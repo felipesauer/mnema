@@ -6,7 +6,7 @@ const vscode = require('vscode');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 exports.run = async () => {
-  const id = 'felipesauer.mnema';
+  const id = 'mnema.mnema';
   const deadline = Date.now() + 60_000;
   let extension = vscode.extensions.getExtension(id);
   while (!extension?.isActive && Date.now() < deadline) {

@@ -29,7 +29,15 @@ name: Release
 #
 # WHAT IT DOES NOT PROVE. Its publish has run (0.1.1 was the first version it published; 0.1.0 was published by hand), so
 # that is no longer untried, and a run does not prove the next one. It needs no npm token and
-# no secret of the repository; the release is created with the job's own `github.token`.
+# no secret for the packages; the release is created with the job's own `github.token`.
+#
+# THE EXTENSION. After the release, the VS Code extension is packed once without a secret, checked, installed
+# into a real VS Code, attached to the release and published, the same file, to the Visual Studio Marketplace
+# and to Open VSX by a job that a person approves in the `extension-stores` environment. That job is the only
+# place in the repository that holds a store token (the two secrets of that environment),
+# and `no-workflow-publishes-the-extension.test.ts` fails if a token or a publish command is anywhere else.
+# A push whose version npm already serves does nothing, the extension included: to put the extension of such
+# a version in the stores, run the jobs of the run that published it again. Nothing here has run yet.
 
 on:
   push:
@@ -277,3 +285,147 @@ jobs:
           [ -s "$notes" ] || { echo "::error::CHANGELOG.md has no section for $VERSION"; exit 1; }
           printf '\nnpm: https://www.npmjs.com/package/@mnema/code/v/%s\n' "$VERSION" >> "$notes"
           gh release create "v$VERSION" --target "$SHA" --title "v$VERSION" --notes-file "$notes"
+
+  # THE EXTENSION AS A FILE, WITHOUT A SECRET. The same `.vsix` goes to the GitHub release, to the Visual
+  # Studio Marketplace and to Open VSX, so it is packed once, here, in a job that holds no token and no
+  # write permission: it builds, packs, checks that the file is what a store takes
+  # (`packages/vscode/build/check-the-vsix.mjs`), installs that very file into a real VS Code to see the
+  # extension start, and exposes its SHA-256 as an output. It runs only after the tag and the release exist,
+  # which is after a person approved the `npm` environment.
+  vsix:
+    name: pack the extension
+    needs: [plan, release]
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      sha256: ${{ steps.pack.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Pack the extension, check the file and write its SHA-256
+        id: pack
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          pnpm --filter @mnema/vscode package
+          vsix="packages/vscode/mnema-$VERSION.vsix"
+          [ -f "$vsix" ] || { echo "::error::$vsix was not made: the extension's version is not $VERSION"; exit 1; }
+          node packages/vscode/build/check-the-vsix.mjs "$vsix"
+          mkdir "$RUNNER_TEMP/vsix"
+          cp "$vsix" "$RUNNER_TEMP/vsix/"
+          echo "sha256=$(sha256sum "$vsix" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Install that file in VS Code and check that it starts
+        run: xvfb-run -a pnpm --filter @mnema/vscode install-check
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vsix
+          path: ${{ runner.temp }}/vsix
+          if-no-files-found: error
+
+  # THE FILE ON THE RELEASE. It writes to the release and nothing else, installs nothing and builds nothing.
+  attach-vsix:
+    name: attach the extension to the release
+    needs: [plan, vsix]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: vsix
+          path: ${{ runner.temp }}/vsix
+
+      - name: Attach the file the pack job made, if the release does not hold it yet
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.plan.outputs.version }}
+          SHA256: ${{ needs.vsix.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          file="$RUNNER_TEMP/vsix/mnema-$VERSION.vsix"
+          have="$(sha256sum "$file" | cut -d' ' -f1)"
+          [ -n "$SHA256" ] && [ "$have" = "$SHA256" ] || { echo "::error::$file is not the file the pack job made"; exit 1; }
+          if gh release view "v$VERSION" --json assets --jq '.assets[].name' | grep -qx "mnema-$VERSION.vsix"; then
+            echo "v$VERSION already holds mnema-$VERSION.vsix: skipped."
+            exit 0
+          fi
+          gh release upload "v$VERSION" "$file"
+
+  # THE EXTENSION IN THE TWO STORES. The only job of any workflow that holds a store token, and a person
+  # approves it in the `extension-stores` environment (its required reviewer and its tag policy are set in
+  # the repository's Settings, not here); the secrets `VSCE_PAT` and `OVSX_PAT` belong to that environment.
+  # It installs nothing and builds nothing: it downloads the file the pack job made, checks it against the
+  # SHA-256 that job exposed (not against a file that travels with it), asks each store whether the version is
+  # already there and skips the store that has it, so a run that stopped halfway runs again, and publishes
+  # THAT file, each store in a step of its own with only its own token. The two CLIs are pinned to a version.
+  publish-vsix:
+    name: publish the extension to the stores
+    needs: [plan, vsix]
+    runs-on: ubuntu-24.04
+    environment: extension-stores
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: vsix
+          path: ${{ runner.temp }}/vsix
+
+      - name: Check the file against the hash the pack job exposes
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+          SHA256: ${{ needs.vsix.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          have="$(sha256sum "$RUNNER_TEMP/vsix/mnema-$VERSION.vsix" | cut -d' ' -f1)"
+          [ -n "$SHA256" ] && [ "$have" = "$SHA256" ] || { echo "::error::mnema-$VERSION.vsix is not the file the pack job made"; exit 1; }
+
+      - name: Publish to the Visual Studio Marketplace, unless it has the version
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          set -euo pipefail
+          served="$(curl -fsS -X POST 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery' \
+            -H 'Accept: application/json;api-version=3.0-preview.1' -H 'Content-Type: application/json' \
+            -d '{"filters":[{"criteria":[{"filterType":7,"value":"mnema.mnema"}]}],"flags":103}' \
+            | node -e 'const j = JSON.parse(require("fs").readFileSync(0, "utf8")); const e = j.results[0].extensions[0]; console.log(e ? e.versions.map((v) => v.version).join(" ") : "")')"
+          case " $served " in
+            *" $VERSION "*) echo "mnema.mnema@$VERSION is already on the Marketplace: skipped."; exit 0 ;;
+          esac
+          npx --yes @vscode/vsce@4.0.0 publish --packagePath "$RUNNER_TEMP/vsix/mnema-$VERSION.vsix"
+
+      - name: Publish to Open VSX, unless it has the version
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          set -euo pipefail
+          code="$(curl -sS -o "$RUNNER_TEMP/ovsx.json" -w '%{http_code}' "https://open-vsx.org/api/mnema/mnema/$VERSION")"
+          if [ "$code" = "200" ] && ! grep -q '"error"' "$RUNNER_TEMP/ovsx.json"; then
+            echo "mnema.mnema@$VERSION is already on Open VSX: skipped."
+            exit 0
+          fi
+          [ "$code" = "404" ] || { echo "::error::Open VSX answered $code, not 404: not publishing blind"; exit 1; }
+          npx --yes ovsx@1.3.0 publish "$RUNNER_TEMP/vsix/mnema-$VERSION.vsix" -p "$OVSX_PAT"
