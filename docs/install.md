@@ -3,8 +3,10 @@
 mnema is one command-line binary, `mnema`, and a plugin for each agent host that hands the
 record to the host's sessions. Install the binary first, then the plugin for your host.
 
+<!-- not-on-the-site -->
 These pages describe the next version, the `main` branch. What the version on npm does not have yet is
 listed under Unreleased in the [Changelog](../CHANGELOG.md).
+<!-- /not-on-the-site -->
 
 ## The binary
 

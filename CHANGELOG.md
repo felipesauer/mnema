@@ -10,6 +10,33 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **A site on GitHub Pages, built from the pages that already exist.** `site/` is a Starlight site in a tree of its own, with
+  its own lockfile and pinned versions, outside the workspace and outside every published package. It holds no page of
+  its own: the build copies the pages of `docs/` (title moved to the frontmatter, relative links sent to the site's page
+  or to the file on GitHub at the commit) and the landing is made of the README's Why, Quick start, What it is not and
+  What it proves sections and of the description of `@mnema/code`. The sidebar is the README's own Docs groups. The
+  accent, the pictures and the favicon are read from `accent.mjs`, `docs/assets/` and the icon the extension draws; no
+  colour or picture is written in `site/`. `/record/` is what `mnema site` writes of the committed record, from the binary
+  built at the same commit, and the build stops when `mnema verify` does not pass. The footer names the version and the
+  commit the site was built from, and `llms.txt` and `robots.txt` are generated beside the sitemap. Two cases hold the
+  built site to its sources: no link goes nowhere, no sentence, colour or picture is the site's own, the footer is the
+  checkout's version and commit, and `/record/` is byte for byte the page the command writes with `--back-link`. The
+  sentence that the pages describe the next version is true on GitHub and npm and false on the site, which describes the
+  published version: the source wraps it in `<!-- not-on-the-site -->` lines, the build takes out that stretch and nothing
+  else, a marker that does not pair stops the build, and the built site is held not to say it.
+- **A `Site` workflow.** On a pull request that touches what the site is made of it builds the site and runs those two cases
+  (it is not a required check, and the path filter is inside the job). After a release it builds the commit the release tagged
+  and deploys it to GitHub Pages from a job that holds `pages: write` and `id-token: write` and no secret; the site
+  describes the published version, and a deploy that fails touches no publication. `site/` has a weekly Dependabot entry and
+  is read by the advisory scan beside the workspace lockfile.
+- **`--back-link` on `mnema site`.** Puts one link back to the address at the top of the page it writes, for a page that
+  sits inside a site, labelled "Back" (the label is fixed): an `http://` or `https://` address, or a path on the same site,
+  with the address escaped. A protocol-relative `//host`, a backslash, an `https:` with no `//`, any other scheme
+  (`javascript:`, `data:`) and an address with white space are refused before anything is written. Without the option the page is byte for
+  byte the one the command wrote before. The site's `/record/` is built with it, pointing at the site's root.
+
 ### Fixed
 
 - **A note is the identity that wrote it first, in every reader.** The read and the write took a note's author from its LAST

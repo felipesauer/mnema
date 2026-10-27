@@ -462,8 +462,12 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the read named in the known limits of the entry on the rules a project inherits, as one that does not list the addresses the origin holds; the reference hands it over with the id',
   },
   'CHANGELOG.md: mnema site': {
-    times: 2,
-    why: 'the verb named as what writes the page, the third reader the strict Ed25519 rule holds and the one that refuses a misnamed key',
+    times: 4,
+    why: 'the verb named as what writes the page, the third reader the strict Ed25519 rule holds and the one that refuses a misnamed key, as what writes the page the site serves at /record/, and as the verb that takes --back-link; its `--help` hands the --out it needs',
+  },
+  'CONTRIBUTING.md: mnema site': {
+    times: 1,
+    why: 'the verb named as what writes the page the site serves at /record/; the page about it hands the line over, with its --out',
   },
   'CHANGELOG.md: mnema stack add': {
     times: 1,
@@ -719,7 +723,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 57, name: 108, flag: 4 },
+  'CHANGELOG.md': { line: 57, name: 111, flag: 4 },
+  'CONTRIBUTING.md': { name: 1 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -731,7 +736,7 @@ export const HANDED_OVER: Readonly<
   'docs/how-it-works.md': { line: 2, name: 2 },
   'docs/install.md': { line: 4, name: 8 },
   'docs/packages.md': { line: 1, name: 2 },
-  'docs/site.md': { line: 1, name: 3 },
+  'docs/site.md': { line: 2, name: 3 },
   'docs/switches.md': { line: 20, name: 4 },
   'docs/verify-without-installing.md': { name: 1 },
   'docs/what-it-proves.md': { line: 7, name: 10 },
@@ -808,7 +813,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/wiring/search.ts': { name: 1 },
   'packages/code/src/wiring/settled.ts': { line: 1 },
   'packages/code/src/wiring/show.ts': { name: 1 },
-  'packages/code/src/wiring/site.ts': { line: 1, name: 2 },
+  'packages/code/src/wiring/site.ts': { line: 2, name: 2 },
   'packages/code/src/wiring/skill.ts': { line: 1 },
   'packages/code/src/wiring/stack.ts': { line: 1 },
   'packages/code/src/wiring/switch.ts': { name: 2 },
