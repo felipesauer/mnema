@@ -207,7 +207,7 @@ describe('what it cannot stand in front of, counted', () => {
 });
 
 describe('the record of the checkout is not written by a file of the suite', () => {
-  it('looks in .mnema/ and in the mnema/ of the git directory, of a clone and of a linked worktree', () => {
+  it('looks in .mnema/ and in the mnema/ of the checkout’s own git directory, of a clone and of a linked worktree', () => {
     const sandbox = mkdtempSync(join(tmpdir(), 'mnema-checkout-places-'));
     try {
       const clone = join(sandbox, 'clone');
@@ -220,11 +220,9 @@ describe('the record of the checkout is not written by a file of the suite', () 
       mkdirSync(own, { recursive: true });
       writeFileSync(join(linked, '.git'), `gitdir: ${own}\n`);
       writeFileSync(join(own, 'commondir'), '../..\n');
-      expect(recordPlacesOf(linked)).toEqual([
-        join(linked, '.mnema'),
-        join(own, 'mnema'),
-        join(clone, '.git', 'mnema'),
-      ]);
+      // The shared private tree (`clone/.git/mnema`) is the main clone's sessions' to write, and
+      // is not listed.
+      expect(recordPlacesOf(linked)).toEqual([join(linked, '.mnema'), join(own, 'mnema')]);
       expect(checkoutOf(join(linked, 'packages', 'code'))).toBe(linked);
     } finally {
       rmSync(sandbox, { recursive: true, force: true });
@@ -240,12 +238,15 @@ describe('the record of the checkout is not written by a file of the suite', () 
       writeFileSync(join(place, 'tails', 'kept'), 'a');
       writeFileSync(join(place, 'tails', 'grown'), 'a');
       writeFileSync(join(place, 'tails', 'gone'), 'a');
+      mkdirSync(join(place, 'locks'));
+      writeFileSync(join(place, 'locks', 'projection.db'), 'a');
       const before = listRecordPlaces([place, absent]);
       expect(whatMovedBetween(before, listRecordPlaces([place, absent]))).toEqual([]);
 
       writeFileSync(join(place, 'tails', 'grown'), 'longer than before');
       rmSync(join(place, 'tails', 'gone'));
       writeFileSync(join(place, 'stray'), 'x');
+      writeFileSync(join(place, 'locks', 'projection.db'), 'a cache is not a record');
       expect(whatMovedBetween(before, listRecordPlaces([place, absent])).sort()).toEqual([
         `appeared: ${join(place, 'stray')}`,
         `removed: ${join(place, 'tails', 'gone')}`,

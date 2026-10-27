@@ -33,15 +33,22 @@
  * one exists.
  *
  *   4. The record places OF THE CHECKOUT the suite runs in (its `.mnema/`, and the `mnema/` of its
- *      git directory and of the common one a linked worktree shares) are listed when the file
- *      starts and again when it ends, and a file after which they differ fails. A case that runs a
- *      verb with the checkout as its working directory writes a record there, and nothing in its
- *      own lines shows it: the sandbox it built sits beside it, empty and removed, while the record
- *      it meant not to touch grew. THIS ONE LOOKS AT THE DISK, which the paragraph below refuses for
- *      the machine's home, and the difference is the place: the checkout belongs to the run, and
- *      the machine's home belongs to the person. The cost is said here: the window is the file, so
- *      a person recording in THIS checkout while the suite runs reddens the file that was running
- *      (the message says so), and a leak by one file is also named by the files that overlapped it.
+ *      own git directory) are listed when the file starts and again when it ends, and a file after
+ *      which they differ fails. A case that runs a verb with the checkout as its working directory
+ *      writes a record there (the committed tree, or the installation id a linked worktree keeps
+ *      in its own git directory), and nothing in its own lines shows it: the sandbox it built sits
+ *      beside it, empty and removed, while the record it meant not to touch grew. THIS ONE LOOKS AT
+ *      THE DISK, which the paragraph below refuses for the machine's home, and the difference is
+ *      the place: the checkout belongs to the run, and the machine's home belongs to the person.
+ *      The cost is said here: the window is the file, so a person recording in THIS checkout while
+ *      the suite runs reddens the file that was running (the message says so), and a leak by one
+ *      file is also named by the files that overlapped it. The lock and cache files under `locks/`
+ *      are not a record and are not listed. THE SHARED PRIVATE TREE, in the git directory the
+ *      worktrees of a clone have in common, is NOT listed, and that is a limit and not an oversight:
+ *      the sessions of the person in the main clone write it while the suite runs (measured: the
+ *      guard reddened seven files on a run in a worktree for writes that were theirs), so a write
+ *      there would be an accusation against a case that did nothing. A case that writes it from a
+ *      worktree also leaves that worktree's own installation id, which is listed.
  *
  * WHAT IT DOES NOT REACH, so nobody has to find it: a case that hands the core a `home` spelled as
  * the machine's by hand (in process, there is no boundary to stand at) and a grandchild that a
@@ -56,7 +63,7 @@ import { randomUUID } from 'node:crypto';
 import { lstatSync, readdirSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { createRequire, syncBuiltinESMExports } from 'node:module';
 import { tmpdir, userInfo } from 'node:os';
-import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
+import { basename, dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
 import { afterAll, afterEach, expect } from 'vitest';
 
@@ -176,8 +183,9 @@ export function checkoutOf(from) {
 
 /**
  * The places a record of the checkout lives, as paths that may not exist yet: `.mnema/` beside the
- * code, and `mnema/` in the git directory (where the private tree goes) of this checkout and of
- * the common one a linked worktree shares with its main clone.
+ * code, and `mnema/` in the git directory of this checkout: the private tree itself in a clone, the
+ * installation id of a linked worktree. The common directory a worktree shares with its main clone
+ * is left out, and the header says why.
  *
  * @param {string} checkout
  * @returns {string[]}
@@ -189,18 +197,9 @@ export function recordPlacesOf(checkout) {
     if (lstatSync(dotGit).isDirectory()) {
       places.push(join(dotGit, 'mnema'));
     } else {
-      // A linked worktree: `.git` is a file naming its own directory, which names the common one.
+      // A linked worktree: `.git` is a file naming its own git directory.
       const named = /^gitdir:\s*(.+)$/m.exec(readFileSync(dotGit, 'utf-8'))?.[1];
-      if (named !== undefined) {
-        const own = resolve(checkout, named.trim());
-        places.push(join(own, 'mnema'));
-        try {
-          const common = readFileSync(join(own, 'commondir'), 'utf-8').trim();
-          places.push(join(resolve(own, common), 'mnema'));
-        } catch {
-          // No `commondir`: a directory that is its own common one.
-        }
-      }
+      if (named !== undefined) places.push(join(resolve(checkout, named.trim()), 'mnema'));
     }
   } catch {
     // No such directory to look in: `.mnema/` is all there is.
@@ -228,6 +227,7 @@ export function listRecordPlaces(places) {
     }
     listed.set(at, stat.isDirectory() ? 'dir' : `${stat.size} ${stat.mtimeMs}`);
     if (!stat.isDirectory()) return;
+    if (basename(at) === 'locks') return; // lock and cache files: not a record
     let names;
     try {
       names = readdirSync(at);
