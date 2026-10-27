@@ -74,6 +74,23 @@ with its own changelog.
 
 ### Changed
 
+- **The page `mnema site` writes reads like a page.** Each decision is a card (state, reasons, what was turned down, who
+  recorded and who accepted it, supersedes and superseded-by as links, the history, the paths it is addressed at), with an
+  anchor by its number (`#ADR-12`, only where no other decision on the page carries it) and a permanent link, and under it the
+  public observations and memories that belong to it (a note taken back stays whole, with when, by whom and why; one that
+  belongs to no decision is listed apart); a timeline lists each act in the record's order. Each act carries a badge worded as
+  the show verb words it, `a person` or `agent <name>`, beside the identity. The page has a main, a link that skips to the
+  decisions, a verdict announced as a status, keyboard focus that shows, a layout that reads at 360 px, and a light and a dark
+  palette at WCAG AA (the dark verified green was 3.59:1 and the broken red 2.90:1) taken from the banner's accent and ground,
+  with the accent darkened for small text by the rule the site's theme uses. With JavaScript, a filter opens on the decisions
+  in force and narrows them by state, identity, agent or person, the day recorded, text and path (by segment: `packages/code`
+  covers `packages/code/src/x.ts` and `packages`, not `packages/codex`), and says how many of how many it shows; without
+  JavaScript every decision, note and timeline entry is listed, where a checkbox and a rule of style used to hide the rest. The
+  verification now starts after the first paint. The stored events are no longer written into the page a second time: opening
+  a tail draws its lines from the files the page already carries for the verification (the same text, a byte that is not UTF-8
+  as U+FFFD), so without JavaScript they are not drawn. At this repository's own record the page went from SIZEBEFORE to
+  SIZEAFTER bytes. What the page lists is still written by the command and still not checked against the files in the browser.
+
 - **The VS Code extension has a container of its own in the activity bar, with the M, and a badge.** The two views, now
   "Awaiting Judgment" and "Stacks", left the Explorer (below Outline and Timeline, collapsed) for a container titled mnema whose
   icon is the first letter of the console's wordmark, drawn into a monochrome SVG when the extension is packed from the same

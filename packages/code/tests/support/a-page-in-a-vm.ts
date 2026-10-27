@@ -4,7 +4,7 @@
  *
  * It is a fake, and it says what it is a fake of: the writer's own output (well formed, every
  * attribute double quoted, the five entities `escapeHtml` writes) and the handful of members the
- * script uses (`site/browser/dom.ts`). It is not a browser, and what it cannot say (layout, paint,
+ * script uses (`Doc` and `El` in `site/browser/filters.ts`). It is not a browser, and what it cannot say (layout, paint,
  * the real event loop) the cases that use it do not claim.
  *
  * IT REFUSES THE WAYS INTO THE PAGE THAT TAKE MARKUP. Assigning `innerHTML` or `outerHTML`,

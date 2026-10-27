@@ -10,7 +10,7 @@
  */
 
 import { fromBase64 } from './buffer.js';
-import type { Doc } from './dom.js';
+import type { Doc } from './filters.js';
 
 /**
  * Decoding never throws: a byte that is not UTF-8 becomes U+FFFD (the replacement character), the

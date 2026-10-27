@@ -20,8 +20,7 @@
 
 import { catalogUpcasters, verifyChain } from '@mnema/chain';
 import { fromBase64 } from './buffer.js';
-import type { Doc } from './dom.js';
-import { wireFilters } from './filters.js';
+import { type Doc, wireFilters } from './filters.js';
 import { mount } from './fs.js';
 import { wireTails } from './tails.js';
 

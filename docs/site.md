@@ -5,13 +5,30 @@ mnema site                  # writes .mnema/site/index.html
 mnema site --out _site      # writes _site/index.html
 ```
 
-One HTML file from the committed tree: the decisions in force (a checkbox shows the
-rejected, superseded and proposed ones), the history of each, who authorized it, and the
-stored events. The file also carries the record's files, and the page runs the same
+One HTML file from the committed tree. Each decision is a card: its reasons, what was turned down, who recorded
+it and who accepted it, its history and the paths it is addressed at. Under a decision are the public notes
+(observations and memories) that belong to it, and a note that was taken back stays, whole, with when, by whom and
+why. A note that belongs to no decision is listed apart, and a timeline lists each act the record holds, in the
+record's order (not the clock's). A decision has an anchor by its number (`#ADR-12`) when no other decision on the
+page carries that number, and always one by its id. Tasks, handoffs, runs and the private tree are not on it.
+
+Each act says whether a person or an agent carried it out, in the words the `show` verb uses (`a person`, or `agent`
+and the name the act declared), next to the identity (`mnid:...`) the record holds. The badge is the act's own `which`
+as the record holds it, and the page does not check it any further; neither it nor an identity is a person's name.
+
+Every decision is on the page without JavaScript. With it, a filter opens on the decisions in force and narrows them
+by state, identity, agent or person, the day the decision was recorded, text (notes included) and path (by segment:
+`packages/code` matches an address `packages/code/src/x.ts` and an address `packages`, and does not match
+`packages/codex`), and the page says how many of how many it shows. Nothing is stored: no cookie, no local storage,
+nothing in the address.
+
+The file also carries the record's files, and the page runs the same
 verifier as `mnema verify` over them in the reader's browser (no request, no key, nothing
-loaded from elsewhere) and prints its sentence. It is `mnema verify`'s verdict for a fresh
+loaded from elsewhere) and prints its sentence, after it has drawn the page. It is `mnema verify`'s verdict for a fresh
 clone of the repository, and the record's own declaration of the backup key `init` made is
-what lets a clone say that key as a backup rather than as a key whose tail is missing.
+what lets a clone say that key as a backup rather than as a key whose tail is missing. The stored events are not
+written into the page a second time: opening a tail under Events draws its lines from those files, so without
+JavaScript they are not drawn (the files are still in the page, in base64).
 
 What the verdict does not cover: it checks the hash chain and the checkpoint signatures
 against the public keys the page carries, not that a key belongs to the person a list names,
