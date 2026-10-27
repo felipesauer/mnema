@@ -19,8 +19,14 @@ as the record holds it, and the page does not check it any further; neither it n
 Every decision is on the page without JavaScript. With it, a filter opens on the decisions in force and narrows them
 by state, identity, agent or person, the day the decision was recorded, text (notes included) and path (by segment:
 `packages/code` matches an address `packages/code/src/x.ts` and an address `packages`, and does not match
-`packages/codex`), and the page says how many of how many it shows. Nothing is stored: no cookie, no local storage,
+`packages/codex`), and the page says how many of how many it shows. A link to a decision the filter hides (the timeline's "open", `#ADR-12`, a note's anchor) gives the filter way: it goes
+to all states, and clears the other choices if they still hide it. Nothing is stored: no cookie, no local storage,
 nothing in the address.
+
+A field of the record is drawn the way `mnema show` words it: whitespace collapsed in a short field (title, identity,
+agent, topic, relation, path, reason) and a right-to-left override, a bell, an escape or a lone carriage return shown
+as an escape, so a hostile value cannot reorder, forge or split what is read. The stored lines of a tail, drawn when it
+is opened, are the exception: they are the bytes of the files, as stored.
 
 The file also carries the record's files, and the page runs the same
 verifier as `mnema verify` over them in the reader's browser (no request, no key, nothing

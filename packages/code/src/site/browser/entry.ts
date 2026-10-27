@@ -118,6 +118,8 @@ export interface Host {
   document?: Page | undefined;
   requestAnimationFrame?: ((callback: () => void) => unknown) | undefined;
   setTimeout?: ((callback: () => void, ms: number) => unknown) | undefined;
+  location?: { hash: string } | undefined;
+  addEventListener?: ((type: string, listener: () => void) => void) | undefined;
 }
 
 /** Whether the page can select elements too, which the filters and the tails need and the verdict does not. */
@@ -146,7 +148,7 @@ export function start(host: Host): void {
   if (carried?.textContent) {
     const files = JSON.parse(carried.textContent) as Record<string, string>;
     if (canBeWired(page)) {
-      wireFilters(page);
+      wireFilters(page, host);
       wireTails(page, files);
     }
     afterTheFirstPaint(host, () => showVerdict(page, files));

@@ -66,6 +66,7 @@ describe('a card under what was chosen', () => {
     expect(cardShown(card, { ...NONE, text: 'DOLLARS' })).toBe(false);
     expect(cardShown(card, { ...NONE, text: 'MONEY' })).toBe(true);
     expect(cardShown(card, { ...NONE, path: 'packages/codex' })).toBe(false);
+    expect(cardShown(card, { ...NONE, path: ' packages/code ' })).toBe(true);
   });
 });
 
@@ -135,19 +136,27 @@ const DECISIONS = [
 ];
 
 /** The page the writer makes for the fixture, with its script run and the first paint over. */
-function aPage(): PageRun {
+function aPage(hash = ''): PageRun {
   const html = renderPage(
     {
       decisions: DECISIONS,
       otherNotes: [],
-      timeline: [],
-      counts: { decisions: 4, inForce: 1, notes: 1, timeline: 0 },
+      timeline: [
+        {
+          kind: 'decision-recorded',
+          at: '2026-02-10T10:00:00.000Z',
+          who: 'mnid:bob',
+          subject: 'd-2',
+          adr: 'ADR-2',
+        },
+      ],
+      counts: { decisions: 4, inForce: 1, notes: 1, timeline: 1 },
       tails: [],
       files: {},
     },
     theSiteVerifier(),
   );
-  const run = runInAVm(html, theSiteVerifier());
+  const run = runInAVm(html, theSiteVerifier(), hash);
   run.timers.drain();
   return run;
 }
@@ -243,6 +252,52 @@ describe('the filters of the page', () => {
     expect(shown(run)).toEqual(['d-2', 'd-3']);
   });
 
+  it('give way to a link to a decision they hide, on load, on a change of the address and on a click', () => {
+    // On load: a deep link by id, and by label, to a decision not in force.
+    const byId = aPage('#d-2');
+    expect(shown(byId)).toEqual(['d-1', 'd-2', 'd-3', 'd-4']);
+    expect(control(byId, 'f-state').value).toBe('');
+    expect(control(byId, 'showing').textContent).toBe('Showing 4 of 4 decision(s)');
+    expect(byId.page.getElementById('d-2')?.scrolledIntoView).toBe(true);
+    expect(shown(aPage('#ADR-3'))).toContain('d-3');
+    // A link to a decision in force leaves the filter where it opened.
+    const inForce = aPage('#d-1');
+    expect(shown(inForce)).toEqual(['d-1']);
+    expect(control(inForce, 'f-state').value).toBe('in-force');
+    // A change of the address, with other choices in the way: they are cleared too.
+    const run = aPage();
+    choose(run, 'f-text', 'cents');
+    choose(run, 'f-who', 'mnid:alice');
+    expect(shown(run)).toEqual(['d-1']);
+    run.address.follow('#d-2');
+    expect(shown(run)).toContain('d-2');
+    expect(control(run, 'f-text').value).toBe('');
+    expect(control(run, 'f-who').value).toBe('');
+    expect(control(run, 'showing').textContent).toBe(
+      `Showing ${shown(run).length} of 4 decision(s)`,
+    );
+    // A note's id leads to the card that carries it.
+    const note = aPage();
+    choose(note, 'f-text', 'dates');
+    expect(shown(note)).toEqual([]);
+    note.address.follow('#note-n-1');
+    expect(shown(note)).toContain('d-1');
+    // The "open" link of the timeline, which does not change the address when it is already there.
+    const click = aPage();
+    const open = click.page
+      .querySelectorAll('a[href]')
+      .find((link) => link.getAttribute('href') === '#d-2') as FakeElement;
+    open.dispatch('click');
+    expect(shown(click)).toContain('d-2');
+    expect(control(click, 'showing').textContent).toBe('Showing 4 of 4 decision(s)');
+    // An address that is no card, or no id at all, changes nothing.
+    const other = aPage();
+    other.address.follow('#decisions');
+    other.address.follow('#');
+    other.address.follow('#%E0%A4%A');
+    expect(shown(other)).toEqual(['d-1']);
+  });
+
   it('clear shows every decision, and does not keep what was typed', () => {
     const run = aPage();
     choose(run, 'f-text', 'cents');
@@ -265,9 +320,10 @@ describe('the filters of the page', () => {
       },
       theSiteVerifier(),
     );
-    const { page, timers } = runInAVm(html, theSiteVerifier());
+    const run = runInAVm(html, theSiteVerifier());
+    const { page, timers } = run;
     expect(timers.pending).toBe(1);
-    expect(control({ page, timers }, 'showing').textContent).toBe('Showing 1 of 4 decision(s)');
+    expect(control(run, 'showing').textContent).toBe('Showing 1 of 4 decision(s)');
     expect(page.getElementById('verdict-status')?.getAttribute('data-state')).toBe('pending');
     timers.drain();
     expect(page.getElementById('verdict-status')?.getAttribute('data-state')).toBe('unverified');

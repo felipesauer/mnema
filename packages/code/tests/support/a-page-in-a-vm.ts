@@ -88,6 +88,13 @@ export class FakeElement {
     this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
   }
 
+  /** Whether the script brought it into view. */
+  scrolledIntoView = false;
+
+  scrollIntoView(): void {
+    this.scrolledIntoView = true;
+  }
+
   /** What a reader's action does: runs the listeners the script put on `type`. */
   dispatch(type: string): void {
     for (const listener of this.listeners.get(type) ?? []) listener();
@@ -246,15 +253,28 @@ export class FakeTimers {
 export interface PageRun {
   readonly page: FakePage;
   readonly timers: FakeTimers;
+  /** The window's address and what a reader does to it: a new fragment, then `hashchange`. */
+  readonly address: {
+    hash: string;
+    follow(hash: string): void;
+  };
 }
 
 /**
  * Parses `html` and runs `script` over it in a context shaped like a plain page. The timers are
  * NOT drained: the case says when the first paint is over (`timers.drain()`).
  */
-export function runInAVm(html: string, script: string): PageRun {
+export function runInAVm(html: string, script: string, hash = ''): PageRun {
   const page = new FakePage(html);
   const timers = new FakeTimers();
+  const listeners: Record<string, (() => void)[]> = {};
+  const address = {
+    hash,
+    follow(next: string): void {
+      address.hash = next;
+      for (const listener of listeners.hashchange ?? []) listener();
+    },
+  };
   const context = vm.createContext({
     TextEncoder,
     TextDecoder,
@@ -263,8 +283,12 @@ export function runInAVm(html: string, script: string): PageRun {
     URL,
     document: page,
     setTimeout: timers.setTimeout,
+    location: address,
+    addEventListener: (type: string, listener: () => void): void => {
+      listeners[type] = [...(listeners[type] ?? []), listener];
+    },
   });
   vm.runInContext('delete globalThis.SharedArrayBuffer', context);
   vm.runInContext(script, context);
-  return { page, timers };
+  return { page, timers, address };
 }

@@ -36,6 +36,14 @@ export interface El {
   appendChild(child: El): void;
   addEventListener(type: string, listener: () => void): void;
   querySelectorAll(selector: string): ArrayLike<El>;
+  /** Brings the element into view; a place that cannot scroll leaves it out. */
+  scrollIntoView?(): void;
+}
+
+/** The window, as far as the filters read it: the address's fragment, and the change of it. */
+export interface Where {
+  location?: { hash: string } | undefined;
+  addEventListener?: ((type: string, listener: () => void) => void) | undefined;
 }
 
 /** The document: elements by id, by selector, and new ones. */
@@ -101,9 +109,8 @@ export function cardShown(card: CardFacts, criteria: Criteria): boolean {
   if (criteria.to !== '' && (card.date === '' || card.date > criteria.to)) return false;
   const text = criteria.text.trim().toLowerCase();
   if (text !== '' && !card.text.includes(text)) return false;
-  if (criteria.path.trim() !== '' && !card.targets.some((t) => pathMatches(criteria.path, t))) {
-    return false;
-  }
+  const path = criteria.path.trim();
+  if (path !== '' && !card.targets.some((t) => pathMatches(path, t))) return false;
   return true;
 }
 
@@ -142,7 +149,7 @@ function fill(page: Doc, select: El, entries: readonly (readonly [string, string
 const sorted = (values: Iterable<string>): string[] => [...new Set(values)].sort();
 
 /** Wires the filters over the cards of the page; a page without them is left as it is. */
-export function wireFilters(page: Doc): void {
+export function wireFilters(page: Doc, where: Where = {}): void {
   const list = page.getElementById('decision-list');
   const controls = page.getElementById('filters');
   const showing = page.getElementById('showing');
@@ -218,8 +225,45 @@ export function wireFilters(page: Doc): void {
     for (const input of [who, by, from, to, text, path]) input.value = '';
     apply();
   });
+
+  /**
+   * A link to a card the filters hide (an "open" of the timeline, `#<id>`, `#ADR-<n>`) would lead
+   * nowhere, so the filters give way: first the state goes to "All states", and if the other
+   * choices still hide it they are cleared, then the card is brought into view. The line "Showing
+   * X of Y" is written by the same `apply` that did the showing.
+   */
+  const reveal = (fragment: string): void => {
+    let id = fragment.replace(/^#/, '');
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+      // not an escape; the fragment is its own id
+    }
+    const target = id === '' ? null : page.getElementById(id);
+    if (target === null) return;
+    const card = cards.find(
+      (c) => c.el === target || Array.from(c.el.querySelectorAll('[id]')).includes(target),
+    );
+    if (card === undefined) return;
+    if (card.el.hidden) {
+      state.value = '';
+      apply();
+    }
+    if (card.el.hidden) {
+      for (const input of [who, by, from, to, text, path]) input.value = '';
+      apply();
+    }
+    target.scrollIntoView?.();
+  };
+  for (const link of Array.from(page.querySelectorAll('a[href]'))) {
+    const href = link.getAttribute('href') ?? '';
+    if (href.startsWith('#')) link.addEventListener('click', () => reveal(href));
+  }
+  where.addEventListener?.('hashchange', () => reveal(where.location?.hash ?? ''));
+
   state.value = 'in-force';
   apply();
+  reveal(where.location?.hash ?? '');
   controls.hidden = false;
   showing.hidden = false;
 }

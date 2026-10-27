@@ -93,7 +93,10 @@ with its own changelog.
   in force and narrows them by state, identity, agent or person, the day recorded, text and path (by segment: `packages/code`
   covers `packages/code/src/x.ts` and `packages`, not `packages/codex`), and says how many of how many it shows; without
   JavaScript every decision, note and timeline entry is listed, where a checkbox and a rule of style used to hide the rest. The
-  verification now starts after the first paint. The stored events are no longer written into the page a second time: opening
+  A link to a decision the filter hides opens it by giving the filter way, a path typed with spaces around it is trimmed
+  before it is matched, and every field of the record is drawn as `mnema show` words it (an override, a bell or an escape
+  is shown as an escape, a title is one line); the stored lines of a tail stay as stored.
+  The verification now starts after the first paint. The stored events are no longer written into the page a second time: opening
   a tail draws its lines from the files the page already carries for the verification (the same text, a byte that is not UTF-8
   as U+FFFD), so without JavaScript they are not drawn. At this repository's own record the page went from 1,328,541 to
   1,042,443 bytes (321 KB to 261 KB gzipped), and a record of 2,112 events made by the product's own writers from 6,002,316 to 4,889,518 bytes. What the page lists is still written by the command and still not checked against the files in the browser.

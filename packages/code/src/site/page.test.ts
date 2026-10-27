@@ -195,6 +195,56 @@ describe('the page', () => {
     }
   });
 
+  it('draws every field of the record the way `mnema show` words it: no override, bell, escape or line break gets through', () => {
+    const evil = 'a\u202eb\u0007c\u001b[31m\r\nd';
+    const shown = 'a\\u202eb\\u0007c\\u001b[31m d';
+    const body = 'a\\u202eb\\u0007c\\u001b[31m\r\nd';
+    const page = renderPage(
+      model(
+        [
+          decision({
+            title: evil,
+            rationale: evil,
+            alternatives: evil,
+            recordedBy: { who: evil, which: evil },
+            moves: [{ ...move, said: evil, which: evil }],
+            addresses: [{ rel: evil, target: evil }],
+            linkedTo: [{ rel: evil, target: evil }],
+            notes: [
+              {
+                ...note,
+                topic: evil,
+                about: evil,
+                text: evil,
+                which: evil,
+                retracted: {
+                  at: '2026-01-02T00:00:00.000Z',
+                  who: evil,
+                  which: evil,
+                  reason: evil,
+                },
+              },
+            ],
+          }),
+        ],
+        { timeline: [{ ...entry('note-recorded', 'n-1'), topic: evil, which: evil }] },
+      ),
+      '/*v*/',
+    );
+    for (const raw of ['\u202e', '\u0007', '\u001b']) {
+      expect(page.includes(raw), `U+${raw.charCodeAt(0).toString(16)} is in the page raw`).toBe(
+        false,
+      );
+    }
+    expect(page).toContain(`<h3><span id="ADR-1"></span>ADR-1 · ${shown} `);
+    expect(page).toContain(`<code class="target">${shown}</code>`);
+    expect(page).toContain(`<code>${shown}</code> <span class="badge">agent ${shown}</span>`);
+    expect(page).toContain(`<pre>${body}</pre>`);
+    expect(page).toContain(`on <strong>${shown}</strong>`);
+    expect(page).toContain(`Why: ${shown}</p>`);
+    expect(page).toContain(escapeHtml(JSON.stringify(shown)));
+  });
+
   it('writes the record files so that nothing in them can close the script', () => {
     const page = renderPage(
       model([], { files: { 'tails/x/000001.jsonl': 'PHNjcmlwdD4=' } }),

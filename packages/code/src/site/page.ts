@@ -34,6 +34,7 @@
 
 import { createHash } from 'node:crypto';
 import { mix, textAccent } from './colour.js';
+import { neutralized, oneLine } from '../one-line.js';
 import {
   actWording,
   type PageDecision,
@@ -67,6 +68,16 @@ export function escapeHtml(text: string): string {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
+
+/**
+ * A record's short field as it is drawn: the rule of the line `mnema show` applies to the same
+ * field ({@link oneLine}), then escaped. A `which`, a title or a path holding a right-to-left
+ * override, a bell, an escape or a line break cannot reorder, forge or break what is drawn.
+ */
+const line = (text: string): string => escapeHtml(oneLine(text));
+
+/** A record's long text (rationale, a note) as `mnema show` prints it ({@link neutralized}), escaped. */
+const block = (text: string): string => escapeHtml(neutralized(text));
 
 /** The floor for text: WCAG 2, level AA. */
 export const TEXT_FLOOR = 4.5;
@@ -215,7 +226,7 @@ summary { cursor: pointer; }
 
 /** The identity as the record names it, and what carried the act out: a person or an agent. */
 function actor(who: string, which?: string): string {
-  return `<code>${escapeHtml(who)}</code> <span class="badge">${escapeHtml(actWording(which))}</span>`;
+  return `<code>${line(who)}</code> <span class="badge">${line(actWording(which))}</span>`;
 }
 
 function permalinkOf(d: PageDecision): string {
@@ -230,8 +241,8 @@ function actorsOf(d: PageDecision): { who: string[]; by: string[] } {
     ...d.moves,
   ];
   return {
-    who: [...new Set(acts.map((act) => act.who))],
-    by: [...new Set(acts.map((act) => actWording(act.which)))],
+    who: [...new Set(acts.map((act) => oneLine(act.who)))],
+    by: [...new Set(acts.map((act) => oneLine(actWording(act.which))))],
   };
 }
 
@@ -239,19 +250,19 @@ function noteHtml(note: PageNote, firstTime: boolean): string {
   const retraction =
     note.retracted === undefined
       ? ''
-      : `<p class="retraction">Retracted at <time>${escapeHtml(note.retracted.at)}</time> by ${actor(note.retracted.who, note.retracted.which)}. Why: ${escapeHtml(note.retracted.reason)}</p>`;
+      : `<p class="retraction">Retracted at <time>${escapeHtml(note.retracted.at)}</time> by ${actor(note.retracted.who, note.retracted.which)}. Why: ${line(note.retracted.reason)}</p>`;
   const what = note.kind === 'memory' ? 'Memory' : 'Observation';
-  const topic = note.topic === undefined ? '' : ` on <strong>${escapeHtml(note.topic)}</strong>`;
-  const about = note.about === undefined ? '' : ` about <code>${escapeHtml(note.about)}</code>`;
+  const topic = note.topic === undefined ? '' : ` on <strong>${line(note.topic)}</strong>`;
+  const about = note.about === undefined ? '' : ` about <code>${line(note.about)}</code>`;
   return (
     `<li class="note${note.retracted === undefined ? '' : ' retracted'}"${firstTime ? ` id="note-${escapeHtml(note.id)}"` : ''}>` +
     `<p class="meta">${what}${topic}${about}, by ${actor(note.who, note.which)} at <time>${escapeHtml(note.at)}</time></p>` +
-    `<pre>${escapeHtml(note.text)}</pre>${retraction}</li>`
+    `<pre>${block(note.text)}</pre>${retraction}</li>`
   );
 }
 
 function linkHtml(link: PageLink): string {
-  return `<span class="rel">${escapeHtml(link.rel)}</span><code class="target">${escapeHtml(link.target)}</code>`;
+  return `<span class="rel">${line(link.rel)}</span><code class="target">${line(link.target)}</code>`;
 }
 
 function decisionHtml(
@@ -262,17 +273,17 @@ function decisionHtml(
   const history = d.moves
     .map(
       (move) =>
-        `<li><time>${escapeHtml(move.at)}</time> ${escapeHtml(move.action)}` +
-        ` (${escapeHtml(move.before ?? 'new')} → ${escapeHtml(move.to)}) by ${actor(move.who, move.which)}` +
-        (move.said === undefined ? '' : `<pre>${escapeHtml(move.said)}</pre>`) +
+        `<li><time>${escapeHtml(move.at)}</time> ${line(move.action)}` +
+        ` (${line(move.before ?? 'new')} → ${line(move.to)}) by ${actor(move.who, move.which)}` +
+        (move.said === undefined ? '' : `<pre>${block(move.said)}</pre>`) +
         '</li>',
     )
     .join('');
   const reference = (id: string): string => {
     const other = known.get(id);
     return other === undefined
-      ? `<code>${escapeHtml(id)}</code>`
-      : `<a href="#${escapeHtml(id)}">${escapeHtml(other.adr)}</a>`;
+      ? `<code>${line(id)}</code>`
+      : `<a href="#${escapeHtml(id)}">${line(other.adr)}</a>`;
   };
   const rows = [
     d.recordedBy === undefined
@@ -319,13 +330,13 @@ function decisionHtml(
   const anchor = d.adrIsUnique ? `<span id="${escapeHtml(d.adr)}"></span>` : '';
   return (
     `<article class="card decision ${d.inForce ? 'in-force' : 'not-in-force'}" id="${escapeHtml(d.id)}" ${data}>` +
-    `<h3>${anchor}${escapeHtml(d.adr)} · ${escapeHtml(d.title)} ` +
-    `<span class="state" data-state="${escapeHtml(d.state)}">${escapeHtml(d.state)}</span>` +
+    `<h3>${anchor}${line(d.adr)} · ${line(d.title)} ` +
+    `<span class="state" data-state="${escapeHtml(d.state)}">${line(d.state)}</span>` +
     `<a class="permalink" href="#${escapeHtml(permalinkOf(d))}" aria-label="Permanent link to ${escapeHtml(d.adr)}">#</a></h3>` +
-    `<pre>${escapeHtml(d.rationale)}</pre>` +
+    `<pre>${block(d.rationale)}</pre>` +
     (d.alternatives === undefined
       ? ''
-      : `<p><strong>Turned down:</strong></p><pre>${escapeHtml(d.alternatives)}</pre>`) +
+      : `<p><strong>Turned down:</strong></p><pre>${block(d.alternatives)}</pre>`) +
     rows +
     addresses +
     linked +
@@ -339,10 +350,10 @@ function decisionHtml(
 
 function timelineHtml(entry: TimelineEntry): string {
   const by = actor(entry.who, entry.which);
-  const topic = entry.topic === undefined ? '' : ` on ${escapeHtml(entry.topic)}`;
+  const topic = entry.topic === undefined ? '' : ` on ${line(entry.topic)}`;
   const text = {
-    'decision-recorded': `${escapeHtml(entry.adr ?? '')} recorded by ${by}`,
-    'decision-moved': `${escapeHtml(entry.adr ?? '')}: ${escapeHtml(entry.action ?? '')} (to ${escapeHtml(entry.to ?? '')}) by ${by}`,
+    'decision-recorded': `${line(entry.adr ?? '')} recorded by ${by}`,
+    'decision-moved': `${line(entry.adr ?? '')}: ${line(entry.action ?? '')} (to ${line(entry.to ?? '')}) by ${by}`,
     'note-recorded': `Note recorded${topic} by ${by}`,
     'note-retracted': `Note retracted by ${by}`,
   }[entry.kind];
