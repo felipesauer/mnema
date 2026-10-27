@@ -281,6 +281,8 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     'The steps of the site build that touch the disk: the pages of docs/ and the landing it writes under site/, the pictures and the favicon it copies or draws from their owners. The case imports it to run it over this tree into a directory of its own, and it sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
   'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-pages.mjs':
     'The readings the site is made of, plain functions over text: the title that moves to the frontmatter, the link that lands, the sections of the README and the groups of its Docs. The case runs them over a fixture and over the real tree, and the specifier is the proof of the site and not a dependency the scanner could follow.',
+  'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts -> ../../../site/build/the-pages.mjs':
+    'The one function of the readings the built-site case needs, the address /record/ links back to, so that the case that compares /record/ with what `mnema site --back-link` writes asks for the same address the build used. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
   'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-record.mjs':
     'The step that writes the verifier page of the record by running the binary of this commit, and stops when the record does not verify. The case runs it over this repository and over a copy with one byte changed, so the specifier is the proof that a record that fails never becomes a page of the site.',
 };
@@ -1171,7 +1173,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-brief-is-the-same-bytes-in-any-order.properties.test.ts': 9,
   'packages/code/tests/the-broken-link-reaches-every-reader.test.ts': 5,
   'packages/code/tests/the-built-binary-runs-from-a-symlink.test.ts': 7,
-  'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts': 7,
+  'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts': 8,
   'packages/code/tests/the-busy-tail-is-a-refusal.test.ts': 11,
   'packages/code/tests/the-cache-dir-reaches-every-door.test.ts': 9,
   'packages/code/tests/the-cache-is-not-said-to-change-no-answer.test.ts': 5,
@@ -2114,8 +2116,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows; a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(17);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(17);
+    expect(unresolved.length).toBe(18);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(18);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);

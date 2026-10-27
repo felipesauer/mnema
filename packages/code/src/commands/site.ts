@@ -74,9 +74,7 @@ export function isAcceptableBackLink(link: string): boolean {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: refusing control characters is the point
   if (link === '' || /[\s\u0000-\u001f\u007f]/.test(link)) return false;
   const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(link)?.[1];
-  return (
-    scheme === undefined || scheme.toLowerCase() === 'http' || scheme.toLowerCase() === 'https'
-  );
+  return scheme === undefined || /^https?$/i.test(scheme);
 }
 
 /** Every file under `dir`, as a path relative to `base`, in a fixed order. */
