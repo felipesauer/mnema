@@ -117,6 +117,7 @@ export interface VscodeApi {
       },
     ): Disposable;
     openTextDocument(uri: UriLike): PromiseLike<unknown>;
+    onDidCloseTextDocument: Event<{ readonly uri: UriLike }>;
   };
   readonly Uri: { from(parts: { scheme: string; path: string; query: string }): UriLike };
   readonly RelativePattern: new (base: string, pattern: string) => unknown;
@@ -526,6 +527,13 @@ export function activate(
         syncActiveDecision();
         return decision.text;
       },
+    }),
+  );
+
+  // A tab that was closed is no longer refreshed: it leaves the map when the editor says it closed.
+  keep(
+    api.workspace.onDidCloseTextDocument((document) => {
+      if (document.uri.scheme === DECISION_SCHEME) openDecisions.delete(document.uri.query);
     }),
   );
 

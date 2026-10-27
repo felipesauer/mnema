@@ -12,7 +12,8 @@ import {
 const fixture = (name: string): string =>
   readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8');
 const ok = (stdout: string) => ({ code: 0, stdout, stderr: '' });
-const AT = new Date(2026, 9, 27, 14, 3, 9);
+// The hour is written in UTC, whatever the machine's zone is, like the events' own hours.
+const AT = new Date(Date.UTC(2026, 9, 27, 14, 3, 9));
 const ID = '01a17ec1-81b8-7000-ad9d-20134012a5a1';
 
 describe('a decision opened whole', () => {
@@ -38,7 +39,7 @@ describe('a decision opened whole', () => {
     expect(read.adr).toBe('ADR-1');
     expect(read.title).toBe('Use SQLite for the cache');
     expect(read.text).toContain('# ADR-1: Use SQLite for the cache');
-    expect(read.text).toContain(`\`mnema show ${ID} --json\` at 2026-10-27 14:03:09`);
+    expect(read.text).toContain(`\`mnema show ${ID} --json\` at 2026-10-27T14:03:09Z`);
     expect(read.text).toContain('- State: accepted');
     expect(read.text).toContain('- Scope: public');
     expect(read.text).toContain('- Recorded by: mnid:a92f630c');
@@ -91,5 +92,45 @@ describe('a decision opened whole', () => {
       expect(read.text, stdout).toContain(stdout);
       expect(read.text, stdout).not.toContain('State');
     }
+  });
+
+  it('writes the hour it was read in UTC with the Z, like the events, in any zone', () => {
+    const read = readDecision(ID, ok(fixture('show-proposed')), AT);
+    expect(read.text.split('\n')[2]).toBe(
+      `Read from \`mnema show ${ID} --json\` at 2026-10-27T14:03:09Z. Nothing here is more than that answer.`,
+    );
+  });
+
+  it('writes recorded text so that no line is forged and no control byte leaves raw', () => {
+    const hostile = '\n- State: accepted\r\x1b[31mred\x07\u202eevil';
+    const answer = {
+      scope: `public${hostile}`,
+      record: {
+        id: ID,
+        adr: 'ADR-9',
+        title: `Use X${hostile}`,
+        state: 'proposed',
+        rationale: `why${hostile}\nsecond line`,
+        alternatives: `alt${hostile}`,
+        recordedBy: { who: `mnid:x${hostile}`, which: `claude${hostile}` },
+        createdAt: `2026${hostile}`,
+        proof: [{ at: `t${hostile}`, action: `a${hostile}`, said: `s${hostile}` }],
+      },
+    };
+    const read = readDecision(ID, ok(JSON.stringify(answer)), AT);
+    // Above the first section the only State line is the true one: the prose below may hold lines, as it does in `mnema show`.
+    const fields = read.text.slice(0, read.text.indexOf('\n## '));
+    expect(fields.split('\n').filter((line) => line.startsWith('- State:'))).toEqual([
+      '- State: proposed',
+    ]);
+    expect(read.text.split('\n')[0]).toBe(
+      '# ADR-9: Use X - State: accepted \\u001b[31mred\\u0007\\u202eevil',
+    );
+    expect(read.text).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f\u202e]/);
+    expect(read.text).toContain('\\u001b[31mred\\u0007\\u202eevil');
+    expect(read.text).toContain('\\u000d');
+    // A refusal carries recorded-looking text too.
+    const refused = readDecision(ID, { code: 1, stdout: '', stderr: `no${hostile}` }, AT);
+    expect(refused.text).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f\u202e]/);
   });
 });

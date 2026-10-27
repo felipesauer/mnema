@@ -138,6 +138,9 @@ importers:
 
   packages/vscode:
     devDependencies:
+      '@mnema/chain':
+        specifier: workspace:*
+        version: link:../chain
       '@mnema/context':
         specifier: workspace:*
         version: link:../context

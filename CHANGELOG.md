@@ -116,7 +116,8 @@ with its own changelog.
   picking a rule from a file's lens) opens a read-only plain text document, `ADR-n`, with what the command line's `show` verb answered
   (title, state, scope, who recorded and accepted it, when, the justification, the alternatives and the moves), the command and
   the time it was read at the top, read again at each opening and each reading of the record; its address carries the id, never
-  the ADR number. While it is `proposed` its editor's title carries accept and reject, which go through the same note box and the
+  the ADR number. What the record wrote is laid out by the rule `mnema show` applies (one line for a title or a field, control bytes
+  written as visible escapes), and the hour it was read is in UTC with the Z. While it is `proposed` its editor's title carries accept and reject, which go through the same note box and the
   same decision move as the buttons beside the items, one decision at a time; the context menu keeps them in separate
   groups. The note stays required in the format, the gate, the command line and the MCP server. In the extension the accept box
   starts with a true stamp, `<the day>, accepted in the VS Code extension, no reason typed`, selected, so Enter records it and

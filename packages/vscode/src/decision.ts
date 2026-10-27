@@ -6,6 +6,7 @@
  * number can be carried by two decisions, so it only names the tab.
  */
 
+import { oneLine, neutralized } from '@mnema/chain/one-line';
 import { decisionDisposition } from '@mnema/context';
 import { isDecisionState } from '@mnema/core';
 
@@ -58,19 +59,19 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 const text = (value: unknown): string | undefined =>
   typeof value === 'string' && value !== '' ? value : undefined;
 
-const two = (n: number): string => String(n).padStart(2, '0');
+/** The text of a field that sits on one line: the record's own rule of the line, the one `mnema show` applies. */
+const oneLined = (value: string | undefined): string | undefined =>
+  value === undefined ? undefined : oneLine(value);
 
-/** When it was read, in the person's own clock: the day and the time. */
-const clock = (at: Date): string =>
-  `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())} ` +
-  `${two(at.getHours())}:${two(at.getMinutes())}:${two(at.getSeconds())}`;
+/** When it was read, in UTC with the Z, as the events' own hours are written: `2026-10-27T14:03:09Z`. */
+const clock = (at: Date): string => at.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 /** Who a record names: the identity, and the agent when it says one. */
 function actor(value: unknown): string | undefined {
   if (!isObject(value)) return undefined;
-  const who = text(value.who);
+  const who = oneLined(text(value.who));
   if (who === undefined) return undefined;
-  const which = text(value.which);
+  const which = oneLined(text(value.which));
   return which === undefined ? who : `${who} (agent ${which})`;
 }
 
@@ -85,7 +86,7 @@ export function readDecision(
 ): DecisionRead {
   const header = `Read from \`mnema show ${id} --json\` at ${clock(readAt)}. Nothing here is more than that answer.`;
   const failed = (said: string): DecisionRead => ({
-    text: `${header}\n\n${said}\n`,
+    text: `${header}\n\n${neutralized(said)}\n`,
     state: undefined,
     adr: undefined,
     title: undefined,
@@ -103,9 +104,9 @@ export function readDecision(
   if (!isObject(answer) || record === undefined) {
     return failed(`The answer was not a record:\n\n${result.stdout.trimEnd()}`);
   }
-  const adr = text(record.adr);
-  const title = text(record.title);
-  const state = text(record.state);
+  const adr = oneLined(text(record.adr));
+  const title = oneLined(text(record.title));
+  const state = oneLined(text(record.state));
   const lines = [
     `# ${[adr, title].filter((part) => part !== undefined).join(': ') || id}`,
     '',
@@ -113,7 +114,7 @@ export function readDecision(
     '',
   ];
   const field = (label: string, value: string | undefined): void => {
-    if (value !== undefined) lines.push(`- ${label}: ${value}`);
+    if (value !== undefined) lines.push(`- ${label}: ${oneLine(value)}`);
   };
   field('Id', text(record.id) ?? id);
   field('State', state);
@@ -124,16 +125,16 @@ export function readDecision(
   field('Created', text(record.createdAt));
   field('Updated', text(record.updatedAt));
   const rationale = text(record.rationale);
-  if (rationale !== undefined) lines.push('', '## Why', '', rationale);
+  if (rationale !== undefined) lines.push('', '## Why', '', neutralized(rationale));
   const alternatives = text(record.alternatives);
-  if (alternatives !== undefined) lines.push('', '## Alternatives', '', alternatives);
+  if (alternatives !== undefined) lines.push('', '## Alternatives', '', neutralized(alternatives));
   const moves = Array.isArray(record.proof)
     ? (record.proof as unknown[]).flatMap((move) => {
         if (!isObject(move)) return [];
         const parts = [text(move.at), text(move.action), text(move.said)].filter(
           (part) => part !== undefined,
         );
-        return parts.length === 0 ? [] : [`- ${parts.join(' · ')}`];
+        return parts.length === 0 ? [] : [`- ${neutralized(parts.join(' · '))}`];
       })
     : [];
   if (moves.length > 0) lines.push('', '## Moves', '', ...moves);

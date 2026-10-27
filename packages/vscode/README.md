@@ -38,7 +38,11 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   elsewhere shows its new state; it is the address (`mnema-decision:` with the decision's id, never
   the ADR number, which two decisions can share) that says which decision it is. A `show` that fails
   is shown as the command line said it. It is plain text, not a web page or a preview: a link or a
-  tag in a justification is just characters.
+  tag in a justification is just characters. What the record wrote goes through the same rule
+  `mnema show` applies: a title or a field is one line, and a control byte (an escape, a bell, a
+  right-to-left override) is written as its visible `\u00xx` escape, so a title cannot forge a
+  `State` line. The hour it was read at is in UTC with the Z, like the events' own hours. A
+  document you close is no longer read again.
 - **Accept or reject, with the note.** While the decision in front is `proposed`, its editor's title
   carries an accept and a reject button; each item of the view has them too (beside it and in its
   context menu), and so do the commands Accept Decision and Reject Decision, listed as `mnema: Accept
@@ -48,7 +52,8 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   cancelling it sends nothing. On an accept the box starts with a stamp, `<the day>, accepted in
   the VS Code extension, no reason typed`, selected, so Enter sends it as it stands and typing
   replaces it by a reason; it says what is true of the act (the day, the place, that no reason was
-  typed) and nothing of the decision, and a reason typed is better. On a reject the box starts empty
+  typed) and nothing of the decision, and a reason typed is better. The day in the stamp is the day on
+  your own calendar (your local date); the signed time the record keeps is the event's own `at`. On a reject the box starts empty
   and a reason has to be typed. What is sent is
   `mnema decision move accept <id> --note <note>` (or `reject`), started with an argument array and
   no shell, and what the command line answers is what is shown: `ADR-2 accepted.` when it said the

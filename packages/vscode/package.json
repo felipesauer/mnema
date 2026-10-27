@@ -406,6 +406,7 @@
     "install-check": "node build/install-the-vsix.mjs"
   },
   "devDependencies": {
+    "@mnema/chain": "workspace:*",
     "@mnema/context": "workspace:*",
     "@mnema/core": "workspace:*",
     "@vscode/test-electron": "^3.1.0",

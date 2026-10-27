@@ -128,6 +128,9 @@ function world(
   const opened: Address[] = [];
   let active: { document: { uri: Address } } | undefined;
   const activeListeners: (() => void)[] = [];
+  /** The addresses the provider announced as changed: what the extension still thinks is open. */
+  const announced: string[] = [];
+  const closeListeners: ((d: { uri: Address }) => void)[] = [];
   const api = {
     workspace: {
       workspaceFolders: [{ uri: { fsPath: root } }],
@@ -149,9 +152,14 @@ function world(
       ) => {
         content = provider;
         provider.onDidChange(async (uri) => {
+          announced.push(uri.query);
           const known = documents.get(uri.query);
           if (known !== undefined) known.text = await provider.provideTextDocumentContent(uri);
         });
+        return { dispose() {} };
+      },
+      onDidCloseTextDocument: (l: (d: { uri: Address }) => void) => {
+        closeListeners.push(l);
         return { dispose() {} };
       },
       openTextDocument: async (uri: Address) => {
@@ -346,6 +354,13 @@ function world(
     opened,
     /** The editor in front: a document the extension served, as `showTextDocument` made it so. */
     active: () => active?.document.uri,
+    announced,
+    /** Closes a tab: the editor drops the document and tells the listeners. */
+    close: (query: string) => {
+      const document = documents.get(query) as NonNullable<ReturnType<typeof documents.get>>;
+      documents.delete(query);
+      for (const l of closeListeners) l(document);
+    },
     /** Brings an already opened document to the front, as a click on its tab does. */
     focus: (query: string) => {
       active = { document: documents.get(query) as NonNullable<ReturnType<typeof documents.get>> };
@@ -825,6 +840,22 @@ describe('a decision opens whole, as what mnema show said', () => {
     await settle();
     expect(w.documents.get(`id=${PROPOSED_ID}`)?.text).toContain('- State: accepted');
     expect(keyOf(w, 'mnema.activeDecisionProposed')).toBe(false);
+  });
+
+  it('stops announcing a document that was closed as changed, and did announce it while it was open', async () => {
+    const answers = sample();
+    const w = world(answers);
+    await settle();
+    await w.command('mnema.openDecision')(proposal);
+    await w.command('mnema.refresh')();
+    await settle();
+    expect(w.announced).toEqual([`id=${PROPOSED_ID}`]);
+    w.close(`id=${PROPOSED_ID}`);
+    w.announced.length = 0;
+    await w.command('mnema.refresh')();
+    await settle();
+    expect(w.announced).toEqual([]);
+    expect(w.documents.has(`id=${PROPOSED_ID}`)).toBe(false);
   });
 
   it('says whether the decision in front is proposed, for the buttons of the editor title', async () => {
