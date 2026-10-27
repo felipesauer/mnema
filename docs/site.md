@@ -18,6 +18,10 @@ and not that the lists were written from those files: `mnema site` wrote them an
 does not derive them again. Only the committed (public) tree is in the file, and all of its
 text is: a repository that must not be read should not publish one.
 
+When the page sits inside a larger site, `mnema site --out _site --back-link /` adds one link at its top
+that goes back to the address given (an http(s) address or a relative path; any other scheme is refused).
+Without the option the page is exactly the one above.
+
 To publish it on GitHub Pages, build it in a workflow. The CLI is what writes the page; the
 [Action](../packages/action/) reads and verifies the record, writes to it only if handed a `checker-key`, and is not involved:
 

@@ -59,7 +59,8 @@ export async function prepare({ root = ROOT, site = SITE } = {}) {
   const { ACCENT } = await import(pathToFileURL(join(root, '.github/the-front-page/accent.mjs')).href);
   writeFileSync(into('src/generated/accent.css'), accentCss(ACCENT));
   const { drawIcon } = await import(pathToFileURL(join(root, 'packages/vscode/build/icon.mjs')).href);
-  writeFileSync(into('public/favicon.png'), drawIcon());
+  const { THE_BLOCKS } = await import(pathToFileURL(join(root, 'packages/code/dist/presentation/banner.js')).href);
+  writeFileSync(into('public/favicon.png'), drawIcon(THE_BLOCKS));
   writeFileSync(into('src/generated/the-build.json'), `${JSON.stringify({ version: facts.version, sha: facts.sha, repoUrl: facts.repoUrl })}\n`);
   return facts;
 }

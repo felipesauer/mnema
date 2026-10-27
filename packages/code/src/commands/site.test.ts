@@ -76,6 +76,54 @@ describe('mnema site', () => {
     expect(pageOf(out)).toContain('No decision is recorded in the public tree.');
   });
 
+  it('adds the link back only when asked, and otherwise writes the same bytes', () => {
+    runInit({ cwd: repo, env });
+    decide('Keep money in integer cents', 'public', 'accept');
+    const plain = join(sandbox, 'plain');
+    const linked = join(sandbox, 'linked');
+    expect(runSite({ cwd: repo, env }, { out: plain }).ok).toBe(true);
+    expect(runSite({ cwd: repo, env }, { out: linked, backLink: '/mnema/' }).ok).toBe(true);
+    expect(pageOf(plain)).not.toContain('>Back<');
+    expect(pageOf(linked)).toBe(
+      pageOf(plain).replace('<body>\n', '<body>\n<p><a href="/mnema/">Back</a></p>\n'),
+    );
+  });
+
+  it('writes the address of the link back as text: quote, angle bracket and ampersand cannot leave the attribute', () => {
+    runInit({ cwd: repo, env });
+    const out = join(sandbox, 'out');
+    const done = runSite({ cwd: repo, env }, { out, backLink: 'https://x.test/a?b=1&c="<d>' });
+    expect(done.ok).toBe(true);
+    expect(pageOf(out)).toContain('<a href="https://x.test/a?b=1&amp;c=&quot;&lt;d&gt;">Back</a>');
+  });
+
+  it.each([
+    'javascript:alert(1)',
+    'JavaScript:alert(1)',
+    'java\tscript:alert(1)',
+    ' javascript:alert(1)',
+    'data:text/html,x',
+    'ftp://x.test/',
+    'https://x.test/a b',
+    '',
+  ])('refuses --back-link %j, and writes nothing', (link) => {
+    runInit({ cwd: repo, env });
+    const out = join(sandbox, 'out');
+    const refused = runSite({ cwd: repo, env }, { out, backLink: link });
+    expect(refused.ok ? '' : refused.reason).toBe('BAD_BACK_LINK');
+    expect(readdirSync(sandbox)).not.toContain('out');
+  });
+
+  it.each(['/mnema/', '../', './x/', 'x/y', 'https://a.test/', 'HTTP://a.test/', '//a.test/x'])(
+    'accepts --back-link %j',
+    (link) => {
+      runInit({ cwd: repo, env });
+      expect(runSite({ cwd: repo, env }, { out: join(sandbox, 'out'), backLink: link }).ok).toBe(
+        true,
+      );
+    },
+  );
+
   it('refuses an --out that is a file, and writes nothing there', () => {
     runInit({ cwd: repo, env });
     decide('Keep money in integer cents', 'public', 'accept');

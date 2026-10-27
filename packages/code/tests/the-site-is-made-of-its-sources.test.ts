@@ -11,6 +11,9 @@
  *   - A PAGE OF `docs/` REACHES THE SITE WITH TWO CHANGES AND NO THIRD: its title moves to the frontmatter,
  *     and each relative link lands where it should (a page of `docs/` on the site, anything else on GitHub
  *     at the commit the site was built from). Nothing is rewritten inside code.
+ *   - WHAT IS TRUE OF THE NEXT VERSION AND NOT OF THE PUBLISHED ONE STAYS OFF THE SITE: a stretch the source
+ *     wraps in `not-on-the-site` markers is taken out, only that stretch, and a marker that does not pair
+ *     stops the build. The sentence "These pages describe the next version" is in no page the build writes.
  *   - EVERY PAGE OF `docs/` IS A PAGE OF THE SITE, and the site has no page of `docs/` that is not a file.
  *   - A LINK THE BUILD WROTE POINTS AT A FILE GIT HOLDS, or at a page the build wrote.
  *   - THE LANDING IS A TRACKED MARKDOWN FILE, so the guards that read every page of the repository reach
@@ -40,9 +43,11 @@ import { prepare } from '../../../site/build/the-build.mjs';
 import {
   llmsTxt,
   pageOf,
+  recordBackLink,
   rewriteLinks,
   titleOf,
   whereItLands,
+  withoutWhatIsNotOnTheSite,
 } from '../../../site/build/the-pages.mjs';
 import { writeTheRecord } from '../../../site/build/the-record.mjs';
 import { head, ROOT, SITE, tracked } from './support/reading-the-site.js';
@@ -105,6 +110,74 @@ describe('a page of docs/ reaches the site with its title moved and its links la
   });
 });
 
+describe('a stretch marked not-on-the-site is taken out, and only that stretch', () => {
+  const OPEN = '<!-- not-on-the-site -->';
+  const CLOSE = '<!-- /not-on-the-site -->';
+
+  it('removes the lines between the markers and the markers, and nothing else', () => {
+    const source = ['# T', '', 'kept one', OPEN, 'gone', 'gone too', CLOSE, 'kept two', ''].join(
+      '\n',
+    );
+    expect(withoutWhatIsNotOnTheSite(source, 'x.md')).toBe(
+      ['# T', '', 'kept one', 'kept two', ''].join('\n'),
+    );
+    expect(withoutWhatIsNotOnTheSite('no marker\n', 'x.md')).toBe('no marker\n');
+    const twice = [OPEN, 'a', CLOSE, 'b', OPEN, 'c', CLOSE].join('\n');
+    expect(withoutWhatIsNotOnTheSite(twice, 'x.md')).toBe('b');
+  });
+
+  it.each([
+    ['one never closed', ['a', OPEN, 'b'].join('\n'), /x\.md:2: .*never closed/],
+    ['a close with no open', ['a', CLOSE].join('\n'), /x\.md:2: .*closes what was not opened/],
+    ['one inside another', [OPEN, OPEN, CLOSE].join('\n'), /x\.md:2: .*opens inside/],
+    ['a marker after other text', `text ${OPEN}\nb\n${CLOSE}`, /x\.md:1: .*alone on its line/],
+    ['a marker spelled with extra text', '<!-- not-on-the-site because -->', /alone on its line/],
+  ])('stops the build on %s', (_name, source, message) => {
+    expect(() => withoutWhatIsNotOnTheSite(source, 'x.md')).toThrow(message);
+  });
+
+  it('reaches pageOf: the page keeps the rest byte for byte', () => {
+    const markdown = [
+      '# Install',
+      '',
+      'before',
+      '',
+      OPEN,
+      'These pages describe the next version.',
+      CLOSE,
+      '',
+      'after',
+      '',
+    ].join('\n');
+    const marked = pageOf({ name: 'install', markdown, facts: FACTS, docs: DOCS }) as string;
+    const bare = pageOf({
+      name: 'install',
+      markdown: '# Install\n\nbefore\n\n\nafter\n',
+      facts: FACTS,
+      docs: DOCS,
+    });
+    expect(marked).toBe(bare);
+    expect(marked).not.toContain('describe the next version');
+    expect(() =>
+      pageOf({ name: 'install', markdown: `# I\n${OPEN}\nx\n`, facts: FACTS, docs: DOCS }),
+    ).toThrow(/never closed/);
+  });
+
+  it('wraps, in the real tree, every place the pages say they describe the next version', () => {
+    const marked = tracked('README.md', 'docs/*.md').filter((f) =>
+      /not-on-the-site/.test(readFileSync(join(ROOT, f), 'utf8')),
+    );
+    expect(marked.sort()).toEqual(['README.md', 'docs/install.md']);
+    for (const file of tracked('README.md', 'docs/*.md')) {
+      const text = readFileSync(join(ROOT, file), 'utf8');
+      const kept = withoutWhatIsNotOnTheSite(text, file) as string;
+      expect(kept, `${file} says it on the site`).not.toMatch(/describe the next version/i);
+      if (marked.includes(file))
+        expect(text, `${file} loses it on GitHub`).toMatch(/describe the next version/);
+    }
+  });
+});
+
 describe('the pages the build writes for this tree', () => {
   let site = '';
   let facts: { sha: string; base: string; repoUrl: string };
@@ -123,6 +196,26 @@ describe('the pages the build writes for this tree', () => {
   it('are the pages of docs/: one for each file git holds, and none besides', () => {
     expect(docsFiles().length).toBeGreaterThan(10);
     expect(written()).toEqual(docsFiles());
+  });
+
+  it('do not say they describe the next version, and are otherwise the pages of the source with only the marked stretch gone', () => {
+    const stretches = /^<!-- not-on-the-site -->\n[\s\S]*?^<!-- \/not-on-the-site -->\n/gm;
+    let taken = 0;
+    for (const file of docsFiles()) {
+      const source = readFileSync(join(ROOT, 'docs', file), 'utf8');
+      const page = read(`src/content/docs/docs/${file}`);
+      expect(page, `${file} says it on the site`).not.toMatch(/describe the next version/i);
+      taken += (source.match(stretches) ?? []).length;
+      const byHand = pageOf({
+        name: file.slice(0, -3),
+        markdown: source.replace(stretches, ''),
+        facts,
+        docs: new Set(docsFiles().map((f) => f.slice(0, -3))),
+      });
+      expect(page, `${file} lost more than the marked stretch`).toBe(byHand);
+    }
+    expect(taken, 'a page of docs/ is marked').toBeGreaterThan(0);
+    expect(read('src/content/docs/index.md')).not.toMatch(/describe the next version/i);
   });
 
   it('are built from the commit the tree is at', () => {
@@ -238,9 +331,15 @@ describe('/record/ is written from a record that verifies, or not at all', () =>
 
   it('is written for this repository: the page is what `mnema site` writes', () => {
     expect(existsSync(binary), 'build the packages first (pnpm build)').toBe(true);
-    const said = writeTheRecord({ root: ROOT, out: join(out, 'ok') }) as string;
+    const said = writeTheRecord({
+      root: ROOT,
+      out: join(out, 'ok'),
+      backLink: recordBackLink(FACTS),
+    }) as string;
     expect(said).toMatch(/Wrote .*index\.html/);
-    expect(readFileSync(join(out, 'ok', 'index.html'), 'utf8')).toContain('<html');
+    const page = readFileSync(join(out, 'ok', 'index.html'), 'utf8');
+    expect(page).toContain('<html');
+    expect(page).toContain('<p><a href="/r/">Back</a></p>');
   }, 60_000);
 
   it('stops when one byte of the record was changed, and writes no page', () => {

@@ -62,7 +62,22 @@ export type SiteRefused =
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   | { readonly ok: false; readonly reason: 'NO_RECORD'; readonly message: string }
   | { readonly ok: false; readonly reason: 'UNREADABLE'; readonly message: string }
-  | { readonly ok: false; readonly reason: 'OUT_IS_A_FILE'; readonly message: string };
+  | { readonly ok: false; readonly reason: 'OUT_IS_A_FILE'; readonly message: string }
+  | { readonly ok: false; readonly reason: 'BAD_BACK_LINK'; readonly message: string };
+
+/**
+ * Whether `--back-link` may be put in the page: an http(s) address or a relative path, and nothing
+ * with white space or a control character (a browser drops those before it reads a scheme, so
+ * `java<tab>script:` would pass a test of the scheme and still run).
+ */
+export function isAcceptableBackLink(link: string): boolean {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: refusing control characters is the point
+  if (link === '' || /[\s\u0000-\u001f\u007f]/.test(link)) return false;
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(link)?.[1];
+  return (
+    scheme === undefined || scheme.toLowerCase() === 'http' || scheme.toLowerCase() === 'https'
+  );
+}
 
 /** Every file under `dir`, as a path relative to `base`, in a fixed order. */
 function filesUnder(base: string, dir: string): string[] {
@@ -154,7 +169,17 @@ function decisionsOf(publicRoot: string): SiteDecision[] {
 }
 
 /** Writes `<out>/index.html` from the project's public tree. */
-export function runSite(ctx: SiteContext, input: { readonly out: string }): SiteDone | SiteRefused {
+export function runSite(
+  ctx: SiteContext,
+  input: { readonly out: string; readonly backLink?: string },
+): SiteDone | SiteRefused {
+  if (input.backLink !== undefined && !isAcceptableBackLink(input.backLink)) {
+    return {
+      ok: false,
+      reason: 'BAD_BACK_LINK',
+      message: '--back-link takes an http(s) address or a relative path, with no spaces',
+    };
+  }
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const publicRoot = trees.projectPublic;
   if (publicRoot === undefined) return { ok: false, reason: 'NO_PROJECT' };
@@ -187,7 +212,7 @@ export function runSite(ctx: SiteContext, input: { readonly out: string }): Site
   }
   mkdirSync(input.out, { recursive: true });
   const path = join(input.out, 'index.html');
-  writeFileSync(path, renderPage({ decisions, tails, files }, theSiteVerifier()));
+  writeFileSync(path, renderPage({ decisions, tails, files }, theSiteVerifier(), input.backLink));
   return {
     ok: true,
     path,

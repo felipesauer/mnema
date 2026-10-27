@@ -120,7 +120,10 @@ The site is in [`site/`](site/), a tree of its own with its own lockfile (it is 
 that is published depends on it). It holds no page of its own: the pages of `docs/` and the sections of the README are
 copied into it by the build, under paths git ignores, and the pictures, the accent and the icon are read from the files
 that already hold them. The page at `/record/` is what `mnema site` writes of this repository's record, from the binary
-built at the same commit. To build it, from the root of a built checkout:
+built at the same commit, with `--back-link` to the site's root. A stretch of a source that is true of the repository and
+not of the published version the site describes (the sentence that the pages describe the next version) is wrapped in
+`<!-- not-on-the-site -->` and `<!-- /not-on-the-site -->` lines of their own; the build takes out that stretch and nothing
+else, and stops on a marker that does not pair. To build it, from the root of a built checkout:
 
 ```sh
 pnpm build

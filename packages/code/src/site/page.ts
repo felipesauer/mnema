@@ -146,8 +146,11 @@ function inertJson(value: unknown): string {
   return JSON.stringify(value).replaceAll('<', '\\u003c');
 }
 
-/** The page, as the text of `index.html`. `verifier` is the script `dist/site-verifier.js` holds. */
-export function renderPage(model: SiteModel, verifier: string): string {
+/**
+ * The page, as the text of `index.html`. `verifier` is the script `dist/site-verifier.js` holds. With a
+ * `backLink` the page opens with one link to it; without, the page is byte for byte what it always was.
+ */
+export function renderPage(model: SiteModel, verifier: string, backLink?: string): string {
   const inForce = model.decisions.filter((d) => d.inForce).length;
   const others = model.decisions.length - inForce;
   const fileCount = Object.keys(model.files).length;
@@ -177,7 +180,7 @@ export function renderPage(model: SiteModel, verifier: string): string {
 <style>${STYLE}</style>
 </head>
 <body>
-<h1>The record</h1>
+${backLink === undefined ? '' : `<p><a href="${escapeHtml(backLink)}">Back</a></p>\n`}<h1>The record</h1>
 <section id="verdict">
 <p><span id="verdict-status" data-state="pending">verifying…</span></p>
 <p id="verdict-summary">This page is checking the record it carries.</p>

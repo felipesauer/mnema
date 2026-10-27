@@ -24,15 +24,16 @@ function run(root, cwd, args) {
 
 /**
  * Writes `<out>/index.html` from the record committed under `cwd`, with the binary built under `root`.
+ * With `backLink` the page carries one link back to the site (`mnema site --back-link`).
  * Throws when `mnema verify` does not pass, or when `mnema site` refuses or says the record does not verify.
  */
-export function writeTheRecord({ root, cwd = root, out }) {
+export function writeTheRecord({ root, cwd = root, out, backLink }) {
   const verify = run(root, cwd, ['verify']);
   if (verify.status !== 0) {
     throw new Error(`the record under ${cwd} does not verify, so /record/ is not written:\n${verify.stdout}${verify.stderr}`);
   }
   mkdirSync(out, { recursive: true });
-  const site = run(root, cwd, ['site', '--out', out]);
+  const site = run(root, cwd, ['site', '--out', out, ...(backLink === undefined ? [] : ['--back-link', backLink])]);
   if (site.status !== 0 || /does not verify/.test(site.stderr)) {
     throw new Error(`mnema site refused or said the record does not verify:\n${site.stdout}${site.stderr}`);
   }

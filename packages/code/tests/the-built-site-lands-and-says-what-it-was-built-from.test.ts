@@ -15,7 +15,10 @@
  *     holds, the pictures are the bytes of `docs/assets/`, and the icon is the one `icon.mjs` draws.
  *   - THE FOOTER SAYS WHAT WAS BUILT: the version of `@mnema/code` and the commit, on every page, the ones
  *     of this checkout.
- *   - /RECORD/ IS THE PAGE `mnema site` WRITES for this commit's record, byte for byte, with no step between.
+ *   - THE SITE DOES NOT SAY THE DOCS DESCRIBE THE NEXT VERSION: the sentence is true on GitHub and npm and
+ *     false here, so no built page holds it.
+ *   - /RECORD/ IS THE PAGE `mnema site --back-link` WRITES for this commit's record, byte for byte, with no
+ *     step between, and it opens with the one link back to the site's root.
  *
  * It needs the site built (`cd site && npm ci --ignore-scripts && npm run build`, after `pnpm build`). In
  * the main suite and in `pnpm test:guards` there is no build, and the cases stand down by name; the site
@@ -31,6 +34,7 @@ import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { recordBackLink } from '../../../site/build/the-pages.mjs';
 import {
   addressesOf,
   DIST,
@@ -146,23 +150,29 @@ when('the built site', () => {
   });
 
   it('has no sentence of its own on the landing: each block is in the README, a page of docs/ or the description', () => {
-    const corpus = norm(
-      [
-        readText(join(ROOT, 'README.md')),
-        ...names.map((n) => readText(join(ROOT, 'docs', `${n}.md`))),
-        (JSON.parse(readText(join(ROOT, 'packages/code/package.json'))) as { description: string })
-          .description,
-      ].join('\n'),
-    );
+    const text = [
+      readText(join(ROOT, 'README.md')),
+      ...names.map((n) => readText(join(ROOT, 'docs', `${n}.md`))),
+      (JSON.parse(readText(join(ROOT, 'packages/code/package.json'))) as { description: string })
+        .description,
+    ].join('\n');
+    const corpus = norm(text);
+    // A short block (a heading, a label) is a few words that any long source holds somewhere, so being
+    // found inside the corpus proves nothing for it: it must be a whole line of a source.
+    const lines = new Set(text.split('\n').map((l) => norm(l.replace(/^\s*(?:#+|[-*|])\s*/, ''))));
     const landing = html('index.html');
     const hero = [
       ...landing.matchAll(/<(?:h1|p)\b(?![^>]*the-build)[^>]*>([\s\S]*?)<\/(?:h1|p)>/g),
     ].map((m) => textOf(m[1] ?? ''));
-    const blocks = [...proseBlocks(landing), ...hero].filter((b) => b.split(' ').length >= 4);
+    const blocks = [...proseBlocks(landing), ...hero];
+    expect(
+      blocks.filter((b) => b.split(' ').length < 4).length,
+      'the landing has short blocks to hold to a line',
+    ).toBeGreaterThan(0);
     expect(blocks.length, 'the landing has prose').toBeGreaterThan(8);
     for (const block of blocks) {
       expect(
-        corpus.includes(norm(block)),
+        block.split(' ').length < 4 ? lines.has(norm(block)) : corpus.includes(norm(block)),
         `the landing says what no source says: ${block.slice(0, 120)}`,
       ).toBe(true);
     }
@@ -223,11 +233,20 @@ when('the built site', () => {
     }
     const { drawIcon } = (await import(
       pathToFileURL(join(ROOT, 'packages/vscode/build/icon.mjs')).href
-    )) as { drawIcon: () => Buffer };
+    )) as { drawIcon: (blocks: readonly string[]) => Buffer };
+    const { THE_BLOCKS } = (await import(
+      pathToFileURL(join(ROOT, 'packages/code/dist/presentation/banner.js')).href
+    )) as { THE_BLOCKS: readonly string[] };
     expect(
-      readFileSync(join(DIST, 'favicon.png')).equals(drawIcon()),
+      readFileSync(join(DIST, 'favicon.png')).equals(drawIcon(THE_BLOCKS)),
       'the favicon is not the icon the extension draws',
     ).toBe(true);
+  });
+
+  it('does not say that the pages describe the next version: that is the repository, not the published version', () => {
+    for (const page of pages) {
+      expect(textOf(html(page)), `${page} says it`).not.toMatch(/describe the next version/i);
+    }
   });
 
   it('says in its footer the version and the commit it was built from, on every page', () => {
@@ -251,13 +270,21 @@ when('the built site', () => {
       const home = mkdtempSync(join(tmpdir(), 'the-record-home-'));
       execFileSync(
         process.execPath,
-        [join(ROOT, 'packages/code/dist/cli.js'), 'site', '--out', out],
+        [
+          join(ROOT, 'packages/code/dist/cli.js'),
+          'site',
+          '--out',
+          out,
+          '--back-link',
+          recordBackLink({ base: BASE }),
+        ],
         { cwd: ROOT, env: { HOME: home, PATH: process.env.PATH ?? '' }, stdio: 'pipe' },
       );
       rmSync(home, { recursive: true, force: true });
       expect(
         readFileSync(join(DIST, 'record/index.html')).equals(readFileSync(join(out, 'index.html'))),
       ).toBe(true);
+      expect(html('record/index.html')).toContain(`<p><a href="${BASE}/">Back</a></p>`);
     } finally {
       rmSync(out, { recursive: true, force: true });
     }

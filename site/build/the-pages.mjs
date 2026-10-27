@@ -2,10 +2,12 @@
 // `package.json`, `.github/the-front-page/accent.mjs` and the SVGs `draw.mjs` made. This file holds the
 // readings, as plain functions over text, so a test can run them over a fixture and over the real tree.
 //
-// There are two changes to a page of `docs/`, and no third:
+// There are three changes to a page of `docs/`, and no fourth:
 //   1. its title moves from the first `# ` line to the frontmatter, because the site draws the title itself;
 //   2. each relative link is rewritten to where it lands on the site: a page of `docs/` to the site's page
-//      for it, anything else to the same file on GitHub, at the commit the site was built from.
+//      for it, anything else to the same file on GitHub, at the commit the site was built from;
+//   3. the stretches between a `not-on-the-site` marker pair are taken out (what is true of the next version
+//      on GitHub and npm and not of the published one the site describes).
 
 import { posix } from 'node:path';
 
@@ -35,6 +37,37 @@ function outsideFences(markdown, fn) {
   }
   flush();
   return out.join('\n');
+}
+
+/** The name of the marker: a line `<!-- not-on-the-site -->` opens a stretch, `<!-- /not-on-the-site -->` closes it. */
+export const NOT_ON_THE_SITE = 'not-on-the-site';
+
+/**
+ * The source without the stretches it marks as true on GitHub and npm and false on the site (the site describes the
+ * published version, the repository's pages the next one). A marker is a whole line of its own, and each stretch
+ * goes with its two marker lines and nothing else. A marker that is not alone on its line, a stretch that is
+ * not closed, a close with no open and a stretch inside a stretch stop the build.
+ */
+export function withoutWhatIsNotOnTheSite(markdown, from) {
+  const marker = new RegExp(`^\\s*<!--\\s*(/?)${NOT_ON_THE_SITE}\\s*-->\\s*$`);
+  const mention = new RegExp(`<!--\\s*/?${NOT_ON_THE_SITE}`);
+  const kept = [];
+  let open = null;
+  markdown.split('\n').forEach((line, i) => {
+    const m = marker.exec(line);
+    if (m === null) {
+      if (mention.test(line)) throw new Error(`${from}:${i + 1}: a ${NOT_ON_THE_SITE} marker must be alone on its line`);
+      if (open === null) kept.push(line);
+    } else if (m[1] === '') {
+      if (open !== null) throw new Error(`${from}:${i + 1}: ${NOT_ON_THE_SITE} opens inside the one opened at line ${open}`);
+      open = i + 1;
+    } else {
+      if (open === null) throw new Error(`${from}:${i + 1}: ${NOT_ON_THE_SITE} closes what was not opened`);
+      open = null;
+    }
+  });
+  if (open !== null) throw new Error(`${from}:${open}: ${NOT_ON_THE_SITE} is never closed`);
+  return kept.join('\n');
 }
 
 /** What the root `package.json` and the package of the binary say, which the site is built around. */
@@ -99,7 +132,8 @@ export function rewriteLinks(markdown, from, facts, docs) {
 }
 
 /** A page of `docs/` as the site holds it: the title in the frontmatter, the links rewritten. */
-export function pageOf({ name, markdown, facts, docs }) {
+export function pageOf({ name, markdown: source, facts, docs }) {
+  const markdown = withoutWhatIsNotOnTheSite(source, `docs/${name}.md`);
   const title = titleOf(markdown);
   let dropped = false;
   const body = outsideFences(markdown, (text) =>
@@ -180,7 +214,8 @@ export function pictureAsTwoImages(html) {
  *   {{link Label of the README's Docs}} the site address of that link
  * In the frontmatter a value goes in as a JSON string, so no value can break the YAML.
  */
-export function landingOf({ template, readme, facts, docs }) {
+export function landingOf({ template, readme: source, facts, docs }) {
+  const readme = withoutWhatIsNotOnTheSite(source, 'README.md');
   const pitch = pitchOf(readme);
   const groups = groupsOf(readme);
   const [, front, body] = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(template) ?? [];
@@ -210,6 +245,11 @@ export function landingOf({ template, readme, facts, docs }) {
       return frontmatter ? JSON.stringify(value) : value;
     });
   return `---\n${fill(front, true)}\n---\n${fill(body, false)}`;
+}
+
+/** Where /record/ links back to: the root of the site, under its base path. */
+export function recordBackLink(facts) {
+  return `${facts.base}/`;
 }
 
 /** The sidebar: the README's groups, a page of `docs/` as the site's page and anything else on GitHub. */

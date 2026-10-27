@@ -22,12 +22,19 @@ with its own changelog.
   built at the same commit, and the build stops when `mnema verify` does not pass. The footer names the version and the
   commit the site was built from, and `llms.txt` and `robots.txt` are generated beside the sitemap. Two cases hold the
   built site to its sources: no link goes nowhere, no sentence, colour or picture is the site's own, the footer is the
-  checkout's version and commit, and `/record/` is byte for byte the page the command writes.
+  checkout's version and commit, and `/record/` is byte for byte the page the command writes with `--back-link`. The
+  sentence that the pages describe the next version is true on GitHub and npm and false on the site, which describes the
+  published version: the source wraps it in `<!-- not-on-the-site -->` lines, the build takes out that stretch and nothing
+  else, a marker that does not pair stops the build, and the built site is held not to say it.
 - **A `Site` workflow.** On a pull request that touches what the site is made of it builds the site and runs those two cases
   (it is not a required check, and the path filter is inside the job). After a release it builds the commit the release tagged
   and deploys it to GitHub Pages from a job that holds `pages: write` and `id-token: write` and no secret; the site
   describes the published version, and a deploy that fails touches no publication. `site/` has a weekly Dependabot entry and
   is read by the advisory scan beside the workspace lockfile.
+- **`mnema site --back-link <url>`.** Puts one link back to the address at the top of the page it writes, for a page that
+  sits inside a site: an http(s) address or a relative path, with the address escaped, and any other scheme (`javascript:`,
+  `data:`) or an address with white space is refused before anything is written. Without the option the page is byte for
+  byte the one the command wrote before. The site's `/record/` is built with it, pointing at the site's root.
 
 ### Fixed
 
