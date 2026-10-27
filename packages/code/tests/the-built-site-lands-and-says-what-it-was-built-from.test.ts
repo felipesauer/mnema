@@ -328,9 +328,12 @@ when('the built site', () => {
         `${page}: commit (is site/dist older than this checkout? build the site again)`,
       ).toBe(sha);
       const footer = /<p class="the-build[^"]*">([\s\S]*?)<\/p>/.exec(text)?.[1] ?? '';
-      expect(textOf(footer), `${page}: the footer reads "commit <sha>", with the space`).toMatch(
-        /· commit [0-9a-f]{12}$/,
-      );
+      // `textOf` puts a space where a tag was, which would hide the missing one: what a reader sees is the tags
+      // taken out and nothing put in their place.
+      expect(
+        footer.replace(/<[^>]*>/g, ''),
+        `${page}: the footer reads "commit <sha>", with the space`,
+      ).toMatch(/· commit [0-9a-f]{12}$/);
     }
   });
 
