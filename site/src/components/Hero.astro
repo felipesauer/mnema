@@ -1,0 +1,35 @@
+---
+import Default from '@astrojs/starlight/components/Hero.astro';
+import proof from '../generated/proof.json';
+
+// Only the landing carries the proof: any page with a `hero` in its frontmatter draws this component.
+const isLanding = Astro.locals.starlightRoute.id === 'index';
+const { command, output, sha, repoUrl, caption, recording } = proof;
+---
+
+<Default {...Astro.props}><slot /></Default>
+{
+  isLanding && (
+    <section class="the-proof">
+      <figure class="the-verdict">
+        <code>{command}</code>
+        <pre data-verdict>{output}</pre>
+        <figcaption>
+          {caption}{' '}
+          <a data-commit href={`${repoUrl}/commit/${sha}`}>{sha.slice(0, 12)}</a>
+        </figcaption>
+      </figure>
+      <figure class="the-recording">
+        <img
+          src={recording.src}
+          alt={recording.alt}
+          width={recording.width}
+          height={recording.height}
+          loading="lazy"
+          decoding="async"
+        />
+        <figcaption set:html={recording.caption} />
+      </figure>
+    </section>
+  )
+}

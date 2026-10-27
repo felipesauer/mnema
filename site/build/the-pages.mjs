@@ -184,6 +184,59 @@ export function pitchOf(readme) {
   return { title: textOfHtml(title[1]), body: textOfHtml(paragraph[1]), bannerAlt: textOfHtml(banner[1]) };
 }
 
+/**
+ * The command the Quick start shows for the verdict: the ONE line of its code fence that starts with `mnema verify`,
+ * up to the `#` that begins the note beside it. The landing shows this text and runs this text, so what a reader sees
+ * is what ran.
+ */
+export function verifyCommandOf(readme) {
+  const fence = /```[a-z]*\n([\s\S]*?)\n```/.exec(sectionOf(readme, 'Quick start'));
+  const lines = (fence?.[1] ?? '').split('\n').filter((l) => /^mnema verify(\s|$)/.test(l));
+  if (lines.length !== 1) {
+    throw new Error(`the README's Quick start has ${lines.length} lines that start with "mnema verify", and the landing reads one`);
+  }
+  return (lines[0] ?? '').split('#')[0].trim();
+}
+
+/**
+ * What the README says of a recording: the `alt` of its `<img>` and the caption beside it (`<sub>`), as HTML, the
+ * links of the caption landed where they land on the site. The README's table cell is the source of both.
+ */
+export function recordingOf({ readme: source, path, facts, docs }) {
+  const readme = withoutWhatIsNotOnTheSite(source, 'README.md');
+  const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const cell = new RegExp(`<img src="${escaped}" alt="([^"]*)"[^>]*>\\s*<br>\\s*<sub>([\\s\\S]*?)</sub>`).exec(readme);
+  if (!cell) throw new Error(`the README has no cell for the recording ${path}`);
+  const caption = cell[2].replace(/href="([^"]*)"/g, (_all, target) => `href="${whereItLands(target, 'README.md', facts, docs)}"`);
+  return { alt: textOfHtml(cell[1]), caption: caption.trim() };
+}
+
+/** The most words one entry of `site/copy.md` may hold: microcopy, a caption or a label, and not a page. */
+export const COPY_WORDS = 20;
+
+/**
+ * The microcopy only the site needs, from `site/copy.md`: under a `## <key>` heading (kebab-case) the one line of its
+ * text, no more than `COPY_WORDS` words. What comes before the first heading (the title and a sentence saying what
+ * the file is) is not read. A repeated key, an empty entry, an entry of more than one line and one of more words
+ * stop the build: a long text would be a page the site wrote of its own.
+ * @returns {Map<string, string>}
+ */
+export function copyOf(text) {
+  const entries = new Map();
+  for (const part of text.split(/^## /m).slice(1)) {
+    const [key = '', ...rest] = part.split('\n');
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(key)) throw new Error(`copy.md: "${key}" is not a kebab-case key`);
+    if (entries.has(key)) throw new Error(`copy.md: "${key}" is written twice`);
+    const lines = rest.map((l) => l.trim()).filter((l) => l !== '');
+    if (lines.length === 0) throw new Error(`copy.md: "${key}" is empty`);
+    if (lines.length > 1) throw new Error(`copy.md: "${key}" must be one line`);
+    const words = (lines[0] ?? '').split(/\s+/).length;
+    if (words > COPY_WORDS) throw new Error(`copy.md: "${key}" has ${words} words, and the most is ${COPY_WORDS} words`);
+    entries.set(key, lines[0]);
+  }
+  return entries;
+}
+
 /** The groups under the README's "Docs": `- **Use.** [Label](target) · ...`, each link in order. */
 export function groupsOf(readme) {
   const text = sectionOf(readme, 'Docs');
@@ -212,9 +265,19 @@ export function pictureAsTwoImages(html) {
  *   {{pitch.title}} {{pitch.body}} {{pitch.bannerAlt}} {{description}} {{version}}
  *   {{section Heading of the README}}  the section, under its own heading, links rewritten
  *   {{link Label of the README's Docs}} the site address of that link
+ *   {{label Label of the README's Docs}} that label as the README writes it (the build stops when it is not there)
+ *   {{copy key}}                         the entry of `site/copy.md` under that key (`copy` says it, or throws)
  * In the frontmatter a value goes in as a JSON string, so no value can break the YAML.
  */
-export function landingOf({ template, readme: source, facts, docs }) {
+export function landingOf({
+  template,
+  readme: source,
+  facts,
+  docs,
+  copy = (key) => {
+    throw new Error(`the landing template asks for {{copy ${key}}}, and no copy was given`);
+  },
+}) {
   const readme = withoutWhatIsNotOnTheSite(source, 'README.md');
   const pitch = pitchOf(readme);
   const groups = groupsOf(readme);
@@ -238,6 +301,8 @@ export function landingOf({ template, readme: source, facts, docs }) {
       let value;
       if (key in simple) value = simple[key];
       else if (key.startsWith('link ')) value = whereItLands(label(key.slice(5)).target, 'README.md', facts, docs);
+      else if (key.startsWith('label ')) value = label(key.slice(6)).label;
+      else if (key.startsWith('copy ')) value = copy(key.slice(5));
       else if (key.startsWith('section ')) {
         const heading = key.slice(8);
         value = `## ${heading}\n\n${rewriteLinks(pictureAsTwoImages(sectionOf(readme, heading)), 'README.md', facts, docs)}`;

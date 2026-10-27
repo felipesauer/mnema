@@ -4,7 +4,8 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { docNames, factsOf, landingOf, llmsTxt, pageOf, themeCss } from './the-pages.mjs';
+import { copyOf, docNames, factsOf, landingOf, llmsTxt, pageOf, recordingOf, themeCss, verifyCommandOf } from './the-pages.mjs';
+import { theVerdictOfTheCommit } from './the-record.mjs';
 
 export const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const ROOT = resolve(SITE, '..');
@@ -19,6 +20,15 @@ export const WRITTEN = Object.freeze([
 ]);
 
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
+
+/** The recording the landing shows beside the verdict: one of those the repository already holds. */
+export const RECORDING = 'recordings/a-write-refused.gif';
+
+/** The width and the height of a GIF, from its header (bytes 6 to 9, little-endian). */
+export function sizeOfGif(bytes) {
+  if (bytes.subarray(0, 3).toString('latin1') !== 'GIF') throw new Error(`${RECORDING} is not a GIF`);
+  return { width: bytes.readUInt16LE(6), height: bytes.readUInt16LE(8) };
+}
 
 /** What the site is built from, read now: the commit and the packages say it, nothing is typed here. */
 export function theFacts(root = ROOT) {
@@ -46,8 +56,31 @@ export async function prepare({ root = ROOT, site = SITE } = {}) {
     writeFileSync(into(`src/content/docs/docs/${file}`), pageOf({ name, markdown, facts, docs }));
   }
 
+  // The microcopy: each key the build takes is written down, so a key nothing takes is found.
+  const microcopy = copyOf(readFileSync(join(site, 'copy.md'), 'utf8'));
+  const taken = new Set();
+  const copy = (key) => {
+    const text = microcopy.get(key);
+    if (text === undefined) throw new Error(`site/copy.md has no entry "${key}"`);
+    taken.add(key);
+    return text;
+  };
+
   const template = readFileSync(join(site, 'landing.md'), 'utf8');
-  writeFileSync(into('src/content/docs/index.md'), landingOf({ template, readme, facts, docs }));
+  writeFileSync(into('src/content/docs/index.md'), landingOf({ template, readme, facts, docs, copy }));
+
+  // The proof: the verdict of the record committed at this sha, run with the command the Quick start shows, and
+  // the recording the README holds, copied as it is.
+  const command = verifyCommandOf(readme);
+  const output = theVerdictOfTheCommit({ root, sha: facts.sha, command });
+  const gif = readFileSync(join(root, RECORDING));
+  writeFileSync(into(`public/${RECORDING}`), gif);
+  const recording = { ...recordingOf({ readme, path: RECORDING, facts, docs }), ...sizeOfGif(gif), src: `${facts.base}/${RECORDING}` };
+  const caption = copy('verdict-caption');
+  writeFileSync(
+    into('src/generated/proof.json'),
+    `${JSON.stringify({ command, output, sha: facts.sha, repoUrl: facts.repoUrl, caption, recording, copyTaken: [...taken].sort() }, null, 2)}\n`,
+  );
 
   for (const file of readdirSync(join(root, 'docs/assets'))) {
     cpSync(join(root, 'docs/assets', file), into(`public/assets/${file}`));

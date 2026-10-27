@@ -20,7 +20,7 @@ export default defineConfig({
       social: [{ icon: 'github', label: 'GitHub', href: facts.repoUrl }],
       sidebar: [...sidebar, { label: 'Record', link: '/record/' }],
       customCss: ['./src/generated/theme.css', './src/styles/site.css'],
-      components: { Footer: './src/components/Footer.astro' },
+      components: { Footer: './src/components/Footer.astro', Hero: './src/components/Hero.astro' },
       head: [{ tag: 'meta', attrs: { name: 'description', content: facts.description } }],
       lastUpdated: false,
       pagination: true,
