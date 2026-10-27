@@ -3,6 +3,7 @@ import {
   cpSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -463,6 +464,15 @@ describe('a judgment goes through the verb of the command line, with a note', ()
     const failed = world({ ...withStack(), [STACK_LIST]: { code: 1, stdout: '', stderr: 'boom' } });
     await settle();
     expect(failed.executed).toContainEqual(['setContext', 'mnema.stacksRead', false]);
+    for (const stdout of ['not json at all', '{"total":0}']) {
+      const garbled = world({ ...withStack(), [STACK_LIST]: ok(stdout) });
+      await settle();
+      expect(garbled.executed, stdout).toContainEqual(['setContext', 'mnema.stacksRead', false]);
+      expect(garbled.executed, stdout).not.toContainEqual(['setContext', 'mnema.stacksRead', true]);
+    }
+    const empty = world({ ...withStack(), [STACK_LIST]: ok('{"stacks":[]}') });
+    await settle();
+    expect(empty.executed).toContainEqual(['setContext', 'mnema.stacksRead', true]);
   });
 
   it('gives the input box a validator that refuses an empty note, and sends nothing without one', async () => {
@@ -533,6 +543,20 @@ describe('what awaits a judgment is a number on the side bar icon', () => {
     expect(w.badge()).toBeUndefined();
     expect(w.started?.shown().badge).toBeUndefined();
     expect(w.executed).toContainEqual(['setContext', 'mnema.proposedRead', true]);
+  });
+
+  it('is read only when the answer was understood: text that is not JSON or has no hits is not an empty list', async () => {
+    for (const stdout of ['not json at all', '{"total":3}']) {
+      const w = world({ ...base(), [LIST]: ok(stdout) });
+      await settle();
+      expect(w.executed, stdout).toContainEqual(['setContext', 'mnema.proposedRead', false]);
+      expect(w.executed, stdout).not.toContainEqual(['setContext', 'mnema.proposedRead', true]);
+      expect(w.badge(), stdout).toBeUndefined();
+      expect(w.tree().getChildren(), stdout).toEqual([]);
+    }
+    const empty = world({ ...base(), [LIST]: ok('{"hits":[],"total":0}') });
+    await settle();
+    expect(empty.executed).toContainEqual(['setContext', 'mnema.proposedRead', true]);
   });
 
   it('says one decision awaits a judgment, and several await', async () => {
@@ -645,6 +669,21 @@ describe('in a folder with no .mnema the command line is never run', () => {
     expect(source).toMatch(/hasRecord\(\)\s*\?\s*runner\(\)\(args\)/);
     expect(source.match(/existsSync\(/g)).toHaveLength(1);
     expect(source).not.toMatch(/\.read\(/);
+    // Nothing else reaches the command line: the runner is built and read in the door's own
+    // definition, and no other source file builds one.
+    expect(source.match(/options\.run\b/g)).toHaveLength(1);
+    expect(source.replace(/^import .*$/gm, '').match(/\bcreateRun\b/g)).toHaveLength(1);
+    const others = readdirSync(new URL('.', import.meta.url)).filter(
+      (name) =>
+        name.endsWith('.ts') &&
+        !name.endsWith('.test.ts') &&
+        name !== 'cli.ts' &&
+        name !== 'extension.ts',
+    );
+    for (const name of others) {
+      const text = readFileSync(new URL(`./${name}`, import.meta.url), 'utf8');
+      expect(text, name).not.toMatch(/\bcreateRun\b|options\.run\b/);
+    }
   });
 });
 

@@ -38,16 +38,16 @@ const isScope = (value: unknown): value is StackScope =>
 const count = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined;
 
-/** The adopted stacks the command line listed; an answer that cannot be read lists none. */
-export function readStacks(stdout: string): AdoptedStack[] {
+/** The adopted stacks the command line listed; undefined when the text is not that answer. */
+export function readStacks(stdout: string): AdoptedStack[] | undefined {
   let answer: unknown;
   try {
     answer = JSON.parse(stdout);
   } catch {
-    return [];
+    return undefined;
   }
   const stacks = (answer as { stacks?: unknown } | null)?.stacks;
-  if (!Array.isArray(stacks)) return [];
+  if (!Array.isArray(stacks)) return undefined;
   const out: AdoptedStack[] = [];
   for (const raw of stacks as Record<string, unknown>[]) {
     if (typeof raw !== 'object' || raw === null) continue;

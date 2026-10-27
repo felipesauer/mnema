@@ -42,8 +42,10 @@ describe('the decisions waiting for a judgment', () => {
   });
 
   it('reads nothing out of what is not the answer', () => {
-    expect(readProposed('nope')).toEqual({ items: [], total: 0 });
-    expect(readProposed('{"hits": 1}')).toEqual({ items: [], total: 0 });
+    expect(readProposed('nope')).toBeUndefined();
+    expect(readProposed('{"hits": 1}')).toBeUndefined();
+    expect(readProposed('{"total": 0}')).toBeUndefined();
+    expect(readProposed('{"hits": []}')).toEqual({ items: [], total: 0 });
   });
 
   it('reads the justification and the alternatives, and leaves an absent one absent', () => {
@@ -63,7 +65,7 @@ describe('the decisions waiting for a judgment', () => {
   });
 
   it('shows a person the title, why and what was turned down', () => {
-    const item = readProposed(JSON.stringify({ hits: [hit('a')] })).items[0] as Proposed;
+    const item = readProposed(JSON.stringify({ hits: [hit('a')] }))?.items[0] as Proposed;
     expect(detailText(item, { adr: 'ADR-1', rationale: 'because Y', alternatives: 'Z' })).toBe(
       'ADR-1: Use X\nscope: public\n\nWhy:\nbecause Y\n\nAlternatives:\nZ',
     );
@@ -71,8 +73,8 @@ describe('the decisions waiting for a judgment', () => {
   });
 
   it('announces what is new since the last reading, and nothing on the first', () => {
-    const a = readProposed(JSON.stringify({ hits: [hit('a')] })).items;
-    const ab = readProposed(JSON.stringify({ hits: [hit('a'), hit('b')] })).items;
+    const a = readProposed(JSON.stringify({ hits: [hit('a')] }))?.items;
+    const ab = readProposed(JSON.stringify({ hits: [hit('a'), hit('b')] }))?.items;
     expect(newlyProposed(undefined, ab)).toEqual([]);
     expect(newlyProposed(new Set(['a']), ab).map((i) => i.id)).toEqual(['b']);
     expect(newlyProposed(new Set(['a', 'b']), a)).toEqual([]);

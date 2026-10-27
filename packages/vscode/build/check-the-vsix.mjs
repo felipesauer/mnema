@@ -45,8 +45,13 @@ else {
   else {
     const svg = read(inside).toString('utf8');
     if (!/viewBox="0 0 24 24"/.test(svg)) refusals.push('the container icon has no 24 by 24 viewBox');
-    if (/<script|<image|href|style|#[0-9a-fA-F]{3,8}/i.test(svg))
-      refusals.push('the container icon holds a script, an image, a link, a style or a colour');
+    if (/<script|<image|href|style/i.test(svg))
+      refusals.push('the container icon holds a script, an image, a link or a style');
+    // Any paint the icon sets is the editor's own colour or none: a name, a function or a hex is refused.
+    for (const [, name, value] of svg.matchAll(/\b(fill|stroke)\s*=\s*["']([^"']*)["']/gi)) {
+      if (!['currentcolor', 'none'].includes(value.trim().toLowerCase()))
+        refusals.push(`the container icon sets ${name}="${value}", not currentColor or none`);
+    }
   }
 }
 const identity = read('extension.vsixmanifest').toString('utf8').match(/<Identity [^>]*>/)?.[0] ?? '';

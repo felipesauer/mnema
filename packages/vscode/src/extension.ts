@@ -334,8 +334,10 @@ export function activate(
       read(['switch']),
       read(STACK_LIST_ARGS),
     ]);
-    session.stacks = stacks.code === 0 ? readStacks(stacks.stdout) : [];
-    void api.commands.executeCommand('setContext', 'mnema.stacksRead', stacks.code === 0);
+    // Read means the answer was understood: exit 0 with text that is not the answer is not "no stacks".
+    const listedStacks = stacks.code === 0 ? readStacks(stacks.stdout) : undefined;
+    session.stacks = listedStacks ?? [];
+    void api.commands.executeCommand('setContext', 'mnema.stacksRead', listedStacks !== undefined);
     stacksChanged.fire();
     session.channels = channels.code === 0 ? readChannels(channels.stdout) : undefined;
     applyBar(
@@ -347,8 +349,9 @@ export function activate(
         coverage: coverage.stdout.trim().split('\n').slice(0, 6).join('\n') || undefined,
       }),
     );
-    void api.commands.executeCommand('setContext', 'mnema.proposedRead', list.code === 0);
-    if (list.code !== 0) {
+    const listed = list.code === 0 ? readProposed(list.stdout) : undefined;
+    void api.commands.executeCommand('setContext', 'mnema.proposedRead', listed !== undefined);
+    if (listed === undefined) {
       // A list that was not read is not an empty one: the view says it did not read, and no number is shown.
       session.proposed = [];
       session.total = 0;
@@ -356,7 +359,7 @@ export function activate(
       treeChanged.fire();
       return;
     }
-    const { items, total } = readProposed(list.stdout);
+    const { items, total } = listed;
     setAwaiting(total);
     const fresh = newlyProposed(session.seen, items);
     session.seen = new Set(items.map((item) => item.id));
