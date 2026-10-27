@@ -13,6 +13,13 @@ name: Host contract
 # this file only gives them a host. Cursor is not here: it needs an account, and its capture is
 # made by hand (`plugin/captures/`).
 #
+# WHETHER A RULE REACHES THE MODEL is among the cases, for six of the hosts (`the-rule-arrives.*`):
+# a sentinel kept in each place a rule can be kept is looked for in the requests the host sends,
+# at the start, late, after a compaction and at an edit, and the cell the table of
+# `docs/rule-arrival.md` holds for it is what the host must have done. They run in each host's job
+# below, on the pinned version on every pull request and on the newest every week, so a host that
+# changes what it puts in front of the model turns that job red and the weekly run opens the issue.
+#
 # NO MODEL, NO ACCOUNT, NO KEY, NO MONEY. The model is `the-stand-in-api.ts`; the key the host is
 # handed is made up and names nothing. Nothing in this file asks for a secret, and the only token
 # in it is the workflow's own, used for one thing: opening an issue when the weekly run fails.
