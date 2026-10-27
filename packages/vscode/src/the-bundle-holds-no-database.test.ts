@@ -53,6 +53,8 @@ describe('the bundled extension', () => {
       // The states a decision can be in are the format's (FORMAT.md §6.7), and `decision-states`
       // takes them from the table there: data, and nothing it opens.
       '../chain/dist/events/workflow.js',
+      // The rule of the line: what `mnema show` runs every recorded text through, taken, not copied.
+      '../chain/dist/one-line.js',
       '../context/dist/context/decisions.js',
       '../context/dist/context/disposition.js',
       '../core/dist/workflow/decision-states.js',

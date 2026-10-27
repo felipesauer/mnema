@@ -127,6 +127,22 @@ describe('the extension manifest', () => {
     ).toBe(true);
   });
 
+  it('opens a decision by a command of its own, whose icon is neither a check nor a seal', () => {
+    const open = commands.find((c) => c.command === 'mnema.openDecision');
+    expect(open?.title).toBe('Open Decision');
+    expect(open?.icon).not.toMatch(/check|pass|verified|shield|workspace-trusted/);
+  });
+
+  it('keeps accept and reject apart in the context menu of a proposal, each in a group of its own', () => {
+    const groups = (menus['view/item/context'] ?? [])
+      .filter((item) => item.when === 'view == mnema.proposed' && /^\d_/.test(item.group ?? ''))
+      .map((item) => [item.command, item.group]);
+    expect(groups).toEqual([
+      ['mnema.accept', '1_accept@1'],
+      ['mnema.reject', '2_reject@1'],
+    ]);
+  });
+
   it('lists every command in the palette, only where a workspace is open, and the file command only over a file', () => {
     const palette = new Map((menus.commandPalette ?? []).map((item) => [item.command, item.when]));
     expect([...palette.keys()].sort()).toEqual(commands.map((c) => c.command).sort());

@@ -112,6 +112,22 @@ with its own changelog.
   `mnema.statusBar.enabled` hides it; it is machine-scoped, like `mnema.command`, so a repository cannot hide the item that says
   when verify fails.
 
+- **A decision opens whole in the VS Code extension, and is judged from the title of its editor.** Clicking a proposal (or
+  picking a rule from a file's lens) opens a read-only plain text document, `ADR-n`, with what the command line's `show` verb answered
+  (title, state, scope, who recorded and accepted it, when, the justification, the alternatives and the moves), the command and
+  the time it was read at the top, read again at each opening and each reading of the record; its address carries the id, never
+  the ADR number. What the record wrote is laid out by the rule the command line's `show` applies (one line for a title or a field, control bytes
+  written as visible escapes), and the hour it was read is in UTC with the Z. While it is `proposed` its editor's title carries accept and reject, which go through the same note box and the
+  same decision move as the buttons beside the items, one decision at a time; the context menu keeps them in separate
+  groups. The note stays required in the format, the gate, the command line and the MCP server. In the extension the accept box
+  starts with a true stamp, `<the day>, accepted in the VS Code extension, no reason typed`, selected, so Enter records it and
+  typing replaces it by a reason; the reject box starts empty and needs a reason typed, and the stamp never carries what the
+  record says. Each item has an icon for its state (a neutral one for a proposal, never a check mark; `package`, `warning` or
+  `error` for a stack by what `stack list` reported) and a spoken name; tooltips are short, boxes and picks lose the `mnema:`
+  prefix and the step counts, a scope is picked by a codicon and its name, and the toast after a verdict reads `ADR-2 accepted.`
+  from the command line's own line (a line of another shape is shown as it came). The check in a real editor opens the
+  proposed decision and reads the document.
+
 ### Removed
 
 - **The VS Code extension no longer shows a message when a decision is proposed.** The badge on the container's icon and the
