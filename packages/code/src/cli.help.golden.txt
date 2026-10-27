@@ -841,8 +841,8 @@ $ mnema site --help
 |
 | Options:
 |   --out <dir>        the directory index.html is written under
-|   --back-link <url>  put one link back to this address (http(s) or a relative
-|                      path) at the top of the page
+|   --back-link <url>  put one link, labelled "Back", to this address (http(s)://,
+|                      or a path on the same site) at the top of the page
 |   -h, --help         display help for command
 |
 | The page holds the committed (public) tree and nothing else: no private tree, no

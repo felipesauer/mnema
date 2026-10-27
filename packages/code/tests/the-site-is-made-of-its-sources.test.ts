@@ -163,6 +163,14 @@ describe('a stretch marked not-on-the-site is taken out, and only that stretch',
     ).toThrow(/never closed/);
   });
 
+  it('keeps the README marker lines inside their list item, so the list is one list on GitHub and npm', () => {
+    const lines = readFileSync(join(ROOT, 'README.md'), 'utf8').split('\n');
+    const markers = lines.filter((l) => /not-on-the-site/.test(l));
+    expect(markers.length).toBeGreaterThan(1);
+    for (const line of markers)
+      expect(line, 'a column 0 marker splits the list').toMatch(/^ {2}<!--/);
+  });
+
   it('wraps, in the real tree, every place the pages say they describe the next version', () => {
     const marked = tracked('README.md', 'docs/*.md').filter((f) =>
       /not-on-the-site/.test(readFileSync(join(ROOT, f), 'utf8')),

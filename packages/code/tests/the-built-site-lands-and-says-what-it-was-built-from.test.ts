@@ -58,6 +58,36 @@ const when = BUILT ? describe : describe.skip;
 const BASE = '/mnema';
 const GITHUB = 'https://github.com/felipesauer/mnema';
 
+/**
+ * What the landing's test holds a block to: a short block (a heading, a label) is a few words that any
+ * long source holds somewhere, so being found inside the text proves nothing for it, and it must be a
+ * whole line of a source; a longer block need only be found in the text.
+ */
+function sourcesSay(text: string): (block: string) => boolean {
+  const corpus = norm(text);
+  const lines = new Set(text.split('\n').map((l) => norm(l.replace(/^\s*(?:#+|[-*|])\s*/, ''))));
+  return (block) =>
+    block.split(' ').length < 4 ? lines.has(norm(block)) : corpus.includes(norm(block));
+}
+
+describe('a short block of the landing is held to a whole line of a source', () => {
+  const say = sourcesSay(
+    '# Why mnema\n\nHello there, and welcome to the long paragraph.\n- A label\n',
+  );
+
+  it('passes a heading or a label that is a line of a source, and a long block found inside it', () => {
+    expect(say('Why mnema')).toBe(true);
+    expect(say('A label')).toBe(true);
+    expect(say('Hello there, and welcome to the long paragraph.')).toBe(true);
+  });
+
+  it('refuses a short block that is only words inside a longer line', () => {
+    expect(say('Hello.')).toBe(false);
+    expect(say('Hello there')).toBe(false);
+    expect(say('long paragraph')).toBe(false);
+  });
+});
+
 describe('the site is built when the run says it must be', () => {
   it('has a build to read', () => {
     if (MUST) expect(BUILT, 'site/dist is not built, and this run says it must be').toBe(true);
@@ -156,10 +186,7 @@ when('the built site', () => {
       (JSON.parse(readText(join(ROOT, 'packages/code/package.json'))) as { description: string })
         .description,
     ].join('\n');
-    const corpus = norm(text);
-    // A short block (a heading, a label) is a few words that any long source holds somewhere, so being
-    // found inside the corpus proves nothing for it: it must be a whole line of a source.
-    const lines = new Set(text.split('\n').map((l) => norm(l.replace(/^\s*(?:#+|[-*|])\s*/, ''))));
+    const say = sourcesSay(text);
     const landing = html('index.html');
     const hero = [
       ...landing.matchAll(/<(?:h1|p)\b(?![^>]*the-build)[^>]*>([\s\S]*?)<\/(?:h1|p)>/g),
@@ -171,10 +198,7 @@ when('the built site', () => {
     ).toBeGreaterThan(0);
     expect(blocks.length, 'the landing has prose').toBeGreaterThan(8);
     for (const block of blocks) {
-      expect(
-        block.split(' ').length < 4 ? lines.has(norm(block)) : corpus.includes(norm(block)),
-        `the landing says what no source says: ${block.slice(0, 120)}`,
-      ).toBe(true);
+      expect(say(block), `the landing says what no source says: ${block.slice(0, 120)}`).toBe(true);
     }
   });
 

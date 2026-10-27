@@ -32,8 +32,9 @@ with its own changelog.
   describes the published version, and a deploy that fails touches no publication. `site/` has a weekly Dependabot entry and
   is read by the advisory scan beside the workspace lockfile.
 - **`--back-link` on `mnema site`.** Puts one link back to the address at the top of the page it writes, for a page that
-  sits inside a site: an http(s) address or a relative path, with the address escaped, and any other scheme (`javascript:`,
-  `data:`) or an address with white space is refused before anything is written. Without the option the page is byte for
+  sits inside a site, labelled "Back" (the label is fixed): an `http://` or `https://` address, or a path on the same site,
+  with the address escaped. A protocol-relative `//host`, a backslash, an `https:` with no `//`, any other scheme
+  (`javascript:`, `data:`) and an address with white space are refused before anything is written. Without the option the page is byte for
   byte the one the command wrote before. The site's `/record/` is built with it, pointing at the site's root.
 
 ### Fixed

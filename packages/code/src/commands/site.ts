@@ -66,15 +66,18 @@ export type SiteRefused =
   | { readonly ok: false; readonly reason: 'BAD_BACK_LINK'; readonly message: string };
 
 /**
- * Whether `--back-link` may be put in the page: an http(s) address or a relative path, and nothing
- * with white space or a control character (a browser drops those before it reads a scheme, so
+ * Whether `--back-link` may be put in the page: an http(s) address with `//` after the scheme, or a
+ * path on the same site (one `/` first, or relative with no scheme). Refused: a protocol-relative
+ * `//host` (it leaves the site), a backslash anywhere (a browser reads it as `/`), `https:` with no
+ * `//`, and white space or a control character (a browser drops those before it reads a scheme, so
  * `java<tab>script:` would pass a test of the scheme and still run).
  */
 export function isAcceptableBackLink(link: string): boolean {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: refusing control characters is the point
-  if (link === '' || /[\s\u0000-\u001f\u007f]/.test(link)) return false;
+  if (link === '' || /[\s\u0000-\u001f\u007f\\]/.test(link)) return false;
   const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(link)?.[1];
-  return scheme === undefined || /^https?$/i.test(scheme);
+  if (scheme !== undefined) return /^https?$/i.test(scheme) && /^[^:]+:\/\/[^/]/.test(link);
+  return !link.startsWith('//');
 }
 
 /** Every file under `dir`, as a path relative to `base`, in a fixed order. */
@@ -175,7 +178,8 @@ export function runSite(
     return {
       ok: false,
       reason: 'BAD_BACK_LINK',
-      message: '--back-link takes an http(s) address or a relative path, with no spaces',
+      message:
+        '--back-link takes an http:// or https:// address, or a path on the same site (not //host, no backslash, no spaces)',
     };
   }
   const trees = resolveTrees(ctx.cwd, ctx.env);

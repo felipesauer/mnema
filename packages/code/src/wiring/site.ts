@@ -28,7 +28,7 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
     .requiredOption('--out <dir>', 'the directory index.html is written under')
     .option(
       '--back-link <url>',
-      'put one link back to this address (http(s) or a relative path) at the top of the page',
+      'put one link, labelled "Back", to this address (http(s)://, or a path on the same site) at the top of the page',
     )
     .addHelpText(
       'after',

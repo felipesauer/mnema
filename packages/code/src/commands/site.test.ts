@@ -105,6 +105,14 @@ describe('mnema site', () => {
     'data:text/html,x',
     'ftp://x.test/',
     'https://x.test/a b',
+    '//evil.example',
+    '//evil.example/x',
+    '\\\\evil.example',
+    '/\\evil.example',
+    '/a\\b',
+    'https:evil.example',
+    'http:/evil.example',
+    'https:///x',
     '',
   ])('refuses --back-link %j, and writes nothing', (link) => {
     runInit({ cwd: repo, env });
@@ -114,7 +122,7 @@ describe('mnema site', () => {
     expect(readdirSync(sandbox)).not.toContain('out');
   });
 
-  it.each(['/mnema/', '../', './x/', 'x/y', 'https://a.test/', 'HTTP://a.test/', '//a.test/x'])(
+  it.each(['/mnema/', '../', './x/', 'x/y', 'https://a.test/', 'HTTP://a.test/', '/'])(
     'accepts --back-link %j',
     (link) => {
       runInit({ cwd: repo, env });
