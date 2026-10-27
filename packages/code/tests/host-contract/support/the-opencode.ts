@@ -37,7 +37,13 @@ import {
   type TheSandbox,
 } from './a-sandbox.js';
 import { destinationsOrRefuse, refuseUnlessLoopbackOnly } from './the-host.js';
-import { startTheStandIn, type TheCall, type TheRequest } from './the-stand-in-api.js';
+import {
+  startAScriptedStandIn,
+  startTheStandIn,
+  type TheCall,
+  type TheReply,
+  type TheRequest,
+} from './the-stand-in-api.js';
 
 /** The made-up key OpenCode is handed. It names no account and opens nothing. */
 const KEY = 'sk-ant-api03-stand-in-0000000000000000000000000000';
@@ -53,6 +59,14 @@ export interface TheOpencodeSpec {
   readonly files?: TheFilesToPut;
   /** The call the stand-in makes, given the project; none: a session that only opens. */
   readonly call?: (project: string) => TheCall;
+  /** What the stand-in answers each request with, in place of the one `call`: a session of several turns. */
+  readonly script?: (
+    project: string,
+  ) => (body: Readonly<Record<string, unknown>>, before: readonly TheRequest[]) => TheReply;
+  /** The context window the model is declared with, in tokens: the one the host compares its usage to. */
+  readonly window?: number;
+  /** Extra environment for the host. */
+  readonly env?: Readonly<Record<string, string>>;
   /** The model's name: `gpt-` decides that the write tool offered is `apply_patch`. */
   readonly model?: 'claude-sonnet-4-5' | 'gpt-5.1-codex';
   /** Whether the plugin module is copied into the project: yes unless a case says otherwise. */
@@ -141,7 +155,10 @@ async function anOpencodeSession(
   const opencode = theOpencodeUnderTest();
   const box = aSandbox('mnema-opencode-', spec.project, spec.files);
   keep(box);
-  const standIn = await startTheStandIn(spec.call?.(box.project));
+  const standIn =
+    spec.script === undefined
+      ? await startTheStandIn(spec.call?.(box.project))
+      : await startAScriptedStandIn(spec.script(box.project));
   const model = spec.model ?? 'claude-sonnet-4-5';
 
   // The project's configuration, as a person writes it: the provider pointed at a base URL, and
@@ -160,7 +177,7 @@ async function anOpencodeSession(
               [model]: {
                 name: model,
                 tool_call: true,
-                limit: { context: 200_000, output: 8_000 },
+                limit: { context: spec.window ?? 200_000, output: 8_000 },
               },
             },
           },
@@ -219,6 +236,7 @@ async function anOpencodeSession(
     OPENCODE_DISABLE_MODELS_FETCH: '1',
     OPENCODE_DISABLE_LSP_DOWNLOAD: '1',
     GIT_CONFIG_NOSYSTEM: '1',
+    ...spec.env,
   };
 
   const reported = spawnSync(opencode.binary, ['--version'], {

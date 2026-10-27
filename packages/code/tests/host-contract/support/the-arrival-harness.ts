@@ -59,6 +59,8 @@ export function theRowOf(
         'the table calls a moment measured that this file does not take',
       ).toEqual([]);
       const seen = await measure({ arm, files, record: theRecordOf(arm) });
+      // What was read, whole, so a red job says what the host did and not only which cell differed.
+      console.log(`arrival ${host} ${arm} ${JSON.stringify(seen)}`);
       for (const moment of MOMENTS) {
         const cell = theCell(host, arm, moment);
         if (cell.is !== 'arrived' && cell.is !== 'not-arrived') continue;

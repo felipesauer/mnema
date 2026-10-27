@@ -56,12 +56,37 @@ export interface TheCodexRequest {
   readonly body: Readonly<Record<string, unknown>>;
 }
 
+/** What the stand-in answers one request with, for a session of several turns. */
+export type TheCodexReply =
+  | {
+      readonly patch: string;
+      /** The `call_id` the call carries, so the request that returns its output can be told from another. */
+      readonly id: string;
+      /** The tokens the turn claims in its usage, for a host that compacts by the usage it is told. */
+      readonly totalTokens?: number;
+    }
+  | { readonly text: string; readonly totalTokens?: number };
+
+/** The decision of a stand-in for a session of several turns. */
+export type TheCodexScript = (
+  body: Readonly<Record<string, unknown>>,
+  before: readonly TheCodexRequest[],
+) => TheCodexReply;
+
 /** What a case asks of one session. */
 export interface TheCodexSpec {
   /** Writes the record the session opens on. */
   readonly project?: (project: TheProjectToWrite) => void;
   /** Files put in the project after its record is written; see {@link TheFilesToPut}. */
   readonly files?: TheFilesToPut;
+  /**
+   * What the stand-in answers each request to `/responses` with, in place of the one `patch`: a
+   * session of several turns. It is made anew for each start of the host, because a session that
+   * is opened a second time (see `one-retry.ts`) must begin its calls from the first.
+   */
+  readonly script?: () => TheCodexScript;
+  /** Lines added to Codex's `config.toml`, at its top level, before its tables. */
+  readonly config?: readonly string[];
   /** The patch the stand-in makes Codex apply, relative to the project; none: a session that only opens. */
   readonly patch?: string;
   /**
@@ -109,13 +134,13 @@ function event(data: Readonly<Record<string, unknown>>): string {
 }
 
 /** A whole response: created, one output item, completed. */
-function aResponse(id: string, item: Readonly<Record<string, unknown>>): string {
+function aResponse(id: string, item: Readonly<Record<string, unknown>>, totalTokens = 0): string {
   const usage = {
-    input_tokens: 0,
+    input_tokens: totalTokens,
     input_tokens_details: null,
     output_tokens: 0,
     output_tokens_details: null,
-    total_tokens: 0,
+    total_tokens: totalTokens,
   };
   return [
     event({ type: 'response.created', response: { id } }),
@@ -143,6 +168,7 @@ function offersTheSearch(body: Readonly<Record<string, unknown>>): boolean {
 async function startTheStandIn(
   patch: string | undefined,
   search: string | undefined,
+  script?: TheCodexScript,
 ): Promise<{
   readonly url: string;
   readonly requests: TheCodexRequest[];
@@ -164,7 +190,36 @@ async function startTheStandIn(
         res.writeHead(200, { 'content-type': 'application/json' }).end('{"data":[],"models":[]}');
         return;
       }
+      const before = [...requests];
       requests.push({ url, headers: req.headers, body });
+      if (script !== undefined) {
+        const reply = script(body, before);
+        res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
+        res.end(
+          'patch' in reply
+            ? aResponse(
+                `resp_${reply.id}`,
+                {
+                  type: 'custom_tool_call',
+                  name: 'apply_patch',
+                  input: reply.patch,
+                  call_id: reply.id,
+                },
+                reply.totalTokens,
+              )
+            : aResponse(
+                'resp_end',
+                {
+                  type: 'message',
+                  role: 'assistant',
+                  id: 'msg_end',
+                  content: [{ type: 'output_text', text: reply.text }],
+                },
+                reply.totalTokens,
+              ),
+        );
+        return;
+      }
       const answered = JSON.stringify(body['input'] ?? []).includes('custom_tool_call_output');
       const call = patch !== undefined && toolsOffered(body).includes('apply_patch') && !answered;
       const searched = JSON.stringify(body['input'] ?? []).includes('tool_search_output');
@@ -249,13 +304,14 @@ async function aCodexSessionOnce(
   keep(box);
   const codexHome = join(box.root, 'codex');
   mkdirSync(codexHome, { recursive: true });
-  const standIn = await startTheStandIn(spec.patch, spec.search);
+  const standIn = await startTheStandIn(spec.patch, spec.search, spec.script?.());
   writeFileSync(
     join(codexHome, 'config.toml'),
     [
       `model = "${MODEL}"`,
       'model_provider = "stand-in"',
       'check_for_update_on_startup = false',
+      ...(spec.config ?? []),
       '',
       '[model_providers.stand-in]',
       'name = "stand-in"',
@@ -411,4 +467,48 @@ export function theResultOfTheSearch(
     }
   }
   return undefined;
+}
+
+/** How a session of several turns goes, for {@link aScriptOfPatches}. */
+export interface TheCodexTurns {
+  /** The patches the model applies, one to a turn, each when the output of the one before came back. */
+  readonly patches: readonly string[];
+  /** The patch after whose answer the stand-in claims a full window, counted from 1; none: never. */
+  readonly fillsTheWindowAfter?: number;
+  /** How a request is told to be the one that asks for the summary of a compaction. */
+  readonly isTheSummaryRequest?: (body: Readonly<Record<string, unknown>>) => boolean;
+  /** What that request is answered with: a text the case chose, without the rule. */
+  readonly summary?: string;
+}
+
+/** The tokens a turn claims when it says the window is full. */
+const A_FULL_WINDOW = 190_000;
+
+/**
+ * The decision of a stand-in that makes the patches in order and then closes, and that answers
+ * the request for a summary with the text it was given. A patch is made when the request carries
+ * the output of the one before it, by its `call_id`, and not by how many requests came: a
+ * conversation that was compacted no longer carries those outputs, and the stand-in closes
+ * instead of starting its patches over.
+ */
+export function aScriptOfPatches(turns: TheCodexTurns): TheCodexScript {
+  let made = 0;
+  let lastId = '';
+  return (body) => {
+    const sent = JSON.stringify(body['input'] ?? []);
+    if (turns.isTheSummaryRequest?.(body) === true) {
+      return { text: turns.summary ?? 'Nothing is known about the work.' };
+    }
+    const patch = turns.patches[made];
+    if (patch !== undefined && (lastId === '' || sent.includes(`"call_id":"${lastId}"`))) {
+      made += 1;
+      lastId = `call_stand_in_${made}`;
+      return {
+        patch,
+        id: lastId,
+        ...(turns.fillsTheWindowAfter === made ? { totalTokens: A_FULL_WINDOW } : {}),
+      };
+    }
+    return { text: 'done' };
+  };
 }
