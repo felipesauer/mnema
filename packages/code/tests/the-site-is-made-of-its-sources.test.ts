@@ -47,14 +47,17 @@ import { prepare } from '../../../site/build/the-build.mjs';
 import {
   cardsOf,
   copyOf,
+  groupsOf,
   installLineOf,
-  landingOf,
   llmsTxt,
   pageOf,
+  pitchOf,
   recordBackLink,
   recordingOf,
   rewriteLinks,
+  sidebarOf,
   stepsOf,
+  templateOf,
   textAccent,
   themeCss,
   themeOf,
@@ -208,7 +211,8 @@ describe('the pages the build writes for this tree', () => {
 
   beforeAll(async () => {
     site = mkdtempSync(join(tmpdir(), 'the-site-'));
-    for (const file of ['landing.md', 'copy.md']) cpSync(join(SITE, file), join(site, file));
+    for (const file of ['landing.md', 'not-found.md', 'copy.md'])
+      cpSync(join(SITE, file), join(site, file));
     facts = await prepare({ root: ROOT, site });
   }, 60_000);
   afterAll(() => rmSync(site, { recursive: true, force: true }));
@@ -311,6 +315,25 @@ describe('the pages the build writes for this tree', () => {
       expect(landing).toContain(`## ${heading}\n`);
     }
     expect(landing).toContain('template: splash');
+  });
+
+  it('make a 404 out of its template: each action is a source and leads into the site, and the record page is the last', () => {
+    const page = read('src/content/docs/404.md');
+    expect(page).not.toMatch(/\{\{/);
+    expect(page).toContain('template: splash');
+    const copy = copyOf(readFileSync(join(SITE, 'copy.md'), 'utf8')) as Map<string, string>;
+    expect(page).toContain(`title: ${JSON.stringify(copy.get('not-found-title'))}`);
+    expect(page).toContain(`tagline: ${JSON.stringify(copy.get('not-found'))}`);
+    const actions = [...page.matchAll(/- text: ("[^"]*")\n\s+link: ("[^"]*")/g)].map((m) => [
+      JSON.parse(m[1] ?? '""') as string,
+      JSON.parse(m[2] ?? '""') as string,
+    ]);
+    expect(actions).toEqual([
+      ['Install', `${facts.base}/docs/install/`],
+      ['How each claim is held', `${facts.base}/docs/evidence/`],
+      ['The page that verifies itself', `${facts.base}/docs/site/`],
+      [copy.get('record'), `${facts.base}/record/`],
+    ]);
   });
 
   it('take every entry of site/copy.md, and the file holds none that nothing takes', () => {
@@ -556,7 +579,7 @@ describe('what the landing reads of the README to show the proof', () => {
   });
 
   const landing = (body: string, copy?: (key: string) => string): string =>
-    landingOf({
+    templateOf({
       template: `---\ntitle: {{pitch.title}}\nbutton: {{label Install}}\n---\n\n${body}\n`,
       readme: real,
       facts: FACTS,
@@ -812,7 +835,8 @@ describe("the wordmark in the head of the site is the banner's letters, and only
   it('is written by the build, one per theme, byte for byte', async () => {
     const site = mkdtempSync(join(tmpdir(), 'the-wordmark-'));
     try {
-      for (const file of ['landing.md', 'copy.md']) cpSync(join(SITE, file), join(site, file));
+      for (const file of ['landing.md', 'not-found.md', 'copy.md'])
+        cpSync(join(SITE, file), join(site, file));
       await prepare({ root: ROOT, site });
       for (const theme of ['dark', 'light'] as const) {
         expect(readFileSync(join(site, `src/assets/wordmark-${theme}.svg`), 'utf8')).toBe(
@@ -825,11 +849,123 @@ describe("the wordmark in the head of the site is the banner's letters, and only
   }, 60_000);
 });
 
+describe('the record page is in the sidebar, inside the group of the README that holds the verifier', () => {
+  const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
+  const docs = new Set(tracked('docs/*.md').map((f) => f.slice(5, -3)));
+  const record = { label: 'Record', link: '/record/' };
+
+  it('puts it right after the page that verifies itself, in the group Verify, and nowhere else', () => {
+    const sidebar = sidebarOf({ readme, facts: FACTS, docs, record }) as {
+      label: string;
+      items: { label: string; link: string }[];
+    }[];
+    const verify = sidebar.find((g) => g.label === 'Verify');
+    const at = verify?.items.findIndex((i) => i.label === 'The page that verifies itself') ?? -1;
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(verify?.items[at + 1]).toEqual(record);
+    expect(
+      sidebar.flatMap((g) => g.items).filter((i) => i.link === '/record/'),
+      'one record item in the whole sidebar',
+    ).toHaveLength(1);
+    // Every top-level entry is a group of the README: the page is not hung beside them.
+    expect(sidebar.map((g) => g.label)).toEqual(
+      (groupsOf(readme) as { label: string }[]).map((g) => g.label),
+    );
+  });
+
+  it('stops the build when the group or the item it goes after is not in the README, and does not hang it at the end', () => {
+    const without = (from: string, to: string): string => readme.replace(from, to);
+    expect(() =>
+      sidebarOf({ readme: without('- **Verify.**', '- **Check.**'), facts: FACTS, docs, record }),
+    ).toThrow(/no "The page that verifies itself" in its "Verify" group/);
+    expect(() =>
+      sidebarOf({
+        readme: without('[The page that verifies itself]', '[The page that checks itself]'),
+        facts: FACTS,
+        docs,
+        record,
+      }),
+    ).toThrow(/no "The page that verifies itself" in its "Verify" group/);
+  });
+});
+
+describe('the social card is the banner and the pitch of the README on the dark page, and nothing else', () => {
+  const draw = async () => await import('../../../.github/the-front-page/draw.mjs');
+  const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
+  const pitch = pitchOf(readme) as { title: string; body: string };
+  const card = async (): Promise<string> =>
+    (await draw()).socialCard({ blocks: THE_BLOCKS, pitch }) as string;
+
+  it('is 1200 by 630 and still: nothing animates, nothing is scripted', async () => {
+    const svg = await card();
+    expect(svg).toContain('width="1200" height="630" viewBox="0 0 1200 630"');
+    expect(svg).not.toMatch(/<(animate|set|script|style)\b|animation|@keyframes|class="a"/);
+  });
+
+  it('says the title and the body of the pitch as its only words, in <text> of the front page sans face', async () => {
+    const svg = await card();
+    const lines = [...svg.matchAll(/<text\b[^>]*>([^<]*)<\/text>/g)].map((m) => m[1] ?? '');
+    const unescaped = (s: string): string =>
+      s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+    expect(unescaped(lines.join(' '))).toBe(`${pitch.title} ${pitch.body}`);
+    // The only words in the file: what a tag does not hold, outside the <text> lines, is nothing.
+    expect(
+      svg
+        .replace(/<text\b[^>]*>[^<]*<\/text>/g, '')
+        .replace(/<[^>]*>/g, '')
+        .trim(),
+    ).toBe('');
+    expect(svg).not.toMatch(/\saria-label=|<title>|<desc>/);
+    for (const m of svg.matchAll(/<text\b[^>]*font-family="([^"]*)"/g)) {
+      expect(m[1]).toContain('Segoe UI');
+    }
+    expect(lines.length).toBeGreaterThan(2);
+  });
+
+  it('draws the wordmark of the banner (the same paths the head draws) and the four cubes', async () => {
+    const svg = await card();
+    const head = (await draw()).headerWordmark(THE_BLOCKS, 'dark') as string;
+    for (const kind of ['blocks', 'lines']) {
+      const of = (s: string): string =>
+        new RegExp(`data-of="${kind}"[^>]* d="([^"]*)"`).exec(s)?.[1] ?? '';
+      expect(of(svg), kind).not.toBe('');
+      expect(of(svg), `${kind} of the head's wordmark`).toBe(of(head));
+    }
+    // A cube is drawn as three faces and an outline: four of them, the last the most solid.
+    expect(svg.match(/stroke-width="1.75" stroke-linejoin="round"/g) ?? []).toHaveLength(4);
+  });
+
+  it('paints the page and the accent of the dark theme, and greys: no other hue', async () => {
+    const svg = await card();
+    const { PAGE } = await draw();
+    const { ACCENT } = await import('../../../.github/the-front-page/accent.mjs');
+    expect(svg).toContain(`<rect width="1200" height="630" fill="${PAGE.dark}"/>`);
+    const hues = new Set<string>();
+    for (const [hex] of svg.matchAll(/#[0-9a-fA-F]{6}\b/g)) {
+      const channels = [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
+      if (Math.max(...channels) - Math.min(...channels) > 24) hues.add(hex.toLowerCase());
+    }
+    expect([...hues]).toEqual([ACCENT.dark]);
+    expect(svg).not.toContain(ACCENT.light);
+  });
+
+  it('breaks its lines inside the margins, whatever the width of the letters', async () => {
+    const svg = await card();
+    for (const m of svg.matchAll(
+      /<text\b[^>]*x="(\d+)"[^>]*font-size="(\d+)"[^>]*>([^<]*)<\/text>/g,
+    )) {
+      const width = [...(m[3] ?? '')].length * Number(m[2]) * 0.6;
+      expect(Number(m[1]) + width, (m[3] ?? '').slice(0, 30)).toBeLessThanOrEqual(1200 - 80);
+    }
+  });
+});
+
 describe('what is tracked under site/', () => {
   const files = tracked('site/').filter((f) => !f.endsWith('package-lock.json'));
 
   it('is found at all, and holds the landing as a Markdown file that git lists', () => {
     expect(files).toContain('site/landing.md');
+    expect(files).toContain('site/not-found.md');
     expect(tracked('*.md')).toContain('site/landing.md');
   });
 
