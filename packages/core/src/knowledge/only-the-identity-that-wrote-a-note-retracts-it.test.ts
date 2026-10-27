@@ -23,6 +23,7 @@ import {
   enrollmentMessage,
   loadOrCreateKeyPair,
   materializePublicKey,
+  memoryCaptured,
   noteRetracted,
   openChainForWriting,
   sign,
@@ -34,7 +35,7 @@ import { orderedEvents } from '../projections/order.js';
 import { appendEvent } from '../workflow/append.js';
 import { enrollKey, ensureFounded } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
-import { captureMemory, retractNote } from './operations.js';
+import { captureMemory, recordObservation, retractNote } from './operations.js';
 
 const upcasters = catalogUpcasters();
 
@@ -199,5 +200,218 @@ describe('only the identity that wrote a note retracts it', () => {
     const verdict = verify(tree, upcasters);
     expect(verdict.ok).toBe(true);
     expect(verdict.census.filter((note) => note.kind === 'foreign-retraction')).toEqual([]);
+  });
+});
+
+/**
+ * A NOTE IS THE IDENTITY THAT FIRST WROTE IT. Its id is minted at the capture, so the product
+ * never writes one id twice; a second writing of it is written by hand, past every operation.
+ * The read used to take the LAST writing in the merged order, so a second identity that wrote
+ * the same id with a later `at` became its author, its content was served, and its retraction
+ * took the note out; `verify` read the author off the last writing in TAIL order, so it either
+ * said nothing or said the retraction was not applied while the read applied it. Every reader
+ * now takes the first writing in the merged order, and both arrangements of the two tails are
+ * asked, since the order of their ids is what the census used to depend on.
+ */
+describe('a note is the identity that first wrote it', () => {
+  const at = (seconds: number) => new Date(Date.now() + seconds * 1000).toISOString();
+
+  for (const creatorTail of ['first', 'last'] as const) {
+    it(`serves the creator's note when another identity writes its id again and retracts it (the creator's tail sorts ${creatorTail})`, () => {
+      const one = machine('mnema-writer-one-');
+      const two = machine('mnema-writer-two-');
+      const oneFirst = one.writer.tail < two.writer.tail;
+      const [creator, intruder] = (creatorTail === 'first') === oneFirst ? [one, two] : [two, one];
+      const taken = memory(creator, 'The cache is SQLite because the load is relational.');
+      const author = ensureFounded(creator);
+      const stranger = ensureFounded(intruder);
+      creator.writer.checkpoint();
+      intruder.writer.checkpoint();
+      const cache = ProjectionCache.open(tree);
+      cache.rebuild();
+
+      // Written by hand, past the operations: well-formed, signed events by the intruder.
+      const envelope = (seconds: number) => ({
+        at: at(seconds),
+        who: stranger,
+        signerFp: intruder.writer.signerFingerprint,
+        subject: taken,
+      });
+      const rewrite = memoryCaptured(envelope(60), {
+        content: 'The cache is a flat file, written by hand.',
+      });
+      expect(appendEvent(intruder.writer, rewrite).ok).toBe(true);
+      const retraction = noteRetracted(envelope(120), { reason: 'Mine now.' });
+      expect(appendEvent(intruder.writer, retraction).ok).toBe(true);
+      intruder.writer.checkpoint();
+
+      const theCreators = {
+        content: 'The cache is SQLite because the load is relational.',
+        who: author,
+      };
+      try {
+        // The cache that was open brings itself forward, and a fresh one replays: both agree.
+        cache.refresh();
+        expect(cache.getMemory(taken)).toMatchObject(theCreators);
+        expect(cache.getMemory(taken)?.retracted).toBeUndefined();
+        expect(served(cache, taken)).toMatchObject({ searched: [taken], listed: [taken] });
+        const replayed = ProjectionCache.open(tree);
+        try {
+          replayed.rebuild();
+          expect(replayed.getMemory(taken)).toMatchObject(theCreators);
+          expect(replayed.getMemory(taken)?.retracted).toBeUndefined();
+          expect(served(replayed, taken)).toMatchObject({ searched: [taken], listed: [taken] });
+        } finally {
+          replayed.close();
+        }
+      } finally {
+        cache.close();
+      }
+
+      const verdict = verify(tree, upcasters);
+      expect(verdict.ok).toBe(true);
+      expect(verdict.census.map((note) => note.kind).sort()).toEqual([
+        'foreign-retraction',
+        'foreign-rewrite',
+      ]);
+      for (const note of verdict.census) {
+        expect(note).toMatchObject({ note: taken, by: stranger, author });
+      }
+
+      // The write asks the same rule: the intruder is refused, the creator retracts.
+      expect(retractNote(intruder, { id: taken, reason: 'Mine now.' })).toMatchObject({
+        ok: false,
+        code: 'NOT_THE_AUTHOR',
+      });
+      expect(retractNote(creator, { id: taken, reason: 'It was a key lookup.' }).ok).toBe(true);
+    });
+  }
+
+  it('serves the later writing when the same identity writes its note again, and lets it retract', () => {
+    const a = machine('mnema-author-a-');
+    const taken = memory(a, 'The cache is SQLite because the load is relational.');
+    const author = ensureFounded(a);
+    const cache = ProjectionCache.open(tree);
+    cache.rebuild();
+    const again = memoryCaptured(
+      { at: at(60), who: author, signerFp: a.writer.signerFingerprint, subject: taken },
+      { content: 'The cache is SQLite because the load is relational and small.' },
+    );
+    expect(appendEvent(a.writer, again).ok).toBe(true);
+    expect(retractNote(a, { id: taken, reason: 'It was a key lookup.' }).ok).toBe(true);
+    a.writer.checkpoint();
+
+    try {
+      cache.refresh();
+      const replayed = ProjectionCache.open(tree);
+      try {
+        replayed.rebuild();
+        for (const open of [cache, replayed]) {
+          const note = open.getMemory(taken);
+          expect(note?.content).toBe(
+            'The cache is SQLite because the load is relational and small.',
+          );
+          expect(note?.retracted?.who).toBe(author);
+        }
+      } finally {
+        replayed.close();
+      }
+    } finally {
+      cache.close();
+    }
+    const verdict = verify(tree, upcasters);
+    expect(verdict.ok).toBe(true);
+    expect(verdict.census).toEqual([]);
+  });
+});
+
+/** The rule is asked across the two kinds that write a note, and across a cache already holding a retraction. */
+describe('a note is one id across its two kinds, and a retraction already cached stays', () => {
+  const at = (seconds: number) => new Date(Date.now() + seconds * 1000).toISOString();
+
+  it('keeps the observation of the first identity when another writes a memory under its id', () => {
+    const a = machine('mnema-author-a-');
+    const b = machine('mnema-author-b-');
+    const about = memory(a, 'Something to observe.');
+    const observed = recordObservation(a, { about, topic: 'cache', text: 'relational load' });
+    if (!observed.ok) throw new Error(observed.message);
+    const taken = observed.id;
+    const author = ensureFounded(a);
+    const stranger = ensureFounded(b);
+    a.writer.checkpoint();
+    const cache = ProjectionCache.open(tree);
+    cache.rebuild();
+
+    const rewrite = memoryCaptured(
+      { at: at(60), who: stranger, signerFp: b.writer.signerFingerprint, subject: taken },
+      { content: 'A memory under the observation id.' },
+    );
+    expect(appendEvent(b.writer, rewrite).ok).toBe(true);
+    b.writer.checkpoint();
+
+    try {
+      cache.refresh();
+      const replayed = ProjectionCache.open(tree);
+      try {
+        replayed.rebuild();
+        for (const open of [cache, replayed]) {
+          expect(open.getObservation(taken)).toMatchObject({
+            who: author,
+            text: 'relational load',
+          });
+          expect(open.getMemory(taken)).toBeNull();
+        }
+      } finally {
+        replayed.close();
+      }
+    } finally {
+      cache.close();
+    }
+    const verdict = verify(tree, upcasters);
+    expect(verdict.ok).toBe(true);
+    expect(verdict.census).toHaveLength(1);
+    expect(verdict.census[0]).toMatchObject({
+      kind: 'foreign-rewrite',
+      note: taken,
+      by: stranger,
+      author,
+    });
+  });
+
+  it('keeps a retraction the cache holds when its author writes the note again', () => {
+    const a = machine('mnema-author-a-');
+    const taken = memory(a, 'The cache is SQLite because the load is relational.');
+    const author = ensureFounded(a);
+    expect(retractNote(a, { id: taken, reason: 'It was a key lookup.' }).ok).toBe(true);
+    a.writer.checkpoint();
+    const cache = ProjectionCache.open(tree);
+    cache.rebuild();
+    expect(cache.getMemory(taken)?.retracted?.who).toBe(author);
+
+    const again = memoryCaptured(
+      { at: at(60), who: author, signerFp: a.writer.signerFingerprint, subject: taken },
+      { content: 'The cache is SQLite because the load is relational and small.' },
+    );
+    expect(appendEvent(a.writer, again).ok).toBe(true);
+    a.writer.checkpoint();
+
+    try {
+      cache.refresh();
+      const replayed = ProjectionCache.open(tree);
+      try {
+        replayed.rebuild();
+        for (const open of [cache, replayed]) {
+          expect(open.getMemory(taken)?.content).toBe(
+            'The cache is SQLite because the load is relational and small.',
+          );
+          expect(open.getMemory(taken)?.retracted?.who).toBe(author);
+          expect(served(open, taken).searched).toEqual([]);
+        }
+      } finally {
+        replayed.close();
+      }
+    } finally {
+      cache.close();
+    }
   });
 });

@@ -975,6 +975,7 @@ function censusLocus(note: CensusNote): string {
     case 'clock-behind-what-it-read':
       return note.tail;
     case 'foreign-retraction':
+    case 'foreign-rewrite':
       return note.note;
     case 'foreign-link-retraction':
       return note.link.subject;
