@@ -14,7 +14,7 @@ describe('the document of mnema why', () => {
   });
 
   it('carries the path and the moment in the address, and gives back the path it was given', () => {
-    for (const path of ['src/a.ts', '-x', 'a b/c&d=e.ts', 'a\nb', 'café/%41.ts']) {
+    for (const path of ['src/a.ts', '-x', 'a b/c&d=e.ts', 'a\nb', 'café/100%.ts']) {
       expect(pathOfQuery(whyQuery(path, 1_700_000_000_000)), path).toBe(path);
     }
     expect(WHY_SCHEME).toBe('mnema-why');

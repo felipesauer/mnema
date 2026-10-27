@@ -1501,9 +1501,10 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/stacks/tests/the-skills-ref-oracle-agrees.test.ts': 5,
   'packages/vscode/src/cli.test.ts': 2,
   'packages/vscode/src/decision.test.ts': 3,
-  'packages/vscode/src/extension.test.ts': 8,
-  'packages/vscode/src/manifest.test.ts': 2,
-  'packages/vscode/src/proposed.test.ts': 2,
+  'packages/vscode/src/extension.test.ts': 10,
+  'packages/vscode/src/manifest.test.ts': 4,
+  'packages/vscode/src/proposed.test.ts': 3,
+  'packages/vscode/src/record-mark.test.ts': 3,
   'packages/vscode/src/rules.test.ts': 2,
   'packages/vscode/src/stacks.test.ts': 7,
   'packages/vscode/src/status.test.ts': 3,
@@ -1511,6 +1512,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/vscode/src/the-mark-the-side-bar-shows.test.ts': 5,
   'packages/vscode/src/the-page-the-stores-show.test.ts': 5,
   'packages/vscode/src/the-vsix-check-refuses-a-paint-of-its-own.test.ts': 5,
+  'packages/vscode/src/why.test.ts': 3,
 };
 
 /**
@@ -2016,9 +2018,11 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/vscode/src/decision.ts',
   'packages/vscode/src/extension.ts',
   'packages/vscode/src/proposed.ts',
+  'packages/vscode/src/record-mark.ts',
   'packages/vscode/src/rules.ts',
   'packages/vscode/src/stacks.ts',
   'packages/vscode/src/status.ts',
+  'packages/vscode/src/why.ts',
 ];
 
 describe('every file has a test that names it', () => {

@@ -2349,8 +2349,8 @@ describe('why a file is the way it is opens as the words of the command line', (
     expect(w.ran).toEqual([]);
     expect(w.opened).toEqual([]);
     expect(w.shown).toEqual([
-      'mnema why reads a file inside the folder that is open.',
-      'mnema why reads a file inside the folder that is open.',
+      'Pick a file inside the folder that is open.',
+      'Pick a file inside the folder that is open.',
     ]);
   });
 

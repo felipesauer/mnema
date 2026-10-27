@@ -126,7 +126,10 @@ try {
           ['add', 'src/a.ts'],
           ['-c', 'user.name=check', '-c', 'user.email=check@example.invalid', 'commit', '-q', '-m', 'Add a'],
         ]) {
-          const done = spawnSync('git', args, { cwd: workspace, env: gitEnv });
+          const done = spawnSync('git', ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args], {
+            cwd: workspace,
+            env: gitEnv,
+          });
           if (done.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${done.stderr}`);
         }
         // The id the editor check opens whole: `Recorded decision ADR-1 (<id>)`.

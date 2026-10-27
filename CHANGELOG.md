@@ -111,7 +111,7 @@ with its own changelog.
   5 (6 with the Stacks view shown), a change of the record 6 became 1, and twenty changes 1.6 seconds apart 120 became 32. The badge
   and the bar count decisions (what `status` also counts, skills and tasks, is not a decision to judge here, and What To Do says
   it exists). The path of `mnema rules` and `mnema why` goes after `--` (`mnema rules --json -- <path>`), so a file named `-x`
-  gets its lens: before, `mnema rules -x --json` was refused as an unknown option.
+  gets its lens: before, the path came first and `mnema` read a file named `-x` as an option it does not have, so that file never had one.
 - **The VS Code extension has a container of its own in the activity bar, with the M, and a badge.** The two views, now
   "Awaiting Judgment" and "Stacks", left the Explorer (below Outline and Timeline, collapsed) for a container titled mnema whose
   icon is the first letter of the console's wordmark, drawn into a monochrome SVG when the extension is packed from the same

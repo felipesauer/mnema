@@ -912,9 +912,7 @@ export function activate(
       const uri = given ?? api.window.activeTextEditor?.document.uri;
       const path = uri === undefined ? undefined : relativePath({ uri });
       if (path === undefined) {
-        void api.window.showInformationMessage(
-          'mnema why reads a file inside the folder that is open.',
-        );
+        void api.window.showInformationMessage('Pick a file inside the folder that is open.');
         return;
       }
       const document = await api.workspace.openTextDocument(

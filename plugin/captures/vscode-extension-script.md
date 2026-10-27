@@ -60,7 +60,7 @@ a finding, and a good capture.
    pick has one line per decision (`ADR-n  <title>`, "awaits a judgment") in the order the command line gave, and no line that
    accepts or rejects; choosing one opens the decision whole. With nothing awaiting, the placeholder says so and there is no line.
    In the Explorer, right-click a file of the folder and run `Why Is This File Like This?`: a document opens in front with a header
-   (`mnema why -- <path>, read at <hour>`) and the text `mnema why` printed, which says how many rules in force address the file
+   that says the command, the path and the hour it was read at, and the text `mnema why` printed, which says how many rules in force address the file
    and how many commits touch it. Run it again after a change: a new document, with the new hour. Over a file outside the folder
    the command says so and opens nothing. A file named `-x` gets its lens and its why like any other.
 9. **The mark on the record's folder.** In the Explorer the `.mnema` folder wears the letter `M` and the accent colour, and

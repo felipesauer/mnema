@@ -124,7 +124,7 @@ exports.run = async () => {
     // What it cost to settle, written to the log of the run: the processes started until the bar and the badge were read.
     console.log(`record: ${lines.length} mnema processes until settled: ${JSON.stringify(lines)}`);
     const colors = extension.packageJSON.contributes.colors ?? [];
-    if (colors.length !== 1 || colors[0].id !== 'mnema.recordFolder') {
+    if (colors.length !== 1 || !/^mnema\.recordFolder$/.test(colors[0].id)) {
       throw new Error('the installed manifest does not declare the colour of the record folder');
     }
     for (const wanted of ['--version', 'verify --json', 'verify']) {
