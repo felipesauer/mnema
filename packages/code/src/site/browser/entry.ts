@@ -115,9 +115,14 @@ export function showVerdict(page: Page, files: Readonly<Record<string, string>>)
 
 /** What the script reads off the place it runs in: a page, and the two ways to wait. */
 export interface Host {
-  document?: (Page & Partial<Doc>) | undefined;
+  document?: Page | undefined;
   requestAnimationFrame?: ((callback: () => void) => unknown) | undefined;
   setTimeout?: ((callback: () => void, ms: number) => unknown) | undefined;
+}
+
+/** Whether the page can select elements too, which the filters and the tails need and the verdict does not. */
+function canBeWired(page: Page): page is Page & Doc {
+  return typeof (page as Partial<Doc>).querySelectorAll === 'function';
 }
 
 /**
@@ -140,9 +145,9 @@ export function start(host: Host): void {
   const carried = page.getElementById('record-files');
   if (carried?.textContent) {
     const files = JSON.parse(carried.textContent) as Record<string, string>;
-    if (typeof page.querySelectorAll === 'function') {
-      wireFilters(page as Doc);
-      wireTails(page as Doc, files);
+    if (canBeWired(page)) {
+      wireFilters(page);
+      wireTails(page, files);
     }
     afterTheFirstPaint(host, () => showVerdict(page, files));
   }
