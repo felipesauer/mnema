@@ -236,12 +236,14 @@ describe('the page', () => {
         false,
       );
     }
-    expect(page).toContain(`<h3><span id="ADR-1"></span>ADR-1 · ${shown} `);
-    expect(page).toContain(`<code class="target">${shown}</code>`);
-    expect(page).toContain(`<code>${shown}</code> <span class="badge">agent ${shown}</span>`);
-    expect(page).toContain(`<pre>${body}</pre>`);
-    expect(page).toContain(`on <strong>${shown}</strong>`);
-    expect(page).toContain(`Why: ${shown}</p>`);
+    expect(page).toContain(`<h3><span id="ADR-1"></span><span data-field="adr">ADR-1</span> · `);
+    expect(page).toContain(`<code class="target" data-field="address-target">${shown}</code>`);
+    expect(page).toContain(
+      `<code data-field="note-retracted-who">${shown}</code> <span class="badge" data-field="note-retracted-by">agent ${shown}</span>`,
+    );
+    expect(page).toContain(`<pre data-field="rationale">${body}</pre>`);
+    expect(page).toContain(`on <strong data-field="note-topic">${shown}</strong>`);
+    expect(page).toContain(`Why: <span data-field="note-retracted-reason">${shown}</span></p>`);
     expect(page).toContain(escapeHtml(JSON.stringify(shown)));
   });
 
@@ -379,10 +381,10 @@ describe('the badge of an act', () => {
       '/*v*/',
     );
     expect(page).toContain(
-      'Accepted by <code>mnid:acc</code> <span class="badge">agent claude-code</span>',
+      'Accepted by <code data-field="accepted-who">mnid:acc</code> <span class="badge" data-field="accepted-by">agent claude-code</span>',
     );
     expect(page).toContain(
-      `Recorded by <code>mnid:rec</code> <span class="badge">${A_PERSON}</span>`,
+      `Recorded by <code data-field="recorded-who">mnid:rec</code> <span class="badge" data-field="recorded-by">${A_PERSON}</span>`,
     );
   });
 });

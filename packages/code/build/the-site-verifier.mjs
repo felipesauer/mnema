@@ -1,11 +1,16 @@
 /**
- * Builds the script a generated page runs: `@mnema/chain`'s verifier, in one file.
+ * Builds the script a generated page runs: `@mnema/chain`'s verifier and the page's own
+ * projections, in one file.
  *
  * The chain reads the record through `node:fs` and hashes and verifies through
  * `node:crypto`; a page has neither, so the bundler is told to link those names to the
  * files under `src/site/browser/`: the same verifier code over the files a page carries, with a
- * synchronous SHA-256 and Ed25519. Nothing else is bundled: the output imports nothing and
- * reaches for no network.
+ * synchronous SHA-256 and Ed25519. The page also derives its lists again from those files, with
+ * `site/model.ts`, which needs two PACKAGE names (not Node modules): `@mnema/core`, linked to
+ * `browser-core.mjs`, which re-exports only the pure projections it uses, and `@mnema/context`, linked
+ * to the one built module of it the model reads. Nothing else is bundled: the output imports nothing,
+ * reaches for no network, and names no `node:` module and no `require(`; the build refuses an output
+ * that does.
  *
  * `bundleTheSiteVerifier` is the one place the script is made. The build runs this file to
  * write `dist/site-verifier.js`; the tests call the function and run what it returns.
@@ -17,11 +22,26 @@ import { build } from 'esbuild';
 
 const here = new URL('.', import.meta.url);
 const browser = (name) => fileURLToPath(new URL(`../src/site/browser/${name}`, here));
+const sibling = (path) => fileURLToPath(new URL(path, here));
 
-/** The verifier as one script's text. */
-export async function bundleTheSiteVerifier() {
+/** What the bundle refuses to contain: each is a way for a page to carry something it cannot run or cannot hold. */
+const HAZARDS = [
+  [/<\/script/i, '"</script"', 'which a page cannot carry inline'],
+  [/<!--/, '"<!--"', 'which a page cannot carry inline'],
+  // A module is named as a quoted string; a property called `node:` (a tree's, in `site/view.ts`) is not one.
+  [/["'`]node:[a-z_/]+["'`]/, 'a quoted "node:" module', 'a module of Node, which a page does not have'],
+  [/\brequire\(/, '"require("', 'a CommonJS load, which a page does not have'],
+];
+
+/**
+ * The script as one text. `extra` is for the tests that prove the build refuses what a page cannot
+ * carry: `alias` replaces a link (a shim that lacks a name), `banner` puts text before the script.
+ * The build itself passes none.
+ */
+export async function bundleTheSiteVerifier(extra = {}) {
   const built = await build({
     entryPoints: [browser('entry.ts')],
+    ...(extra.banner === undefined ? {} : { banner: { js: extra.banner } }),
     bundle: true,
     write: false,
     platform: 'browser',
@@ -34,6 +54,9 @@ export async function bundleTheSiteVerifier() {
       'node:fs': browser('fs.ts'),
       'node:path': browser('path.ts'),
       'node:crypto': browser('crypto.ts'),
+      '@mnema/core': sibling('./browser-core.mjs'),
+      '@mnema/context': sibling('../../context/dist/context/decisions.js'),
+      ...extra.alias,
     },
     inject: [browser('buffer.ts')],
     // The chain makes a `SharedArrayBuffer` when it loads, for a sleep the verifier never
@@ -43,13 +66,11 @@ export async function bundleTheSiteVerifier() {
     define: { SharedArrayBuffer: 'ArrayBuffer', 'import.meta.url': '"file:///the-chain/x.js"' },
   });
   const text = built.outputFiles[0].text;
-  // The script is written into a page between <script> tags, where either of these would end
-  // it early or change how the rest is read. Minified output has neither today; this keeps
-  // it that way rather than escaping something that should not be there.
-  for (const hazard of ['</script', '<!--']) {
-    if (text.toLowerCase().includes(hazard)) {
-      throw new Error(`the site verifier contains "${hazard}", which a page cannot carry inline`);
-    }
+  // The script is written into a page between <script> tags, where either of the first two would end
+  // it early or change how the rest is read; the other two are a module the page cannot load. Minified
+  // output has none today; this keeps it that way rather than escaping something that should not be there.
+  for (const [hazard, name, why] of HAZARDS) {
+    if (hazard.test(text)) throw new Error(`the site verifier contains ${name}, ${why}`);
   }
   return text;
 }

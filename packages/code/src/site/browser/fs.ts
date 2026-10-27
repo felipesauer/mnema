@@ -8,7 +8,7 @@
  * something else.
  */
 
-import { type Buffer, copyOf } from './buffer.js';
+import { type Buffer, copyOf, fromBase64 } from './buffer.js';
 
 const files = new Map<string, Buffer>();
 const directories = new Set<string>(['/']);
@@ -27,6 +27,27 @@ export function mount(contents: ReadonlyMap<string, Uint8Array>): void {
       directories.add(path.slice(0, cut));
     }
   }
+}
+
+/** Where the record's files are mounted: the chain root the verifier and the projections are pointed at. */
+export const RECORD_ROOT = '/record';
+
+let mountedFiles: object | undefined;
+
+/**
+ * Mounts the files a page carries (path under the chain root to base64) at {@link RECORD_ROOT}.
+ * The verification always mounts afresh, so what it verifies never depends on what was mounted
+ * before. The derivation of the lists asks to `reuse` the mounting the verification just made, when
+ * it is handed the same object: the page does not decode six hundred kilobytes twice.
+ */
+export function mountRecord(files: Readonly<Record<string, string>>, reuse = false): void {
+  if (reuse && mountedFiles === files) return;
+  const mounted = new Map<string, Uint8Array>();
+  for (const [path, base64] of Object.entries(files)) {
+    mounted.set(`${RECORD_ROOT}/${path}`, fromBase64(base64));
+  }
+  mount(mounted);
+  mountedFiles = files;
 }
 
 function missing(path: string): Error {

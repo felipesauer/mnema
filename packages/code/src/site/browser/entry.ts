@@ -16,12 +16,16 @@
  * while (780 ms over this repository's own record, 5 s at two thousand events), and a page that
  * answered a keypress only once it was done would feel broken. Until the verdict is there the
  * page says it is verifying, and says so as a status a reader's software announces.
+ *
+ * AFTER A VERDICT THAT IS `verified`, in a turn of its own, the script derives the page's lists again
+ * from the files it verified and names each difference from what the page shows (`check.ts`). Over a
+ * record that did not verify it derives nothing and says the lists were not checked.
  */
 
 import { catalogUpcasters, verifyChain } from '@mnema/chain';
-import { fromBase64 } from './buffer.js';
+import { deriveLists, showListsCheck } from './check.js';
 import { type Doc, wireFilters } from './filters.js';
-import { mount } from './fs.js';
+import { mountRecord, RECORD_ROOT } from './fs.js';
 import { wireTails } from './tails.js';
 
 /** The verdict as the page shows it: the chain's words, unchanged. */
@@ -34,9 +38,6 @@ export interface RecordVerdict {
   readonly issues: readonly string[];
   readonly census: readonly string[];
 }
-
-/** Where the files are mounted: the chain root `verifyChain` is pointed at. */
-const ROOT = '/record';
 
 /**
  * Where an issue is: a tail and its event, a tail alone when the line has no seq (it could not be
@@ -52,12 +53,8 @@ function placeOf(tail: string | undefined, seq: number | undefined): string {
  * (`tails/<tail>/000001.jsonl`, `keys/<fingerprint>.pub`, …) to its bytes in base64.
  */
 export function verifyRecord(files: Readonly<Record<string, string>>): RecordVerdict {
-  const mounted = new Map<string, Uint8Array>();
-  for (const [path, base64] of Object.entries(files)) {
-    mounted.set(`${ROOT}/${path}`, fromBase64(base64));
-  }
-  mount(mounted);
-  const result = verifyChain({ root: ROOT }, catalogUpcasters());
+  mountRecord(files);
+  const result = verifyChain({ root: RECORD_ROOT }, catalogUpcasters());
   return {
     ok: result.ok,
     fullySigned: result.fullySigned,
@@ -82,8 +79,15 @@ interface Page {
   createElement(tag: string): Element;
 }
 
-/** Runs the verification a page asks for and writes the verdict where the page keeps it. */
-export function showVerdict(page: Page, files: Readonly<Record<string, string>>): void {
+/**
+ * Runs the verification a page asks for and writes the verdict where the page keeps it. It hands the
+ * verdict back, or nothing when there was none to hand (no files, or the verification threw): what
+ * the check of the lists asks first is whether this record verified.
+ */
+export function showVerdict(
+  page: Page,
+  files: Readonly<Record<string, string>>,
+): RecordVerdict | undefined {
   const status = page.getElementById('verdict-status');
   const summary = page.getElementById('verdict-summary');
   const issues = page.getElementById('verdict-issues');
@@ -92,7 +96,7 @@ export function showVerdict(page: Page, files: Readonly<Record<string, string>>)
     status.setAttribute('data-state', 'unverified');
     status.textContent = 'not verified';
     summary.textContent = 'This page carries no record files, so nothing was verified.';
-    return;
+    return undefined;
   }
   let verdict: RecordVerdict;
   try {
@@ -101,7 +105,7 @@ export function showVerdict(page: Page, files: Readonly<Record<string, string>>)
     status.setAttribute('data-state', 'unverified');
     status.textContent = 'not verified';
     summary.textContent = `The page could not run the verification: ${error instanceof Error ? error.message : String(error)}`;
-    return;
+    return undefined;
   }
   status.setAttribute('data-state', verdict.ok ? 'verified' : 'broken');
   status.textContent = verdict.ok ? `verified (${verdict.level})` : `broken (${verdict.level})`;
@@ -111,6 +115,7 @@ export function showVerdict(page: Page, files: Readonly<Record<string, string>>)
     item.textContent = line;
     issues.appendChild(item);
   }
+  return verdict;
 }
 
 /** What the script reads off the place it runs in: a page, and the two ways to wait. */
@@ -139,7 +144,7 @@ function afterTheFirstPaint(host: Host, work: () => void): void {
 
 /**
  * What the script does in a page: wires the filters and the tails, then verifies after the first
- * paint. A place with no document (Node, where this module is imported by a test) gets nothing.
+ * paint and checks the lists after the verdict. A place with no document (Node, where this module is imported by a test) gets nothing.
  */
 export function start(host: Host): void {
   const page = host.document;
@@ -151,10 +156,21 @@ export function start(host: Host): void {
       wireFilters(page, host);
       wireTails(page, files);
     }
-    afterTheFirstPaint(host, () => showVerdict(page, files));
+    afterTheFirstPaint(host, () => {
+      const verdict = showVerdict(page, files);
+      // The lists are derived after the verdict is on the page, in a turn of their own, so a reader sees
+      // the verdict while the derivation runs. Only a page the script can select in is checked.
+      if (canBeWired(page)) {
+        const check = (): void => showListsCheck(page, files, verdict?.ok === true);
+        if (host.setTimeout === undefined) check();
+        else host.setTimeout(check, 0);
+      }
+    });
   }
 }
 
-const here = globalThis as Host & { mnemaSite?: { verifyRecord: typeof verifyRecord } };
-here.mnemaSite = { verifyRecord };
+const here = globalThis as Host & {
+  mnemaSite?: { verifyRecord: typeof verifyRecord; deriveLists: typeof deriveLists };
+};
+here.mnemaSite = { verifyRecord, deriveLists };
 start(here);

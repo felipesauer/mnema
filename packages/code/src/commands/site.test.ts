@@ -160,10 +160,10 @@ describe('mnema site', () => {
     const page = pageOf(out);
     expect(page).toContain('Keep money in integer cents');
     expect(page).toMatch(
-      /class="card decision in-force"[^>]*><h3><span id="ADR-1"><\/span>ADR-1 · Keep money in integer cents/,
+      /class="card decision in-force"[^>]*><h3><span id="ADR-1"><\/span><span data-field="adr">ADR-1<\/span> · <span data-field="title">Keep money in integer cents/,
     );
     expect(page).toMatch(
-      /class="card decision not-in-force"[^>]*><h3><span id="ADR-2"><\/span>ADR-2 · Store dates as local time/,
+      /class="card decision not-in-force"[^>]*><h3><span id="ADR-2"><\/span><span data-field="adr">ADR-2<\/span> · <span data-field="title">Store dates as local time/,
     );
     expect(page).not.toContain('type="checkbox"');
     expect(page).toContain('agreed in review');
@@ -184,7 +184,9 @@ describe('mnema site', () => {
     expect(page).not.toContain('{&quot;event&quot;');
     expect(whole).toContain('"tails/');
     expect(page).toContain('<details class="tail" data-tail="');
-    expect(page).toMatch(/<summary><code>[^<]+<\/code>: \d+ event\(s\)<\/summary><pre><\/pre>/);
+    expect(page).toMatch(
+      /<summary><code data-field="tail-id">[^<]+<\/code>: <span data-field="tail-events">\d+<\/span> event\(s\)<\/summary><pre><\/pre>/,
+    );
   });
 
   it('shows the public notes under the decision they belong to, and a note taken back whole with why', () => {
@@ -222,9 +224,9 @@ describe('mnema site', () => {
     expect(card).toContain('half to even in the ledger');
     expect(card).toContain('the invoice export rounds twice');
     expect(card).toContain('cents are a unit of the past');
-    expect(card).toContain('Why: it was a draft');
-    expect(card).toContain('<span class="badge">agent claude-code</span>');
-    expect(card).toContain(`<span class="badge">${A_PERSON}</span>`);
+    expect(card).toContain('Why: <span data-field="note-retracted-reason">it was a draft</span>');
+    expect(card).toContain('<span class="badge" data-field="note-by">agent claude-code</span>');
+    expect(card).toContain(`<span class="badge" data-field="note-by">${A_PERSON}</span>`);
     // The note that is about no decision is on the page, and not under one.
     expect(card).not.toContain('a note about nothing in particular');
     expect(page.slice(page.indexOf('id="other-notes"'))).toContain(
