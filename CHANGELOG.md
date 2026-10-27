@@ -10,6 +10,15 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`FORMAT.md` says what a waiver is.** §3 said the document did not describe the waiver, and that nothing in it told an authorized cut from tampering. It now says what a `tail.pruned` holds, that the writer checks it against the disk before the cut and a reader only by its declared fields, that it is an account of a WHOLE tail which this product's `verify` names beside a committed key with no tail, that it never cures a break or a `seq` gap on a tail still present, and that it is not permission. What authorizes a cut of PART of a tail is still not specified, and the second reader still reports such a gap and stops. The second reader's list of gaps and its page say the same.
+- **`FORMAT.md` says which facts of §6.2 wait for a signature.** It said "two of the three" facts that change the set take effect only when signature-covered. Both readers gate seven kinds: a `key.revoked`, a `checker.retired`, an `agent.retired` and a `backup.declared` always, and an `identity.founded`, a `key.enrolled` and an `agent.enrolled` when it would restore a key a covered revocation removed. The paragraph names all seven.
+- **`FORMAT.md` says that a move repeated byte for byte is not a divergence**, which is what this product's reading already did: it is a duplicated entry, which both readers refuse at the repeated `seq`.
+- **`FORMAT.md` says that a published vector for an old `v` is an intention.** The table of vectors is held total by kind, not by `(kind, v)`, so nothing yet makes a new `v` bring its vector with it.
+- **The second reader's page says what it does with the rest of a tail whose line it refused.** It folds every line it read, so the causes it lists can differ from the product's, which leaves the whole tail out of the folds; both refuse the record.
+- **The counts the format pages spell are held to the artifacts.** The 38 vectors, the four aggregate digests and the twenty-seven points the second reader's writing found, as `FORMAT.md`, the verifier's page, `@mnema/chain`'s page and `docs/verify-without-installing.md` spell them, are read off `canonical-vectors.json` and the second reader's `gaps` by a test, so a vector or a gap added reddens the sentence that counts them.
+
 ### Changed
 
 - **The VS Code extension's icon is the banner's M.** It was a cube; it is now the first letter of the console's wordmark, in the banner's accent and block style on its dark page, in a rounded square with a thin lilac border, with the same letter behind it in a darker lilac, shifted down and to the right, as a solid shadow. It is drawn from the rows the console draws (`THE_BLOCKS`), so the icon and the banner cannot drift apart. It reaches the stores with the next published version.
