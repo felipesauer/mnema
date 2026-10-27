@@ -146,11 +146,13 @@ GAPS: tuple[Gap, ...] = (
     Gap(
         "G09",
         "3",
-        'the word "waiver" appears once in the whole document, inside a test path: what a '
-        "waiver is, where it lives and what it signs is not specified, so an authorized cut "
-        "is indistinguishable from tampering",
+        "what authorizes a cut of PART of a tail is not specified: the one account of a cut "
+        "section 3 describes, the waiver (`tail.pruned`), is for a WHOLE tail, so a cut of "
+        "part of one is indistinguishable from tampering",
         "unresolved",
-        "the word waiver appears once in the whole document, inside a test path. A sequence "
+        "this used to say the word waiver appears once in the whole document, inside a test "
+        "path; section 3 describes it now, as the account of a whole tail with no tail left, "
+        "and this reader does not read it (such a key is named under section 6.5). A sequence "
         "gap is reported and located; whether it was authorized cannot be read from here. "
         "A CUT THAT LEAVES THE CHECKPOINTS BEHIND IS REPORTED TOO, and this used to say a "
         "removal that takes the end of a tail leaves nothing discontinuous to report: a record "

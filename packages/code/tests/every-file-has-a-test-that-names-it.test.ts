@@ -268,7 +268,7 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
   'packages/code/tests/what-the-suite-left-behind.test.ts -> ../../../.github/what-the-suite-left-behind/sweep.mjs':
     'The sweep that reports which sandboxes under the machine temp directory outlived a run of the suite. It answers from OUTSIDE the suite, with no worker alive, which is the one place the before-and-after listing is not a race, so it can be neither a package nor reachable by a walk of one.',
   'packages/vscode/src/the-page-the-stores-show.test.ts -> ../build/icon.mjs':
-    'The build script that draws the extension icon, a plain module outside the package sources the coverage universe covers. The case importing it asserts the PNG it returns (its signature, its size, the same bytes on a second drawing), so the specifier is the proof of the icon and not a dependency the scanner could follow.',
+    'The build script that draws the extension icon, a plain module outside the package sources the coverage universe covers. The cases importing it assert the PNG it returns (its signature, its size, the same bytes on a second drawing, the pixels of the banner M), so the specifier is the proof of the icon and not a dependency the scanner could follow.',
   'packages/chain/src/readme-example.test.ts -> ./index.js':
     "The chain package's barrel, named by the case that runs its README example from inside src/. Excluded by the same glob as the two below, and reached by the shortest specifier of the three because this package keeps its cases beside its sources rather than under tests/.",
   'packages/core/tests/readme-example.test.ts -> ../src/index.js':
@@ -1500,7 +1500,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/vscode/src/stacks.test.ts': 7,
   'packages/vscode/src/status.test.ts': 3,
   'packages/vscode/src/the-bundle-holds-no-database.test.ts': 6,
-  'packages/vscode/src/the-page-the-stores-show.test.ts': 3,
+  'packages/vscode/src/the-page-the-stores-show.test.ts': 5,
 };
 
 /**

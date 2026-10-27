@@ -1,73 +1,81 @@
 /**
- * The extension's icon, drawn in code: `drawIcon()` returns a 128x128 PNG as a Buffer.
+ * The extension's icon, drawn in code: `drawIcon(blocks)` returns a 128x128 PNG as a Buffer.
  *
- * The mark is the cube of the repository's banner (a hexagon with its three faces, in the accent
- * #c4a0f5, outlined) on the banner's dark ground, as a rounded square. The stores take a PNG and
- * refuse an SVG, and the repository holds no raster tool, so the shapes are polygons filled at 4x4
- * samples per pixel and written as a PNG with `node:zlib` alone: the same bytes on every run, no
- * binary kept in the tree that has no source. Run by `package-vsix.mjs`, which puts the file in the
- * `.vsix` as `icon.png`.
+ * The mark is the letter M of the repository's banner, and nothing else: the first letter of the
+ * console's wordmark (`THE_BLOCKS`, `packages/code/src/presentation/banner.ts`), in the banner's
+ * own paint. A full block is a filled cell in the accent (`.github/the-front-page/accent.mjs`),
+ * on the banner's dark page (`PAGE.dark`, the manifest's `galleryBanner`), inside a rounded
+ * square with a thin border in the accent. Behind the letter sits the same letter in blocks, a
+ * darker lilac and opaque, shifted down and to the right: the solid shadow that gives the blocks
+ * their depth (the banner's own thin double-line strokes are not drawn here, they vanish at 16
+ * pixels). The shadow's colour is the accent mixed into the page, never a colour of its own.
+ * `package-vsix.mjs`
+ * hands it the rows of the built console, so a letter changed there is a letter changed here.
+ * The stores take a PNG and refuse an SVG, and the repository holds no raster tool, so the shapes
+ * are filled at 4x4 samples per pixel and written as a PNG with `node:zlib` alone: the same bytes
+ * on every run, no binary kept in the tree that has no source. Run by `package-vsix.mjs`, which
+ * puts the file in the `.vsix` as `icon.png`.
  */
 
 import { deflateSync } from 'node:zlib';
+import { ACCENT } from '../../../.github/the-front-page/accent.mjs';
+import { CELL, inkFoot, PAGE } from '../../../.github/the-front-page/draw.mjs';
 
 const SIZE = 128;
 const SAMPLES = 4;
-const GROUND = [13, 17, 23];
-const ACCENT = [196, 160, 245];
-
-// The banner's cube (a 52 by 60 hexagon) scaled by 1.55 and centred in the square.
-const SCALE = 1.55;
-const CX = SIZE / 2;
-const CY = SIZE / 2;
-const p = (x, y) => [CX + (x - 25.98) * SCALE, CY + (y - 68) * SCALE];
-const TOP = [p(25.98, 38), p(51.96, 53), p(25.98, 68), p(0, 53)];
-const LEFT = [p(0, 53), p(25.98, 68), p(25.98, 98), p(0, 83)];
-const RIGHT = [p(25.98, 68), p(51.96, 53), p(51.96, 83), p(25.98, 98)];
-const OUTLINE = [
-  [p(25.98, 38), p(51.96, 53)],
-  [p(51.96, 53), p(51.96, 83)],
-  [p(51.96, 83), p(25.98, 98)],
-  [p(25.98, 98), p(0, 83)],
-  [p(0, 83), p(0, 53)],
-  [p(0, 53), p(25.98, 38)],
-  [p(0, 53), p(25.98, 68)],
-  [p(25.98, 68), p(51.96, 53)],
-  [p(25.98, 68), p(25.98, 98)],
-];
-const STROKE = 3.2;
+const rgb = (hex) => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
+const GROUND = rgb(PAGE.dark);
+const PAINT = rgb(ACCENT.dark);
+/** The share of the accent kept in the shadow: the accent mixed into the page at this share. */
+const SHADOW_SHARE = 0.45;
+const SHADOW = GROUND.map((g, i) => Math.round(g * (1 - SHADOW_SHARE) + PAINT[i] * SHADOW_SHARE));
+/** How far the shadow is shifted down and to the right, in pixels of the 128 icon. */
+const SHADOW_OFFSET = 4;
+/** The letter's width on the icon, as a share of the icon's. */
+const LETTER = 0.66;
 const RADIUS = 24;
+const BORDER = 3;
 
-const inPolygon = (x, y, poly) => {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+/**
+ * The first letter of the wordmark: each row up to the column of the last row's second `╝`, which
+ * is where the M ends (the next letter starts in the very next column, with no gap).
+ * @param {readonly string[]} blocks
+ */
+const firstLetter = (blocks) => {
+  const last = [...(blocks.at(-1) ?? '')];
+  let seen = 0;
+  let end = last.length - 1;
+  for (let i = 0; i < last.length; i++) {
+    if (last[i] === '╝' && ++seen === 2) {
+      end = i;
+      break;
+    }
   }
-  return inside;
-};
-const nearSegment = (x, y, [[ax, ay], [bx, by]]) => {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
-  return Math.hypot(x - (ax + t * dx), y - (ay + t * dy)) <= STROKE / 2;
-};
-const inRoundedSquare = (x, y) => {
-  const qx = Math.abs(x - SIZE / 2) - (SIZE / 2 - RADIUS);
-  const qy = Math.abs(y - SIZE / 2) - (SIZE / 2 - RADIUS);
-  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) <= RADIUS;
+  return blocks.map((row) => [...row].slice(0, end + 1));
 };
 
-/** The colour at a point: [r, g, b, a] with a in 0..1. */
-const sample = (x, y) => {
-  if (!inRoundedSquare(x, y)) return [0, 0, 0, 0];
-  if (OUTLINE.some((s) => nearSegment(x, y, s))) return [...ACCENT, 1];
-  let alpha = 0;
-  if (inPolygon(x, y, TOP)) alpha = 0.34;
-  else if (inPolygon(x, y, LEFT)) alpha = 0.2;
-  else if (inPolygon(x, y, RIGHT)) alpha = 0.1;
-  return [...GROUND.map((g, i) => g * (1 - alpha) + ACCENT[i] * alpha), 1];
+/**
+ * The letter as filled rectangles in the wordmark's own units (only the full blocks).
+ * @param {readonly string[]} blocks
+ */
+const shapesOf = (blocks) => {
+  const rows = firstLetter(blocks);
+  const rects = [];
+  rows.forEach((row, r) => {
+    row.forEach((glyph, c) => {
+      if (glyph !== '█') return;
+      rects.push([c * CELL.w, r * CELL.h, (c + 1) * CELL.w, (r + 1) * CELL.h]);
+    });
+  });
+  return { rects, width: (rows[0]?.length ?? 0) * CELL.w, height: inkFoot(blocks) };
+};
+
+const inRoundedSquare = (x, y, inset) => {
+  const half = SIZE / 2 - inset;
+  const radius = RADIUS - inset;
+  const qx = Math.abs(x - SIZE / 2) - (half - radius);
+  const qy = Math.abs(y - SIZE / 2) - (half - radius);
+  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) <= radius;
 };
 
 const crcTable = Array.from({ length: 256 }, (_, n) => {
@@ -89,7 +97,31 @@ const chunk = (type, data) => {
   return Buffer.concat([head, data, tail]);
 };
 
-export function drawIcon() {
+/**
+ * The icon over the rows of the console's wordmark (`THE_BLOCKS`).
+ * @param {readonly string[]} blocks
+ * @returns {Buffer}
+ */
+export function drawIcon(blocks) {
+  const { rects, width, height } = shapesOf(blocks);
+  const scale = (SIZE * LETTER) / width;
+  const x0 = (SIZE - width * scale) / 2;
+  const y0 = (SIZE - height * scale) / 2;
+
+  /** The colour at a point: [r, g, b, a] with a in 0..1. */
+  const sample = (px, py) => {
+    if (!inRoundedSquare(px, py, 0)) return [0, 0, 0, 0];
+    if (!inRoundedSquare(px, py, BORDER)) return [...PAINT, 1];
+    const covers = (qx, qy) => {
+      const x = (qx - x0) / scale;
+      const y = (qy - y0) / scale;
+      return rects.some(([l, t, r, b]) => x >= l && x < r && y >= t && y < b);
+    };
+    if (covers(px, py)) return [...PAINT, 1];
+    if (covers(px - SHADOW_OFFSET, py - SHADOW_OFFSET)) return [...SHADOW, 1];
+    return [...GROUND, 1];
+  };
+
   const rows = [];
   for (let y = 0; y < SIZE; y++) {
     const row = Buffer.alloc(1 + SIZE * 4);
