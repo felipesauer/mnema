@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   acceptStamp,
   judgeArgs,
-  judgeLabel,
   judgedText,
+  judgeLabel,
   LIST_ARGS,
   noteProblem,
   type Proposed,

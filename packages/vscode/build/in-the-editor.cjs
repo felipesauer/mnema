@@ -126,6 +126,37 @@ exports.run = async () => {
         throw new Error(`mnema was never asked "${wanted}": ${JSON.stringify(lines)}`);
       }
     }
+    // The proposed decision opens whole: a document of the extension's own scheme, holding what
+    // `mnema show <id> --json` said, brought to the front, with the judgment buttons declared on
+    // the editor title for it.
+    const decision = process.env.MNEMA_CHECK_DECISION;
+    const title = extension.packageJSON.contributes.menus['editor/title'] ?? [];
+    if (!['mnema.accept', 'mnema.reject'].every((c) => title.some((item) => item.command === c))) {
+      throw new Error('the installed manifest puts no accept and reject on the editor title');
+    }
+    // Nothing asked so far counts: the opening itself has to ask for the decision.
+    require('node:fs').writeFileSync(process.env.MNEMA_CHECK_LOG, '');
+    await vscode.commands.executeCommand('mnema.openDecision', {
+      id: decision,
+      title: 'Use SQLite for the cache',
+      scope: 'public',
+      at: '',
+    });
+    const document = await until('the decision to open as a document', () =>
+      vscode.workspace.textDocuments.find((d) => d.uri.scheme === 'mnema-decision'),
+    );
+    if (!document.getText().includes('Use SQLite for the cache') || !document.getText().includes('small and local')) {
+      throw new Error(`the decision document does not carry the record: ${JSON.stringify(document.getText())}`);
+    }
+    if (!document.getText().includes('- State: proposed')) {
+      throw new Error(`the decision document does not say it is proposed: ${JSON.stringify(document.getText())}`);
+    }
+    if (vscode.window.activeTextEditor?.document.uri.scheme !== 'mnema-decision') {
+      throw new Error('the decision is not the editor in front');
+    }
+    if (!asked().includes(`show ${decision} --json`)) {
+      throw new Error(`mnema was never asked to show the decision: ${JSON.stringify(asked())}`);
+    }
   } else {
     throw new Error(`unknown scenario ${scenario}`);
   }
