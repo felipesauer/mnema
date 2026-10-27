@@ -12,7 +12,8 @@
  *     only, in the file it was rendered from; every block of the landing is found in the README, the pages of
  *     `docs/` or the description of `@mnema/code`.
  *   - NO COLOUR AND NO PICTURE IS THE SITE'S OWN: the accent in the built style is the one `accent.mjs`
- *     holds, the pictures are the bytes of `docs/assets/`, and the icon is the one `icon.mjs` draws.
+ *     holds, the ground is `PAGE`, the theme's own rule sits in no layer (Starlight's defaults are in one
+ *     and would win), the pictures are the bytes of `docs/assets/`, and the icon is the one `icon.mjs` draws.
  *   - THE FOOTER SAYS WHAT WAS BUILT: the version of `@mnema/code` and the commit, on every page, the ones
  *     of this checkout.
  *   - THE SITE DOES NOT SAY THE DOCS DESCRIBE THE NEXT VERSION: the sentence is true on GitHub and npm and
@@ -34,7 +35,7 @@ import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { recordBackLink } from '../../../site/build/the-pages.mjs';
+import { recordBackLink, themeOf } from '../../../site/build/the-pages.mjs';
 import {
   addressesOf,
   DIST,
@@ -267,6 +268,47 @@ when('the built site', () => {
     ).toBe(true);
   });
 
+  it('carries the calculated theme in a rule of no layer, so Starlight does not take it back', async () => {
+    const { ACCENT } = (await import(
+      pathToFileURL(join(ROOT, '.github/the-front-page/accent.mjs')).href
+    )) as { ACCENT: { dark: string; light: string } };
+    const { PAGE } = (await import(
+      pathToFileURL(join(ROOT, '.github/the-front-page/draw.mjs')).href
+    )) as { PAGE: { dark: string; light: string } };
+    const theme = themeOf({ ACCENT, PAGE }) as Record<'dark' | 'light', Record<string, string>>;
+    const astro = join(DIST, '_astro');
+    const css = readdirSync(astro)
+      .filter((f) => f.endsWith('.css'))
+      .map((f) => readText(join(astro, f)))
+      .join('\n');
+    // The minifier writes `#ffffff` as `#fff`.
+    const short = (hex: string): string =>
+      /^#(.)\1(.)\2(.)\3$/.test(hex) ? hex.replace(/^#(.).(.).(.)./, '#$1$2$3') : hex;
+    const starts = {
+      dark: ':root{--sl-color-accent:',
+      light: ':root[data-theme=light]{--sl-color-accent:',
+    } as const;
+    for (const which of ['dark', 'light'] as const) {
+      const at = css.indexOf(`${starts[which]}${short(ACCENT[which])};`);
+      expect(at, `${which}: the rule of the theme is in the built style`).toBeGreaterThanOrEqual(0);
+      const before = css.slice(0, at);
+      const depth = (before.match(/\{/g) ?? []).length - (before.match(/\}/g) ?? []).length;
+      expect(
+        depth,
+        `${which}: the rule sits inside a block (a layer?) and loses to Starlight's`,
+      ).toBe(0);
+      const rule = `${css.slice(at, css.indexOf('}', at))};`;
+      expect(rule, `${which}: the ground is the page's`).toContain(
+        `--sl-color-black:${short(PAGE[which])};`,
+      );
+      for (const name of ['text-accent', 'accent-high', 'bg-inline-code', 'gray-3']) {
+        expect(rule, `${which}: ${name}`).toContain(
+          `--sl-color-${name}:${short(theme[which][name] as string)};`,
+        );
+      }
+    }
+  });
+
   it('does not say that the pages describe the next version: that is the repository, not the published version', () => {
     for (const page of pages) {
       expect(textOf(html(page)), `${page} says it`).not.toMatch(/describe the next version/i);
@@ -285,6 +327,10 @@ when('the built site', () => {
         /data-commit href="[^"]*\/commit\/([0-9a-f]{40})"/.exec(text)?.[1],
         `${page}: commit (is site/dist older than this checkout? build the site again)`,
       ).toBe(sha);
+      const footer = /<p class="the-build[^"]*">([\s\S]*?)<\/p>/.exec(text)?.[1] ?? '';
+      expect(textOf(footer), `${page}: the footer reads "commit <sha>", with the space`).toMatch(
+        /· commit [0-9a-f]{12}$/,
+      );
     }
   });
 

@@ -19,7 +19,7 @@ export default defineConfig({
       favicon: '/favicon.png',
       social: [{ icon: 'github', label: 'GitHub', href: facts.repoUrl }],
       sidebar: [...sidebar, { label: 'Record', link: '/record/' }],
-      customCss: ['./src/generated/accent.css', './src/styles/site.css'],
+      customCss: ['./src/generated/theme.css', './src/styles/site.css'],
       components: { Footer: './src/components/Footer.astro' },
       head: [{ tag: 'meta', attrs: { name: 'description', content: facts.description } }],
       lastUpdated: false,

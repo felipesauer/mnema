@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { accentCss, docNames, factsOf, landingOf, llmsTxt, pageOf } from './the-pages.mjs';
+import { docNames, factsOf, landingOf, llmsTxt, pageOf, themeCss } from './the-pages.mjs';
 
 export const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const ROOT = resolve(SITE, '..');
@@ -57,7 +57,8 @@ export async function prepare({ root = ROOT, site = SITE } = {}) {
   }
 
   const { ACCENT } = await import(pathToFileURL(join(root, '.github/the-front-page/accent.mjs')).href);
-  writeFileSync(into('src/generated/accent.css'), accentCss(ACCENT));
+  const { PAGE } = await import(pathToFileURL(join(root, '.github/the-front-page/draw.mjs')).href);
+  writeFileSync(into('src/generated/theme.css'), themeCss({ ACCENT, PAGE }));
   const { drawIcon } = await import(pathToFileURL(join(root, 'packages/vscode/build/icon.mjs')).href);
   const { THE_BLOCKS } = await import(pathToFileURL(join(root, 'packages/code/dist/presentation/banner.js')).href);
   writeFileSync(into('public/favicon.png'), drawIcon(THE_BLOCKS));
