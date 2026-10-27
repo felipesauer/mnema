@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { RECORD_BADGE, RECORD_COLOR } from './record-mark.js';
 
 interface Command {
   command: string;
@@ -27,6 +29,7 @@ interface Manifest {
         }
       >;
     };
+    colors?: { id: string; description: string; defaults: Record<string, string> }[];
     viewsContainers?: { activitybar?: { id: string; title: string; icon: string }[] };
     views: Record<string, { id: string; name: string }[]>;
     viewsWelcome: { view: string; contents: string; when: string }[];
@@ -68,12 +71,24 @@ describe('the extension manifest', () => {
     expect(manifest.capabilities?.untrustedWorkspaces?.supported).toBe(false);
   });
 
-  it('gives every command a codicon, the category mnema and a title of one to three words, because the editor writes the category before the title in the palette and the title alone is the tooltip of a button', () => {
+  it('gives every command a codicon and the category mnema, and a title of one to three words where it is a button (its title is the tooltip), up to six elsewhere, because the editor writes the category before the title in the palette', () => {
     expect(commands.length).toBeGreaterThan(0);
+    // A button is a command in a title bar or beside an item: `navigation` and `inline` groups.
+    const buttons = new Set(
+      ['view/title', 'view/item/context', 'editor/title']
+        .flatMap((menu) => menus[menu] ?? [])
+        .filter((item) => item.group === undefined || /^(inline|navigation)/.test(item.group))
+        .map((item) => item.command),
+    );
+    expect(buttons.size).toBeGreaterThan(0);
     for (const { command, title, icon, category } of commands) {
       expect(icon, `${command} icon`).toMatch(/^\$\([a-z]+(-[a-z]+)*\)$/);
       expect(category, `${command} category`).toBe('mnema');
-      expect(title, `${command} title`).toMatch(/^[A-Z][A-Za-z]*( [A-Za-z]+){0,2}$/);
+      expect(title, `${command} title`).toMatch(
+        buttons.has(command)
+          ? /^[A-Z][A-Za-z]*( [A-Za-z]+){0,2}$/
+          : /^[A-Z][A-Za-z]*( [A-Za-z]+){0,5}\??$/,
+      );
     }
   });
 
@@ -103,7 +118,10 @@ describe('the extension manifest', () => {
   it('keeps one action of the stacks title in the overflow menu, not as a third icon', () => {
     const title = menus['view/title'] ?? [];
     const overflow = title.filter((item) => /^\d_[a-z]+@\d+$/.test(item.group ?? ''));
-    expect(overflow.map((item) => item.command)).toEqual(['mnema.stacks.addFromIndex']);
+    expect(overflow.map((item) => [item.when, item.command])).toEqual([
+      ['view == mnema.proposed', 'mnema.whatToDo'],
+      ['view == mnema.stacks', 'mnema.stacks.addFromIndex'],
+    ]);
     const stacks = title.filter((item) => item.when === 'view == mnema.stacks');
     expect(stacks.filter((item) => item.group?.startsWith('navigation')).length).toBe(2);
   });
@@ -274,6 +292,52 @@ describe('the extension manifest', () => {
     }
     const last = walkthrough?.steps.at(-1);
     expect(last?.description).toContain('mnema verify');
+  });
+
+  it('declares the colour the folder of the record wears, with a value for each kind of theme, the accent of the front page in the dark and light ones', async () => {
+    const colors = manifest.contributes.colors ?? [];
+    expect(colors.map((c) => c.id)).toEqual([RECORD_COLOR]);
+    const [color] = colors;
+    expect(Object.keys(color?.defaults ?? {}).sort()).toEqual([
+      'dark',
+      'highContrast',
+      'highContrastLight',
+      'light',
+    ]);
+    for (const value of Object.values(color?.defaults ?? {}))
+      expect(value).toMatch(/^#[0-9a-f]{6}$/);
+    expect(color?.description).not.toBe('');
+    // The accent is the one the front page draws the wordmark with: one source, read from it.
+    const accent = fileURLToPath(
+      new URL('../../../.github/the-front-page/accent.mjs', import.meta.url),
+    );
+    const { ACCENT } = (await import(pathToFileURL(accent).href)) as {
+      ACCENT: { dark: string; light: string };
+    };
+    expect(color?.defaults.dark).toBe(ACCENT.dark);
+    expect(color?.defaults.light).toBe(ACCENT.light);
+    expect(RECORD_BADGE.length).toBeLessThanOrEqual(2);
+  });
+
+  it('puts the why command on the context menu of a file in the Explorer and of the editor, only over a file and only with a record', () => {
+    for (const menu of ['explorer/context', 'editor/context']) {
+      const items = menus[menu] ?? [];
+      expect(
+        items.map((item) => item.command),
+        menu,
+      ).toEqual(['mnema.why']);
+      expect(items[0]?.when, menu).toBe('resourceScheme == file && mnema.hasRecord');
+    }
+  });
+
+  it('puts the what-to-do pick in the palette and in the overflow of the awaiting view, and nowhere as a button', () => {
+    const where = Object.entries(menus).flatMap(([menu, items]) =>
+      items.filter((item) => item.command === 'mnema.whatToDo').map((item) => [menu, item.group]),
+    );
+    expect(where).toEqual([
+      ['view/title', '1_more@1'],
+      ['commandPalette', undefined],
+    ]);
   });
 
   it('keeps its words free of emoji and of the long dash', () => {

@@ -247,7 +247,7 @@ describe('the tooltip', () => {
     expect(bar(STRONG, { awaiting: 2 }).tooltip).toBe(
       [
         '**mnema** · fully\\-signed',
-        `[2 decisions await a judgment](command:${CONTAINER_COMMAND})`,
+        `[2 decisions await a judgment](command:${CONTAINER_COMMAND}) · [What to do](command:mnema.whatToDo)`,
         `\`\`\`\n${COVERAGE}\n\`\`\``,
         `Channels off: edit\\-first\\-write\\-gate, user\\-corrections ([what they carry](${SWITCHES_PAGE}))`,
         `Read at 14:03:09 · [Refresh](command:mnema.refresh) · [Settings](command:workbench.action.openSettings?${encodeURIComponent('["mnema.statusBar"]')})`,
@@ -299,6 +299,7 @@ describe('the tooltip', () => {
   it('lists the commands its links may run, closed, and never one that judges a decision', () => {
     expect(TOOLTIP_COMMANDS).toEqual([
       'workbench.view.extension.mnema',
+      'mnema.whatToDo',
       'mnema.refresh',
       'workbench.action.openSettings',
     ]);

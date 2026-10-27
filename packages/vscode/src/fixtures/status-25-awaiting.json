@@ -1,0 +1,177 @@
+{
+  "resume": {
+    "actor": "mnid:48a6169bf8a8f21f372e0c4713b6a1d63a53b7d13361bbdcdffea272bf14a6f0",
+    "lastRun": null,
+    "focus": {
+      "openRuns": []
+    }
+  },
+  "work": [],
+  "workTotal": 0,
+  "skills": [],
+  "decisions": [],
+  "decisionsTotal": 0,
+  "awaitingJudgement": [
+    {
+      "kind": "decision",
+      "id": "01a17f26-cb9a-7000-8584-7bc2d965bec7",
+      "adr": "ADR-25",
+      "title": "Decision number 25",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:51.375Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-cabf-7000-beaa-dd62a7b5a6da",
+      "adr": "ADR-24",
+      "title": "Decision number 24",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:51.157Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c9e1-7000-8b91-d1fbcf504971",
+      "adr": "ADR-23",
+      "title": "Decision number 23",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:50.931Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c900-7000-aa2d-782ce99054de",
+      "adr": "ADR-22",
+      "title": "Decision number 22",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:50.707Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c81c-7000-aa90-3bf0d6443acf",
+      "adr": "ADR-21",
+      "title": "Decision number 21",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:50.480Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c721-7000-ace5-2bce257f73ed",
+      "adr": "ADR-20",
+      "title": "Decision number 20",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:50.231Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c610-7000-82a0-d2d30ec93b8d",
+      "adr": "ADR-19",
+      "title": "Decision number 19",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:49.958Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c514-7000-af09-c4949da8745c",
+      "adr": "ADR-18",
+      "title": "Decision number 18",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:49.707Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c411-7000-86ae-17cd8cc454a3",
+      "adr": "ADR-17",
+      "title": "Decision number 17",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:49.446Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c309-7000-8059-20e5c31a47c4",
+      "adr": "ADR-16",
+      "title": "Decision number 16",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:49.183Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c211-7000-81d2-d0cb4c9db930",
+      "adr": "ADR-15",
+      "title": "Decision number 15",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:48.935Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c130-7000-b55b-e8d329e84d5b",
+      "adr": "ADR-14",
+      "title": "Decision number 14",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:48.711Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-c057-7000-a74a-349218b4034c",
+      "adr": "ADR-13",
+      "title": "Decision number 13",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:48.489Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-bf7a-7000-80ca-c02ac4a3395f",
+      "adr": "ADR-12",
+      "title": "Decision number 12",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:48.272Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-be84-7000-988f-49caaee97e2a",
+      "adr": "ADR-11",
+      "title": "Decision number 11",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:48.035Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-bd9e-7000-b5d7-1fb01967ea0e",
+      "adr": "ADR-10",
+      "title": "Decision number 10",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:47.796Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-bc87-7000-8f43-9d0599d12e70",
+      "adr": "ADR-9",
+      "title": "Decision number 9",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:47.516Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-bb95-7000-b16c-0f2932e50703",
+      "adr": "ADR-8",
+      "title": "Decision number 8",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:47.275Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-baab-7000-9ac1-711cfbeebf38",
+      "adr": "ADR-7",
+      "title": "Decision number 7",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:47.039Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f26-b9ca-7000-9594-4d5fb11e1c98",
+      "adr": "ADR-6",
+      "title": "Decision number 6",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:56:46.813Z"
+    }
+  ],
+  "awaitingJudgementTotal": 25
+}

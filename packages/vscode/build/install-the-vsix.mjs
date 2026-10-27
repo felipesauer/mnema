@@ -117,6 +117,21 @@ try {
           { cwd: workspace, env: { PATH: process.env.PATH } },
         );
         if (proposed.status !== 0) throw new Error(`mnema decision record failed: ${proposed.stderr}`);
+        // A file committed in the project, for the editor check to ask why it is the way it is.
+        mkdirSync(join(workspace, 'src'));
+        writeFileSync(join(workspace, 'src', 'a.ts'), 'export const a = 1;\n');
+        const gitEnv = { PATH: process.env.PATH, HOME: home, GIT_CONFIG_NOSYSTEM: '1' };
+        for (const args of [
+          ['init', '-q'],
+          ['add', 'src/a.ts'],
+          ['-c', 'user.name=check', '-c', 'user.email=check@example.invalid', 'commit', '-q', '-m', 'Add a'],
+        ]) {
+          const done = spawnSync('git', ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args], {
+            cwd: workspace,
+            env: gitEnv,
+          });
+          if (done.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${done.stderr}`);
+        }
         // The id the editor check opens whole: `Recorded decision ADR-1 (<id>)`.
         decisionId = /\(([0-9a-f-]{36})\)/.exec(String(proposed.stdout))?.[1] ?? '';
         if (decisionId === '') throw new Error(`no decision id in: ${proposed.stdout}`);
