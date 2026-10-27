@@ -29,15 +29,16 @@
  * colours Starlight paints its own chrome and code with, or how the pages look.
  */
 
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { recordBackLink, themeOf } from '../../../site/build/the-pages.mjs';
+import { copyOf, recordBackLink, themeOf } from '../../../site/build/the-pages.mjs';
 import {
   addressesOf,
+  blocksOfMain,
   DIST,
   head,
   htmlFiles,
@@ -48,6 +49,7 @@ import {
   proseBlocks,
   ROOT,
   readText,
+  SITE,
   textOf,
   tracked,
 } from './support/reading-the-site.js';
@@ -86,6 +88,46 @@ describe('a short block of the landing is held to a whole line of a source', () 
     expect(say('Hello.')).toBe(false);
     expect(say('Hello there')).toBe(false);
     expect(say('long paragraph')).toBe(false);
+  });
+});
+
+describe('the text a reader gets from the <main> of a page is read in blocks, and nothing escapes them', () => {
+  const read = (inner: string): ReturnType<typeof blocksOfMain> =>
+    blocksOfMain(`<body><header>Not main</header><main>${inner}</main></body>`);
+
+  it('reads a paragraph, a heading, a div and a button as a block each, a span as part of the block around it', () => {
+    const got = read(
+      '<h2>A title</h2><p>One <a href="/x">link</a> and <code>code</code>.</p><div>Loose words <span>and a span</span></div><div class="actions"><a class="sl-link-button" href="/y">Go<svg><path/></svg></a><a class="sl-link-button" href="/z">Stay</a></div>',
+    );
+    expect([...got.text].sort()).toEqual(
+      ['A title', 'One link and code.', 'Loose words and a span', 'Go', 'Stay'].sort(),
+    );
+  });
+
+  it('finds a span of its own words and a div of typed words: the kind of element does not hide them', () => {
+    expect(read('<div><span>Trusted by thousands</span></div>').text).toEqual([
+      'Trusted by thousands',
+    ]);
+    expect(read('<section><div>Typed here</div></section>').text).toEqual(['Typed here']);
+  });
+
+  it('reads the alt, the title and the aria-label as words a reader is told', () => {
+    const got = read(
+      '<p><img src="a.gif" alt="An alt"><a href="/" title="A title" aria-label="A label">go</a></p>',
+    );
+    expect(got.spoken).toEqual(['An alt', 'A title', 'A label']);
+    expect(read('<img src="a.svg" alt="">').spoken).toEqual([]);
+  });
+
+  it('leaves out only: scripts, styles, svg, code blocks, heading anchors, the commit link and the verdict', () => {
+    const got = read(
+      '<script>var a = "x"</script><style>.a{}</style><svg><title>T</title></svg>' +
+        '<div class="expressive-code"><figure><pre>code</pre></figure></div>' +
+        '<h2>Why<a class="sl-anchor-link" href="#why"><span class="sr-only">Section titled</span></a></h2>' +
+        '<figure><pre data-verdict>public: ok</pre><figcaption>Said at <a data-commit href="/c">abc</a></figcaption></figure>' +
+        '<pre>other pre</pre>',
+    );
+    expect([...got.text].sort()).toEqual(['Said at', 'Why', 'other pre'].sort());
   });
 });
 
@@ -180,14 +222,30 @@ when('the built site', () => {
     expect(blocks, 'the sweep read the prose').toBeGreaterThan(1000);
   });
 
-  it('has no sentence of its own on the landing: each block is in the README, a page of docs/ or the description', () => {
-    const text = [
+  /** The README's Quick start: the command on its one line that starts with `mnema verify`, up to the `#`. */
+  const verifyCommandInReadme = (): string => {
+    const quick = /## Quick start\n[\s\S]*?```sh\n([\s\S]*?)\n```/.exec(
       readText(join(ROOT, 'README.md')),
+    )?.[1];
+    const lines = (quick ?? '').split('\n').filter((l) => /^mnema verify\b/.test(l));
+    expect(lines, 'the Quick start has one line that starts with mnema verify').toHaveLength(1);
+    return (lines[0] ?? '').split('#')[0]?.trim() ?? '';
+  };
+
+  const landingCorpus = (): string =>
+    [
+      readText(join(ROOT, 'README.md')),
+      // The README's own HTML (the captions of its recordings) as a reader sees it, tags out.
+      textOf(readText(join(ROOT, 'README.md'))),
       ...names.map((n) => readText(join(ROOT, 'docs', `${n}.md`))),
       (JSON.parse(readText(join(ROOT, 'packages/code/package.json'))) as { description: string })
         .description,
+      // From site/copy.md, only its entries: the title and the sentence that opens the file are not a source.
+      ...[...(copyOf(readText(join(SITE, 'copy.md'))) as Map<string, string>).values()],
     ].join('\n');
-    const say = sourcesSay(text);
+
+  it('has no sentence of its own on the landing: each block is in the README, a page of docs/, the description or an entry of site/copy.md', () => {
+    const say = sourcesSay(landingCorpus());
     const landing = html('index.html');
     const hero = [
       ...landing.matchAll(/<(?:h1|p)\b(?![^>]*the-build)[^>]*>([\s\S]*?)<\/(?:h1|p)>/g),
@@ -201,6 +259,26 @@ when('the built site', () => {
     for (const block of blocks) {
       expect(say(block), `the landing says what no source says: ${block.slice(0, 120)}`).toBe(true);
     }
+  });
+
+  it('has no sentence of its own anywhere in the <main> of the landing: every block, every alt, title and aria-label, and nothing left over', () => {
+    const say = sourcesSay(landingCorpus());
+    // The command shown beside the verdict is a line of the Quick start read up to its `#`: a source, as the case below holds.
+    const command = verifyCommandInReadme();
+    const { text, spoken, stripped } = blocksOfMain(html('index.html'));
+    expect(text.length, 'the <main> has text').toBeGreaterThan(15);
+    expect(spoken.length, 'the <main> has pictures with words').toBeGreaterThan(0);
+    for (const block of [...text, ...spoken]) {
+      expect(
+        block === command || say(block),
+        `the <main> of the landing says what no source says: ${block.slice(0, 120)}`,
+      ).toBe(true);
+    }
+    // Totality: the letters and numbers of the <main>, less the exclusions, are the letters and numbers of the blocks.
+    const letters = (s: string): string => [...norm(s)].sort().join('');
+    expect(letters(textOf(stripped)), 'text of the <main> that no block holds').toBe(
+      letters(text.join(' ')),
+    );
   });
 
   it('paints in the one accent and shows the bytes of the pictures: nothing drawn for the site', async () => {
@@ -306,6 +384,90 @@ when('the built site', () => {
           `--sl-color-${name}:${short(theme[which][name] as string)};`,
         );
       }
+    }
+  });
+
+  /** The text of a piece of HTML as the reader's browser reads it: the entities undone, no white space touched. */
+  const unescaped = (s: string): string =>
+    s
+      .replace(/&#x([0-9a-f]+);/gi, (_m, h: string) => String.fromCodePoint(Number.parseInt(h, 16)))
+      .replace(/&#(\d+);/g, (_m, d: string) => String.fromCodePoint(Number(d)))
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&');
+
+  it('shows on the landing the verdict of the committed record: the command of the Quick start and the bytes of a run of its own', () => {
+    const landing = html('index.html');
+    const figure =
+      /<figure class="the-verdict[^"]*"[^>]*>([\s\S]*?)<\/figure>/.exec(landing)?.[1] ?? '';
+    const command = verifyCommandInReadme();
+    expect(/<code>([^<]*)<\/code>/.exec(figure)?.[1], 'the command beside the verdict').toBe(
+      command,
+    );
+    const shown = unescaped(
+      /<pre\b[^>]*data-verdict[^>]*>([\s\S]*?)<\/pre>/.exec(figure)?.[1] ?? '',
+    );
+    expect(shown, 'the verdict is shown').not.toBe('');
+    expect(
+      shown.split('\n').some((l) => l.startsWith('private:')),
+      'a private tree is in the verdict',
+    ).toBe(false);
+
+    // An independent run: the record of HEAD, taken out of the repository into a directory of its own, and the binary on it.
+    const dir = mkdtempSync(join(tmpdir(), 'the-verdict-landing-'));
+    try {
+      const tar = join(dir, 'record.tar');
+      execFileSync('git', ['archive', '--format=tar', '-o', tar, 'HEAD', '.mnema'], { cwd: ROOT });
+      const tree = join(dir, 'tree');
+      mkdirSync(tree);
+      execFileSync('tar', ['-xf', tar, '-C', tree]);
+      execFileSync('git', ['init', '-q', tree]);
+      const home = mkdtempSync(join(tmpdir(), 'the-verdict-landing-home-'));
+      const ran = spawnSync(
+        process.execPath,
+        [join(ROOT, 'packages/code/dist/cli.js'), ...command.split(' ').slice(1)],
+        { cwd: tree, env: { HOME: home, PATH: process.env.PATH ?? '' }, encoding: 'utf8' },
+      );
+      rmSync(home, { recursive: true, force: true });
+      expect(ran.status, ran.stderr).toBe(0);
+      expect(shown, 'the landing shows the bytes of a run of its own').toBe(ran.stdout);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+    expect(
+      /data-commit href="[^"]*\/commit\/([0-9a-f]{40})"/.exec(figure)?.[1],
+      'the commit beside the verdict',
+    ).toBe(head());
+  }, 60_000);
+
+  it('shows on the landing the recording of the repository, as the README words it, and on no other page', () => {
+    const gif = join(ROOT, 'recordings/a-write-refused.gif');
+    expect(
+      readFileSync(join(DIST, 'recordings/a-write-refused.gif')).equals(readFileSync(gif)),
+      "the recording is not the repository's",
+    ).toBe(true);
+    const landing = html('index.html');
+    const img =
+      /<img\b[^>]*src="[^"]*recordings\/a-write-refused\.gif"[^>]*>/.exec(landing)?.[0] ?? '';
+    expect(img, 'the landing shows the recording').not.toBe('');
+    const readme = readText(join(ROOT, 'README.md'));
+    const alt = /\salt="([^"]*)"/.exec(img)?.[1] ?? '?';
+    expect(readme, "the alt is the README's").toContain(
+      `<img src="recordings/a-write-refused.gif" alt="${alt.replace(/&#39;/g, "'")}"`,
+    );
+    expect(img).toContain('loading="lazy"');
+    const caption =
+      /<figure class="the-recording[^"]*"[^>]*>[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/.exec(
+        landing,
+      )?.[1] ?? '';
+    expect(readme, "the caption is the README's").toContain(
+      textOf(caption).split(' Recorded')[0] ?? '?',
+    );
+    for (const other of ['404.html', 'docs/install/index.html']) {
+      expect(html(other), `${other} carries the proof`).not.toMatch(
+        /the-proof|data-verdict|a-write-refused/,
+      );
     }
   });
 
