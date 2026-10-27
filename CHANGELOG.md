@@ -99,7 +99,7 @@ with its own changelog.
   covers `packages/code/src/x.ts` and `packages`, not `packages/codex`), and says how many of how many it shows; without
   JavaScript every decision, note and timeline entry is listed, where a checkbox and a rule of style used to hide the rest. The
   A link to a decision the filter hides opens it by giving the filter way, a path typed with spaces around it is trimmed
-  before it is matched, and every field of the record is drawn as `mnema show` words it (an override, a bell or an escape
+  before it is matched, and every field of the record is drawn the way the show verb words it (an override, a bell or an escape
   is shown as an escape, a title is one line); the stored lines of a tail stay as stored.
   The verification now starts after the first paint. The stored events are no longer written into the page a second time: opening
   a tail draws its lines from the files the page already carries for the verification (the same text, a byte that is not UTF-8

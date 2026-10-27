@@ -294,7 +294,7 @@ describe('the filters of the page', () => {
     const other = aPage();
     other.address.follow('#decisions');
     other.address.follow('#');
-    other.address.follow('#%E0%A4%A');
+    other.address.follow('#%zz');
     expect(shown(other)).toEqual(['d-1']);
   });
 
