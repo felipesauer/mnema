@@ -277,6 +277,12 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     "The context package's barrel. This one DOES exist under packages/, and is unresolvable for the other reason entirely: the coverage gate excludes a package's src/index.ts from what it measures, PRODUCTION implements that exclusion, and so the barrel is in no corpus for a specifier to land in.",
   'packages/core/src/index.test.ts -> ./index.js':
     "The core package's barrel, named by the case that sits next to it. Excluded by the same glob as the context package barrel, and worth its own row because the two are reached differently: this one is imported from inside src/, where a test file lives beside the source it names.",
+  'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-build.mjs':
+    'The steps of the site build that touch the disk: the pages of docs/ and the landing it writes under site/, the pictures and the favicon it copies or draws from their owners. The case imports it to run it over this tree into a directory of its own, and it sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
+  'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-pages.mjs':
+    'The readings the site is made of, plain functions over text: the title that moves to the frontmatter, the link that lands, the sections of the README and the groups of its Docs. The case runs them over a fixture and over the real tree, and the specifier is the proof of the site and not a dependency the scanner could follow.',
+  'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-record.mjs':
+    'The step that writes the verifier page of the record by running the binary of this commit, and stops when the record does not verify. The case runs it over this repository and over a copy with one byte changed, so the specifier is the proof that a record that fails never becomes a page of the site.',
 };
 
 // ---------------------------------------------------------------------------
@@ -1138,6 +1144,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/support/published-examples.ts': 3,
   'packages/code/tests/support/reading-a-shell-line.ts': 2,
   'packages/code/tests/support/reading-source.ts': 2,
+  'packages/code/tests/support/reading-the-site.ts': 4,
   'packages/code/tests/support/screen.ts': 3,
   'packages/code/tests/support/the-cache-is-not-the-record.ts': 1,
   'packages/code/tests/support/the-host-files.ts': 6,
@@ -1164,6 +1171,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-brief-is-the-same-bytes-in-any-order.properties.test.ts': 9,
   'packages/code/tests/the-broken-link-reaches-every-reader.test.ts': 5,
   'packages/code/tests/the-built-binary-runs-from-a-symlink.test.ts': 7,
+  'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts': 7,
   'packages/code/tests/the-busy-tail-is-a-refusal.test.ts': 11,
   'packages/code/tests/the-cache-dir-reaches-every-door.test.ts': 9,
   'packages/code/tests/the-cache-is-not-said-to-change-no-answer.test.ts': 5,
@@ -1297,6 +1305,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-session-the-manual-shows-is-the-one-printed.test.ts': 8,
   'packages/code/tests/the-shell-a-page-publishes-is-the-shell-that-runs.test.ts': 5,
   'packages/code/tests/the-shell-knows-the-verbs.test.ts': 17,
+  'packages/code/tests/the-site-is-made-of-its-sources.test.ts': 9,
   'packages/code/tests/the-strict-gate-catches-the-forgery.test.ts': 7,
   'packages/code/tests/the-switch-is-a-fact.test.ts': 28,
   'packages/code/tests/the-switch-pages-are-generated.test.ts': 5,
@@ -2105,8 +2114,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows; a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(14);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(14);
+    expect(unresolved.length).toBe(17);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(17);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);
