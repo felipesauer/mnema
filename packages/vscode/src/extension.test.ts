@@ -2234,7 +2234,10 @@ describe('the what-to-do pick is made of one status, and judges nothing', () => 
   it('has no line that accepts or rejects, and choosing any line never puts a judgment among the runs', async () => {
     const w = world(withTwo());
     await settle();
-    for (const label of labelsOf(w) ?? []) expect(label).not.toMatch(/accept|reject/i);
+    await w.command('mnema.whatToDo')();
+    const labels = labelsOf(w) ?? [];
+    expect(labels.length).toBeGreaterThan(0);
+    for (const label of labels) expect(label).not.toMatch(/accept|reject/i);
     for (const pick of [
       'ADR-2  Keep the CLI free of a daemon',
       'ADR-1  Use SQLite for the cache',
