@@ -330,8 +330,8 @@ export function pictureAsTwoImages(html) {
 }
 
 /**
- * The landing: `landing.md` is the template (tracked, so the guards that read every Markdown page reach it),
- * and each directive is replaced by what a source says:
+ * A page the site writes from a template (`landing.md` for the landing, `not-found.md` for the 404): the template is
+ * tracked, so the guards that read every Markdown page reach it, and each directive is replaced by what a source says:
  *   {{pitch.title}} {{pitch.body}} {{pitch.bannerAlt}} {{description}} {{version}}
  *   {{section Heading of the README}}  the section, under its own heading, links rewritten
  *   {{link Label of the README's Docs}} the site address of that link
@@ -339,7 +339,7 @@ export function pictureAsTwoImages(html) {
  *   {{copy key}}                         the entry of `site/copy.md` under that key (`copy` says it, or throws)
  * In the frontmatter a value goes in as a JSON string, so no value can break the YAML.
  */
-export function landingOf({
+export function templateOf({
   template,
   readme: source,
   facts,
@@ -350,7 +350,7 @@ export function landingOf({
   const pitch = pitchOf(readme);
   const groups = groupsOf(readme);
   const [, front, body] = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(template) ?? [];
-  if (front === undefined) throw new Error('the landing template has no frontmatter');
+  if (front === undefined) throw new Error('a template of the site has no frontmatter');
   const simple = {
     'pitch.title': pitch.title,
     'pitch.body': pitch.body,
@@ -371,13 +371,13 @@ export function landingOf({
       else if (key.startsWith('link ')) value = whereItLands(label(key.slice(5)).target, 'README.md', facts, docs);
       else if (key.startsWith('label ')) value = label(key.slice(6)).label;
       else if (key.startsWith('copy ')) {
-        if (copy === undefined) throw new Error(`the landing template asks for {{${key}}}, and no microcopy was given`);
+        if (copy === undefined) throw new Error(`the template asks for {{${key}}}, and no microcopy was given`);
         value = copy(key.slice(5));
       }
       else if (key.startsWith('section ')) {
         const heading = key.slice(8);
         value = `## ${heading}\n\n${rewriteLinks(pictureAsTwoImages(sectionOf(readme, heading)), 'README.md', facts, docs)}`;
-      } else throw new Error(`the landing template asks for {{${key}}}, which no source gives`);
+      } else throw new Error(`the template asks for {{${key}}}, which no source gives`);
       return frontmatter ? JSON.stringify(value) : value;
     });
   return `---\n${fill(front, true)}\n---\n${fill(body, false)}`;
@@ -388,8 +388,16 @@ export function recordBackLink(facts) {
   return `${facts.base}/`;
 }
 
-/** The sidebar: the README's groups, a page of `docs/` as the site's page and anything else on GitHub. */
-export function sidebarOf({ readme, facts, docs }) {
+/** The group of the README's Docs that holds the verifier, and the item the record page goes right after. */
+export const RECORD_GROUP = 'Verify';
+export const RECORD_AFTER = 'The page that verifies itself';
+
+/**
+ * The sidebar: the README's groups, a page of `docs/` as the site's page and anything else on GitHub. The record page
+ * (`record`: its label and its address) goes inside the group that holds the verifier, right after the page that
+ * describes it. A README without that group or that item stops the build, so the page is never hung at the end.
+ */
+export function sidebarOf({ readme, facts, docs, record }) {
   const groups = groupsOf(readme).map((g) => ({
     label: g.label,
     items: g.items.map((item) => {
@@ -398,6 +406,13 @@ export function sidebarOf({ readme, facts, docs }) {
       return { label: item.label, link: internal ?? there };
     }),
   }));
+  if (record === undefined) return groups;
+  const group = groups.find((g) => g.label === RECORD_GROUP);
+  const at = group?.items.findIndex((item) => item.label === RECORD_AFTER) ?? -1;
+  if (group === undefined || at === -1) {
+    throw new Error(`the README's Docs has no "${RECORD_AFTER}" in its "${RECORD_GROUP}" group, and the record page goes after it`);
+  }
+  group.items.splice(at + 1, 0, record);
   return groups;
 }
 

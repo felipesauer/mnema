@@ -5,6 +5,7 @@ dist/
 # Written by `build/prepare.mjs` from the tree on every build. The pages of docs/ are the source; these are never it.
 src/content/docs/docs/
 src/content/docs/index.md
+src/content/docs/404.md
 src/assets/
 src/generated/
 public/

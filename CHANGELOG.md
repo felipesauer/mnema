@@ -53,7 +53,16 @@ with its own changelog.
   Enforce, Prove) and, after the proof, the four steps of How it works, each read from the README and stopping the build when
   its shape changes (a table of other than three columns, a step with a link, other than four steps). The title in the
   head of the site is the wordmark of the banner, the same letters drawn from the same rows without the chain of cubes,
-  in the accent of each theme.
+  in the accent of each theme. One social card serves every page: `socialCard` in `.github/the-front-page/draw.mjs` draws
+  the banner's wordmark and cubes on the dark page with the README's line and paragraph as its only words, and the build
+  rasterizes it to `og.png` (1200 by 630) with `sharp`, which `astro` already installs and `site/package.json` now names
+  at the version the lockfile holds, so the set of packages in the lockfile is the same. Every page declares it in
+  `og:image` and `twitter:image` at its address on the published site, with its size and the README's line as the alt;
+  the landing is `og:type` website and the others stay articles. The 404 is a page of the site's own
+  (`site/not-found.md`): a line of `site/copy.md` and links, with the labels of the README's Docs, to the install page, to
+  how each claim is held, to the page that verifies itself and to `/record/`. The record page is an item of the sidebar's
+  Verify group, after the page that describes it, under a label that `site/copy.md` holds, and the build stops when that
+  group or item is not in the README.
 - **A `Site` workflow.** On a pull request that touches what the site is made of it builds the site and runs those two cases
   (it is not a required check, and the path filter is inside the job). After a release it builds the commit the release tagged
   and deploys it to GitHub Pages from a job that holds `pages: write` and `id-token: write` and no secret; the site
