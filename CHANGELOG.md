@@ -19,6 +19,10 @@ with its own changelog.
 - **The second reader's page says what it does with the rest of a tail whose line it refused.** It folds every line it read, so the causes it lists can differ from the product's, which leaves the whole tail out of the folds; both refuse the record.
 - **The counts the format pages spell are held to the artifacts.** The 38 vectors, the four aggregate digests and the twenty-seven points the second reader's writing found, as `FORMAT.md`, the verifier's page, `@mnema/chain`'s page and `docs/verify-without-installing.md` spell them, are read off `canonical-vectors.json` and the second reader's `gaps` by a test, so a vector or a gap added reddens the sentence that counts them.
 
+### Changed
+
+- **The VS Code extension's icon is the banner's M.** It was a cube; it is now the first letter of the console's wordmark, in the banner's accent and block style on its dark page, in a rounded square with a thin lilac border, with the same letter behind it in a darker lilac, shifted down and to the right, as a solid shadow. It is drawn from the rows the console draws (`THE_BLOCKS`), so the icon and the banner cannot drift apart. It reaches the stores with the next published version.
+
 ## [0.1.3] - 2026-10-26
 
 ### Added

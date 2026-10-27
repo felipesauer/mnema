@@ -1,1 +1,1 @@
-export function drawIcon(): Buffer;
+export function drawIcon(blocks: readonly string[]): Buffer;
