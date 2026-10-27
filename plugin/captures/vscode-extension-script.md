@@ -22,14 +22,16 @@ The date; the version and commit shown by **Help > About**; the operating system
 Each case ends in one of three words: `held`, `did-not-hold`, `not-run`. A case that does not hold is
 a finding, and a good capture.
 
-1. **A folder with no `.mnema`.** Open it. The extension does not start on opening: no status bar item (opening one of its views, or
-   running `mnema: Refresh`, starts it). The two
-   mnema views in the Explorer say the folder holds no record and how to start one.
+1. **A folder with no `.mnema`.** Open it. The extension does not start on opening: no status bar item.
+   The activity bar has the mnema container, with the M as its icon and no badge. Open it (that starts the
+   extension, and nothing runs `mnema`: no status bar item appears either). Its two views, Awaiting Judgment and
+   Stacks, say the folder holds no record and how to start one, in sentences, with no blue button. Run
+   `mnema: Refresh` from the palette: one message says the folder holds no record.
 2. **A folder with a `.mnema` and no `mnema` command.** Set `mnema.command` in your user settings to a
    path that does not exist. The status bar item says the command was not found, with a warning
    icon. The two views say the command is missing, and do not say nothing is pending. Hovering the
    item says what to install or set. Clicking it opens the `mnema.command` setting.
-3. **One decision awaiting a judgment.** The view lists it. A notification says a decision was
+3. **One decision awaiting a judgment.** The view lists it, and the mnema icon in the activity bar carries the badge 1. A notification says a decision was
    proposed, with a Review action. Each item shows two icon buttons (accept, reject), not text.
 4. **Accept with an empty note.** The input box refuses it and says why; nothing is recorded.
 5. **The lens.** Open a file under an address a decision in force names: the lens above its first
