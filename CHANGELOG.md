@@ -12,6 +12,7 @@ with its own changelog.
 
 ### Fixed
 
+- **The check of the links after a merge no longer accuses a page the server did not answer for.** An address that ended on HTTP 408, 502, 503 or 504 after three attempts was counted as broken, as five badges were once when the badge host timed out; it is now listed as unreachable and opens no issue, like a rate limit (429) or no answer at all. A 404, a 410 or a 500 still count as broken.
 - **A note is the identity that wrote it first, in every reader.** The read and the write took a note's author from its LAST
   writing in the merged order, and `mnema verify` and the second reader from its last writing in the order of the tail ids. A
   key of another identity that wrote the same id again with a later clock took the note: its content and its author were

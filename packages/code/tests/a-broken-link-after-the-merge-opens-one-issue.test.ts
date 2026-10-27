@@ -180,6 +180,26 @@ describe('a broken link after the merge opens one issue', () => {
     expect(book.done).toEqual([]);
   });
 
+  it.each([408, 429, 502, 503, 504])(
+    'treats an address that answers %i on every attempt as unreachable, not broken',
+    async (status) => {
+      const { ask, calls } = network({ [IMAGE]: status });
+      const book = issueBook();
+      const reading = await scanPages({ pages, fetch: ask, wait: noWait });
+      expect(calls.filter((one) => one === IMAGE)).toHaveLength(3);
+      expect(reading.broken).toEqual([]);
+      expect(reading.unreachable.map((one) => one.url)).toEqual([IMAGE]);
+      expect(await tellSomebody(reading, book.issues)).toEqual({ did: 'nothing' });
+      expect(book.done).toEqual([]);
+    },
+  );
+
+  it('still counts an address that answers 500 on every attempt as broken', async () => {
+    const { ask } = network({ [IMAGE]: 500 });
+    const reading = await scanPages({ pages, fetch: ask, wait: noWait });
+    expect(reading.broken.map((one) => [one.url, one.status])).toEqual([[IMAGE, 500]]);
+  });
+
   it('refuses, and opens nothing, when no address answers at all', async () => {
     const down = (async () => {
       throw new TypeError('fetch failed');
