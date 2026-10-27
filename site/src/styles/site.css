@@ -16,3 +16,66 @@
   color: var(--sl-color-text-accent);
   text-decoration: underline;
 }
+
+/* The proof under the hero: the verdict of the commit, then a recording. Only Starlight's variables. */
+.the-proof {
+  display: grid;
+  gap: 2rem;
+  margin-block: 2rem;
+}
+
+.the-proof figure {
+  margin: 0;
+  min-width: 0;
+}
+
+.the-proof figcaption {
+  margin-top: 0.5rem;
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-3);
+}
+
+.the-proof figcaption a {
+  color: var(--sl-color-text-accent);
+  text-decoration: underline;
+}
+
+.the-verdict code {
+  display: block;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-bottom: 0;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background-color: var(--sl-color-bg-inline-code);
+  color: var(--sl-color-white);
+  font-size: var(--sl-text-sm);
+}
+
+.the-verdict pre {
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0 0 0.5rem 0.5rem;
+  background-color: var(--sl-color-bg-nav);
+  color: var(--sl-color-gray-2);
+  font-size: var(--sl-text-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.the-recording img {
+  display: block;
+  width: 100%;
+  max-width: 44rem;
+  height: auto;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+}
+
+/* A recording that loops with no pause is movement a reader may have asked not to see: the caption stays. */
+@media (prefers-reduced-motion: reduce) {
+  .the-recording img {
+    display: none;
+  }
+}
