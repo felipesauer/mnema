@@ -105,7 +105,7 @@ function bothReaders(record: string) {
     secondVerdict: there.verdict,
     secondFails: there.findings.filter((finding) => finding.level === 'FAIL'),
     productRetractions: here.census.flatMap((note): Named[] =>
-      note.kind === 'foreign-retraction'
+      note.kind === 'foreign-retraction' || note.kind === 'foreign-rewrite'
         ? [{ tail: note.tail, seq: note.seq, rule: note.kind }]
         : [],
     ),
@@ -193,9 +193,9 @@ describe('two heads that tie on `at`: the tail id decides, by UTF-16 code unit',
   );
 });
 
-describe('the last author of a note, when two tails write it at one instant', () => {
+describe('the author of a note, when two tails write it at one instant', () => {
   it(
-    'a retraction by the identity that wrote last by UTF-16 order is applied by both readers',
+    'the identity whose writing is taken first by UTF-16 order is the author, in both readers',
     () => {
       const record = fresh('mnema-order-record-');
       const { high, astral, keyPair } = oneKeyTwoInstallations(record);
@@ -234,9 +234,10 @@ describe('the last author of a note, when two tails write it at one instant', ()
       high.append(
         identityFounded(fAs(high.anchor, -3, high.anchor), { foundingFp: high.signerFingerprint }),
       );
-      // Both write m-1 at one instant. By UTF-16 the astral tail goes first, so the BMP tail's
-      // writer, A, wrote it last and may take it back; by code point it would be the astral
-      // tail's, B, and A's retraction would be foreign.
+      // Both write m-1 at one instant. By UTF-16 the astral tail goes first, so its writer, B,
+      // wrote the note first and is its author: A's writing and A's retraction are a stranger's,
+      // and both readers name them. By code point the BMP tail would go first, A would be the
+      // author, and nothing would be named.
       high.append(memoryCaptured(fAs(high.anchor, 10, 'm-1'), { content: 'x' }));
       astral.append(memoryCaptured(fAs(b.anchor, 10, 'm-1'), { content: 'y' }));
       high.append(noteRetracted(fAs(high.anchor, 30, 'm-1'), { reason: 'r' }));
@@ -245,7 +246,10 @@ describe('the last author of a note, when two tails write it at one instant', ()
       b.checkpoint();
 
       const said = bothReaders(record);
-      expect(said.productRetractions, 'the product, against §6.4').toEqual([]);
+      expect(said.productRetractions, 'the product, against §6.4').toEqual([
+        { tail: high.tail, seq: 1, rule: 'foreign-rewrite' },
+        { tail: high.tail, seq: 2, rule: 'foreign-retraction' },
+      ]);
       expect(said.secondRetractions, 'the second reader, against the product').toEqual(
         said.productRetractions,
       );

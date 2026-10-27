@@ -39,6 +39,14 @@ with its own changelog.
 
 ### Fixed
 
+- **A note is the identity that wrote it first, in every reader.** The read and the write took a note's author from its LAST
+  writing in the merged order, and `mnema verify` and the second reader from its last writing in the order of the tail ids. A
+  key of another identity that wrote the same id again with a later clock took the note: its content and its author were
+  served, and its retraction took the note out, while the census either said nothing or said that retraction was not applied.
+  Every reader now takes the author from the first writing in the merged order (FORMAT.md §6.4): a later writing by another
+  identity is not applied, the write refuses that identity's retraction (`NOT_THE_AUTHOR`), and both verifiers name the
+  writing in the census (`foreign-rewrite`), informational, exit unchanged. The product mints a note's id at its capture,
+  so no record it wrote holds such a writing.
 - **`FORMAT.md` says what a waiver is.** §3 said the document did not describe the waiver, and that nothing in it told an authorized cut from tampering. It now says what a `tail.pruned` holds, that the writer checks it against the disk before the cut and a reader only by its declared fields, that it is an account of a WHOLE tail which this product's `verify` names beside a committed key with no tail, that it never cures a break or a `seq` gap on a tail still present, and that it is not permission. What authorizes a cut of PART of a tail is still not specified, and the second reader still reports such a gap and stops. The second reader's list of gaps and its page say the same.
 - **`FORMAT.md` says which facts of §6.2 wait for a signature.** It said "two of the three" facts that change the set take effect only when signature-covered. Both readers gate seven kinds: a `key.revoked`, a `checker.retired`, an `agent.retired` and a `backup.declared` always, and an `identity.founded`, a `key.enrolled` and an `agent.enrolled` when it would restore a key a covered revocation removed. The paragraph names all seven.
 - **`FORMAT.md` says that a move repeated byte for byte is not a divergence**, which is what this product's reading already did: it is a duplicated entry, which both readers refuse at the repeated `seq`.

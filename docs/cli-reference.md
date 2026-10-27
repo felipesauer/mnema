@@ -1795,7 +1795,9 @@ observations are retracted: a decision is rejected or superseded, and a pattern 
 deprecated, each by its own move. Only the identity that wrote a note takes it back, with
 any key of it: another identity is refused, and a retraction another identity signed anyway
 is not applied: the note is still served, and `mnema verify` names it in a census line,
-informational, not a break.
+informational, not a break. The note is the identity that wrote it first: a writing of the
+same id by another identity, which only a hand-made event can be since the id is minted at
+the capture, is not applied and is named the same way.
 
 **A relation is a label, and a recipe's marker is not a value.** The relation is open, but a path (`--rel src/a.ts`, `./x`, or a name that exists in the project) is the target typed in the wrong place and is refused `NOT_A_REFERENCE`, as is a marker a recipe prints
 where a value goes (`--rel "<rel>"`, `--which "<name>"`).
