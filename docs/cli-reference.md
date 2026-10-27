@@ -54,8 +54,10 @@ CLI and the MCP tools behave identically, because they are the same call.
   over which entity, in which session, signed by which key) and never a payload, for
   the reason `mnema audit exposure` exists. It writes to standard output and sends nothing
   anywhere; what it does and does not promise is in the table below.
-- **A page of the record that verifies itself**: `mnema site --out <dir>` writes one
-  `index.html` from the committed (public) tree: the decisions in force, with a control
+- **A page of the record that verifies itself**: `mnema site` writes one
+  `index.html` from the committed (public) tree, by default under `.mnema/site/` (the record's own `.gitignore`
+  keeps it out of git, and `mnema site` adds that line first to a record that lacks it); `--out <dir>` names another
+  directory, and one inside the record and outside `site/` is refused. The page lists the decisions in force, with a control
   that shows the rest, the history of each, who authorized it, and the stored events. The
   page carries the record's files and runs the same verifier as `mnema verify` over them in
   the reader's browser, with no request and no key. Nothing from a private or machine-global
@@ -283,7 +285,8 @@ mnema init
 # the start of a session, naming each (see "The mnema instructions in the files a host reads", below). It
 # touches no other file outside `.mnema/`. Run again in a project that is already founded, it adds only what that project lacks of
 # these (the README, the `.editorconfig`, the `.prettierignore` line), says what it added, and
-# touches nothing else of the record; where nothing is missing it answers "Already a mnema project" as before.
+# touches nothing else of the record (and gives the record's own `.gitignore` a line it lacks, such as `/site/`, and says so);
+# where nothing is missing it answers "Already a mnema project" as before.
 # It never writes the instructions again: `mnema instructions` does, where they are missing.
 #
 # A project founded before `init` left the README gets it without running `init` again: the first signed
@@ -1281,6 +1284,12 @@ directory: nothing reads them there, and removing that worktree deletes them.
 It also says when the project lacks what `mnema init` leaves beside the record, which is the `.mnema/README.md`, the
 `.mnema/.editorconfig`, or the line `.mnema/` in a `.prettierignore` where prettier is declared. It writes none: each
 finding says to run `mnema init`, which adds exactly that. (`--fix` takes a named target, and these are not among them.)
+Asked of git, in a repository, it says two more things about the page `mnema site` writes under the record: that git would
+not ignore `.mnema/site/index.html` (where `.mnema/.gitignore` lacks `/site/` it says to run `mnema init`, which adds it;
+where the line is there it says a `!` rule re-includes the page, and `init` changes nothing), and that git already
+tracks files under `.mnema/site/`, with their count and the command to stop tracking them, `git rm -r --cached
+.mnema/site`, which the doctor never runs. Outside a repository, with no `git` on the `PATH` or when git does not
+answer, it says nothing of either.
 It says, too, each file an agent host reads that lacks this version's mnema instructions (one with none, an earlier
 version's block, or a block somebody edited), with what `mnema instructions` would do about it.
 

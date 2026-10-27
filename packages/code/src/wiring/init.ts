@@ -169,6 +169,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
           );
           if (result.completed.readme) io.out('Added .mnema/README.md.');
           if (result.completed.editorconfig) io.out('Added .mnema/.editorconfig.');
+          if (result.completed.gitignore) io.out('Added the lines it lacked to .mnema/.gitignore.');
           reportIgnore(io, result.completed.prettierIgnore);
         }
         reportWhoWritesHere(result, io, render, (await import('../key-file.js')).keyFileLine);

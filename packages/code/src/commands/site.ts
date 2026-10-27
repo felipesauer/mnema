@@ -1,5 +1,5 @@
 /**
- * `mnema site --out <dir>`: the committed record as one HTML file a stranger can open.
+ * `mnema site [--out <dir>]`: the committed record as one HTML file a stranger can open.
  *
  * THE PUBLIC TREE AND NOTHING ELSE. A page published to GitHub Pages is read by whoever has the
  * link, so what goes in it is what the repository already shows everyone: the committed tree.
@@ -14,18 +14,25 @@
  * lists (decisions, their history, the raw events) is written here from the same files.
  *
  * IT RECORDS NOTHING. It reads the public tree and writes one file, `index.html`, under the
- * directory the caller named; nothing else is touched.
+ * directory the caller named, or under `<record>/site/` when none is named. That directory sits
+ * inside the record's own folder, so before it is created the record's `.gitignore` is made to
+ * carry `/site/` (`ensureTree`, which also adds the `.gitattributes` a tree made before it lacks):
+ * a `git add .mnema` after the page would otherwise publish it. Nothing else is touched. A
+ * directory the caller names INSIDE the record and outside `site/` is refused (`OUT_IN_THE_RECORD`):
+ * the folder whose contents are the proof receives nothing derived, bar the one the record's own
+ * `.gitignore` hides.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { catalogUpcasters, transitionProse, verify } from '@mnema/chain';
+import { isAbsolute, join, relative, resolve } from 'node:path';
+import { catalogUpcasters, ensureTree, transitionProse, verify } from '@mnema/chain';
 import { decisionDisposition } from '@mnema/context';
 import {
   type DecisionState,
   type DiscoveryEnv,
   orderedEvents,
   projectDecisions,
+  realOfMaybeMissing,
   resolveTrees,
 } from '@mnema/core';
 import { type DecisionMove, renderPage, type SiteDecision, type SiteTail } from '../site/page.js';
@@ -42,7 +49,7 @@ export interface SiteContext {
 /** The page that was written. */
 export interface SiteDone {
   readonly ok: true;
-  /** The file, as the caller's `--out` spelled the directory. */
+  /** The file: as the caller's `--out` spelled the directory, or relative to the cwd for the default. */
   readonly path: string;
   readonly decisions: number;
   readonly inForce: number;
@@ -63,6 +70,7 @@ export type SiteRefused =
   | { readonly ok: false; readonly reason: 'NO_RECORD'; readonly message: string }
   | { readonly ok: false; readonly reason: 'UNREADABLE'; readonly message: string }
   | { readonly ok: false; readonly reason: 'OUT_IS_A_FILE'; readonly message: string }
+  | { readonly ok: false; readonly reason: 'OUT_IN_THE_RECORD'; readonly message: string }
   | { readonly ok: false; readonly reason: 'BAD_BACK_LINK'; readonly message: string };
 
 /**
@@ -169,10 +177,19 @@ function decisionsOf(publicRoot: string): SiteDecision[] {
   }));
 }
 
-/** Writes `<out>/index.html` from the project's public tree. */
+/** Whether `inner` is `outer` or below it, both already resolved. */
+function isWithin(inner: string, outer: string): boolean {
+  const rel = relative(outer, inner);
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+}
+
+/**
+ * Writes `<out>/index.html` from the project's public tree; with no `out`, under
+ * `<record>/site/`.
+ */
 export function runSite(
   ctx: SiteContext,
-  input: { readonly out: string; readonly backLink?: string },
+  input: { readonly out?: string; readonly backLink?: string },
 ): SiteDone | SiteRefused {
   if (input.backLink !== undefined && !isAcceptableBackLink(input.backLink)) {
     return {
@@ -185,6 +202,26 @@ export function runSite(
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const publicRoot = trees.projectPublic;
   if (publicRoot === undefined) return { ok: false, reason: 'NO_PROJECT' };
+  // The default is the record's own `site/`, not `<cwd>/.mnema/site`: the cwd may be a folder below
+  // the project, and the record is where discovery found it.
+  const out = input.out ?? join(publicRoot, 'site');
+  // Asked as the file system resolves it, so a link, a `..` or a spelling of the record from
+  // elsewhere cannot put the page in the proof's folder: the nearest ancestor that exists is
+  // resolved (`realOfMaybeMissing`), and a plain `resolve` would walk past a link.
+  // Every write below goes to `target`, the directory as the cwd resolves it, never to the bare
+  // spelling: a relative one would otherwise be read from the process's own folder.
+  const target = resolve(ctx.cwd, out);
+  const realOut = realOfMaybeMissing(target);
+  const realRecord = realOfMaybeMissing(publicRoot);
+  const inRecord = isWithin(realOut, realRecord);
+  const inSite = isWithin(realOut, join(realRecord, 'site'));
+  if (inRecord && !inSite) {
+    return {
+      ok: false,
+      reason: 'OUT_IN_THE_RECORD',
+      message: `${out} is inside the record, and the record's folder holds only what is proof: leave --out off to write under ${join(relative(ctx.cwd, publicRoot) || '.', 'site')} (git ignores it), or name a directory outside the record`,
+    };
+  }
   const files = recordFiles(publicRoot);
   if (Object.keys(files).length === 0) {
     return {
@@ -205,19 +242,24 @@ export function runSite(
   }
   const tails = tailsOf(publicRoot, files);
   const ruled = verify(publicRoot, catalogUpcasters());
-  if (existsSync(input.out) && !statSync(input.out).isDirectory()) {
+  if (existsSync(target) && !statSync(target).isDirectory()) {
     return {
       ok: false,
       reason: 'OUT_IS_A_FILE',
-      message: `${input.out} is a file, and --out names the directory the page is written under`,
+      message: `${out} is a file, and --out names the directory the page is written under`,
     };
   }
-  mkdirSync(input.out, { recursive: true });
-  const path = join(input.out, 'index.html');
-  writeFileSync(path, renderPage({ decisions, tails, files }, theSiteVerifier(), input.backLink));
+  // The record's `.gitignore` carries `/site/` BEFORE the first byte of the page exists.
+  if (inSite) ensureTree({ root: publicRoot });
+  mkdirSync(target, { recursive: true });
+  const written = join(target, 'index.html');
+  writeFileSync(
+    written,
+    renderPage({ decisions, tails, files }, theSiteVerifier(), input.backLink),
+  );
   return {
     ok: true,
-    path,
+    path: input.out === undefined ? relative(ctx.cwd, written) : join(input.out, 'index.html'),
     decisions: decisions.length,
     inForce: decisions.filter((d) => d.inForce).length,
     events: tails.reduce((n, tail) => n + tail.events, 0),

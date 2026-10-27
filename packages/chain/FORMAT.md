@@ -222,6 +222,7 @@ if they were events. The layout, which only ever appeared here incidentally in ย
 <record>/.gitignore                             what git leaves out of the tree; not part of the proof
 <record>/.editorconfig                          `unset` for every property an outer EditorConfig could impose on these bytes; written by `init`; not part of the proof
 <record>/README.md                              written by `init`, for a person or an agent who opens the folder; not part of the proof
+<record>/site/                                  the page `mnema site` writes by default; ignored by the tree's .gitignore; not part of the proof
 <record>/inherit.json                           the record this one inherits, by its location and one commit (`mnema inherit`); committed; not part of the proof
 <record>/keys/<fingerprint>.pub                 the public keys (ยง6)
 <record>/tails/<tailId>/NNNNNN.jsonl            the segments, six digits, in name order
@@ -232,7 +233,7 @@ if they were events. The layout, which only ever appeared here incidentally in ย
 ```
 
 **A reader enumerates `keys/` and `tails/`, and nothing else at the root.** Every other
-entry there, the four files above that say they are not part of the proof, `inherit.json`,
+entry there, the four files above that say they are not part of the proof, the `site/` folder, `inherit.json`,
 or anything a person leaves, is not read, and a verdict is the same with it as without it,
 whatever it holds: a file that is not UTF-8, a link to nothing, a directory named `tails` or
 `keys` further down

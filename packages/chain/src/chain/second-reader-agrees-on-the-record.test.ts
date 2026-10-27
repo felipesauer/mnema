@@ -2144,6 +2144,15 @@ describe('what a person leaves beside the record, to both readers', () => {
     writeFileSync(join(decoyTail, 'checkpoints.jsonl'), '{}\n');
     mkdirSync(join(left, 'shared', 'keys'), { recursive: true });
     writeFileSync(join(left, 'shared', 'keys', `${'f'.repeat(64)}.pub`), 'not a key\n');
+    // The page `mnema site` writes by default, with a `keys/` and a `tails/` nested in it as a
+    // copy of the record would have: not read, by either reader.
+    const site = join(record, 'site');
+    const siteTail = join(site, 'tails', `${'e'.repeat(64)}-${'1'.repeat(32)}`);
+    mkdirSync(siteTail, { recursive: true });
+    mkdirSync(join(site, 'keys'), { recursive: true });
+    writeFileSync(join(site, 'index.html'), '<!doctype html><title>the page</title>\n');
+    writeFileSync(join(site, 'keys', 'a.pub'), 'not a key\n');
+    writeFileSync(join(siteTail, '000001.jsonl'), 'not a line\n');
   }
 
   /** What each reader says of the record, whole: every axis, so a verdict that moved on one fails. */
@@ -2176,5 +2185,18 @@ describe('what a person leaves beside the record, to both readers', () => {
     const withIt = readings(record);
     expect(withIt.here, 'the product read the folder').toEqual(without.here);
     expect(withIt.there, 'the second reader read the folder').toEqual(without.there);
+  });
+
+  it('is a fixture the readers DO read when the same bytes sit in the record proper', () => {
+    // The proof that the equality above is not vacuous: the tail the `site/` folder holds, put
+    // in `tails/` where a reader enumerates, moves the verdict of both.
+    const record = copyOf(readdirSync(FIXTURES)[0] as string);
+    const without = readings(record);
+    const decoy = join(record, 'tails', `${'e'.repeat(64)}-${'1'.repeat(32)}`);
+    mkdirSync(decoy, { recursive: true });
+    writeFileSync(join(decoy, '000001.jsonl'), 'not a line\n');
+    const moved = readings(record);
+    expect(moved.here).not.toEqual(without.here);
+    expect(moved.there).not.toEqual(without.there);
   });
 });
