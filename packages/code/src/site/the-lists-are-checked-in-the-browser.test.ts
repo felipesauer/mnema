@@ -330,6 +330,14 @@ describe('a server that lies about a list', () => {
       /^ADR-3: the field rationale is missing from the page$/,
     ],
     [
+      '(o) a node with a field name the events do not give, holding no text',
+      (html) =>
+        withCard(html, 'ADR-3', (card) =>
+          swapped(card, '</article>', '<span data-field="invented"></span></article>'),
+        ),
+      /^ADR-3: the page has a field named "invented" that the events do not give$/,
+    ],
+    [
       '(l) an "open" link pointed at another card',
       (html) =>
         swapped(
