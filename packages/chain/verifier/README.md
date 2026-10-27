@@ -113,7 +113,9 @@ and has no id:
   self-test`. (G06)
 - §3: *telling an authorized cut from tampering*. A sequence gap is reported and located;
   whether it was authorized cannot be read from here, because the document does not say what
-  authorizes one. A cut that leaves the checkpoints behind **is** reported: if the events at
+  authorizes a cut of part of a tail: the one account it describes, a `tail.pruned`, is for a
+  whole tail, and this reader does not read it (a key with no tail is named under §6.5 either
+  way). A cut that leaves the checkpoints behind **is** reported: if the events at
   the end of a tail go and `checkpoints.jsonl` stays, every signed range that outruns the
   entries present is named under §5. §6 makes `prev` the hash of the previous checkpoint's
   signed message, so a checkpoint dropped from the start or the middle is caught; the last
@@ -150,6 +152,8 @@ frozen record twenty minutes later than this reader did. It elects by height now
 two readers agree.
 
 **WHAT THIS READER DOES NOT SAY: that a formatter rewrote the record.** The product's `verify` adds one line beside a refusal when the files read back in canonical form verify with no issue and every line put back is covered by a signature; this reader refuses the same records, by the same causes, and stops there. It is left out on purpose: the line moves no verdict, and this reader is worth what its independence is worth, which is measured in how little of it there is to audit. A second implementation of the condition is a second place where a tampering could come to be called a reformat. The verdict over those records is the one both readers give.
+
+**WHAT THIS READER DOES WITH THE REST OF A TAIL WHOSE LINE IT REFUSED: it reads it, and the product does not fold it.** A line that does not read is refused where it stands, and the record with it, in both readers. Neither walks the hash chain or folds a content root across the hole, and both still check the tail's ownership, whose key signed its checkpoints and events, and each checkpoint's signature ([`a-refused-line-hides-nothing-else-in-its-tail.test.ts`](../src/chain/a-refused-line-hides-nothing-else-in-its-tail.test.ts)). Past that they part. This reader folds every line it did read into §6.2, §6.4 and §6.7, so what the refused line held is missing from those folds and a cause they name may be its consequence; one consequence is certain and is said once instead, per key, as not judged: the events a key signed for its own anchor when the refused line is its tail's first and no line read founds that anchor. The product leaves the whole tail out of those folds, no events, no coverage, and says `unreadable`. So the lists of causes the two readers give for such a record can differ; the verdict cannot: both refuse it ([`second-reader-names-a-refused-founding-once.test.ts`](../src/chain/second-reader-names-a-refused-founding-once.test.ts)).
 
 ## The verdict, and the four things it can be
 
