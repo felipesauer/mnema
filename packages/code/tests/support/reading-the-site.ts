@@ -160,7 +160,7 @@ export function blocksOfMain(html: string): { text: string[]; spoken: string[]; 
       /\bexpressive-code\b|\bsl-anchor-link\b|\bthe-build\b/.test(cls) ||
       /\sdata-commit\b/.test(attrs) ||
       (tag === 'pre' && /\sdata-verdict\b/.test(attrs));
-    if (!skipped() && !skip) {
+    if (!skipped() && !['script', 'style', 'svg'].includes(tag)) {
       for (const a of SPOKEN) {
         const v = new RegExp(`\\s${a}="([^"]*)"`).exec(attrs)?.[1];
         if (v !== undefined && textOf(v) !== '') spoken.push(textOf(v));
