@@ -80,11 +80,26 @@ with its own changelog.
 
 ### Changed
 
+- **The VS Code extension has a container of its own in the activity bar, with the M, and a badge.** The two views, now
+  "Awaiting Judgment" and "Stacks", left the Explorer (below Outline and Timeline, collapsed) for a container titled mnema whose
+  icon is the first letter of the console's wordmark, drawn into a monochrome SVG when the extension is packed from the same
+  function that draws the store icon (the PNG is byte for byte what it was), and the container carries a badge with the number of
+  decisions awaiting a judgment, as many as `mnema` says exist, nothing at zero or when the list was not read. Every command is in
+  the category `mnema` and its title no longer repeats it (the palette still shows `mnema: Accept Decision`), `Add from Index`
+  moved to the stacks view's `...` menu, and no welcome text has a link alone on its line, so no blue button. The container is in
+  every folder and opening a view of it starts the extension (measured in VS Code 1.143.1), so the extension has one door to the
+  command line, which starts no `mnema` process unless the folder holds a `.mnema` on the disk at that call: in a folder with no
+  record the status bar item is hidden, no lens is drawn, the context key `mnema.cliMissing` stays false and a command says once
+  that the folder holds no record. A new context key, `mnema.proposedRead`, lets the decisions view say that nothing awaits a
+  judgment only when the list was read and understood: an answer with exit code 0 that is not the JSON the view expects (or the stacks view's, with `mnema.stacksRead`, which had the same gap) counts as not read, with no badge. The check that starts the packaged file in a real editor has a fourth scenario, which opens
+  the container in a folder with no `.mnema`, and the file check reads the container's icon in the `.vsix` and refuses any `fill` or `stroke` in it that is not `currentColor` or `none`.
 - **The VS Code extension's icon is the banner's M.** It was a cube; it is now the first letter of the console's wordmark, in the banner's accent and block style on its dark page, in a rounded square with a thin lilac border, with the same letter behind it in a darker lilac, shifted down and to the right, as a solid shadow. It is drawn from the rows the console draws (`THE_BLOCKS`), so the icon and the banner cannot drift apart. It reaches the stores with the next published version.
 
 ### Security
 
 - **`@azure/msal-node` is lifted to 7.1 by an override, closing GHSA-xcx6-jx8p-x3h5.** It reached the tree only through the VS Code extension's packing tool (`@vscode/vsce` -> `@azure/identity`, which still asks for 6.x), a development dependency that no published package ships. The workspace and the release job's own tool folder now resolve it to 7.1.1, the extension still packs the same twelve files, and the advisory scan no longer ignores the advisory.
+
+- **`qs` resolves to 6.16.1 everywhere, closing GHSA-6pq8-jhm2-2vcw.** The advisory is a denial of service: `qs.stringify` with `arrayFormat: 'comma'` throws an uncaught `TypeError` on an array element that carries a non-callable own `toString`. The published package already received the fixed version through `body-parser` (the `body-parser` override and the 6.16.1 entry for `express`), and mnema's MCP server speaks stdio and never starts express, so the path was not reachable from `@mnema/code`. The one copy left at 6.16.0 came from the VS Code extension's packing tool (`@vscode/vsce` -> `typed-rest-client`), a development dependency that no published package ships; the lockfile now points it at 6.16.1, a version its range already accepts.
 
 ## [0.1.3] - 2026-10-26
 

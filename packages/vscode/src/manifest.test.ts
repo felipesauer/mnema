@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 interface Command {
   command: string;
   title: string;
+  category?: string;
   icon?: string;
 }
 interface MenuItem {
@@ -20,7 +21,8 @@ interface Manifest {
         { scope?: unknown; description?: unknown; markdownDescription?: unknown }
       >;
     };
-    views: Record<string, { id: string }[]>;
+    viewsContainers?: { activitybar?: { id: string; title: string; icon: string }[] };
+    views: Record<string, { id: string; name: string }[]>;
     viewsWelcome: { view: string; contents: string; when: string }[];
     walkthroughs?: {
       id: string;
@@ -53,12 +55,27 @@ describe('the extension manifest', () => {
     expect(manifest.capabilities?.untrustedWorkspaces?.supported).toBe(false);
   });
 
-  it('gives every command a codicon and a title of one to three words after the product name, because it is the tooltip of a button', () => {
+  it('gives every command a codicon, the category mnema and a title of one to three words, because the editor writes the category before the title in the palette and the title alone is the tooltip of a button', () => {
     expect(commands.length).toBeGreaterThan(0);
-    for (const { command, title, icon } of commands) {
+    for (const { command, title, icon, category } of commands) {
       expect(icon, `${command} icon`).toMatch(/^\$\([a-z]+(-[a-z]+)*\)$/);
-      expect(title, `${command} title`).toMatch(/^mnema: [A-Z][A-Za-z]*( [A-Za-z]+){0,2}$/);
+      expect(category, `${command} category`).toBe('mnema');
+      expect(title, `${command} title`).toMatch(/^[A-Z][A-Za-z]*( [A-Za-z]+){0,2}$/);
     }
+  });
+
+  it('has its own container in the activity bar, titled mnema, with the icon the packer writes, and both views live in it and in no other', () => {
+    const containers = manifest.contributes.viewsContainers?.activitybar ?? [];
+    expect(containers.map((c) => ({ id: c.id, title: c.title, icon: c.icon }))).toEqual([
+      { id: 'mnema', title: 'mnema', icon: 'media/mnema.svg' },
+    ]);
+    const packer = readFileSync(new URL('../build/package-vsix.mjs', import.meta.url), 'utf8');
+    expect(packer).toContain("join(scratch, 'media', 'mnema.svg')");
+    expect(Object.keys(views)).toEqual(['mnema']);
+    expect(views.mnema?.map((v) => [v.id, v.name])).toEqual([
+      ['mnema.proposed', 'Awaiting Judgment'],
+      ['mnema.stacks', 'Stacks'],
+    ]);
   });
 
   it('puts no button in a view without the icon that stands for it', () => {
@@ -68,6 +85,14 @@ describe('the extension manifest', () => {
     );
     expect(buttons.length).toBeGreaterThan(0);
     for (const item of buttons) expect(icons.get(item.command), item.command).toBeDefined();
+  });
+
+  it('keeps one action of the stacks title in the overflow menu, not as a third icon', () => {
+    const title = menus['view/title'] ?? [];
+    const overflow = title.filter((item) => /^\d_[a-z]+@\d+$/.test(item.group ?? ''));
+    expect(overflow.map((item) => item.command)).toEqual(['mnema.stacks.addFromIndex']);
+    const stacks = title.filter((item) => item.when === 'view == mnema.stacks');
+    expect(stacks.filter((item) => item.group?.startsWith('navigation')).length).toBe(2);
   });
 
   it('groups the buttons by meaning: at most three icons beside an item, the rest in named, ordered groups', () => {
@@ -115,6 +140,22 @@ describe('the extension manifest', () => {
     }
     // What a view says of its own emptiness is true only if mnema read it: the stacks view claims
     // "no stack is adopted" only when the list was read, and says it did not read otherwise.
+    const proposedWhens = viewsWelcome
+      .filter((w) => w.view === 'mnema.proposed')
+      .map((w) => w.when);
+    expect(proposedWhens.sort()).toEqual([
+      '!mnema.hasRecord',
+      'mnema.hasRecord && !mnema.cliMissing && !mnema.proposedRead',
+      'mnema.hasRecord && !mnema.cliMissing && mnema.proposedRead',
+      'mnema.hasRecord && mnema.cliMissing',
+    ]);
+    for (const w of viewsWelcome.filter((w) => w.when.endsWith('&& mnema.proposedRead'))) {
+      expect(w.contents).toContain('Nothing awaits a judgment');
+    }
+    for (const w of viewsWelcome.filter((w) => w.when.endsWith('&& !mnema.proposedRead'))) {
+      expect(w.contents).not.toContain('Nothing awaits');
+      expect(w.contents).toContain('status bar');
+    }
     const stacksWhens = viewsWelcome.filter((w) => w.view === 'mnema.stacks').map((w) => w.when);
     expect(stacksWhens.sort()).toEqual([
       '!mnema.hasRecord',
@@ -129,11 +170,33 @@ describe('the extension manifest', () => {
       expect(w.contents).not.toContain('No stack is adopted');
       expect(w.contents).toContain('status bar');
     }
-    const known = [...commands.map((c) => c.command), 'workbench.action.openSettings'];
+    const known = [
+      ...commands.map((c) => c.command),
+      'workbench.action.openSettings',
+      'workbench.action.terminal.new',
+    ];
     for (const { contents } of viewsWelcome) {
       for (const [, target] of contents.matchAll(/\]\(command:([^)?]+)/g)) {
         expect(known).toContain(target);
       }
+    }
+  });
+
+  it('has no welcome line that is only a link, because the editor draws such a line as a wide blue button', () => {
+    expect(viewsWelcome.length).toBeGreaterThan(0);
+    for (const { view, when, contents } of viewsWelcome) {
+      for (const line of contents.split('\n')) {
+        expect(line.trim(), `${view} ${when}`).not.toMatch(/^\[[^\]]*\]\([^)]*\)\.?$/);
+      }
+    }
+  });
+
+  it('says in a folder with no record how to start one and where a first one is shown, in every view', () => {
+    for (const { id } of Object.values(views).flat()) {
+      const none = viewsWelcome.filter((w) => w.view === id && w.when === '!mnema.hasRecord');
+      expect(none, id).toHaveLength(1);
+      expect(none[0]?.contents, id).toContain('mnema init');
+      expect(none[0]?.contents, id).toContain('docs/first-record.md');
     }
   });
 

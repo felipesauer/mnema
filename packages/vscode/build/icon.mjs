@@ -20,6 +20,7 @@
 import { deflateSync } from 'node:zlib';
 import { ACCENT } from '../../../.github/the-front-page/accent.mjs';
 import { CELL, inkFoot, PAGE } from '../../../.github/the-front-page/draw.mjs';
+import { firstLetter, letterCells } from './mark.mjs';
 
 const SIZE = 128;
 const SAMPLES = 4;
@@ -37,37 +38,17 @@ const RADIUS = 24;
 const BORDER = 3;
 
 /**
- * The first letter of the wordmark: each row up to the column of the last row's second `╝`, which
- * is where the M ends (the next letter starts in the very next column, with no gap).
- * @param {readonly string[]} blocks
- */
-const firstLetter = (blocks) => {
-  const last = [...(blocks.at(-1) ?? '')];
-  let seen = 0;
-  let end = last.length - 1;
-  for (let i = 0; i < last.length; i++) {
-    if (last[i] === '╝' && ++seen === 2) {
-      end = i;
-      break;
-    }
-  }
-  return blocks.map((row) => [...row].slice(0, end + 1));
-};
-
-/**
  * The letter as filled rectangles in the wordmark's own units (only the full blocks).
  * @param {readonly string[]} blocks
  */
 const shapesOf = (blocks) => {
-  const rows = firstLetter(blocks);
-  const rects = [];
-  rows.forEach((row, r) => {
-    row.forEach((glyph, c) => {
-      if (glyph !== '█') return;
-      rects.push([c * CELL.w, r * CELL.h, (c + 1) * CELL.w, (r + 1) * CELL.h]);
-    });
-  });
-  return { rects, width: (rows[0]?.length ?? 0) * CELL.w, height: inkFoot(blocks) };
+  const rects = letterCells(blocks).map(([c, r]) => [
+    c * CELL.w,
+    r * CELL.h,
+    (c + 1) * CELL.w,
+    (r + 1) * CELL.h,
+  ]);
+  return { rects, width: (firstLetter(blocks)[0]?.length ?? 0) * CELL.w, height: inkFoot(blocks) };
 };
 
 const inRoundedSquare = (x, y, inset) => {

@@ -269,6 +269,10 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     'The sweep that reports which sandboxes under the machine temp directory outlived a run of the suite. It answers from OUTSIDE the suite, with no worker alive, which is the one place the before-and-after listing is not a race, so it can be neither a package nor reachable by a walk of one.',
   'packages/vscode/src/the-page-the-stores-show.test.ts -> ../build/icon.mjs':
     'The build script that draws the extension icon, a plain module outside the package sources the coverage universe covers. The cases importing it assert the PNG it returns (its signature, its size, the same bytes on a second drawing, the pixels of the banner M), so the specifier is the proof of the icon and not a dependency the scanner could follow.',
+  'packages/vscode/src/the-mark-the-side-bar-shows.test.ts -> ../build/icon.mjs':
+    'The build script that draws the extension icon, named here by the case that holds the 128 pixel PNG to the bytes it had before its letter geometry moved into the module below. A plain module outside the package sources the coverage universe covers, so the specifier is the proof and not a dependency the scanner could follow.',
+  'packages/vscode/src/the-mark-the-side-bar-shows.test.ts -> ../build/mark.mjs':
+    'The build module that reads the M out of the console wordmark and draws it as the monochrome SVG of the side bar container. A plain module outside the package sources the coverage universe covers. The cases importing it assert the SVG it returns (one path, the editor colour, whole pixels, the banner M cell by cell, the same bytes on a second drawing), so the specifier is the proof of the mark and not a dependency the scanner could follow.',
   'packages/chain/src/readme-example.test.ts -> ./index.js':
     "The chain package's barrel, named by the case that runs its README example from inside src/. Excluded by the same glob as the two below, and reached by the shortest specifier of the three because this package keeps its cases beside its sources rather than under tests/.",
   'packages/core/tests/readme-example.test.ts -> ../src/index.js':
@@ -1503,7 +1507,9 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/vscode/src/stacks.test.ts': 7,
   'packages/vscode/src/status.test.ts': 3,
   'packages/vscode/src/the-bundle-holds-no-database.test.ts': 6,
+  'packages/vscode/src/the-mark-the-side-bar-shows.test.ts': 5,
   'packages/vscode/src/the-page-the-stores-show.test.ts': 5,
+  'packages/vscode/src/the-vsix-check-refuses-a-paint-of-its-own.test.ts': 5,
 };
 
 /**
@@ -2117,8 +2123,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows; a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(18);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(18);
+    expect(unresolved.length).toBe(20);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(20);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);

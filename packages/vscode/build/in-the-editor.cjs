@@ -1,6 +1,7 @@
 // Runs inside the editor `install-the-vsix.mjs` starts, once per scenario (MNEMA_CHECK). It throws
 // when what the extension did is not what the scenario says, which fails the run.
-const { readFileSync } = require('node:fs');
+const { existsSync, readFileSync } = require('node:fs');
+const { join } = require('node:path');
 const vscode = require('vscode');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -27,14 +28,35 @@ exports.run = async () => {
   if (!installed) throw new Error(`${id} is not installed in this editor`);
 
   if (scenario === 'no-record') {
-    // A folder with no `.mnema`: the extension's own activation event is not met, and the views
-    // that sit in the Explorer do not start it either (measured). Give the editor time to prove
-    // otherwise; the extension must still be asleep, and the command line must never have been run.
+    // A folder with no `.mnema`: the extension's own activation event is not met, and nothing
+    // else starts it. Give the editor time to prove otherwise; the extension must still be asleep,
+    // and the command line must never have been run.
     await sleep(15_000);
     if (installed.isActive) throw new Error(`${id} is active in a folder with no .mnema`);
     const lines = asked();
     if (lines.length > 0) {
       throw new Error(`mnema was run in a folder with no .mnema: ${JSON.stringify(lines)}`);
+    }
+    return;
+  }
+
+  if (scenario === 'no-record-container') {
+    // The side bar container is there in every folder, and opening it is what a person does to see
+    // what mnema has to say. Whether that starts the extension is measured and written to the log
+    // of the run; either way, the command line must never be run here, and the extension, when it
+    // did start, shows no status bar item and no badge.
+    await sleep(5_000);
+    await vscode.commands.executeCommand('workbench.view.extension.mnema');
+    await sleep(15_000);
+    console.log(`no-record-container: opening the container left the extension ${installed.isActive ? 'active' : 'asleep'}`);
+    const lines = asked();
+    if (lines.length > 0) {
+      throw new Error(`mnema was run in a folder with no .mnema: ${JSON.stringify(lines)}`);
+    }
+    if (installed.isActive) {
+      const now = installed.exports.shown();
+      if (now.visible !== false) throw new Error('the status bar item is shown in a folder with no .mnema');
+      if (now.badge !== undefined) throw new Error('the side bar icon has a badge in a folder with no .mnema');
     }
     return;
   }
@@ -69,6 +91,18 @@ exports.run = async () => {
       throw new Error('the bar does not say what to set');
     }
   } else if (scenario === 'record') {
+    const container = extension.packageJSON.contributes.viewsContainers?.activitybar?.[0];
+    if (container?.id !== 'mnema') throw new Error('the installed manifest has no mnema container');
+    if (!existsSync(join(extension.extensionPath, container.icon))) {
+      throw new Error(`the container icon ${container.icon} is not in the installed extension`);
+    }
+    const badge = await until('the badge to count the proposed decision', () => {
+      const now = extension.exports.shown();
+      return now.badge?.value === 1 ? now.badge : undefined;
+    });
+    if (badge.tooltip !== '1 decision awaits a judgment') {
+      throw new Error(`the badge says ${JSON.stringify(badge.tooltip)}`);
+    }
     if (!/^\$\((book|info)\) mnema: [a-z-]+/.test(shown.text)) {
       throw new Error(`with a record the bar says ${JSON.stringify(shown.text)}`);
     }

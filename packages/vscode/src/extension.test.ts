@@ -3,6 +3,7 @@ import {
   cpSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -15,7 +16,15 @@ import { type CliResult, createRun, type Run } from './cli.js';
 import { activate, QUIET_MS, type VscodeApi } from './extension.js';
 import { MIN_CLI_VERSION } from './status.js';
 
-const ROOT = '/work/proj';
+/** The folders a test made: each holds a real `.mnema`, because the extension reads the disk for it. */
+const made: string[] = [];
+/** A folder like an opened project: with a record in it, or without. */
+function folderWith(record: boolean): string {
+  const dir = mkdtempSync(join(tmpdir(), 'mnema-extension-folder-'));
+  made.push(dir);
+  if (record) mkdirSync(join(dir, '.mnema'));
+  return dir;
+}
 const ok = (stdout: string): CliResult => ({ code: 0, stdout, stderr: '' });
 const hit = (id: string, title: string) => ({
   id,
@@ -46,12 +55,12 @@ const SWITCH = ok('2 channel(s):\n  brief-document  on  x\n  user-corrections  o
 function world(
   answers: Record<string, CliResult>,
   real?: Run,
-  root: string = ROOT,
+  root: string = folderWith(true),
   rereadSetting = false,
 ) {
   const setting = { command: 'mnema' };
   const settingListeners: ((e: { affectsConfiguration(s: string): boolean }) => void)[] = [];
-  const made: string[] = [];
+  const makeRuns: string[] = [];
   const ran: string[][] = [];
   const executed: unknown[][] = [];
   const run = async (args: readonly string[]) => {
@@ -66,13 +75,19 @@ function world(
     );
   };
   const commands = new Map<string, (...args: never[]) => unknown>();
-  const watcher = { change: [] as (() => void)[] };
+  const watcher = { change: [] as (() => void)[], create: [] as (() => void)[] };
   const bar = {
     text: '',
     tooltip: '',
     command: '' as unknown,
     accessibilityInformation: undefined as unknown,
-    show() {},
+    visible: false,
+    show() {
+      bar.visible = true;
+    },
+    hide() {
+      bar.visible = false;
+    },
     dispose() {},
   };
   const shown: string[] = [];
@@ -87,6 +102,7 @@ function world(
   let reply: string | undefined;
   type Tree = { getChildren(): never[]; getTreeItem(e: never): Record<string, unknown> };
   const trees = new Map<string, Tree>();
+  const treeViews = new Map<string, { badge: { value: number; tooltip: string } | undefined }>();
   const channel: string[] = [];
   const picks: string[] = [];
   const picked: string[][] = [];
@@ -108,7 +124,10 @@ function world(
           watcher.change.push(l);
           return { dispose() {} };
         },
-        onDidCreate: () => ({ dispose() {} }),
+        onDidCreate: (l: () => void) => {
+          watcher.create.push(l);
+          return { dispose() {} };
+        },
         onDidDelete: () => ({ dispose() {} }),
         dispose() {},
       }),
@@ -116,9 +135,11 @@ function world(
     RelativePattern: class {},
     window: {
       createStatusBarItem: () => bar,
-      registerTreeDataProvider: (id: string, p: never) => {
-        trees.set(id, p);
-        return { dispose() {} };
+      createTreeView: (id: string, options: { treeDataProvider: Tree }) => {
+        trees.set(id, options.treeDataProvider);
+        const view = { badge: undefined, dispose() {} };
+        treeViews.set(id, view);
+        return view;
       },
       createOutputChannel: () => ({
         clear: () => channel.splice(0),
@@ -196,7 +217,7 @@ function world(
       ? {
           // Only the command named `good` is there: the person fixes the setting from a wrong name.
           makeRun: (command) => {
-            made.push(command);
+            makeRuns.push(command);
             return command === 'good'
               ? run
               : async () => ({ code: null, stdout: '', stderr: `spawn ${command} ENOENT` });
@@ -215,7 +236,9 @@ function world(
     watcher,
     setting,
     settingListeners,
-    made,
+    root,
+    makeRuns,
+    treeViews,
     answers,
     setReply: (v: string | undefined) => {
       reply = v;
@@ -223,6 +246,7 @@ function world(
     command: (id: string) => commands.get(id) as (...a: unknown[]) => Promise<void>,
     tree: () => trees.get('mnema.proposed') as Tree,
     stackTree: () => trees.get('mnema.stacks') as Tree,
+    badge: () => treeViews.get('mnema.proposed')?.badge,
     channel,
     ids: () => [...commands.keys()],
     picks,
@@ -254,6 +278,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.useRealTimers();
+  for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
 const settle = () => vi.advanceTimersByTimeAsync(0);
@@ -270,7 +295,12 @@ describe('the extension reads the record through the command line', () => {
     });
     expect(w.bar.command).toBe('mnema.refresh');
     expect(w.executed).toContainEqual(['setContext', 'mnema.cliMissing', false]);
-    expect(w.started?.shown()).toEqual({ text: w.bar.text, tooltip: w.bar.tooltip });
+    expect(w.started?.shown()).toEqual({
+      text: w.bar.text,
+      tooltip: w.bar.tooltip,
+      visible: true,
+      badge: { value: 1, tooltip: '1 decision awaits a judgment' },
+    });
   });
 
   it('says the command is missing, apart from nothing pending, and sends the bar to the setting', async () => {
@@ -315,7 +345,7 @@ describe('the extension reads the record through the command line', () => {
   });
 
   it('reads the mnema.command setting again at every refresh, and when it changes, so a corrected setting clears "command not found" without a reload', async () => {
-    const w = world(base(), undefined, ROOT, true);
+    const w = world(base(), undefined, undefined, true);
     w.setting.command = 'typo';
     await w.command('mnema.refresh')();
     expect(w.bar.text).toBe('$(warning) mnema: command not found');
@@ -330,27 +360,23 @@ describe('the extension reads the record through the command line', () => {
     for (const l of w.settingListeners) l({ affectsConfiguration: (s) => s === 'mnema.command' });
     await settle();
     expect(w.bar.text).toBe('$(book) mnema: fully-signed · 1 of 2 channels off');
-    expect(w.made.at(-1)).toBe('good');
+    expect(w.makeRuns.at(-1)).toBe('good');
 
     // And a Refresh alone reads it too, with no event.
     w.setting.command = 'typo-again';
     await w.command('mnema.refresh')();
-    expect(w.made.at(-1)).toBe('typo-again');
+    expect(w.makeRuns.at(-1)).toBe('typo-again');
     expect(w.bar.text).toBe('$(warning) mnema: command not found');
   });
 
   it('tells the empty views whether the folder holds a record, by what is on disk and not by what the command line said', async () => {
-    const folder = mkdtempSync(join(tmpdir(), 'mnema-extension-key-'));
-    try {
-      const without = world(base(), undefined, folder);
-      await settle();
-      expect(without.executed).toContainEqual(['setContext', 'mnema.hasRecord', false]);
-      mkdirSync(join(folder, '.mnema'));
-      await without.command('mnema.refresh')();
-      expect(without.executed).toContainEqual(['setContext', 'mnema.hasRecord', true]);
-    } finally {
-      rmSync(folder, { recursive: true, force: true });
-    }
+    const folder = folderWith(false);
+    const without = world(base(), undefined, folder);
+    await settle();
+    expect(without.executed).toContainEqual(['setContext', 'mnema.hasRecord', false]);
+    mkdirSync(join(folder, '.mnema'));
+    await without.command('mnema.refresh')();
+    expect(without.executed).toContainEqual(['setContext', 'mnema.hasRecord', true]);
   });
 
   it('lists what waits for a judgment, with its justification', async () => {
@@ -367,7 +393,7 @@ describe('the extension reads the record through the command line', () => {
     const w = world(base());
     await settle();
     const doc = (fsPath: string) => ({ uri: { scheme: 'file', fsPath } }) as never;
-    const lens = (await w.lenses().provideCodeLenses(doc(`${ROOT}/src/a.ts`))) as {
+    const lens = (await w.lenses().provideCodeLenses(doc(`${w.root}/src/a.ts`))) as {
       command: { title: string; command: string; arguments: string[] };
     }[];
     expect(lens[0]?.command).toEqual({
@@ -438,6 +464,15 @@ describe('a judgment goes through the verb of the command line, with a note', ()
     const failed = world({ ...withStack(), [STACK_LIST]: { code: 1, stdout: '', stderr: 'boom' } });
     await settle();
     expect(failed.executed).toContainEqual(['setContext', 'mnema.stacksRead', false]);
+    for (const stdout of ['not json at all', '{"total":0}']) {
+      const garbled = world({ ...withStack(), [STACK_LIST]: ok(stdout) });
+      await settle();
+      expect(garbled.executed, stdout).toContainEqual(['setContext', 'mnema.stacksRead', false]);
+      expect(garbled.executed, stdout).not.toContainEqual(['setContext', 'mnema.stacksRead', true]);
+    }
+    const empty = world({ ...withStack(), [STACK_LIST]: ok('{"stacks":[]}') });
+    await settle();
+    expect(empty.executed).toContainEqual(['setContext', 'mnema.stacksRead', true]);
   });
 
   it('gives the input box a validator that refuses an empty note, and sends nothing without one', async () => {
@@ -492,6 +527,163 @@ describe('the record is watched, and a new proposal is announced once', () => {
     for (let i = 0; i < 20; i++) w.watcher.change[0]?.();
     await vi.advanceTimersByTimeAsync(QUIET_MS * 3);
     expect(w.ran.filter((a) => a.join(' ') === 'verify --json').length).toBe(before + 1);
+  });
+});
+
+describe('what awaits a judgment is a number on the side bar icon', () => {
+  const hits = (n: number) => Array.from({ length: n }, (_, i) => hit(`d${i}`, `Decision ${i}`));
+  const withList = (n: number, total = n): Record<string, CliResult> => ({
+    ...base(),
+    [LIST]: ok(JSON.stringify({ hits: hits(n), total })),
+  });
+
+  it('is nothing at zero, never a badge that says 0', async () => {
+    const w = world(withList(0));
+    await settle();
+    expect(w.badge()).toBeUndefined();
+    expect(w.started?.shown().badge).toBeUndefined();
+    expect(w.executed).toContainEqual(['setContext', 'mnema.proposedRead', true]);
+  });
+
+  it('is read only when the answer was understood: text that is not JSON or has no hits is not an empty list', async () => {
+    for (const stdout of ['not json at all', '{"total":3}']) {
+      const w = world({ ...base(), [LIST]: ok(stdout) });
+      await settle();
+      expect(w.executed, stdout).toContainEqual(['setContext', 'mnema.proposedRead', false]);
+      expect(w.executed, stdout).not.toContainEqual(['setContext', 'mnema.proposedRead', true]);
+      expect(w.badge(), stdout).toBeUndefined();
+      expect(w.tree().getChildren(), stdout).toEqual([]);
+    }
+    const empty = world({ ...base(), [LIST]: ok('{"hits":[],"total":0}') });
+    await settle();
+    expect(empty.executed).toContainEqual(['setContext', 'mnema.proposedRead', true]);
+  });
+
+  it('says one decision awaits a judgment, and several await', async () => {
+    const one = world(withList(1));
+    await settle();
+    expect(one.badge()).toEqual({ value: 1, tooltip: '1 decision awaits a judgment' });
+    const three = world(withList(3));
+    await settle();
+    expect(three.badge()).toEqual({ value: 3, tooltip: '3 decisions await a judgment' });
+  });
+
+  it('counts the total the command line said, not the decisions it listed', async () => {
+    const w = world(withList(200, 250));
+    await settle();
+    expect(w.tree().getChildren()).toHaveLength(200);
+    expect(w.badge()).toEqual({ value: 250, tooltip: '250 decisions await a judgment' });
+  });
+
+  it('is nothing when the command is missing, and again when it is back', async () => {
+    const answers = withList(2);
+    const w = world(answers);
+    await settle();
+    expect(w.badge()?.value).toBe(2);
+    answers['--version'] = { code: null, stdout: '', stderr: 'spawn mnema ENOENT' };
+    await w.command('mnema.refresh')();
+    expect(w.badge()).toBeUndefined();
+    answers['--version'] = ok(`${MIN_CLI_VERSION}\n`);
+    await w.command('mnema.refresh')();
+    expect(w.badge()?.value).toBe(2);
+  });
+
+  it('is nothing when the list was not read, and the view says it did not read rather than that nothing awaits', async () => {
+    const answers = withList(2);
+    const w = world(answers);
+    await settle();
+    answers[LIST] = { code: 1, stdout: '', stderr: 'boom' };
+    await w.command('mnema.refresh')();
+    expect(w.badge()).toBeUndefined();
+    expect(w.tree().getChildren()).toEqual([]);
+    expect(w.executed.filter((e) => e[1] === 'mnema.proposedRead').map((e) => e[2])).toEqual([
+      true,
+      false,
+    ]);
+  });
+});
+
+describe('in a folder with no .mnema the command line is never run', () => {
+  const declared = (
+    JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
+      contributes: { commands: { command: string }[] };
+    }
+  ).contributes.commands.map((c) => c.command);
+  const proposal = { id: 'd1', title: 'Use X', scope: 'public', at: '' };
+  const stack = { name: 'hello-stack', scope: 'public' };
+  const argumentOf = (id: string): unknown =>
+    id.startsWith('mnema.stacks.') ? stack : id === 'mnema.showRules' ? 'src/a.ts' : proposal;
+
+  it('starts no process for a reading, the watcher, a changed setting, a lens or any command of the manifest, and says what is missing', async () => {
+    const w = world(withStack(), undefined, folderWith(false));
+    w.setReply('a note');
+    w.choose('Write these files');
+    await settle();
+    w.watcher.change[0]?.();
+    w.watcher.create[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    for (const l of w.settingListeners) l({ affectsConfiguration: (s) => s === 'mnema.command' });
+    await settle();
+    const doc = { uri: { scheme: 'file', fsPath: `${w.root}/src/a.ts` } } as never;
+    expect(await w.lenses().provideCodeLenses(doc)).toEqual([]);
+    expect(declared.length).toBeGreaterThan(5);
+    for (const id of declared) {
+      w.shown.length = 0;
+      w.picks.push('hello-stack', 'public');
+      await w.command(id)(argumentOf(id));
+      expect(w.shown, id).toContain(
+        'This folder holds no .mnema record. Run mnema init in a terminal here.',
+      );
+      expect(w.errors, id).toEqual([]);
+    }
+    expect(w.ran).toEqual([]);
+    expect(w.executed.filter((e) => e[1] === 'mnema.cliMissing' && e[2] === true)).toEqual([]);
+    expect(w.executed).toContainEqual(['setContext', 'mnema.hasRecord', false]);
+    expect(w.bar.visible).toBe(false);
+    expect(w.badge()).toBeUndefined();
+    expect(w.started?.shown()).toMatchObject({ visible: false, badge: undefined });
+    expect(w.tree().getChildren()).toEqual([]);
+    expect(w.stackTree().getChildren()).toEqual([]);
+  });
+
+  it('reads the disk each time it is asked: a .mnema born later is read at the next change, and the bar comes back', async () => {
+    const folder = folderWith(false);
+    const w = world(base(), undefined, folder);
+    await settle();
+    expect(w.ran).toEqual([]);
+    expect(w.bar.visible).toBe(false);
+    mkdirSync(join(folder, '.mnema'));
+    w.watcher.create[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    expect(w.ran).toContainEqual(['--version']);
+    expect(w.bar.visible).toBe(true);
+    expect(w.bar.text).toBe('$(book) mnema: fully-signed · 1 of 2 channels off');
+    expect(w.badge()?.value).toBe(1);
+  });
+
+  it('has one door: the only place that calls the runner is the one that checks for the record first', () => {
+    const source = readFileSync(new URL('./extension.ts', import.meta.url), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    expect(source.match(/runner\(\)/g)).toHaveLength(1);
+    expect(source).toMatch(/hasRecord\(\)\s*\?\s*runner\(\)\(args\)/);
+    expect(source.match(/existsSync\(/g)).toHaveLength(1);
+    expect(source).not.toMatch(/\.read\(/);
+    // Nothing else reaches the command line: the runner is built and read in the door's own
+    // definition, and no other source file builds one.
+    expect(source.match(/options\.run\b/g)).toHaveLength(1);
+    expect(source.replace(/^import .*$/gm, '').match(/\bcreateRun\b/g)).toHaveLength(1);
+    const others = readdirSync(new URL('.', import.meta.url)).filter(
+      (name) =>
+        name.endsWith('.ts') &&
+        !name.endsWith('.test.ts') &&
+        name !== 'cli.ts' &&
+        name !== 'extension.ts',
+    );
+    for (const name of others) {
+      const text = readFileSync(new URL(`./${name}`, import.meta.url), 'utf8');
+      expect(text, name).not.toMatch(/\bcreateRun\b|options\.run\b/);
+    }
   });
 });
 
@@ -880,7 +1072,7 @@ describe('the same acts against the built command line, in a project of their ow
           ],
         }),
       );
-      const w = world({}, real);
+      const w = world({}, real, project);
       await vi.waitFor(() => expect(w.bar.text).not.toBe('mnema: reading'), { timeout: 20_000 });
       expect(w.stackTree().getChildren()).toEqual([]);
 

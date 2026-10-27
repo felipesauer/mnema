@@ -4,9 +4,10 @@
  *
  * It downloads VS Code once into `.vscode-test/` (free, and ignored by git), installs the file with
  * the editor's own `--install-extension` into a scratch extensions folder, and opens the editor
- * three times, each on its own scratch workspace and its own scratch user data: a folder with no
- * `.mnema`, a folder with a `.mnema` and a `mnema.command` that does not exist, and a folder with a
- * real record read by the `mnema` built in this repository. `in-the-editor.cjs` runs inside each
+ * four times, each on its own scratch workspace and its own scratch user data: a folder with no
+ * `.mnema` (twice: left alone, and with the side bar container opened), a folder with a `.mnema` and
+ * a `mnema.command` that does not exist, and a folder with a real record and one proposed decision,
+ * read by the `mnema` built in this repository. `in-the-editor.cjs` runs inside each
  * and checks what the extension did there. A display is needed: on a machine without one, run it
  * under `xvfb-run -a`. Nothing here reads or writes the person's own editor profile, and the
  * `mnema` it starts runs with a scratch HOME.
@@ -83,6 +84,7 @@ try {
   // The captures, when asked for, are taken by the caller around this script: it only says where.
   const scenarios = [
     { name: 'no-record', record: false, command: 'wrapper' },
+    { name: 'no-record-container', record: false, command: 'wrapper' },
     { name: 'no-cli', record: true, command: join(scratch, 'there-is-no-mnema-here') },
     { name: 'record', record: true, command: 'wrapper' },
   ];
@@ -107,6 +109,13 @@ try {
         // A real record, written by the built `mnema` into the scratch workspace.
         const init = spawnSync(command, ['init'], { cwd: workspace, env: { PATH: process.env.PATH } });
         if (init.status !== 0) throw new Error(`mnema init failed: ${init.stderr}`);
+        // One decision awaiting a judgment, for the side bar's badge to count.
+        const proposed = spawnSync(
+          command,
+          ['decision', 'record', 'Use SQLite for the cache', 'small and local'],
+          { cwd: workspace, env: { PATH: process.env.PATH } },
+        );
+        if (proposed.status !== 0) throw new Error(`mnema decision record failed: ${proposed.stderr}`);
         writeFileSync(log, '');
       } else {
         mkdirSync(join(workspace, '.mnema'));

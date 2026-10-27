@@ -812,7 +812,7 @@ export const HANDED_OVER: Readonly<
   'packages/sdk/README.md': { line: 2, name: 4 },
   'packages/stacks/README.md': { line: 1, name: 2 },
   'packages/vscode/CHANGELOG.md': { name: 1 },
-  'packages/vscode/README.md': { line: 13, name: 11 },
+  'packages/vscode/README.md': { line: 13, name: 15 },
   'packages/vscode/media/walkthrough/verify.md': { name: 1 },
   'packages/vscode/src/stacks.ts': { line: 1 },
   'plugin/README.md': { line: 38, name: 26, flag: 1 },
