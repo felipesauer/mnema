@@ -6,7 +6,7 @@
  * number can be carried by two decisions, so it only names the tab.
  */
 
-import { oneLine, neutralized } from '@mnema/chain/one-line';
+import { neutralized, oneLine } from '@mnema/chain/one-line';
 import { decisionDisposition } from '@mnema/context';
 import { isDecisionState } from '@mnema/core';
 
