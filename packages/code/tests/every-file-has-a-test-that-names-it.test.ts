@@ -1509,6 +1509,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/vscode/src/the-bundle-holds-no-database.test.ts': 6,
   'packages/vscode/src/the-mark-the-side-bar-shows.test.ts': 5,
   'packages/vscode/src/the-page-the-stores-show.test.ts': 5,
+  'packages/vscode/src/the-vsix-check-refuses-a-paint-of-its-own.test.ts': 5,
 };
 
 /**
