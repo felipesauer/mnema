@@ -75,7 +75,9 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
 - **A mark on the `.mnema` folder.** In the Explorer the record's own folder wears the badge `M` and the accent of the
   front page (the colour `mnema.recordFolder`, which a theme can override), and its tooltip says what the folder is. No
   file is marked: `mnema` does not list the addresses its rules cover, so a file with no mark would look as if no rule
-  reached it, which the record does not say. The mark is a comparison of two paths; it starts no process and reads nothing.
+  reached it, which the record does not say. The mark is a comparison of two paths; it starts no process and reads nothing. The editor draws one badge per
+  item: where git marks the folder too (the record has changes git has not committed, say), the badge drawn in the editor
+  measured (1.143.1) is git's, and the accent stays on the name.
 - **No notification per proposal.** The record is watched through the editor's file watcher on
   `.mnema/**`; when it has been quiet for 1.5 seconds it is read again, and a decision proposed
   meanwhile raises the badge on the container's icon and the count in the status bar. Nothing
@@ -204,7 +206,7 @@ code --install-extension packages/vscode/mnema-*.vsix
 ```
 
 `package` bundles the extension into one file, `extension.cjs`, with no database in it, and has `vsce`,
-the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 27 KB:
+the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 36 KB:
 the extension reads the record only through the `mnema` command line, so nothing native rides along
 and nothing is installed beside it. CI runs the same command, installs the file into a real VS Code
 four times (a folder with no `.mnema`, where it must not start on opening the folder and so must not run `mnema`;

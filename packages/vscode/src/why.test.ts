@@ -24,7 +24,8 @@ describe('the document of mnema why', () => {
   });
 
   it('names the tab by the last part of the path, on one line', () => {
-    expect(whyPath('src/deep/a.ts')).toBe('/Why a.ts');
+    expect(whyPath('src/deep/a.ts')).toBe('/a.ts (why)');
+    expect(whyPath('src/deep/a.ts')).not.toMatch(/\.ts$/);
     expect(whyPath('a\nb.ts')).not.toContain('\n');
   });
 

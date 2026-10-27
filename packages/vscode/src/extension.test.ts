@@ -2261,7 +2261,7 @@ describe('why a file is the way it is opens as the words of the command line', (
     await w.command('mnema.why')(fileUri(w, 'src/a.ts'));
     expect(w.ran).toEqual([['why', '--', 'src/a.ts']]);
     const [doc] = whyDocs(w);
-    expect(doc?.path).toBe('/Why a.ts');
+    expect(doc?.path).toBe('/a.ts (why)');
     const text = w.documents.get(doc?.query ?? '')?.text ?? '';
     expect(text.startsWith('mnema why -- src/a.ts, read at 2026-10-27T14:03:09Z\n\n')).toBe(true);
     expect(text).toContain('rules in force that address this path: 0');

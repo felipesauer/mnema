@@ -20,8 +20,12 @@ export const whyArgs = (path: string): string[] => pathArgs('why', path);
 /** The name a tab shows: the last part of the path, on one line. */
 const nameOf = (path: string): string => oneLine(path.split(/[\\/]/).pop() ?? path);
 
-/** The path of the address: the name of the tab, with no extension, so the document is only characters. */
-export const whyPath = (path: string): string => `/Why ${nameOf(path)}`;
+/**
+ * The path of the address: the name of the tab. It must not end in the extension of the file it is
+ * about: the editor would take a `.ts` for TypeScript and draw its errors in the text, so the name
+ * of the file comes first and the document is only characters.
+ */
+export const whyPath = (path: string): string => `/${nameOf(path)} (why)`;
 
 /** The query of the address: the path asked about, and when it was asked. */
 export const whyQuery = (path: string, at: number): string =>
