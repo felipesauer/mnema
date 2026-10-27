@@ -250,7 +250,11 @@ describe('what a verification costs', () => {
     }).toMatchObject({ linear: true });
   });
 
-  it('reads each committed key off the disk once, however many checks name it', () => {
+  // The same writer's cost as the case above, at 40 acts a machine instead of 240: about 160
+  // synced appends, which stopped at the shared 5 s (6.5 s) in a suite running on 16 workers.
+  it('reads each committed key off the disk once, however many checks name it', {
+    timeout: 60_000,
+  }, () => {
     const record = twoMachines(40);
     const { result, keyReads, derivations } = countedVerification(record.root);
     expect(result.level).toBe('fully-signed');
