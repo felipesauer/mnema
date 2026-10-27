@@ -34,10 +34,18 @@ a finding, and a good capture.
    it opens the mnema container.
 3. **One decision awaiting a judgment.** The view lists it, and the mnema icon in the activity bar carries the badge 1. The
    status bar says the level and `1 to judge`. Propose another from a terminal: the badge and the bar go to 2 and
-   no notification appears. Each item shows two icon buttons (accept, reject), not text.
-4. **Accept with an empty note.** The input box refuses it and says why; nothing is recorded.
+   no notification appears. Each item shows two icon buttons (accept, reject), not text, and a neutral circle icon, not a check
+   mark; the stacks view shows a package, a warning or an error icon beside the text that says the same.
+4. **Open a decision, accept it with the stamp, reject without a reason.** Click a proposal: a document named
+   `ADR-n.md` opens in front with the title, the state, the justification and the alternatives, the command and the time
+   it was read at the top, and an accept and a reject button on the editor's title. Click accept: the box is titled
+   `Accept ADR-n`, holds `<today>, accepted in the VS Code extension, no reason typed` selected, and Enter records
+   exactly that; the toast says `ADR-n accepted.`, the buttons leave the title and the document says `accepted`. On
+   another proposal click reject: the box is empty and an empty or spaces-only note is refused with what to fix.
+   Opened from a lens, a rule in force shows no buttons. Open a document, accept the decision in a terminal, then
+   refresh: the document shows the new state.
 5. **The lens.** Open a file under an address a decision in force names: the lens above its first
-   line says how many rules govern it, and clicking it opens the list.
+   line says how many rules govern it, and clicking it opens the list; picking a rule opens that decision whole, without buttons.
 6. **The status bar on three themes.** Light, dark and high contrast. The icon and the text are
    legible on each. The item never shows a check mark or a seal: only the level `mnema verify`
    printed, and `N to judge` when something awaits. Hover it: the tooltip is markdown, and the lines

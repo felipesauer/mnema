@@ -16,20 +16,43 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
 - **A lens over each file a rule addresses.** The first line of the file says how many decisions in
   force address it, by what they do (`governs`, `asks-for-a-person`, `refuses-a-write`), read from
   `mnema rules <path> --json`. Clicking it lists them: the decision's name, what it does to the
-  file, and who accepted it, as the record says. A file no rule in force addresses has no lens.
+  file, and who accepted it, as the record says; picking one opens that decision whole (see below),
+  with no judgment button, since it is in force. A file no rule in force addresses has no lens.
 - **A container of its own in the activity bar, titled mnema, with the banner's M as its icon.** It holds
   the two views below, "Awaiting Judgment" and "Stacks", and carries a badge: the number of decisions
   awaiting a judgment, as many as `mnema` says exist (not only the ones listed), nothing at zero and
   nothing when the list was not read. The icon is the first letter of the console's wordmark, drawn when
   the extension is packed.
 - **A view, "Awaiting Judgment".** The decisions whose state is
-  `proposed`, read from `mnema search --kind decision --state proposed --json`, each with the
-  justification and the alternatives `mnema show <id> --json` holds for it, in its tooltip.
-- **Accept or reject, with the note.** Each item has an accept and a reject button (and the commands
-  Accept Decision and Reject Decision, listed as `mnema: Accept Decision` and `mnema: Reject Decision` in the Command Palette). The input box does not take an empty
-  note, nor one of only spaces, and cancelling it sends nothing. What is sent is
+  `proposed`, read from `mnema search --kind decision --state proposed --json`, each with a short
+  tooltip (the title, the ADR and the start of the justification `mnema show <id> --json` holds for
+  it). Each wears a neutral icon (never a check mark: it has not been judged) and is read out as
+  "ADR-1, <title>, awaits a judgment". Clicking one opens it whole.
+- **A decision, whole.** Open Decision (a click on an item, or from the Command Palette, which asks
+  which one) opens a read-only text document named by the ADR (`ADR-1.md`) holding what
+  `mnema show <id> --json` answered: the title, the state, the scope, who recorded it and who accepted
+  it, when, the justification and the alternatives as the record has them, and the moves it went
+  through, with the command and the time it was read at the top. It carries nothing the answer did
+  not (a field `show` leaves out is left out, and the scope is the one `show` says, never the list's).
+  It is read again each time it opens and at each reading of the record, so a decision that moved
+  elsewhere shows its new state; it is the address (`mnema-decision:` with the decision's id, never
+  the ADR number, which two decisions can share) that says which decision it is. A `show` that fails
+  is shown as the command line said it. It is plain text, not a web page or a preview: a link or a
+  tag in a justification is just characters.
+- **Accept or reject, with the note.** While the decision in front is `proposed`, its editor's title
+  carries an accept and a reject button; each item of the view has them too (beside it and in its
+  context menu), and so do the commands Accept Decision and Reject Decision, listed as `mnema: Accept
+  Decision` and `mnema: Reject Decision` in the Command Palette (which asks which decision). One
+  decision at a time: there is no accept-all. The box is titled `Accept ADR-1` or `Reject ADR-1`
+  (the start of the id when there is no ADR) and does not take an empty note, nor one of only spaces;
+  cancelling it sends nothing. On an accept the box starts with a stamp, `<the day>, accepted in
+  the VS Code extension, no reason typed`, selected, so Enter sends it as it stands and typing
+  replaces it by a reason; it says what is true of the act (the day, the place, that no reason was
+  typed) and nothing of the decision, and a reason typed is better. On a reject the box starts empty
+  and a reason has to be typed. What is sent is
   `mnema decision move accept <id> --note <note>` (or `reject`), started with an argument array and
-  no shell, and what the command line answers is what is shown, a refusal included.
+  no shell, and what the command line answers is what is shown: `ADR-2 accepted.` when it said the
+  decision was accepted, its own line when it said anything else, its refusal when it refused.
 - **No notification per proposal.** The record is watched through the editor's file watcher on
   `.mnema/**`; when it has been quiet for 1.5 seconds it is read again, and a decision proposed
   meanwhile raises the badge on the container's icon and the count in the status bar. Nothing
@@ -52,16 +75,21 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
     Export Stack runs `mnema stack export <name> <folder>` into a folder the person types.
 - **Icons and short titles.** Every command carries a codicon (`$(check)` accept, `$(close)` reject,
   `$(refresh)` refresh, `$(law)` rules over the file, `$(add)` and `$(library)` add a stack,
-  `$(eye)` show, `$(diff)` compare, `$(checklist)` check, `$(trash)` remove, `$(export)` export), so the
+  `$(eye)` show, `$(diff)` compare, `$(checklist)` check, `$(trash)` remove, `$(export)` export,
+  `$(go-to-file)` open a decision), so the
   buttons are icons and the command's title (one to three words) is their tooltip. Every command is
   in the category `mnema`, which is what puts `mnema: ` before its title in the Command Palette and in
   a keybinding's list, so no title repeats it. A decision has accept
   and reject side by side; a stack has show, compare and check beside it, export in the context menu and
   remove alone in the last group of it; the stacks view's title bar has add and refresh, with add from
-  the index in its `...` menu, and the decisions view's has refresh. The Command Palette lists the commands only where a
+  the index in its `...` menu, and the decisions view's has refresh. A stack wears an icon by what
+  `mnema stack list` reported (`$(package)` when sound, `$(warning)` when it departs from what was
+  written, `$(error)` when its receipt is refused) and the text beside it says the same, since a
+  colour alone does not count. The Command Palette lists the commands only where a
   workspace folder is open, and the rules command only over a file. Each input box and each choice has a
-  title (with "1 of 2" where there are two steps), a placeholder that says what to type and stays open
-  when focus moves; a note that is empty is refused with what to fix.
+  short title, a placeholder that says what to type and stays open when focus moves (`Why? Required.`
+  for a note, `Install where?` with a codicon before each scope for a stack); a note that is empty is
+  refused with what to fix.
 - **What an empty view says.** A folder with no `.mnema` says so and points to `mnema init` (run in a
   terminal, which a link opens) and to [the first record](../../docs/first-record.md); with a record, the
   decisions view says that nothing awaits a judgment only when the answer of `mnema search` was read and understood (the context key
@@ -149,7 +177,9 @@ never be run and the bar and the badge must be empty; a folder
 with a `.mnema` and a `mnema.command` that does not exist, where the bar must say "mnema not found" and a
 click must open the container; and a folder with a real record and one proposed decision, read by the
 `mnema` built here, where the bar must carry a level and `1 to judge`, the tooltip what `mnema verify`
-printed, the click the container, the manifest's container its icon file and the badge the number 1). `pnpm --filter @mnema/vscode install-check` does the same
+printed, the click the container, the manifest's container its icon file and the badge the number 1, and
+where opening the proposed decision must give a document with its title, its justification and its state,
+in front, after asking `mnema show <id> --json`). `pnpm --filter @mnema/vscode install-check` does the same
 by hand, under `xvfb-run -a` on a machine without a screen. What no CI reads (a hover, a context menu,
 the light and high-contrast themes, a screen reader) has [a script for a person](../../plugin/captures/vscode-extension-script.md). CI keeps the file as an
 artifact of the run (`mnema-vscode-extension`). The only thing that sends the file anywhere is one job of
@@ -159,7 +189,7 @@ publish command or a store token appears in any other job or file. The file has 
 
 ## How it is built
 
-The part worth testing has no editor in it. `rules.ts`, `proposed.ts` and `status.ts` turn what the
+The part worth testing has no editor in it. `rules.ts`, `proposed.ts`, `decision.ts` and `status.ts` turn what the
 command line printed into what is shown, `cli.ts` starts the command, and `extension.ts` wires them
 to the editor through a handed-in `vscode` module. The tests run `extension.ts` against a stand-in
 for that module; nothing downloads or starts an editor.
@@ -177,7 +207,14 @@ for that module; nothing downloads or starts an editor.
   a verdict, the refusal is shown and nothing is recorded. A verdict made here is signed as whoever
   the `mnema` it starts is on that machine.
 - The note is required before anything is sent, which is the extension asking for what the command
-  would refuse without it; it is not a judgment of what a good note is.
+  would refuse without it; it is not a judgment of what a good note is. The stamp the accept box
+  starts with is not a reason: it is the day and the place, true of the act, put there so that the
+  person who has read the decision and agrees is one keystroke from recording it, and a person who
+  has something to say replaces it. Nothing the record says is copied into it, and a reject has none.
+- The document of a decision is what `mnema show` answered when the extension last asked, which is
+  at the time written at its top, not necessarily now. A decision judged in another window or in a
+  terminal while it is open shows the old state until the next reading; the command line refuses a
+  verdict that no longer applies, and the refusal is shown.
 - A decision that never reaches a watcher is not counted until the next reading. The badge and the
   bar depend on the editor reporting a change under `.mnema/`; a change it does not report (a
   folder excluded from watching, say) shows up at the next reading, which the `mnema: Refresh`

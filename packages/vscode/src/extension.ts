@@ -13,6 +13,7 @@ import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { type CliResult, createRun, type Run } from './cli.js';
 import {
+  awaitsJudgment,
   DECISION_SCHEME,
   decisionPath,
   decisionQuery,
@@ -504,7 +505,7 @@ export function activate(
   const syncActiveDecision = (): void => {
     const uri = api.window.activeTextEditor?.document.uri;
     const id = uri?.scheme === DECISION_SCHEME ? idOfQuery(uri.query) : undefined;
-    const proposed = id !== undefined && session.known.get(id)?.state === 'proposed';
+    const proposed = id !== undefined && awaitsJudgment(session.known.get(id)?.state);
     void api.commands.executeCommand('setContext', 'mnema.activeDecisionProposed', proposed);
   };
   keep(api.window.onDidChangeActiveTextEditor(syncActiveDecision));

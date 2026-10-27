@@ -6,8 +6,17 @@
  * number can be carried by two decisions, so it only names the tab.
  */
 
+import { decisionDisposition } from '@mnema/context';
+import { isDecisionState } from '@mnema/core';
+
 /** The scheme of the documents this extension serves. */
 export const DECISION_SCHEME = 'mnema-decision';
+
+/** Whether a state is one a person still has to judge: asked of the record's own classification, never restated. */
+export const awaitsJudgment = (state: string | undefined): boolean =>
+  state !== undefined &&
+  isDecisionState(state) &&
+  decisionDisposition(state) === 'awaiting-judgement';
 
 /** The command that reads one decision whole. */
 export const showArgs = (id: string): string[] => ['show', id, '--json'];

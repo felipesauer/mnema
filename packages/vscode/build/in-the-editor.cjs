@@ -130,13 +130,20 @@ exports.run = async () => {
     // `mnema show <id> --json` said, brought to the front, with the judgment buttons declared on
     // the editor title for it.
     const decision = process.env.MNEMA_CHECK_DECISION;
-    const title = extension.packageJSON.contributes.menus['editor/title'] ?? [];
-    if (!['mnema.accept', 'mnema.reject'].every((c) => title.some((item) => item.command === c))) {
-      throw new Error('the installed manifest puts no accept and reject on the editor title');
+    // The commands are the manifest's own, found by their titles: the two judgments on the editor
+    // title, and the one that opens a decision.
+    const byTitle = (wanted) => extension.packageJSON.contributes.commands.find((c) => c.title === wanted)?.command;
+    const onTitle = (extension.packageJSON.contributes.menus['editor/title'] ?? []).map((item) => item.command);
+    for (const wanted of ['Accept Decision', 'Reject Decision']) {
+      if (!onTitle.includes(byTitle(wanted))) {
+        throw new Error(`the installed manifest puts no ${wanted} on the editor title`);
+      }
     }
+    const open = byTitle('Open Decision');
+    if (open === undefined) throw new Error('the installed manifest has no command that opens a decision');
     // Nothing asked so far counts: the opening itself has to ask for the decision.
     require('node:fs').writeFileSync(process.env.MNEMA_CHECK_LOG, '');
-    await vscode.commands.executeCommand('mnema.openDecision', {
+    await vscode.commands.executeCommand(open, {
       id: decision,
       title: 'Use SQLite for the cache',
       scope: 'public',
