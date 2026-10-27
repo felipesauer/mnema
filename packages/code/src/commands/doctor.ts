@@ -4,7 +4,7 @@
  * configuration, not a cache, and it asks nobody over a network. `--fix vscode` and
  * `--fix private-tree` are the two things it writes, each only when a person asks.
  *
- * NINE QUESTIONS, each answered by files that were read and named in the answer:
+ * TEN QUESTIONS, each answered by files that were read and named in the answer:
  *   - is a `mnema` on the `PATH`, which one, and is it the one running now;
  *   - is the first `node` on the `PATH` one that takes `mnema` (a hook starts it through
  *     `#!/usr/bin/env node`), and where this machine holds the Node Cursor's command-line agent
@@ -25,6 +25,10 @@
  *   - does the project lack what `mnema init` leaves beside the record (the `.mnema/README.md`,
  *     the line `.mnema/` in a `.prettierignore` where prettier is declared): said, never written,
  *     and `mnema init` is the fix;
+ *   - does git, asked, leave out the page `mnema site` writes under the record (`.mnema/site/`), and
+ *     does it already TRACK something there: asked of git and not of one file, because the ignore
+ *     can come from `.git/info/exclude` or a global file, and a tracked file is published whatever
+ *     any line says. Said with the command to run, never run: no `git rm` here;
  *   - and, for each agent key this machine holds, does this project's record enrol it, does a
  *     host asked to sign as an agent hold a key to do it with, and does the person's own key being
  *     unencrypted leave the whole separation to nothing.
@@ -34,7 +38,7 @@
  * wants to act on a finding reads the line.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   accessSync,
   constants,
@@ -47,7 +51,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { basename, delimiter, dirname, join } from 'node:path';
+import { basename, delimiter, dirname, join, relative } from 'node:path';
 import { listAppleDoubleKeyFiles, listPrivateKeyFingerprints } from '@mnema/chain';
 import {
   AGENT_NAME,
@@ -60,6 +64,7 @@ import {
   type PrivateTreesLeftBehind,
   privateTreesLeftBehind,
   reachableTrees,
+  realOfMaybeMissing,
   resolveTrees,
   type Scope,
   withAgentKey,
@@ -825,11 +830,89 @@ function recordPageFindings(ctx: DoctorContext): Finding[] {
   }
   for (const reach of toolsThatRewrite(dirname(trees.projectPublic)))
     lines.push(sayWhatReaches(reach));
+  lines.push(...sitePageLines(ctx, trees.projectPublic));
   return lines.map((line) => ({
     topic: 'record-page' as const,
     state: 'attention' as const,
     line,
   }));
+}
+
+/** How long git is given to answer; a hang is no answer, and no answer is no finding. */
+const GIT_BUDGET_MS = 5_000;
+
+/** One read of git in `cwd`, or undefined where git is absent, ran out of time or died. */
+function askGit(
+  ctx: DoctorContext,
+  cwd: string,
+  args: readonly string[],
+): { readonly status: number; readonly out: string } | undefined {
+  const asked = spawnSync('git', [...args], {
+    cwd,
+    encoding: 'utf-8',
+    timeout: GIT_BUDGET_MS,
+    // The process's own HOME where it has one (git reads the user's global ignore file from it), and
+    // the one this run was handed where it has none: git resolves a missing one to the machine's.
+    env: {
+      ...ctx.processEnv,
+      ...(ctx.processEnv.HOME === undefined && ctx.env.home !== undefined
+        ? { HOME: ctx.env.home }
+        : {}),
+      GIT_OPTIONAL_LOCKS: '0',
+    },
+  });
+  if (asked.error !== undefined || asked.status === null) return undefined;
+  return { status: asked.status, out: asked.stdout };
+}
+
+/**
+ * What git says of the page `mnema site` writes under the record: that it would not ignore
+ * `<record>/site/index.html` (where the record's `.gitignore` lacks the line the fix is `mnema init`;
+ * where it has the line, a rule that re-includes the page is the cause and `init` changes nothing), and that it TRACKS files under `<record>/site/` (the fix is `git rm -r --cached`, which
+ * this never runs). Asked of git, as `privateTreeVisibility` is: outside a repository, with git
+ * absent or out of time, or where git does not answer (128), it says nothing.
+ */
+function sitePageLines(ctx: DoctorContext, record: string): string[] {
+  const project = realOfMaybeMissing(dirname(record));
+  const site = relative(project, join(realOfMaybeMissing(record), 'site'));
+  const lines: string[] = [];
+  const ignored = askGit(ctx, project, [
+    'check-ignore',
+    '--no-index',
+    '-q',
+    '--',
+    join(site, 'index.html'),
+  ]);
+  if (ignored?.status === 1) {
+    const page = oneLine(join(site, 'index.html'));
+    const own = join(realOfMaybeMissing(record), '.gitignore');
+    const hasLine =
+      existsSync(own) &&
+      readFileSync(own, 'utf-8')
+        .split('\n')
+        .some((l) => l.trim() === '/site/' || l.trim() === 'site/');
+    const head = `git would not ignore ${page}, the page \`mnema site\` writes there: a \`git add .mnema\` would stage it`;
+    if (!hasLine) {
+      lines.push(`${head}; run \`mnema init\` to add /site/ to .mnema/.gitignore.`);
+    } else {
+      // The line is there and the page is still not ignored: a rule re-includes it, and `init`
+      // adds nothing. `check-ignore -v` cannot name that rule (it prints nothing for a path that
+      // is not ignored, measured with a `!/site/` line), so it is said without the name.
+      lines.push(
+        `${head}: .mnema/.gitignore already lists /site/, but a \`!\` rule in a .gitignore (this one or one above it) re-includes site/; find it and take it out, \`mnema init\` changes nothing here.`,
+      );
+    }
+  }
+  const tracked = askGit(ctx, project, ['ls-files', '-z', '--', site]);
+  if (tracked?.status === 0) {
+    const count = tracked.out.split('\0').filter((name) => name !== '').length;
+    if (count > 0) {
+      lines.push(
+        `git tracks ${count} file(s) under ${oneLine(site)}, the page \`mnema site\` writes: a line in a .gitignore does not stop a tracked file from being committed or published; to stop tracking them and keep them on disk run \`git rm -r --cached ${oneLine(site)}\` (this never runs it).`,
+      );
+    }
+  }
+  return lines;
 }
 
 /**

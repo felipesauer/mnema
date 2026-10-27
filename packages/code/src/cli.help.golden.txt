@@ -840,7 +840,9 @@ $ mnema site --help
 | the browser (records nothing)
 |
 | Options:
-|   --out <dir>        the directory index.html is written under
+|   --out <dir>        the directory index.html is written under (default: the
+|                      record's own site/ folder, which its .gitignore keeps out
+|                      of git)
 |   --back-link <url>  put one link, labelled "Back", to this address (http(s)://,
 |                      or a path on the same site) at the top of the page
 |   -h, --help         display help for command
@@ -857,7 +859,13 @@ $ mnema site --help
 | page is the same bytes it has always been; with it, the page opens with one link back
 | to a site that hosts it, and nothing else about the page changes.
 |
+| Without --out the page is written under the record, in .mnema/site/, and the record's
+| .gitignore is given the line /site/ first, so a `git add .mnema` leaves it out. A
+| directory named by --out that is inside the record and not under site/ is refused:
+| the record's folder holds only what is proof.
+|
 | Examples:
+|   mnema site                       write .mnema/site/index.html
 |   mnema site --out dist/record     write dist/record/index.html
 |   mnema site --out dist/record --back-link /mnema/
 
