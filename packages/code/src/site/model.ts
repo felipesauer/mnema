@@ -158,10 +158,14 @@ function notesOf(events: readonly CatalogEvent[]): PageNote[] {
   const notes: PageNote[] = [];
   const seen = new Set<string>();
   for (const event of events) {
-    if (seen.has(event.subject)) continue;
     if (event.kind === 'memory.captured') {
       const memory = memories.get(event.subject);
-      if (memory === undefined || memory.who !== event.who || memory.capturedAt !== event.at) {
+      if (
+        memory === undefined ||
+        memory.who !== event.who ||
+        memory.capturedAt !== event.at ||
+        seen.has(memory.id)
+      ) {
         continue;
       }
       seen.add(memory.id);
@@ -179,7 +183,8 @@ function notesOf(events: readonly CatalogEvent[]): PageNote[] {
       if (
         observation === undefined ||
         observation.who !== event.who ||
-        observation.recordedAt !== event.at
+        observation.recordedAt !== event.at ||
+        seen.has(observation.id)
       ) {
         continue;
       }

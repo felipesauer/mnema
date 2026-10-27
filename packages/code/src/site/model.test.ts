@@ -151,6 +151,24 @@ describe('the model of the page', () => {
     ]);
   });
 
+  it("serves a note's later writing by the same identity, in place of the earlier, with the agent that wrote that one", () => {
+    const model = pageModel([
+      ...decided(1, 'd-1', 'ADR-1', 'Keep money in cents'),
+      memoryCaptured(at(5, 'm-1', ALICE, 'first-agent'), { content: 'the first words' }),
+      memoryCaptured(at(6, 'm-1', ALICE, 'second-agent'), { content: 'the corrected words' }),
+      knowledgeLinked(at(7, 'm-1'), { target: 'd-1', rel: 'relates-to' }),
+    ]);
+    expect(model.decisions[0]?.notes).toHaveLength(1);
+    expect(model.decisions[0]?.notes[0]).toMatchObject({
+      text: 'the corrected words',
+      which: 'second-agent',
+      at: '2026-01-01T00:00:06.000Z',
+    });
+    // One note, one act on the timeline: the one that is served.
+    expect(model.timeline.filter((e) => e.kind === 'note-recorded')).toHaveLength(1);
+    expect(model.timeline.find((e) => e.kind === 'note-recorded')?.which).toBe('second-agent');
+  });
+
   it('words an act with no agent as a person and one with an agent as the agent', () => {
     const model = pageModel([
       ...decided(1, 'd-1', 'ADR-1', 'Keep money in cents', 'accepted'),
