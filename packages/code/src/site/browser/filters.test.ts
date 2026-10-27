@@ -9,11 +9,16 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { type FakeElement, type PageRun, runInAVm } from '../../../tests/support/a-page-in-a-vm.js';
+import {
+  type FakeElement,
+  FakePage,
+  type PageRun,
+  runInAVm,
+} from '../../../tests/support/a-page-in-a-vm.js';
 import type { PageDecision, PageNote } from '../model.js';
 import { renderPage } from '../page.js';
 import { theSiteVerifier } from '../verifier-bundle.js';
-import { type CardFacts, type Criteria, cardShown, pathMatches } from './filters.js';
+import { type CardFacts, type Criteria, cardShown, pathMatches, wireFilters } from './filters.js';
 
 const NONE: Criteria = { state: '', who: '', by: '', from: '', to: '', text: '', path: '' };
 
@@ -266,5 +271,60 @@ describe('the filters of the page', () => {
     expect(page.getElementById('verdict-status')?.getAttribute('data-state')).toBe('pending');
     timers.drain();
     expect(page.getElementById('verdict-status')?.getAttribute('data-state')).toBe('unverified');
+  });
+});
+
+describe('the filters, run from the module', () => {
+  const html = (): string =>
+    renderPage(
+      {
+        decisions: DECISIONS,
+        otherNotes: [],
+        timeline: [],
+        counts: { decisions: 4, inForce: 1, notes: 1, timeline: 0 },
+        tails: [],
+        files: {},
+      },
+      '/*v*/',
+    );
+
+  it('open on the decisions in force and narrow by text, and clear', () => {
+    const page = new FakePage(html());
+    wireFilters(page);
+    const cards = page.querySelectorAll('.decision');
+    expect(cards.filter((card) => !card.hidden).map((card) => card.getAttribute('id'))).toEqual([
+      'd-1',
+    ]);
+    const text = page.getElementById('f-text') as FakeElement;
+    const state = page.getElementById('f-state') as FakeElement;
+    state.value = '';
+    text.value = 'CENTS';
+    text.dispatch('input');
+    expect(cards.filter((card) => !card.hidden).map((card) => card.getAttribute('id'))).toEqual([
+      'd-1',
+      'd-4',
+    ]);
+    (page.getElementById('f-clear') as FakeElement).dispatch('click');
+    expect(cards.every((card) => !card.hidden)).toBe(true);
+  });
+
+  it('read a card whose attributes are not what the writer wrote as no one and nothing, and leave a page without controls alone', () => {
+    const page = new FakePage(
+      html()
+        .replaceAll('data-who="[&quot;mnid:bob&quot;]"', 'data-who="not json"')
+        .replaceAll('data-by="[&quot;agent codex&quot;]"', 'data-by="{&quot;a&quot;:1}"'),
+    );
+    wireFilters(page);
+    const who = (page.getElementById('f-who') as FakeElement)
+      .querySelectorAll('option')
+      .map((option) => option.getAttribute('value'));
+    expect(who).toEqual(['', 'mnid:alice']);
+    const by = (page.getElementById('f-by') as FakeElement)
+      .querySelectorAll('option')
+      .map((option) => option.getAttribute('value'));
+    expect(by).not.toContain('agent codex');
+    const bare = new FakePage('<div id="decision-list"></div>');
+    wireFilters(bare);
+    expect(bare.writes).toEqual([]);
   });
 });

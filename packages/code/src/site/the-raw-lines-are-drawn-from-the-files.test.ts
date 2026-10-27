@@ -15,12 +15,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type PageRun, runInAVm } from '../../tests/support/a-page-in-a-vm.js';
+import { FakePage, type PageRun, runInAVm } from '../../tests/support/a-page-in-a-vm.js';
 import { runDecision } from '../commands/decision.js';
 import { runDecisionTransition } from '../commands/decision-transition.js';
 import { runInit } from '../commands/init.js';
 import { runSite } from '../commands/site.js';
-import { rawLinesOf } from './browser/tails.js';
+import { rawLinesOf, wireTails } from './browser/tails.js';
 import { renderPage } from './page.js';
 import { theSiteVerifier } from './verifier-bundle.js';
 
@@ -156,5 +156,42 @@ describe('the raw lines of a tail', () => {
     ]);
     expect(open(run, 't-1')).toBe('<img src=x onerror=alert(1)>');
     expect(run.page.querySelectorAll('img')).toHaveLength(0);
+  });
+
+  it('are drawn from the module once, when the tail is opened, and a file that cannot be decoded says so', () => {
+    const html = renderPage(
+      {
+        decisions: [],
+        otherNotes: [],
+        timeline: [],
+        counts: { decisions: 0, inForce: 0, notes: 0, timeline: 0 },
+        tails: [
+          { id: 't-1', events: 1 },
+          { id: 't-2', events: 1 },
+        ],
+        files: {},
+      },
+      '/*v*/',
+    );
+    const page = new FakePage(html);
+    wireTails(page, {
+      'tails/t-1/000001.jsonl': b64('one\n'),
+      'tails/t-2/000001.jsonl': '***not base64***',
+    });
+    const [first, second] = page.querySelectorAll('.tail');
+    const text = (tail: typeof first): string | undefined =>
+      tail?.querySelectorAll('pre')[0]?.textContent;
+    expect(text(first)).toBe('');
+    first?.dispatch('toggle');
+    expect(text(first)).toBe('');
+    if (first !== undefined) first.open = true;
+    first?.dispatch('toggle');
+    expect(text(first)).toBe('one');
+    const writes = page.writes.length;
+    first?.dispatch('toggle');
+    expect(page.writes).toHaveLength(writes);
+    if (second !== undefined) second.open = true;
+    second?.dispatch('toggle');
+    expect(text(second)).toMatch(/^These lines could not be drawn from the files of the page: /);
   });
 });

@@ -113,26 +113,30 @@ export function showVerdict(page: Page, files: Readonly<Record<string, string>>)
   }
 }
 
-const here = globalThis as {
-  document?: Page & Partial<Doc>;
-  requestAnimationFrame?: (callback: () => void) => unknown;
-  setTimeout?: (callback: () => void, ms: number) => unknown;
-  mnemaSite?: { verifyRecord: typeof verifyRecord };
-};
-here.mnemaSite = { verifyRecord };
+/** What the script reads off the place it runs in: a page, and the two ways to wait. */
+export interface Host {
+  document?: (Page & Partial<Doc>) | undefined;
+  requestAnimationFrame?: ((callback: () => void) => unknown) | undefined;
+  setTimeout?: ((callback: () => void, ms: number) => unknown) | undefined;
+}
 
 /**
  * Runs `work` once the browser has drawn the page: a timer set from inside a frame callback fires
  * after that frame is painted. Where there is no frame callback, the timer alone.
  */
-function afterTheFirstPaint(work: () => void): void {
-  const later = (): unknown => here.setTimeout?.(work, 0);
-  if (here.requestAnimationFrame !== undefined) here.requestAnimationFrame(later);
+function afterTheFirstPaint(host: Host, work: () => void): void {
+  const later = (): unknown => host.setTimeout?.(work, 0);
+  if (host.requestAnimationFrame !== undefined) host.requestAnimationFrame(later);
   else later();
 }
 
-if (here.document !== undefined) {
-  const page = here.document;
+/**
+ * What the script does in a page: wires the filters and the tails, then verifies after the first
+ * paint. A place with no document (Node, where this module is imported by a test) gets nothing.
+ */
+export function start(host: Host): void {
+  const page = host.document;
+  if (page === undefined) return;
   const carried = page.getElementById('record-files');
   if (carried?.textContent) {
     const files = JSON.parse(carried.textContent) as Record<string, string>;
@@ -140,6 +144,10 @@ if (here.document !== undefined) {
       wireFilters(page as Doc);
       wireTails(page as Doc, files);
     }
-    afterTheFirstPaint(() => showVerdict(page, files));
+    afterTheFirstPaint(host, () => showVerdict(page, files));
   }
 }
+
+const here = globalThis as Host & { mnemaSite?: { verifyRecord: typeof verifyRecord } };
+here.mnemaSite = { verifyRecord };
+start(here);
