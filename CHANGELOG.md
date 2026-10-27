@@ -108,7 +108,7 @@ with its own changelog.
   when verify fails.
 
 - **A decision opens whole in the VS Code extension, and is judged from the title of its editor.** Clicking a proposal (or
-  picking a rule from a file's lens) opens a read-only text document, `ADR-n.md`, with what the command line's `show` verb answered
+  picking a rule from a file's lens) opens a read-only plain text document, `ADR-n`, with what the command line's `show` verb answered
   (title, state, scope, who recorded and accepted it, when, the justification, the alternatives and the moves), the command and
   the time it was read at the top, read again at each opening and each reading of the record; its address carries the id, never
   the ADR number. While it is `proposed` its editor's title carries accept and reject, which go through the same note box and the

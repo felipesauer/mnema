@@ -751,7 +751,7 @@ describe('a decision opens whole, as what mnema show said', () => {
     expect(w.opened).toHaveLength(1);
     expect(w.opened[0]).toMatchObject({
       scheme: 'mnema-decision',
-      path: '/ADR-2.md',
+      path: '/ADR-2',
       query: `id=${PROPOSED_ID}`,
     });
     const text = w.documents.get(`id=${PROPOSED_ID}`)?.text ?? '';

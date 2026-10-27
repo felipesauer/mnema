@@ -29,7 +29,7 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   it). Each wears a neutral icon (never a check mark: it has not been judged) and is read out as
   "ADR-1, <title>, awaits a judgment". Clicking one opens it whole.
 - **A decision, whole.** Open Decision (a click on an item, or from the Command Palette, which asks
-  which one) opens a read-only text document named by the ADR (`ADR-1.md`) holding what
+  which one) opens a read-only text document named by the ADR (`ADR-1`, with no extension, so no markdown preview can render a link in it) holding what
   `mnema show <id> --json` answered: the title, the state, the scope, who recorded it and who accepted
   it, when, the justification and the alternatives as the record has them, and the moves it went
   through, with the command and the time it was read at the top. It carries nothing the answer did

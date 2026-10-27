@@ -22,9 +22,11 @@ describe('a decision opened whole', () => {
   });
 
   it('carries the id in the address, and the ADR only in the name of the tab', () => {
-    expect(decisionPath('ADR-1', ID)).toBe('/ADR-1.md');
-    expect(decisionPath(undefined, ID)).toBe('/01a17ec1.md');
-    expect(decisionPath('../x', ID)).toBe('/01a17ec1.md');
+    expect(decisionPath('ADR-1', ID)).toBe('/ADR-1');
+    expect(decisionPath(undefined, ID)).toBe('/01a17ec1');
+    expect(decisionPath('../x', ID)).toBe('/01a17ec1');
+    // No extension: a markdown name would give the document the editor's preview, which renders links.
+    expect(decisionPath('ADR-1', ID)).not.toMatch(/\.[A-Za-z]+$/);
     expect(idOfQuery(decisionQuery(ID))).toBe(ID);
     expect(idOfQuery('id=a b')).toBeUndefined();
     expect(idOfQuery('')).toBeUndefined();

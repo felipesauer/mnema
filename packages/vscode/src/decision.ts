@@ -25,9 +25,13 @@ export const showArgs = (id: string): string[] => ['show', id, '--json'];
 export const decisionName = (adr: string | undefined, id: string): string =>
   adr !== undefined && /^[A-Za-z0-9-]+$/.test(adr) ? adr : id.slice(0, 8);
 
-/** The path of the address: the name of the tab, as a markdown file so the editor colours it. */
+/**
+ * The path of the address: the name of the tab. It has no extension on purpose: a markdown file
+ * would get the editor's preview, which renders a link inside a justification as a link, and a
+ * plain text document is only characters.
+ */
 export const decisionPath = (adr: string | undefined, id: string): string =>
-  `/${decisionName(adr, id)}.md`;
+  `/${decisionName(adr, id)}`;
 
 /** The query of the address: the id, which is what says which decision it is. */
 export const decisionQuery = (id: string): string => `id=${id}`;

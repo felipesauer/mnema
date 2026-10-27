@@ -37,7 +37,7 @@ a finding, and a good capture.
    no notification appears. Each item shows two icon buttons (accept, reject), not text, and a neutral circle icon, not a check
    mark; the stacks view shows a package, a warning or an error icon beside the text that says the same.
 4. **Open a decision, accept it with the stamp, reject without a reason.** Click a proposal: a document named
-   `ADR-n.md` opens in front with the title, the state, the justification and the alternatives, the command and the time
+   `ADR-n` opens in front with the title, the state, the justification and the alternatives, the command and the time
    it was read at the top, and an accept and a reject button on the editor's title. Click accept: the box is titled
    `Accept ADR-n`, holds `<today>, accepted in the VS Code extension, no reason typed` selected, and Enter records
    exactly that; the toast says `ADR-n accepted.`, the buttons leave the title and the document says `accepted`. On
