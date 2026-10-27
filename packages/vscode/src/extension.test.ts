@@ -699,6 +699,7 @@ describe('what awaits a judgment is a number on the side bar icon', () => {
     await settle();
     expect(w.tree().getChildren()).toHaveLength(200);
     expect(w.badge()).toEqual({ value: 250, tooltip: '250 decisions await a judgment' });
+    expect(w.bar.text).toBe('$(book) fully-signed · 250 to judge');
   });
 
   it('is nothing when the command is missing, and again when it is back', async () => {
