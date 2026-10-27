@@ -46,9 +46,9 @@ const n = (value) => String(Math.round(value * 100) / 100);
 // The wordmark
 
 /** One terminal cell, in the proportions of a monospace font: twice as tall as it is wide. */
-const CELL = { w: 12, h: 24 };
+export const CELL = { w: 12, h: 24 };
 /** A double line's two strokes: half the gap between their centres, and their width. */
-const DOUBLE = { half: 2.75, width: 1.5 };
+export const DOUBLE = { half: 2.75, width: 1.5 };
 
 /**
  * The strokes of a double-line box glyph in a cell at (x, y), as path data, or undefined for a
@@ -58,7 +58,7 @@ const DOUBLE = { half: 2.75, width: 1.5 };
  * @param {number} y
  * @returns {string | undefined}
  */
-function doubleLine(glyph, x, y) {
+export function doubleLine(glyph, x, y) {
   const { w, h } = CELL;
   const cx = x + w / 2;
   const cy = y + h / 2;
@@ -142,7 +142,7 @@ function wordmark(blocks, accent, x0, y0) {
  * a double line on the middle of its cell, not at the cell's foot.
  * @param {readonly string[]} blocks
  */
-function inkFoot(blocks) {
+export function inkFoot(blocks) {
   const shadowOnly = [...(blocks.at(-1) ?? '')].every((g) => ' ╚═╝'.includes(g));
   const height = blocks.length * CELL.h;
   return shadowOnly ? height - CELL.h / 2 + DOUBLE.half + DOUBLE.width / 2 : height;
@@ -804,7 +804,7 @@ const H_PKG = 240;
  * The page of each theme. A package's picture carries its own, so the dark one, shown on a light
  * page, still reads; on a dark page it is the page.
  */
-const PAGE = Object.freeze({ dark: '#0d1117', light: '#ffffff' });
+export const PAGE = Object.freeze({ dark: '#0d1117', light: '#ffffff' });
 
 /**
  * One size for each role a text plays, on every package's picture: the package's name, the name

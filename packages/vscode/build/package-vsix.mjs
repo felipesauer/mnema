@@ -9,7 +9,7 @@
  * workspace name is `@mnema/vscode`), no `private` (the workspace package is not sent to npm; the
  * file is what the stores take) and no development fields. The repository's own manifest is not
  * touched. Nothing here publishes: the file is written to disk and that is where it stops. The
- * icon is drawn by `icon.mjs` into the scratch folder, so no binary lives in the tree.
+ * icon is drawn by `icon.mjs` from the built console's wordmark into the scratch folder, so no binary lives in the tree.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -18,6 +18,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bundle } from './bundle.mjs';
+import { THE_BLOCKS } from '../../code/dist/presentation/banner.js';
 import { drawIcon } from './icon.mjs';
 
 const pkgDir = fileURLToPath(new URL('..', import.meta.url));
@@ -37,7 +38,7 @@ try {
   copyFileSync(join(pkgDir, 'NOTICE'), join(scratch, 'NOTICE'));
   copyFileSync(join(pkgDir, 'README.md'), join(scratch, 'README.md'));
   copyFileSync(join(pkgDir, 'CHANGELOG.md'), join(scratch, 'CHANGELOG.md'));
-  writeFileSync(join(scratch, 'icon.png'), drawIcon());
+  writeFileSync(join(scratch, 'icon.png'), drawIcon(THE_BLOCKS));
   cpSync(join(pkgDir, 'media'), join(scratch, 'media'), { recursive: true });
   const done = spawnSync(
     join(pkgDir, 'node_modules', '.bin', 'vsce'),
