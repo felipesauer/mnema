@@ -12,6 +12,7 @@ with its own changelog.
 
 ### Fixed
 
+- **The host contract holds the Copilot CLI 1.0.104.** The weekly run against the newest Copilot CLI failed on the weight of the 27 definitions: from 1.0.103 the host marks each one `defer_loading` (21 bytes each) and drops a `cache_control` from one, so they weigh 51,540 bytes and 11,942 tokens instead of 51,010 and 11,762. The pinned version is now 1.0.104 and the figure on the evidence page is the new one.
 - **A note is the identity that wrote it first, in every reader.** The read and the write took a note's author from its LAST
   writing in the merged order, and `mnema verify` and the second reader from its last writing in the order of the tail ids. A
   key of another identity that wrote the same id again with a later clock took the note: its content and its author were
