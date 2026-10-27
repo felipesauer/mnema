@@ -9,7 +9,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { showVerdict, verifyRecord } from './entry.js';
+import { FakePage, FakeTimers } from '../../../tests/support/a-page-in-a-vm.js';
+import { showVerdict, start, verifyRecord } from './entry.js';
 
 interface Fake {
   textContent: string | null;
@@ -80,5 +81,64 @@ describe('the page script', () => {
       ['census', 'clauses', 'fullySigned', 'issues', 'level', 'ok', 'summary'].sort(),
     );
     expect(verdict.summary).toBe(verdict.clauses.join('; '));
+  });
+});
+
+describe('what the script does in a page, from the module', () => {
+  const PAGE = `<div id="verdict-status" data-state="pending"></div><p id="verdict-summary"></p><ul id="verdict-issues"></ul><script id="record-files">{}</script>`;
+
+  it('does nothing where there is no document, and nothing for a page that carries no files', () => {
+    const timers = new FakeTimers();
+    start({ setTimeout: timers.setTimeout });
+    start({ document: new FakePage('<p></p>'), setTimeout: timers.setTimeout });
+    expect(timers.pending).toBe(0);
+  });
+
+  it('verifies after the first paint: a frame callback first, a timer inside it, and the verdict only then', () => {
+    const page = new FakePage(PAGE);
+    const timers = new FakeTimers();
+    const frames: (() => void)[] = [];
+    start({
+      document: page,
+      setTimeout: timers.setTimeout,
+      requestAnimationFrame: (callback) => frames.push(callback),
+    });
+    expect(frames).toHaveLength(1);
+    expect(timers.pending).toBe(0);
+    frames[0]?.();
+    expect(timers.pending).toBe(1);
+    expect(page.getElementById('verdict-status')?.getAttribute('data-state')).toBe('pending');
+    timers.drain();
+    expect(page.getElementById('verdict-status')?.getAttribute('data-state')).toBe('unverified');
+  });
+
+  it('uses a timer alone where there is no frame callback', () => {
+    const page = new FakePage(PAGE);
+    const timers = new FakeTimers();
+    start({ document: page, setTimeout: timers.setTimeout });
+    expect(timers.pending).toBe(1);
+    timers.drain();
+    expect(page.getElementById('verdict-summary')?.textContent).toBe(
+      'This page carries no record files, so nothing was verified.',
+    );
+  });
+
+  it('verifies a page that has no way to select elements, and wires nothing', () => {
+    const timers = new FakeTimers();
+    const elements = new Map(
+      ['verdict-status', 'verdict-summary', 'verdict-issues'].map((id) => [id, fake()] as const),
+    );
+    const files = fake();
+    files.textContent = '{}';
+    start({
+      document: {
+        getElementById: (id: string) =>
+          id === 'record-files' ? files : (elements.get(id) ?? null),
+        createElement: () => fake(),
+      },
+      setTimeout: timers.setTimeout,
+    });
+    timers.drain();
+    expect(elements.get('verdict-status')?.attributes['data-state']).toBe('unverified');
   });
 });

@@ -11,7 +11,9 @@
  *
  * IT CARRIES THE RECORD'S FILES SO THE PAGE CAN VERIFY THEM. The verdict is the chain's own,
  * computed in the reader's browser over those files (`site/browser/entry.ts`). What the page
- * lists (decisions, their history, the raw events) is written here from the same files.
+ * lists (decisions, their notes and addresses, the timeline) is written here from the same
+ * files, by `pageModel`; the raw events are not written again, the browser draws them from the
+ * files the page carries.
  *
  * IT RECORDS NOTHING. It reads the public tree and writes one file, `index.html`, under the
  * directory the caller named, or under `<record>/site/` when none is named. That directory sits
@@ -25,17 +27,10 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
-import { catalogUpcasters, ensureTree, transitionProse, verify } from '@mnema/chain';
-import { decisionDisposition } from '@mnema/context';
-import {
-  type DecisionState,
-  type DiscoveryEnv,
-  orderedEvents,
-  projectDecisions,
-  realOfMaybeMissing,
-  resolveTrees,
-} from '@mnema/core';
-import { type DecisionMove, renderPage, type SiteDecision, type SiteTail } from '../site/page.js';
+import { catalogUpcasters, ensureTree, verify } from '@mnema/chain';
+import { type DiscoveryEnv, orderedEvents, realOfMaybeMissing, resolveTrees } from '@mnema/core';
+import { pageModel } from '../site/model.js';
+import { renderPage, type SiteTail } from '../site/page.js';
 import { theSiteVerifier } from '../site/verifier-bundle.js';
 
 /** What the site command needs: injected so it is testable. */
@@ -123,7 +118,11 @@ function recordFiles(publicRoot: string): Record<string, string> {
   return files;
 }
 
-/** Each tail's segment lines, verbatim: what the page lists as the raw events. */
+/**
+ * How many stored lines each tail holds. The lines themselves are not written into the page a
+ * second time: the files the verifier reads carry them, and the page draws a tail from those when a
+ * reader opens it.
+ */
 function tailsOf(publicRoot: string, files: Readonly<Record<string, string>>): SiteTail[] {
   const tails = new Map<string, string[]>();
   for (const file of Object.keys(files)) {
@@ -137,44 +136,8 @@ function tailsOf(publicRoot: string, files: Readonly<Record<string, string>>): S
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([id, segments]) => {
       const text = segments.join('').replace(/\n+$/, '');
-      return { id, events: text === '' ? 0 : text.split('\n').length, text };
+      return { id, events: text === '' ? 0 : text.split('\n').length };
     });
-}
-
-/** The decisions of the public tree and what each went through, in the order they were recorded. */
-function decisionsOf(publicRoot: string): SiteDecision[] {
-  const events = orderedEvents({ root: publicRoot }, catalogUpcasters());
-  const moves = new Map<string, DecisionMove[]>();
-  for (const event of events) {
-    if (event.kind !== 'decision.transitioned') continue;
-    const said = transitionProse(event.payload.fields);
-    const list = moves.get(event.subject) ?? [];
-    list.push({
-      at: event.at,
-      action: event.payload.action,
-      before: event.payload.from,
-      to: event.payload.to,
-      who: event.who,
-      ...(event.which !== undefined ? { which: event.which } : {}),
-      ...(said !== '' ? { said } : {}),
-    });
-    moves.set(event.subject, list);
-  }
-  return [...projectDecisions(events).values()].map((d) => ({
-    id: d.id,
-    adr: d.adr,
-    title: d.title,
-    rationale: d.rationale,
-    ...(d.alternatives !== undefined ? { alternatives: d.alternatives } : {}),
-    state: d.state,
-    inForce: decisionDisposition(d.state as DecisionState) === 'in-force',
-    ...(d.supersedes !== undefined ? { supersedes: d.supersedes } : {}),
-    ...(d.supersededBy !== undefined ? { supersededBy: d.supersededBy } : {}),
-    createdAt: d.createdAt,
-    ...(d.recordedBy !== undefined ? { recordedBy: d.recordedBy } : {}),
-    ...(d.acceptedBy !== undefined ? { acceptedBy: d.acceptedBy } : {}),
-    moves: moves.get(d.id) ?? [],
-  }));
 }
 
 /** Whether `inner` is `outer` or below it, both already resolved. */
@@ -230,9 +193,9 @@ export function runSite(
       message: 'the public tree holds no record yet, so there is nothing to publish',
     };
   }
-  let decisions: SiteDecision[];
+  let page: ReturnType<typeof pageModel>;
   try {
-    decisions = decisionsOf(publicRoot);
+    page = pageModel(orderedEvents({ root: publicRoot }, catalogUpcasters()));
   } catch (error) {
     return {
       ok: false,
@@ -253,15 +216,12 @@ export function runSite(
   if (inSite) ensureTree({ root: publicRoot });
   mkdirSync(target, { recursive: true });
   const written = join(target, 'index.html');
-  writeFileSync(
-    written,
-    renderPage({ decisions, tails, files }, theSiteVerifier(), input.backLink),
-  );
+  writeFileSync(written, renderPage({ ...page, tails, files }, theSiteVerifier(), input.backLink));
   return {
     ok: true,
     path: input.out === undefined ? relative(ctx.cwd, written) : join(input.out, 'index.html'),
-    decisions: decisions.length,
-    inForce: decisions.filter((d) => d.inForce).length,
+    decisions: page.counts.decisions,
+    inForce: page.counts.inForce,
     events: tails.reduce((n, tail) => n + tail.events, 0),
     files: Object.keys(files).length,
     verdict: { ok: ruled.ok, summary: ruled.summary },

@@ -9,11 +9,20 @@
  * It is built into ONE script (`dist/site-verifier.js`) that has no import and reaches for
  * nothing outside itself, and the same script is what the verdict test runs in a context
  * with no `Buffer`, no `require` and no filesystem.
+ *
+ * The same script wires what the page lets a reader do: the filters of the decision list
+ * (`filters.ts`) and the drawing of a tail's raw lines when it is opened (`tails.ts`). It does
+ * both BEFORE it verifies, and it verifies after the first paint: the verification takes a
+ * while (780 ms over this repository's own record, 5 s at two thousand events), and a page that
+ * answered a keypress only once it was done would feel broken. Until the verdict is there the
+ * page says it is verifying, and says so as a status a reader's software announces.
  */
 
 import { catalogUpcasters, verifyChain } from '@mnema/chain';
 import { fromBase64 } from './buffer.js';
+import { type Doc, wireFilters } from './filters.js';
 import { mount } from './fs.js';
+import { wireTails } from './tails.js';
 
 /** The verdict as the page shows it: the chain's words, unchanged. */
 export interface RecordVerdict {
@@ -104,16 +113,48 @@ export function showVerdict(page: Page, files: Readonly<Record<string, string>>)
   }
 }
 
-const here = globalThis as {
-  document?: Page;
-  mnemaSite?: { verifyRecord: typeof verifyRecord };
-};
-here.mnemaSite = { verifyRecord };
+/** What the script reads off the place it runs in: a page, and the two ways to wait. */
+export interface Host {
+  document?: Page | undefined;
+  requestAnimationFrame?: ((callback: () => void) => unknown) | undefined;
+  setTimeout?: ((callback: () => void, ms: number) => unknown) | undefined;
+  location?: { hash: string } | undefined;
+  addEventListener?: ((type: string, listener: () => void) => void) | undefined;
+}
 
-if (here.document !== undefined) {
-  const page = here.document;
+/** Whether the page can select elements too, which the filters and the tails need and the verdict does not. */
+function canBeWired(page: Page): page is Page & Doc {
+  return typeof (page as Partial<Doc>).querySelectorAll === 'function';
+}
+
+/**
+ * Runs `work` once the browser has drawn the page: a timer set from inside a frame callback fires
+ * after that frame is painted. Where there is no frame callback, the timer alone.
+ */
+function afterTheFirstPaint(host: Host, work: () => void): void {
+  const later = (): unknown => host.setTimeout?.(work, 0);
+  if (host.requestAnimationFrame !== undefined) host.requestAnimationFrame(later);
+  else later();
+}
+
+/**
+ * What the script does in a page: wires the filters and the tails, then verifies after the first
+ * paint. A place with no document (Node, where this module is imported by a test) gets nothing.
+ */
+export function start(host: Host): void {
+  const page = host.document;
+  if (page === undefined) return;
   const carried = page.getElementById('record-files');
   if (carried?.textContent) {
-    showVerdict(page, JSON.parse(carried.textContent) as Record<string, string>);
+    const files = JSON.parse(carried.textContent) as Record<string, string>;
+    if (canBeWired(page)) {
+      wireFilters(page, host);
+      wireTails(page, files);
+    }
+    afterTheFirstPaint(host, () => showVerdict(page, files));
   }
 }
+
+const here = globalThis as Host & { mnemaSite?: { verifyRecord: typeof verifyRecord } };
+here.mnemaSite = { verifyRecord };
+start(here);
