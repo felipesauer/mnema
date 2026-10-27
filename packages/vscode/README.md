@@ -15,7 +15,7 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
 
 - **A lens over each file a rule addresses.** The first line of the file says how many decisions in
   force address it, by what they do (`governs`, `asks-for-a-person`, `refuses-a-write`), read from
-  `mnema rules <path> --json`. Clicking it lists them: the decision's name, what it does to the
+  `mnema rules --json -- <path>` (the path comes after `--`, so a file named `-x` is a file). Clicking it lists them: the decision's name, what it does to the
   file, and who accepted it, as the record says; picking one opens that decision whole (see below),
   with no judgment button, since it is in force. A file no rule in force addresses has no lens.
 - **A container of its own in the activity bar, titled mnema, with the banner's M as its icon.** It holds
@@ -24,9 +24,11 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   nothing when the list was not read. The icon is the first letter of the console's wordmark, drawn when
   the extension is packed.
 - **A view, "Awaiting Judgment".** The decisions whose state is
-  `proposed`, read from `mnema search --kind decision --state proposed --json`, each with a short
-  tooltip (the title, the ADR and the start of the justification `mnema show <id> --json` holds for
-  it). Each wears a neutral icon (never a check mark: it has not been judged) and is read out as
+  `proposed`, read from one `mnema status --json`, which serves the first 20 with their `ADR-n`; when
+  `mnema` counted more than it served, `mnema search --kind decision --state proposed --json` is asked too,
+  so the view lists up to 200 as before (the ones `status` served by their ADR, the others by their id).
+  Each has a short tooltip (the ADR and the title; the justification is in the document a click opens,
+  not in the tooltip, so no `mnema show` is run for each item). Each wears a neutral icon (never a check mark: it has not been judged) and is read out as
   "ADR-1, <title>, awaits a judgment". Clicking one opens it whole.
 - **A decision, whole.** Open Decision (a click on an item, or from the Command Palette, which asks
   which one) opens a read-only text document named by the ADR (`ADR-1`, with no extension, so no markdown preview can render a link in it) holding what
@@ -58,6 +60,22 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   `mnema decision move accept <id> --note <note>` (or `reject`), started with an argument array and
   no shell, and what the command line answers is what is shown: `ADR-2 accepted.` when it said the
   decision was accepted, its own line when it said anything else, its refusal when it refused.
+- **What To Do.** `mnema: What To Do`, in the Command Palette, in the `...` menu of the awaiting view and as a link in
+  the status bar's tooltip, is a pick made of one `mnema status --json` read when it opens: a line per decision
+  awaiting a judgment, in the order `mnema` gave (`ADR-2  <title>`), each opening that decision whole, and, when
+  `mnema` counted more than the decisions it listed (it serves 20, and what awaits can also be a skill or a task), a line
+  `N more await a judgment` that opens the container. When nothing awaits it says so in its placeholder. In a folder with no `.mnema`
+  its one line says there is no record and opens a terminal (nothing is run); with no `mnema` command, its one line opens the
+  `mnema.command` setting. It lists no task, recommends nothing and has no line that judges: a decision is judged from
+  its own document, with the note.
+- **Why Is This File Like This?** In the Explorer's context menu and the editor's, and in the Command Palette, over a file of the
+  open folder: runs `mnema why -- <path>` and shows what it printed, as `mnema` words it, in a read-only document under a
+  header that says what was asked and when (UTC, with the Z). Each opening is a new document, so a second look is never
+  an old reading. A file outside the folder says so and runs nothing.
+- **A mark on the `.mnema` folder.** In the Explorer the record's own folder wears the badge `M` and the accent of the
+  front page (the colour `mnema.recordFolder`, which a theme can override), and its tooltip says what the folder is. No
+  file is marked: `mnema` does not list the addresses its rules cover, so a file with no mark would look as if no rule
+  reached it, which the record does not say. The mark is a comparison of two paths; it starts no process and reads nothing.
 - **No notification per proposal.** The record is watched through the editor's file watcher on
   `.mnema/**`; when it has been quiet for 1.5 seconds it is read again, and a decision proposed
   meanwhile raises the badge on the container's icon and the count in the status bar. Nothing
@@ -81,8 +99,9 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
 - **Icons and short titles.** Every command carries a codicon (`$(check)` accept, `$(close)` reject,
   `$(refresh)` refresh, `$(law)` rules over the file, `$(add)` and `$(library)` add a stack,
   `$(eye)` show, `$(diff)` compare, `$(checklist)` check, `$(trash)` remove, `$(export)` export,
-  `$(go-to-file)` open a decision), so the
-  buttons are icons and the command's title (one to three words) is their tooltip. Every command is
+  `$(go-to-file)` open a decision, `$(list-unordered)` what to do, `$(history)` why a file is the way it is), so the
+  buttons are icons and the command's title (one to three words where it is a button, up to six where it is not, as
+  `Why Is This File Like This?`) is their tooltip. Every command is
   in the category `mnema`, which is what puts `mnema: ` before its title in the Command Palette and in
   a keybinding's list, so no title repeats it. A decision has accept
   and reject side by side; a stack has show, compare and check beside it, export in the context menu and
@@ -97,7 +116,7 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   refused with what to fix.
 - **What an empty view says.** A folder with no `.mnema` says so and points to `mnema init` (run in a
   terminal, which a link opens) and to [the first record](../../docs/first-record.md); with a record, the
-  decisions view says that nothing awaits a judgment only when the answer of `mnema search` was read and understood (the context key
+  decisions view says that nothing awaits a judgment only when the answer of `mnema status` was read and understood (the context key
   `mnema.proposedRead`, the twin of `mnema.stacksRead`), and otherwise says it has not listed them, which
   the status bar explains; the stacks view, when the answer of `mnema stack list` was read and understood, offers the two ways to
   add one, and otherwise says it has not listed the stacks (the status bar shows what `mnema` read).
@@ -126,7 +145,7 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   reading, and links to Refresh and to the setting. What a level covers is what the command line
   says, and the extension adds no sentence of its own about it. The words that came from the command
   line or from the record are escaped, so a name or a line written by someone else cannot become a
-  link, and the only commands a link may run are the container, Refresh and the settings editor:
+  link, and the only commands a link may run are the container, What To Do, Refresh and the settings editor:
   never a verdict. A click on the item opens the container, in every state. When `mnema verify`
   fails the item wears the theme's warning background and the tooltip carries what failed; a weaker
   level is not a warning. The item has an accessibility label that spells the whole sentence out
@@ -135,7 +154,9 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   `mnema.command`: a repository's `.vscode/settings.json` cannot hide an item that says when
   `mnema verify` fails. It takes effect without a reload.
 - **A missing command is not "nothing pending".** Before anything else the extension asks
-  `mnema --version`. When the command cannot be started, answers as no mnema does, or is older than
+  `mnema --version` (when it starts, on Refresh, when `mnema.command` changes, at a change of the record while the last
+  answer was that the command is missing, and in the reading in which any call came back with no exit code at all, which
+  is how a command that vanished mid-session is told). When the command cannot be started, answers as no mnema does, or is older than
   0.1.2 (the version the extension is written against), the views say the command is missing and how to
   fix it (install `@mnema/code` from source, or set `mnema.command`), nothing else is asked of it, and
   the status bar says "mnema not found", its tooltip says why and links to the `mnema.command`
@@ -145,6 +166,16 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   setting needs no reload. A command that did not answer `--version` within 60 seconds is reported as
   not answering, in the tooltip, not as not found. The error mark of the bar follows `record.ok` in
   `mnema verify --json`, the verdict whose failure makes `mnema verify` exit 1.
+- **Few processes per reading.** Reading the record after a change starts one `mnema status --json` (and the `search`
+  only when `status` cut its list); `--version` is not asked again while the command is there. `mnema verify`, `mnema verify
+  --json` and `mnema switch` run when the extension starts, on Refresh, after a judgment or a stack act of yours and when the
+  setting changes, and after a change of the record at most once in ten seconds, with a last run ten seconds after the
+  last write of a burst, so the bar is never more than about ten seconds behind the record and its tooltip says when
+  it read. They are not run while the status bar item is switched off. `mnema stack list --json` runs only when the Stacks
+  view is on screen (and on Refresh); hidden, the list is marked old, and read when the view appears. Measured in the tests
+  with the command line replaced by a recorder: starting with two proposals costs 5 processes with the Stacks view hidden
+  and 6 with it shown (it was 8), a change of the record costs 1 (it was 6, and one `show` for each new proposal), a
+  Refresh costs 6 (as before), and twenty changes 1.6 seconds apart cost 32 processes (they were 120).
 - **A walkthrough of three steps** (Help > Welcome > Walkthroughs, "Get started with mnema"): make the
   command available, run `mnema init`, run `mnema verify` and read what it prints. It says to read the
   command's output, never that the record is safe or verified.
@@ -184,7 +215,8 @@ click must open the container; and a folder with a real record and one proposed 
 `mnema` built here, where the bar must carry a level and `1 to judge`, the tooltip what `mnema verify`
 printed, the click the container, the manifest's container its icon file and the badge the number 1, and
 where opening the proposed decision must give a document with its title, its justification and its state,
-in front, after asking `mnema show <id> --json`). `pnpm --filter @mnema/vscode install-check` does the same
+in front, after asking `mnema show <id> --json`, and where Why Is This File Like This? over a committed file must
+open a document with what `mnema why` printed). `pnpm --filter @mnema/vscode install-check` does the same
 by hand, under `xvfb-run -a` on a machine without a screen. What no CI reads (a hover, a context menu,
 the light and high-contrast themes, a screen reader) has [a script for a person](../../plugin/captures/vscode-extension-script.md). CI keeps the file as an
 artifact of the run (`mnema-vscode-extension`). The only thing that sends the file anywhere is one job of
@@ -194,8 +226,8 @@ publish command or a store token appears in any other job or file. The file has 
 
 ## How it is built
 
-The part worth testing has no editor in it. `rules.ts`, `proposed.ts`, `decision.ts` and `status.ts` turn what the
-command line printed into what is shown, `cli.ts` starts the command, and `extension.ts` wires them
+The part worth testing has no editor in it. `rules.ts`, `proposed.ts`, `decision.ts`, `why.ts` and `status.ts` turn what the
+command line printed into what is shown, `record-mark.ts` says which folder wears the mark, `cli.ts` starts the command, and `extension.ts` wires them
 to the editor through a handed-in `vscode` module. The tests run `extension.ts` against a stand-in
 for that module; nothing downloads or starts an editor.
 
@@ -226,8 +258,13 @@ for that module; nothing downloads or starts an editor.
   command and the link in the tooltip start.
 - It reads the first workspace folder only, and only that folder's record. The view lists at most
   200 decisions, and says in each tooltip how many exist when there are more; the badge counts the
-  total `mnema` reports, so it can be larger than the list. It says "awaits a judgment" and nothing
+  decisions `mnema` says await a judgment (when `status` cut its list, the number `mnema search` gives for
+  decisions), so it can be larger than the list. `status` also counts skills and tasks that await; those are
+  not decisions to judge here, and What To Do says they exist. It says "awaits a judgment" and nothing
   of the record's soundness.
+- The bar can be up to about ten seconds behind a burst of writes to the record, and says when it read; a
+  verification that the interval skipped runs at the end of the burst, not never. The Stacks list can be
+  old while its view is hidden, and is read when the view appears.
 - In a folder with no `.mnema` it asks the command line nothing and says nothing about the record:
   the bar is not shown and the views teach `mnema init`. That is a statement about the folder on the
   disk, not about anything `mnema` read.

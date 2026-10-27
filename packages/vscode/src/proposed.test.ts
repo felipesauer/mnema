@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   acceptStamp,
@@ -8,9 +9,16 @@ import {
   noteProblem,
   type Proposed,
   proposedTooltip,
-  readDetail,
   readProposed,
+  readStatus,
+  STATUS_ARGS,
+  wasCut,
+  withAdrs,
 } from './proposed.js';
+
+/** What the command line built for a sample project: see the fixtures' own names. */
+const fixture = (name: string): string =>
+  readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8');
 
 const hit = (id: string, title = 'Use X') => ({
   id,
@@ -50,31 +58,69 @@ describe('the decisions waiting for a judgment', () => {
     expect(readProposed('{"hits": []}')).toEqual({ items: [], total: 0 });
   });
 
-  it('reads the justification and the alternatives, and leaves an absent one absent', () => {
-    const json = JSON.stringify({
-      record: { adr: 'ADR-1', title: 'Use X', rationale: 'because Y', alternatives: 'Z, too slow' },
-    });
-    expect(readDetail(json)).toEqual({
-      adr: 'ADR-1',
-      rationale: 'because Y',
-      alternatives: 'Z, too slow',
-    });
-    expect(readDetail('{"record": {"rationale": ""}}')).toEqual({
-      adr: undefined,
-      rationale: undefined,
-      alternatives: undefined,
-    });
+  it('asks the CLI for what awaits a judgment with one status', () => {
+    expect(STATUS_ARGS).toEqual(['status', '--json']);
   });
 
-  it('gives the item a short tooltip: the title, the ADR and the start of the justification, and nothing it was not told', () => {
-    const item = readProposed(JSON.stringify({ hits: [hit('a')] }))?.items[0] as Proposed;
-    expect(proposedTooltip(item, { adr: 'ADR-1', rationale: 'because Y', alternatives: 'Z' })).toBe(
-      'ADR-1: Use X\n\nbecause Y',
+  it('reads the decisions status served with their ADR, in its order, and says how many it counted', () => {
+    const read = readStatus(fixture('status-2-awaiting'));
+    expect(read?.items.map((item) => [item.adr, item.title])).toEqual([
+      ['ADR-2', 'Keep the CLI free of a daemon'],
+      ['ADR-1', 'Use SQLite for the cache'],
+    ]);
+    expect(read?.served).toBe(2);
+    expect(read?.total).toBe(2);
+    expect(read && wasCut(read)).toBe(false);
+    for (const item of read?.items ?? []) expect(item).not.toHaveProperty('scope');
+  });
+
+  it('knows status cut its list: 25 counted and 20 served', () => {
+    const read = readStatus(fixture('status-25-awaiting'));
+    expect(read?.items).toHaveLength(20);
+    expect(read?.served).toBe(20);
+    expect(read?.total).toBe(25);
+    expect(read && wasCut(read)).toBe(true);
+  });
+
+  it('reads nothing awaiting from an answer that holds none, and nothing from what is not the answer', () => {
+    const read = readStatus(fixture('status-nothing-awaits'));
+    expect(read).toEqual({ items: [], served: 0, total: 0 });
+    expect(readStatus('nope')).toBeUndefined();
+    expect(readStatus('{"awaitingJudgement": 1}')).toBeUndefined();
+    expect(readStatus('{"awaitingJudgementTotal": 3}')).toBeUndefined();
+    expect(readStatus('[]')).toBeUndefined();
+  });
+
+  it('keeps only the decisions of what awaits, and counts the others as served', () => {
+    const answer = JSON.parse(fixture('status-2-awaiting')) as {
+      awaitingJudgement: Record<string, unknown>[];
+    };
+    answer.awaitingJudgement[1] = { ...answer.awaitingJudgement[1], kind: 'skill' };
+    const read = readStatus(JSON.stringify(answer));
+    expect(read?.items.map((item) => item.adr)).toEqual(['ADR-2']);
+    expect(read?.served).toBe(2);
+  });
+
+  it('lists the search hits with the ADR status gave for the ones it served, and none made up for the rest', () => {
+    const served = readStatus(fixture('status-25-awaiting')) as NonNullable<
+      ReturnType<typeof readStatus>
+    >;
+    const searched = readProposed(fixture('search-25-proposed')) as NonNullable<
+      ReturnType<typeof readProposed>
+    >;
+    const joined = withAdrs(searched, served.items);
+    expect(joined.total).toBe(25);
+    expect(joined.items).toHaveLength(25);
+    expect(joined.items.slice(0, 20).map((item) => item.adr)).toEqual(
+      served.items.map((item) => item.adr),
     );
-    expect(proposedTooltip(item, undefined)).toBe('a: Use X');
-    const long = 'w'.repeat(500);
-    const cut = proposedTooltip(item, { adr: 'ADR-1', rationale: long, alternatives: undefined });
-    expect(cut).toBe(`ADR-1: Use X\n\n${'w'.repeat(159)}\u2026`);
+    for (const item of joined.items.slice(20)) expect(item).not.toHaveProperty('adr');
+  });
+
+  it('gives the item a short tooltip: the ADR and the title, or the id when no ADR was said', () => {
+    const item = readProposed(JSON.stringify({ hits: [hit('a')] }))?.items[0] as Proposed;
+    expect(proposedTooltip({ ...item, adr: 'ADR-1' })).toBe('ADR-1: Use X');
+    expect(proposedTooltip(item)).toBe('a: Use X');
   });
 });
 

@@ -54,9 +54,10 @@ export function readChannels(stdout: string): Channel[] {
 }
 
 /**
- * The oldest `mnema` the extension is written against: the commands it starts (`verify --json`,
- * `switch`, `rules --json`, `stack list --json`, `search ... --json`) are the ones that version
- * has. An older one is treated as not there, because its answers are not read back correctly.
+ * The oldest `mnema` the extension is written against: the commands it starts (`status --json`,
+ * `verify --json`, `switch`, `rules --json`, `why`, `stack list --json`, `search ... --json`) are the
+ * ones that version has. An older one is treated as not there, because its answers are not read
+ * back correctly.
  */
 export const MIN_CLI_VERSION = '0.1.2';
 
@@ -111,6 +112,7 @@ export const CONTAINER_COMMAND = 'workbench.view.extension.mnema';
  */
 export const TOOLTIP_COMMANDS: readonly string[] = [
   CONTAINER_COMMAND,
+  'mnema.whatToDo',
   'mnema.refresh',
   'workbench.action.openSettings',
 ];
@@ -204,7 +206,9 @@ export function describeBar(input: {
   const off = (input.channels ?? []).filter((c) => !c.on).map((c) => plain(c.name));
   const parts = [`**mnema** · ${plain(proof)}`];
   if (awaiting !== undefined) {
-    parts.push(`[${awaitingPhrase(awaiting)}](command:${CONTAINER_COMMAND})`);
+    parts.push(
+      `[${awaitingPhrase(awaiting)}](command:${CONTAINER_COMMAND}) · [What to do](command:mnema.whatToDo)`,
+    );
   }
   if (input.printed.length > 0) parts.push(fenced(input.printed));
   if (input.channels === undefined || input.channels.length === 0) {

@@ -72,6 +72,18 @@
         }
       }
     },
+    "colors": [
+      {
+        "id": "mnema.recordFolder",
+        "description": "The badge and the name of the .mnema folder in the Explorer: the mnema accent.",
+        "defaults": {
+          "dark": "#c4a0f5",
+          "light": "#997dbf",
+          "highContrast": "#c4a0f5",
+          "highContrastLight": "#5b3d99"
+        }
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -157,6 +169,12 @@
         "icon": "$(go-to-file)"
       },
       {
+        "command": "mnema.whatToDo",
+        "title": "What To Do",
+        "category": "mnema",
+        "icon": "$(list-unordered)"
+      },
+      {
         "command": "mnema.refresh",
         "title": "Refresh",
         "category": "mnema",
@@ -167,6 +185,12 @@
         "title": "Show File Rules",
         "category": "mnema",
         "icon": "$(law)"
+      },
+      {
+        "command": "mnema.why",
+        "title": "Why Is This File Like This?",
+        "category": "mnema",
+        "icon": "$(history)"
       },
       {
         "command": "mnema.stacks.add",
@@ -281,6 +305,11 @@
           "group": "navigation@1"
         },
         {
+          "command": "mnema.whatToDo",
+          "when": "view == mnema.proposed",
+          "group": "1_more@1"
+        },
+        {
           "command": "mnema.stacks.add",
           "when": "view == mnema.stacks",
           "group": "navigation@1"
@@ -322,11 +351,19 @@
           "when": "workspaceFolderCount > 0"
         },
         {
+          "command": "mnema.whatToDo",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
           "command": "mnema.refresh",
           "when": "workspaceFolderCount > 0"
         },
         {
           "command": "mnema.showRules",
+          "when": "workspaceFolderCount > 0 && resourceScheme == file"
+        },
+        {
+          "command": "mnema.why",
           "when": "workspaceFolderCount > 0 && resourceScheme == file"
         },
         {
@@ -356,6 +393,20 @@
         {
           "command": "mnema.stacks.export",
           "when": "workspaceFolderCount > 0"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "mnema.why",
+          "when": "resourceScheme == file && mnema.hasRecord",
+          "group": "mnema@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "mnema.why",
+          "when": "resourceScheme == file && mnema.hasRecord",
+          "group": "mnema@1"
         }
       ]
     },

@@ -13,8 +13,10 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type CliResult, createRun, type Run } from './cli.js';
-import { activate, QUIET_MS, type VscodeApi } from './extension.js';
+import { activate, QUIET_MS, VERIFY_EVERY_MS, type VscodeApi } from './extension.js';
+import { rulesArgs } from './rules.js';
 import { CONTAINER_COMMAND, MIN_CLI_VERSION, TOOLTIP_COMMANDS } from './status.js';
+import { whyArgs } from './why.js';
 
 /** The folders a test made: each holds a real `.mnema`, because the extension reads the disk for it. */
 const made: string[] = [];
@@ -28,15 +30,6 @@ function folderWith(record: boolean): string {
 const ok = (stdout: string): CliResult => ({ code: 0, stdout, stderr: '' });
 /** What the person sends by pressing Enter on a box, whatever it holds. */
 const ENTER = '\u0000enter';
-const hit = (id: string, title: string) => ({
-  id,
-  kind: 'decision',
-  scope: 'public',
-  title,
-  at: '',
-});
-const listing = (...hits: ReturnType<typeof hit>[]) =>
-  ok(JSON.stringify({ hits, total: hits.length }));
 const RULES = ok(
   JSON.stringify({
     rules: [
@@ -50,6 +43,28 @@ const RULES = ok(
     ],
   }),
 );
+/** What the command line built for a sample project with two proposals: the shape of `status --json`. */
+const statusFixture = (
+  name: string,
+): Record<string, unknown> & {
+  awaitingJudgement: Record<string, unknown>[];
+} => JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8'));
+/** One decision of `awaitingJudgement`, in the shape the command line gives it. */
+const decision = (id: string, title: string, adr: string) => ({
+  ...(statusFixture('status-2-awaiting').awaitingJudgement[0] as Record<string, unknown>),
+  id,
+  title,
+  adr,
+});
+/** An answer of `status --json` that says these await a judgment, and `total` in all. */
+const awaiting = (...items: ReturnType<typeof decision>[]): CliResult =>
+  ok(
+    JSON.stringify({
+      ...statusFixture('status-2-awaiting'),
+      awaitingJudgement: items,
+      awaitingJudgementTotal: items.length,
+    }),
+  );
 const VERIFY = ok(JSON.stringify({ ok: true, record: { ok: true, level: 'fully-signed' } }));
 const SWITCH = ok('2 channel(s):\n  brief-document  on  x\n  user-corrections  off  y\n');
 
@@ -59,6 +74,7 @@ function world(
   real?: Run,
   root: string = folderWith(true),
   rereadSetting = false,
+  hidden: readonly string[] = [],
 ) {
   const setting = { command: 'mnema', statusBarEnabled: true };
   const settingListeners: ((e: { affectsConfiguration(s: string): boolean }) => void)[] = [];
@@ -108,7 +124,20 @@ function world(
   let reply: string | undefined;
   type Tree = { getChildren(): never[]; getTreeItem(e: never): Record<string, unknown> };
   const trees = new Map<string, Tree>();
-  const treeViews = new Map<string, { badge: { value: number; tooltip: string } | undefined }>();
+  type View = {
+    badge: { value: number; tooltip: string } | undefined;
+    visible: boolean;
+    listeners: ((e: { visible: boolean }) => void)[];
+  };
+  const treeViews = new Map<string, View>();
+  let decorations:
+    | {
+        onDidChangeFileDecorations: (l: (u: { fsPath: string }) => void) => unknown;
+        provideFileDecoration(u: unknown): unknown;
+      }
+    | undefined;
+  /** The addresses the extension told the Explorer to ask about again. */
+  const redecorated: string[] = [];
   const channel: string[] = [];
   const picks: string[] = [];
   const picked: string[][] = [];
@@ -118,12 +147,11 @@ function world(
   // The documents of the scheme the extension serves, as the editor holds them: read when opened,
   // and read again when the provider says it changed.
   type Address = { scheme: string; path: string; query: string; fsPath: string };
-  let content:
-    | {
-        onDidChange: (l: (u: Address) => void) => unknown;
-        provideTextDocumentContent(u: Address): Promise<string>;
-      }
-    | undefined;
+  type Content = {
+    onDidChange: (l: (u: Address) => void) => unknown;
+    provideTextDocumentContent(u: Address): Promise<string>;
+  };
+  const contents = new Map<string, Content>();
   const documents = new Map<string, { uri: Address; text: string }>();
   const opened: Address[] = [];
   let active: { document: { uri: Address } } | undefined;
@@ -146,11 +174,8 @@ function world(
         settingListeners.push(l);
         return { dispose() {} };
       },
-      registerTextDocumentContentProvider: (
-        _scheme: string,
-        provider: NonNullable<typeof content>,
-      ) => {
-        content = provider;
+      registerTextDocumentContentProvider: (scheme: string, provider: Content) => {
+        contents.set(scheme, provider);
         provider.onDidChange(async (uri) => {
           announced.push(uri.query);
           const known = documents.get(uri.query);
@@ -166,7 +191,7 @@ function world(
         opened.push(uri);
         const document = {
           uri,
-          text: await (content as NonNullable<typeof content>).provideTextDocumentContent(uri),
+          text: await (contents.get(uri.scheme) as Content).provideTextDocumentContent(uri),
         };
         documents.set(uri.query, document);
         return document;
@@ -190,12 +215,23 @@ function world(
         ...parts,
         fsPath: parts.path,
       }),
+      file: (path: string) => ({ scheme: 'file', path, query: '', fsPath: path }),
     },
     window: {
       createStatusBarItem: () => bar,
       createTreeView: (id: string, options: { treeDataProvider: Tree }) => {
         trees.set(id, options.treeDataProvider);
-        const view = { badge: undefined, dispose() {} };
+        const listeners: View['listeners'] = [];
+        const view = {
+          badge: undefined,
+          visible: !hidden.includes(id),
+          listeners,
+          onDidChangeVisibility: (l: View['listeners'][number]) => {
+            listeners.push(l);
+            return { dispose() {} };
+          },
+          dispose() {},
+        };
         treeViews.set(id, view);
         return view;
       },
@@ -227,6 +263,11 @@ function world(
         return items.find(
           (i) => i.label === want || i.label.replace(/^\$\([a-z-]+\) /, '') === want,
         );
+      },
+      registerFileDecorationProvider: (p: NonNullable<typeof decorations>) => {
+        decorations = p;
+        p.onDidChangeFileDecorations((u) => redecorated.push(u.fsPath));
+        return { dispose() {} };
       },
       showInformationMessage: async (m: string, ...actions: string[]) => {
         shown.push(m);
@@ -296,6 +337,13 @@ function world(
     ThemeColor: class {
       constructor(readonly id: string) {}
     },
+    FileDecoration: class {
+      constructor(
+        readonly badge: string,
+        readonly tooltip: string,
+        readonly color: { id: string },
+      ) {}
+    },
     ThemeIcon: class {
       constructor(
         readonly id: string,
@@ -332,6 +380,22 @@ function world(
     root,
     makeRuns,
     treeViews,
+    redecorated,
+    /** Brings a file to the front of the editor, as opening it does. */
+    openInEditor: (uri: Address) => {
+      active = { document: { uri } };
+    },
+    /** Shows or hides a view of the side bar, as the editor does: its listeners are told. */
+    setVisible: (id: string, visible: boolean) => {
+      const view = treeViews.get(id) as View;
+      view.visible = visible;
+      for (const l of view.listeners) l({ visible });
+    },
+    /** What the Explorer is told about an address: the decoration of the provider, or nothing. */
+    decorate: (uri: { scheme: string; fsPath: string }) =>
+      (decorations as NonNullable<typeof decorations>).provideFileDecoration(uri) as
+        | { badge: string; tooltip: string; color: { id: string } }
+        | undefined,
     answers,
     setReply: (v: string | undefined) => {
       reply = v;
@@ -374,16 +438,16 @@ function world(
 }
 
 const LIST = 'search --kind decision --state proposed --limit 200 --json';
+const STATUS = 'status --json';
 const STACK_LIST = 'stack list --json';
 const COVERAGE = 'public: local integrity verified (T1/T2/T4); external witness (T3): not covered';
 const base = (): Record<string, CliResult> => ({
   '--version': ok(`${MIN_CLI_VERSION}\n`),
   verify: ok(`${COVERAGE}\n`),
   [STACK_LIST]: ok(JSON.stringify({ stacks: [] })),
-  [LIST]: listing(hit('d1', 'Use X')),
+  [STATUS]: awaiting(decision('d1', 'Use X', 'ADR-1')),
   'verify --json': VERIFY,
   switch: SWITCH,
-  'show d1 --json': ok('{"record": {"adr": "ADR-1", "rationale": "because Y"}}'),
   rules: RULES,
 });
 
@@ -396,6 +460,8 @@ afterEach(() => {
 });
 
 const settle = () => vi.advanceTimersByTimeAsync(0);
+/** The commands a run started, one string each, in the order they were started. */
+const calls = (w: { ran: string[][] }): string[] => w.ran.map((args) => args.join(' '));
 
 describe('the extension reads the record through the command line', () => {
   it('shows the level and what awaits in the status bar, and the detail in its tooltip', async () => {
@@ -597,14 +663,15 @@ describe('the extension reads the record through the command line', () => {
     expect(without.executed).toContainEqual(['setContext', 'mnema.hasRecord', true]);
   });
 
-  it('lists what waits for a judgment, with its justification', async () => {
+  it('lists what waits for a judgment with its ADR, from one status and no show', async () => {
     const w = world(base());
     await settle();
     const [item] = w.tree().getChildren();
     const node = w.tree().getTreeItem(item as never);
     expect(node.label).toBe('Use X');
     expect(node.description).toBe('ADR-1');
-    expect(node.tooltip).toContain('because Y');
+    expect(node.tooltip).toBe('ADR-1: Use X');
+    expect(w.ran.filter((args) => args[0] === 'show')).toEqual([]);
   });
 
   it('puts a lens on a file a rule addresses, and none on a file outside the folder', async () => {
@@ -619,7 +686,7 @@ describe('the extension reads the record through the command line', () => {
       command: 'mnema.showRules',
       arguments: ['src/a.ts'],
     });
-    expect(w.ran).toContainEqual(['rules', 'src/a.ts', '--json']);
+    expect(w.ran).toContainEqual(['rules', '--json', '--', 'src/a.ts']);
     expect(await w.lenses().provideCodeLenses(doc('/elsewhere/a.ts'))).toEqual([]);
   });
 });
@@ -734,7 +801,7 @@ const movedTo = (name: string, state: string): CliResult => {
 };
 const sample = (): Record<string, CliResult> => ({
   ...base(),
-  [LIST]: listing(hit(PROPOSED_ID, 'Write migrations by hand')),
+  [STATUS]: awaiting(decision(PROPOSED_ID, 'Write migrations by hand', 'ADR-2')),
   [`show ${PROPOSED_ID} --json`]: ok(fixture('show-proposed')),
   [`show ${ACCEPTED_ID} --json`]: ok(fixture('show-accepted')),
   rules: ok(
@@ -879,16 +946,11 @@ describe('a decision opens whole, as what mnema show said', () => {
     expect(keyOf(w, 'mnema.activeDecisionProposed')).toBe(false);
   });
 
-  it('takes the scope from what show said and never from the list', async () => {
+  it('takes the scope from what show said, and the list of status carries none to take', async () => {
     const answers = sample();
-    answers[LIST] = ok(
-      JSON.stringify({
-        hits: [{ ...hit(PROPOSED_ID, 'Write migrations by hand'), scope: 'private' }],
-        total: 1,
-      }),
-    );
     const w = world(answers);
     await settle();
+    expect(w.tree().getChildren()[0]).not.toHaveProperty('scope');
     await w.command('mnema.openDecision')(proposal);
     expect(w.documents.get(`id=${PROPOSED_ID}`)?.text).toContain('- Scope: public');
     const noScope = JSON.parse(fixture('show-proposed')) as Record<string, unknown>;
@@ -1115,13 +1177,11 @@ describe('every item of the views carries an icon for its state and a spoken nam
     });
   });
 
-  it('shows a short tooltip: the title, the ADR and the start of why', async () => {
+  it('shows a short tooltip: the ADR and the title, and the whole text opens on a click', async () => {
     const w = world(sample());
     await settle();
     const [item] = w.tree().getChildren();
-    expect(w.tree().getTreeItem(item as never).tooltip).toBe(
-      "ADR-2: Write migrations by hand\n\nThe ORM's generator drifts from what we review.",
-    );
+    expect(w.tree().getTreeItem(item as never).tooltip).toBe('ADR-2: Write migrations by hand');
   });
 
   it('marks a stack by what the command line reported, and no state icon is a verdict', async () => {
@@ -1174,7 +1234,10 @@ describe('the record is watched, and a new proposal raises the badge and the bar
     await settle();
     expect(w.shown).toEqual([]);
     expect(w.badge()?.value).toBe(1);
-    w.answers[LIST] = listing(hit('d1', 'Use X'), hit('d2', 'Use Y'));
+    w.answers[STATUS] = awaiting(
+      decision('d1', 'Use X', 'ADR-1'),
+      decision('d2', 'Use Y', 'ADR-2'),
+    );
     w.watcher.change[0]?.();
     await vi.advanceTimersByTimeAsync(QUIET_MS);
     expect(w.shown).toEqual([]);
@@ -1188,18 +1251,29 @@ describe('the record is watched, and a new proposal raises the badge and the bar
   it('reads once for a burst of changes, not once per change', async () => {
     const w = world(base());
     await settle();
-    const before = w.ran.filter((a) => a.join(' ') === 'verify --json').length;
+    const before = w.ran.filter((a) => a.join(' ') === STATUS).length;
     for (let i = 0; i < 20; i++) w.watcher.change[0]?.();
     await vi.advanceTimersByTimeAsync(QUIET_MS * 3);
-    expect(w.ran.filter((a) => a.join(' ') === 'verify --json').length).toBe(before + 1);
+    expect(w.ran.filter((a) => a.join(' ') === STATUS).length).toBe(before + 1);
   });
 });
 
 describe('what awaits a judgment is a number on the side bar icon', () => {
-  const hits = (n: number) => Array.from({ length: n }, (_, i) => hit(`d${i}`, `Decision ${i}`));
-  const withList = (n: number, total = n): Record<string, CliResult> => ({
+  const decisions = (n: number) =>
+    Array.from({ length: n }, (_, i) => decision(`d${i}`, `Decision ${i}`, `ADR-${i + 1}`));
+  const withList = (n: number): Record<string, CliResult> => ({
     ...base(),
-    [LIST]: ok(JSON.stringify({ hits: hits(n), total })),
+    [STATUS]: awaiting(...decisions(n)),
+  });
+  /** What the command line built for 25 proposals: `status` served 20, `search` lists all 25. */
+  const withTwentyFive = (): Record<string, CliResult> => ({
+    ...base(),
+    [STATUS]: ok(
+      readFileSync(new URL('./fixtures/status-25-awaiting.json', import.meta.url), 'utf8'),
+    ),
+    [LIST]: ok(
+      readFileSync(new URL('./fixtures/search-25-proposed.json', import.meta.url), 'utf8'),
+    ),
   });
 
   it('is nothing at zero, never a badge that says 0', async () => {
@@ -1210,16 +1284,20 @@ describe('what awaits a judgment is a number on the side bar icon', () => {
     expect(w.executed).toContainEqual(['setContext', 'mnema.proposedRead', true]);
   });
 
-  it('is read only when the answer was understood: text that is not JSON or has no hits is not an empty list', async () => {
-    for (const stdout of ['not json at all', '{"total":3}']) {
-      const w = world({ ...base(), [LIST]: ok(stdout) });
+  it('is read only when the answer was understood: text that is not JSON or has no list is not an empty list', async () => {
+    for (const stdout of [
+      'not json at all',
+      '{"awaitingJudgementTotal":3}',
+      '{"awaitingJudgement":1}',
+    ]) {
+      const w = world({ ...base(), [STATUS]: ok(stdout) });
       await settle();
       expect(w.executed, stdout).toContainEqual(['setContext', 'mnema.proposedRead', false]);
       expect(w.executed, stdout).not.toContainEqual(['setContext', 'mnema.proposedRead', true]);
       expect(w.badge(), stdout).toBeUndefined();
       expect(w.tree().getChildren(), stdout).toEqual([]);
     }
-    const empty = world({ ...base(), [LIST]: ok('{"hits":[],"total":0}') });
+    const empty = world({ ...base(), [STATUS]: ok(fixture('status-nothing-awaits')) });
     await settle();
     expect(empty.executed).toContainEqual(['setContext', 'mnema.proposedRead', true]);
   });
@@ -1233,12 +1311,48 @@ describe('what awaits a judgment is a number on the side bar icon', () => {
     expect(three.badge()).toEqual({ value: 3, tooltip: '3 decisions await a judgment' });
   });
 
-  it('counts the total the command line said, not the decisions it listed', async () => {
-    const w = world(withList(200, 250));
+  it('lists all 25 when status served 20 and counted 25: the 20 with their ADR, the other 5 by their id', async () => {
+    const w = world(withTwentyFive());
     await settle();
-    expect(w.tree().getChildren()).toHaveLength(200);
-    expect(w.badge()).toEqual({ value: 250, tooltip: '250 decisions await a judgment' });
-    expect(w.bar.text).toBe('$(book) fully-signed · 250 to judge');
+    const nodes = w
+      .tree()
+      .getChildren()
+      .map((item) => w.tree().getTreeItem(item as never));
+    expect(nodes).toHaveLength(25);
+    expect(nodes.slice(0, 20).map((n) => n.description)).toEqual(
+      Array.from({ length: 20 }, (_, i) => `ADR-${25 - i}`),
+    );
+    for (const node of nodes.slice(20)) expect(node.description).toMatch(/^[0-9a-f-]{36}$/);
+    expect(w.badge()).toEqual({ value: 25, tooltip: '25 decisions await a judgment' });
+    expect(w.bar.text).toBe('$(book) fully-signed · 25 to judge');
+    expect(w.ran.filter((args) => args[0] === 'search')).toEqual([[...LIST.split(' ')]]);
+  });
+
+  it('asks search only when status cut its list, so 20 or fewer cost one process', async () => {
+    const w = world(base());
+    await settle();
+    expect(w.ran.filter((args) => args[0] === 'search')).toEqual([]);
+    expect(w.ran.filter((args) => args[0] === 'status')).toEqual([['status', '--json']]);
+  });
+
+  it('lists the 20 it was served, and counts what status counted, when search cannot be read', async () => {
+    const w = world({ ...withTwentyFive(), [LIST]: { code: 1, stdout: '', stderr: 'boom' } });
+    await settle();
+    expect(w.tree().getChildren()).toHaveLength(20);
+    expect(w.badge()?.value).toBe(25);
+    const [item] = w.tree().getChildren();
+    expect(String(w.tree().getTreeItem(item as never).tooltip)).toContain('(20 of 25 are listed)');
+  });
+
+  it('lists decisions only, and counts decisions only: a skill that awaits is not a decision to judge here', async () => {
+    const skill = { ...decision('s1', 'A pattern', 'ADR-9'), kind: 'skill' };
+    const w = world({
+      ...base(),
+      [STATUS]: awaiting(decision('d1', 'Use X', 'ADR-1'), skill as never),
+    });
+    await settle();
+    expect(w.tree().getChildren()).toHaveLength(1);
+    expect(w.badge()?.value).toBe(1);
   });
 
   it('is nothing when the command is missing, and again when it is back', async () => {
@@ -1258,7 +1372,7 @@ describe('what awaits a judgment is a number on the side bar icon', () => {
     const answers = withList(2);
     const w = world(answers);
     await settle();
-    answers[LIST] = { code: 1, stdout: '', stderr: 'boom' };
+    answers[STATUS] = { code: 1, stdout: '', stderr: 'boom' };
     await w.command('mnema.refresh')();
     expect(w.badge()).toBeUndefined();
     expect(w.bar.text).toBe('$(book) fully-signed');
@@ -1278,8 +1392,14 @@ describe('in a folder with no .mnema the command line is never run', () => {
   ).contributes.commands.map((c) => c.command);
   const proposal = { id: 'd1', title: 'Use X', scope: 'public', at: '' };
   const stack = { name: 'hello-stack', scope: 'public' };
-  const argumentOf = (id: string): unknown =>
-    id.startsWith('mnema.stacks.') ? stack : id === 'mnema.showRules' ? 'src/a.ts' : proposal;
+  const argumentOf = (id: string, root: string): unknown =>
+    id.startsWith('mnema.stacks.')
+      ? stack
+      : id === 'mnema.showRules'
+        ? 'src/a.ts'
+        : id === 'mnema.why'
+          ? { scheme: 'file', path: `${root}/src/a.ts`, query: '', fsPath: `${root}/src/a.ts` }
+          : proposal;
 
   it('starts no process for a reading, the watcher, a changed setting, a lens or any command of the manifest, and says what is missing', async () => {
     const w = world(withStack(), undefined, folderWith(false));
@@ -1297,7 +1417,12 @@ describe('in a folder with no .mnema the command line is never run', () => {
     for (const id of declared) {
       w.shown.length = 0;
       w.picks.push('hello-stack', 'public');
-      await w.command(id)(argumentOf(id));
+      await w.command(id)(argumentOf(id, w.root));
+      if (id === 'mnema.whatToDo') {
+        // The pick has one line: the folder has no record, and a terminal to start one. Nothing is run.
+        expect(w.picked.at(-1), id).toEqual(['This folder holds no .mnema record']);
+        continue;
+      }
       expect(w.shown, id).toContain(
         'This folder holds no .mnema record. Run mnema init in a terminal here.',
       );
@@ -1779,6 +1904,567 @@ describe('the same acts against the built command line, in a project of their ow
       await w.command('mnema.stacks.addFromIndex')();
       expect(w.errors.at(-1)).toContain('is not the one the index lists');
       expect(w.stackTree().getChildren()).toEqual([]);
+    } finally {
+      if (kept === undefined) delete process.env.HOME;
+      else process.env.HOME = kept;
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  }, 120_000);
+});
+
+/** What the command line built for the sample project with two proposals, ADR-1 and ADR-2. */
+const withTwo = (): Record<string, CliResult> => ({
+  ...base(),
+  [STATUS]: ok(fixture('status-2-awaiting')),
+});
+
+describe('the record is read with few processes, and the work waits for what is on screen', () => {
+  const AT_START = ['--version', 'status --json', 'verify --json', 'verify', 'switch'];
+  const STACKS = 'stack list --json';
+  const verifies = (w: { ran: string[][] }): number =>
+    calls(w).filter((c) => c === 'verify --json').length;
+  /** The extension reads the first time with the stacks view hidden, as it is until the container opens. */
+  const hiddenStacks = ['mnema.stacks'];
+  const started = async (answers: Record<string, CliResult> = withTwo(), hidden = hiddenStacks) => {
+    const w = world(answers, undefined, undefined, false, hidden);
+    await settle();
+    return w;
+  };
+
+  it('starts five processes with two proposals when the stacks are not on screen, six when they are, and asks show for none', async () => {
+    const hidden = await started();
+    expect(calls(hidden).sort()).toEqual([...AT_START].sort());
+    const visible = await started(withTwo(), []);
+    expect(calls(visible).sort()).toEqual([...AT_START, STACKS].sort());
+    expect(calls(visible).some((c) => c.startsWith('show'))).toBe(false);
+  });
+
+  it('asks only what awaits when the record changes and nothing else is due', async () => {
+    const w = await started();
+    w.ran.length = 0;
+    w.watcher.change[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    expect(calls(w)).toEqual([STATUS]);
+  });
+
+  it('asks the stacks too when their view is on screen', async () => {
+    const w = await started(withTwo(), []);
+    w.ran.length = 0;
+    w.watcher.change[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    expect(calls(w).sort()).toEqual([STACKS, STATUS].sort());
+  });
+
+  it('asks --version at the start, on a refresh and when the command setting changes, and not when the record changes', async () => {
+    const w = await started();
+    const versions = (): number => calls(w).filter((c) => c === '--version').length;
+    expect(versions()).toBe(1);
+    w.watcher.change[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    expect(versions()).toBe(1);
+    await w.command('mnema.refresh')();
+    expect(versions()).toBe(2);
+    for (const l of w.settingListeners) l({ affectsConfiguration: (s) => s === 'mnema.command' });
+    await settle();
+    expect(versions()).toBe(3);
+  });
+
+  it('says the command is gone in the same reading in which a call came back with no exit code', async () => {
+    const answers = withTwo();
+    const w = await started(answers);
+    expect(w.bar.text).toBe('$(book) fully-signed · 2 to judge');
+    const gone = { code: null, stdout: '', stderr: 'spawn mnema ENOENT' };
+    answers[STATUS] = gone;
+    answers['--version'] = gone;
+    w.ran.length = 0;
+    w.watcher.change[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    expect(calls(w)).toEqual([STATUS, '--version']);
+    expect(w.executed.filter((e) => e[1] === 'mnema.cliMissing').at(-1)?.[2]).toBe(true);
+    expect(w.bar.text).toBe('$(warning) mnema not found');
+    expect(w.badge()).toBeUndefined();
+  });
+
+  it('asks --version again at the next change while the last answer was that the command is missing', async () => {
+    const answers: Record<string, CliResult> = {
+      ...withTwo(),
+      '--version': { code: null, stdout: '', stderr: 'spawn mnema ENOENT' },
+    };
+    const w = await started(answers);
+    expect(w.bar.text).toBe('$(warning) mnema not found');
+    answers['--version'] = ok(`${MIN_CLI_VERSION}\n`);
+    w.watcher.change[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    expect(w.bar.text).toBe('$(book) fully-signed · 2 to judge');
+  });
+
+  it('verifies at most once in ten seconds, and a write inside the interval is verified when it ends', async () => {
+    const w = await started();
+    expect(verifies(w)).toBe(1);
+    for (let i = 0; i < 3; i++) {
+      w.watcher.change[0]?.();
+      await vi.advanceTimersByTimeAsync(2000);
+    }
+    // Six seconds in, three readings of the record, no second verification yet.
+    expect(verifies(w)).toBe(1);
+    await vi.advanceTimersByTimeAsync(VERIFY_EVERY_MS - 6000);
+    expect(verifies(w)).toBe(2);
+    expect(calls(w).filter((c) => c === 'verify').length).toBe(2);
+    expect(calls(w).filter((c) => c === 'switch').length).toBe(2);
+    // Nothing more is asked once nothing changes.
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(verifies(w)).toBe(2);
+  });
+
+  it('verifies a change that comes after the interval at once', async () => {
+    const w = await started();
+    await vi.advanceTimersByTimeAsync(VERIFY_EVERY_MS + 1000);
+    w.watcher.change[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    expect(verifies(w)).toBe(2);
+  });
+
+  it('counts twenty changes in thirty seconds: five verifications with the first, the last one ten seconds after the last write', async () => {
+    const w = await started();
+    w.ran.length = 0;
+    for (let i = 0; i < 20; i++) {
+      w.watcher.change[0]?.();
+      await vi.advanceTimersByTimeAsync(1600);
+    }
+    await vi.advanceTimersByTimeAsync(VERIFY_EVERY_MS);
+    expect(calls(w).filter((c) => c === STATUS).length).toBe(20);
+    expect(verifies(w)).toBe(4);
+    expect(w.ran.length).toBe(20 + 4 * 3);
+  });
+
+  it('verifies at once on a refresh, inside the interval, and a refresh costs six processes, the stacks included', async () => {
+    const w = await started();
+    w.ran.length = 0;
+    await w.command('mnema.refresh')();
+    expect(calls(w).sort()).toEqual([...AT_START, STACKS].sort());
+  });
+
+  it('does not verify while the bar is off, and verifies as soon as it is on again', async () => {
+    const w = await started();
+    w.setting.statusBarEnabled = false;
+    for (const l of w.settingListeners)
+      l({ affectsConfiguration: (s) => s === 'mnema.statusBar.enabled' });
+    w.ran.length = 0;
+    w.watcher.change[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS + 3 * VERIFY_EVERY_MS);
+    await w.command('mnema.refresh')();
+    expect(calls(w).filter((c) => c.startsWith('verify') || c === 'switch')).toEqual([]);
+    w.setting.statusBarEnabled = true;
+    for (const l of w.settingListeners)
+      l({ affectsConfiguration: (s) => s === 'mnema.statusBar.enabled' });
+    await settle();
+    expect(verifies(w)).toBe(1);
+  });
+
+  it('keeps the level it last read, with the count that is new, between two verifications', async () => {
+    const answers = withTwo();
+    const w = await started(answers);
+    expect(w.bar.text).toBe('$(book) fully-signed · 2 to judge');
+    answers[STATUS] = awaiting(decision('d1', 'Use X', 'ADR-1'));
+    w.watcher.change[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    expect(verifies(w)).toBe(1);
+    expect(w.bar.text).toBe('$(book) fully-signed · 1 to judge');
+  });
+
+  it('does not read the stacks while their view is hidden, reads them when it appears, and says it has not read them until then', async () => {
+    const w = await started();
+    expect(calls(w)).not.toContain(STACKS);
+    expect(keyOf(w, 'mnema.stacksRead')).toBe(false);
+    w.setVisible('mnema.stacks', true);
+    await settle();
+    expect(calls(w).filter((c) => c === STACKS)).toHaveLength(1);
+    expect(keyOf(w, 'mnema.stacksRead')).toBe(true);
+    // Shown again with nothing new: not read again.
+    w.setVisible('mnema.stacks', false);
+    w.setVisible('mnema.stacks', true);
+    await settle();
+    expect(calls(w).filter((c) => c === STACKS)).toHaveLength(1);
+    // Hidden, the record changes: the list is old, and it is read when the view comes back.
+    w.setVisible('mnema.stacks', false);
+    w.watcher.change[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    expect(calls(w).filter((c) => c === STACKS)).toHaveLength(1);
+    expect(keyOf(w, 'mnema.stacksRead')).toBe(false);
+    w.setVisible('mnema.stacks', true);
+    await settle();
+    expect(calls(w).filter((c) => c === STACKS)).toHaveLength(2);
+    expect(keyOf(w, 'mnema.stacksRead')).toBe(true);
+  });
+
+  it('reads the stacks on a refresh asked for, even when their view is hidden', async () => {
+    const w = await started();
+    await w.command('mnema.refresh')();
+    expect(calls(w).filter((c) => c === STACKS)).toHaveLength(1);
+  });
+
+  it('counts what an act of the person costs as a refresh: the judgment is followed by a full reading', async () => {
+    const w = await started({
+      ...withTwo(),
+      [`decision move accept ${ID_OF_ADR_1} --note ok`]: ok(
+        `Decision ADR-1 (${ID_OF_ADR_1}) → accepted\n`,
+      ),
+    });
+    w.setReply('ok');
+    w.ran.length = 0;
+    await w.command('mnema.accept')({ id: ID_OF_ADR_1, title: 'Use SQLite for the cache', at: '' });
+    expect(calls(w).sort()).toEqual(
+      [`decision move accept ${ID_OF_ADR_1} --note ok`, ...AT_START, STACKS].sort(),
+    );
+  });
+});
+
+const ID_OF_ADR_1 = (
+  JSON.parse(fixture('status-2-awaiting')) as { awaitingJudgement: { id: string; adr: string }[] }
+).awaitingJudgement.find((item) => item.adr === 'ADR-1')?.id as string;
+
+describe('the what-to-do pick is made of one status, and judges nothing', () => {
+  const labelsOf = (w: ReturnType<typeof world>) => w.picked.at(-1);
+  const placeholderOf = (w: ReturnType<typeof world>) =>
+    (w.pickOptions.at(-1) as unknown as { placeHolder: string }).placeHolder;
+
+  it('lists what awaits in the order the command line gave it, each opening the decision whole', async () => {
+    const w = world(withTwo());
+    await settle();
+    w.ran.length = 0;
+    w.picks.push('ADR-1  Use SQLite for the cache');
+    await w.command('mnema.whatToDo')();
+    expect(labelsOf(w)).toEqual([
+      'ADR-2  Keep the CLI free of a daemon',
+      'ADR-1  Use SQLite for the cache',
+    ]);
+    // One status, then the `show` the document of the chosen decision asks for, and nothing else.
+    expect(calls(w)).toEqual([STATUS, `show ${ID_OF_ADR_1} --json`]);
+    expect(w.opened.map((u) => u.query)).toEqual([`id=${ID_OF_ADR_1}`]);
+    expect(w.pickOptions.at(-1)).toMatchObject({ title: 'What To Do', ignoreFocusOut: true });
+    expect(placeholderOf(w)).toBe('Pick a decision to read it whole.');
+  });
+
+  it('says nothing awaits in its placeholder, and has no item', async () => {
+    const w = world({ ...base(), [STATUS]: ok(fixture('status-nothing-awaits')) });
+    await settle();
+    await w.command('mnema.whatToDo')();
+    expect(labelsOf(w)).toEqual([]);
+    expect(placeholderOf(w)).toBe('Nothing awaits a judgment, as mnema reads it.');
+  });
+
+  it('lists the 20 status served and a line for the 5 more, which opens the side bar', async () => {
+    const w = world({
+      ...base(),
+      [STATUS]: ok(
+        readFileSync(new URL('./fixtures/status-25-awaiting.json', import.meta.url), 'utf8'),
+      ),
+    });
+    await settle();
+    w.picks.push('5 more await a judgment');
+    w.executed.length = 0;
+    await w.command('mnema.whatToDo')();
+    const labels = labelsOf(w) ?? [];
+    expect(labels).toHaveLength(21);
+    expect(labels.at(-1)).toBe('5 more await a judgment');
+    expect(labels[0]).toBe('ADR-25  Decision number 25');
+    expect(w.executed).toContainEqual([CONTAINER_COMMAND]);
+  });
+
+  it('lists only decisions, and says in one more line that something else awaits too', async () => {
+    const skill = { ...decision('s1', 'A pattern', 'ADR-9'), kind: 'skill' };
+    const w = world({
+      ...base(),
+      [STATUS]: awaiting(decision('d1', 'Use X', 'ADR-1'), skill as never),
+    });
+    await settle();
+    await w.command('mnema.whatToDo')();
+    expect(labelsOf(w)).toEqual(['ADR-1  Use X', '1 more awaits a judgment']);
+  });
+
+  it('shows a title from the record on one line, whatever it carries', async () => {
+    const w = world({
+      ...base(),
+      [STATUS]: awaiting(
+        decision('d1', 'Line one\nLine two\u0007 [x](command:mnema.accept)', 'ADR-1'),
+      ),
+    });
+    await settle();
+    await w.command('mnema.whatToDo')();
+    const [label] = labelsOf(w) ?? [];
+    expect(label).not.toContain('\n');
+    expect(label).not.toContain('\u0007');
+    expect(label).toContain('Line one');
+  });
+
+  it('has no line that accepts or rejects, and choosing any line never puts a judgment among the runs', async () => {
+    const w = world(withTwo());
+    await settle();
+    for (const label of labelsOf(w) ?? []) expect(label).not.toMatch(/accept|reject/i);
+    for (const pick of [
+      'ADR-2  Keep the CLI free of a daemon',
+      'ADR-1  Use SQLite for the cache',
+    ]) {
+      w.picks.push(pick);
+      await w.command('mnema.whatToDo')();
+    }
+    expect(w.ran.some((args) => args[0] === 'decision')).toBe(false);
+    expect(w.inputs).toEqual([]);
+  });
+
+  it('opens a terminal in a folder with no record, and runs nothing', async () => {
+    const w = world(withTwo(), undefined, folderWith(false));
+    await settle();
+    w.picks.push('This folder holds no .mnema record');
+    await w.command('mnema.whatToDo')();
+    expect(w.executed).toContainEqual(['workbench.action.terminal.new']);
+    expect(w.ran).toEqual([]);
+  });
+
+  it('opens the setting when the command is missing', async () => {
+    const w = world({
+      ...withTwo(),
+      [STATUS]: { code: null, stdout: '', stderr: 'spawn mnema ENOENT' },
+      '--version': { code: null, stdout: '', stderr: 'spawn mnema ENOENT' },
+    });
+    await settle();
+    w.picks.push('The mnema command could not be used');
+    await w.command('mnema.whatToDo')();
+    expect(labelsOf(w)).toEqual(['The mnema command could not be used']);
+    expect(w.executed).toContainEqual(['workbench.action.openSettings', 'mnema.command']);
+  });
+
+  it('says it did not read when status gave an answer it cannot read, and lists nothing', async () => {
+    const w = world({ ...withTwo(), [STATUS]: ok('not json') });
+    await settle();
+    await w.command('mnema.whatToDo')();
+    expect(labelsOf(w)).toEqual([]);
+    expect(placeholderOf(w)).toBe('mnema did not say what awaits a judgment.');
+  });
+});
+
+describe('why a file is the way it is opens as the words of the command line', () => {
+  const WHY_A = readFileSync(new URL('./fixtures/why-a-file.txt', import.meta.url), 'utf8');
+  const fileUri = (w: { root: string }, name: string) => ({
+    scheme: 'file',
+    path: `${w.root}/${name}`,
+    query: '',
+    fsPath: `${w.root}/${name}`,
+  });
+  const whyDocs = (w: ReturnType<typeof world>) => w.opened.filter((u) => u.scheme === 'mnema-why');
+
+  it('asks mnema why with the path after --, and shows what it printed under a header that says when', async () => {
+    vi.setSystemTime(new Date('2026-10-27T14:03:09Z'));
+    const w = world({ ...base(), 'why -- src/a.ts': ok(WHY_A) });
+    await settle();
+    w.ran.length = 0;
+    await w.command('mnema.why')(fileUri(w, 'src/a.ts'));
+    expect(w.ran).toEqual([['why', '--', 'src/a.ts']]);
+    const [doc] = whyDocs(w);
+    expect(doc?.path).toBe('/Why a.ts');
+    const text = w.documents.get(doc?.query ?? '')?.text ?? '';
+    expect(text.startsWith('mnema why -- src/a.ts, read at 2026-10-27T14:03:09Z\n\n')).toBe(true);
+    expect(text).toContain('rules in force that address this path: 0');
+    expect(text).toContain('nothing was written to the record');
+    expect(w.active()?.scheme).toBe('mnema-why');
+  });
+
+  it('uses the file open in the editor when the palette gives none', async () => {
+    const w = world({ ...base(), 'why -- src/a.ts': ok(WHY_A) });
+    await settle();
+    w.openInEditor(fileUri(w, 'src/a.ts'));
+    await w.command('mnema.why')(undefined);
+    expect(w.ran).toContainEqual(['why', '--', 'src/a.ts']);
+  });
+
+  it('says what the command line refused, and no more', async () => {
+    const w = world({
+      ...base(),
+      'why -- src/a.ts': { code: 1, stdout: '', stderr: 'Not a project.' },
+    });
+    await settle();
+    await w.command('mnema.why')(fileUri(w, 'src/a.ts'));
+    const text = w.documents.get(whyDocs(w)[0]?.query ?? '')?.text ?? '';
+    expect(text).toContain('mnema refused: Not a project.');
+    expect(text).not.toContain('rules in force');
+  });
+
+  it('is a new document at each opening, so a second look is never an old reading', async () => {
+    const answers: Record<string, CliResult> = { ...base(), 'why -- src/a.ts': ok(WHY_A) };
+    const w = world(answers);
+    await settle();
+    await w.command('mnema.why')(fileUri(w, 'src/a.ts'));
+    vi.setSystemTime(Date.now() + 5000);
+    answers['why -- src/a.ts'] = ok('changed\n');
+    await w.command('mnema.why')(fileUri(w, 'src/a.ts'));
+    const docs = whyDocs(w);
+    expect(docs).toHaveLength(2);
+    expect(docs[0]?.query).not.toBe(docs[1]?.query);
+    expect(w.documents.get(docs[1]?.query ?? '')?.text).toContain('changed');
+  });
+
+  it('puts a file named like an option after --, and the lens does too', async () => {
+    const w = world({
+      ...base(),
+      'why -- -x': ok('-x  ·  not in the working tree\n'),
+      'why -- --json': ok('--json  ·  not in the working tree\n'),
+    });
+    await settle();
+    await w.command('mnema.why')(fileUri(w, '-x'));
+    await w.command('mnema.why')(fileUri(w, '--json'));
+    expect(w.ran).toContainEqual(['why', '--', '-x']);
+    expect(w.ran).toContainEqual(['why', '--', '--json']);
+    await w.lenses().provideCodeLenses({ uri: fileUri(w, '-x') } as never);
+    expect(w.ran).toContainEqual(['rules', '--json', '--', '-x']);
+    expect(w.ran.filter((args) => args[0] === 'rules' && args[1] !== '--json')).toEqual([]);
+  });
+
+  it('keeps a line break in the name out of the header and the tab', async () => {
+    const w = world({ ...base() });
+    await settle();
+    await w.command('mnema.why')(fileUri(w, 'a\nb.ts'));
+    expect(w.ran).toContainEqual(['why', '--', 'a\nb.ts']);
+    const [doc] = whyDocs(w);
+    expect(doc?.path).not.toContain('\n');
+    const header = (w.documents.get(doc?.query ?? '')?.text ?? '').split('\n\n')[0] ?? '';
+    expect(header).not.toContain('\n');
+  });
+
+  it('asks nothing for a file outside the folder, or one that is not a file, and says so', async () => {
+    const w = world(base());
+    await settle();
+    w.ran.length = 0;
+    await w.command('mnema.why')({
+      scheme: 'file',
+      path: '/elsewhere/a.ts',
+      query: '',
+      fsPath: '/elsewhere/a.ts',
+    });
+    await w.command('mnema.why')({
+      scheme: 'untitled',
+      path: 'Untitled-1',
+      query: '',
+      fsPath: 'Untitled-1',
+    });
+    expect(w.ran).toEqual([]);
+    expect(w.opened).toEqual([]);
+    expect(w.shown).toEqual([
+      'mnema why reads a file inside the folder that is open.',
+      'mnema why reads a file inside the folder that is open.',
+    ]);
+  });
+
+  it('places a path in one function: no verb of the extension writes the path itself', () => {
+    const dir = new URL('.', import.meta.url);
+    const holders = readdirSync(dir).filter(
+      (name) =>
+        name.endsWith('.ts') &&
+        !name.endsWith('.test.ts') &&
+        /'--',\s*path/.test(readFileSync(new URL(name, dir), 'utf8')),
+    );
+    expect(holders).toEqual(['rules.ts']);
+    const source = readFileSync(new URL('./extension.ts', import.meta.url), 'utf8');
+    expect(source).not.toMatch(/\['rules'/);
+    expect(source).not.toMatch(/\['why'/);
+  });
+});
+
+describe('the folder of the record wears a mark in the Explorer, and no file does', () => {
+  it('marks the .mnema folder with the badge M, the accent colour and what the folder is', async () => {
+    const w = world(base());
+    await settle();
+    const mark = w.decorate({ scheme: 'file', fsPath: join(w.root, '.mnema') });
+    expect(mark).toEqual({
+      badge: 'M',
+      tooltip: 'The mnema record of this project. mnema verify reads it.',
+      color: { id: 'mnema.recordFolder' },
+    });
+  });
+
+  it('marks nothing else: not the folder that holds it, not what is inside it, not a governed file, not another scheme', async () => {
+    const w = world({ ...base(), rules: RULES });
+    await settle();
+    for (const fsPath of [
+      w.root,
+      join(w.root, '.mnema', 'public'),
+      join(w.root, '.mnema', 'public', 'tails', 'a.jsonl'),
+      join(w.root, 'src', 'a.ts'),
+      join(w.root, 'src', '.mnema'),
+      join(w.root, '.mnema-old'),
+      '/elsewhere/.mnema',
+    ]) {
+      expect(w.decorate({ scheme: 'file', fsPath }), fsPath).toBeUndefined();
+    }
+    expect(
+      w.decorate({ scheme: 'mnema-decision', fsPath: join(w.root, '.mnema') }),
+    ).toBeUndefined();
+  });
+
+  it('starts no process to answer, in a folder with a record or without', async () => {
+    const withRecord = world(base());
+    await settle();
+    const before = withRecord.ran.length;
+    withRecord.decorate({ scheme: 'file', fsPath: join(withRecord.root, '.mnema') });
+    withRecord.decorate({ scheme: 'file', fsPath: join(withRecord.root, 'src', 'a.ts') });
+    expect(withRecord.ran.length).toBe(before);
+    const without = world(base(), undefined, folderWith(false));
+    await settle();
+    expect(without.decorate({ scheme: 'file', fsPath: join(without.root, '.mnema') })?.badge).toBe(
+      'M',
+    );
+    expect(without.ran).toEqual([]);
+  });
+
+  it('asks the Explorer again about the folder when it is born or removed', async () => {
+    const w = world(base());
+    await settle();
+    w.watcher.create[0]?.();
+    expect(w.redecorated).toEqual([join(w.root, '.mnema')]);
+  });
+
+  it('imports nothing that could read the disk or start a process', () => {
+    const source = readFileSync(new URL('./record-mark.ts', import.meta.url), 'utf8');
+    const imports = [...source.matchAll(/^import .* from '([^']+)';$/gm)].map((m) => m[1]);
+    expect(imports).toEqual(['node:path']);
+  });
+});
+
+describe('the same two commands against the built command line, with files named like options', () => {
+  const CLI = fileURLToPath(new URL('../../code/dist/cli.js', import.meta.url));
+
+  it('reads rules and why of a file named -x, which the order before -- could not', async () => {
+    vi.useRealTimers();
+    const sandbox = mkdtempSync(join(tmpdir(), 'mnema-extension-paths-'));
+    const kept = process.env.HOME;
+    const project = join(sandbox, 'project');
+    mkdirSync(project);
+    mkdirSync(join(sandbox, 'home'));
+    process.env.HOME = join(sandbox, 'home');
+    try {
+      const real = createRun(CLI, project);
+      expect((await real(['init'])).code).toBe(0);
+      for (const name of ['-x', '--json']) {
+        writeFileSync(join(project, name), 'x\n');
+        const rules = await real(rulesArgs(name));
+        expect(rules.code, `rules ${name}: ${rules.stderr}`).toBe(0);
+        const why = await real(whyArgs(name));
+        expect(why.code, `why ${name}: ${why.stderr}`).toBe(0);
+        expect(why.stdout).toContain(name);
+      }
+      // The control: the order the extension used before is refused for the same file.
+      expect((await real(['rules', '-x', '--json'])).code).not.toBe(0);
+      const w = world({}, real, project);
+      await vi.waitFor(() => expect(w.bar.text).not.toBe('mnema: reading'), { timeout: 20_000 });
+      await w.command('mnema.why')({
+        scheme: 'file',
+        path: join(project, '-x'),
+        query: '',
+        fsPath: join(project, '-x'),
+      });
+      const [doc] = w.opened.filter((u) => u.scheme === 'mnema-why');
+      expect(w.documents.get(doc?.query ?? '')?.text).toContain(
+        'rules in force that address this path: 0',
+      );
     } finally {
       if (kept === undefined) delete process.env.HOME;
       else process.env.HOME = kept;

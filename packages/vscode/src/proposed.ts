@@ -1,16 +1,22 @@
 /**
- * The decisions waiting for a person, read from `mnema search --state proposed --json` and
- * `mnema show <id> --json`, and the command that judges one.
+ * The decisions waiting for a person, read from `mnema status --json`, and the command that judges one.
+ *
+ * `status --json` serves the first 20 of everything that awaits a judgment, with the `ADR-n` of each
+ * decision and a count of all of them. When there are more than it served, the panel also asks
+ * `mnema search`, which lists up to 200 decisions, so no decision that was listed before is dropped.
  *
  * A judgment is the CLI's own verb, `mnema decision move accept|reject <id> --note <text>`, and
  * the note is the CLI's own requirement; this module only refuses to ask for a verdict it
  * already knows the CLI would refuse.
  */
 
-/** How many the panel asks for: the most `mnema search` returns. */
+/** How many the panel asks for when `status` cut its list: the most `mnema search` returns. */
 export const PROPOSED_LIMIT = 200;
 
-/** The command that lists what waits for a judgment. */
+/** The command that says what awaits a judgment, and how many there are in all. */
+export const STATUS_ARGS: readonly string[] = ['status', '--json'];
+
+/** The command that lists the decisions awaiting a judgment, up to the most it returns. */
 export const LIST_ARGS: readonly string[] = [
   'search',
   '--kind',
@@ -26,15 +32,11 @@ export const LIST_ARGS: readonly string[] = [
 export interface Proposed {
   readonly id: string;
   readonly title: string;
-  readonly scope: string;
+  /** Set only when the answer that listed it said it: `status` does not, so it is not made up. */
+  readonly scope?: string;
   readonly at: string;
-}
-
-/** What the record holds about one of them, when it was asked. */
-export interface ProposedDetail {
-  readonly adr: string | undefined;
-  readonly rationale: string | undefined;
-  readonly alternatives: string | undefined;
+  /** Set only when the answer that listed it carried it: `status` does, `search` does not. */
+  readonly adr?: string;
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -65,7 +67,7 @@ export function readProposed(stdout: string): { items: Proposed[]; total: number
     items.push({
       id,
       title,
-      scope: typeof scope === 'string' ? scope : 'public',
+      ...(typeof scope === 'string' ? { scope } : {}),
       at: typeof at === 'string' ? at : '',
     });
   }
@@ -73,29 +75,67 @@ export function readProposed(stdout: string): { items: Proposed[]; total: number
   return { items, total };
 }
 
-/** The justification and the alternatives in an answer of `mnema show --json`. */
-export function readDetail(stdout: string): ProposedDetail {
-  const record = parse(stdout)?.record;
-  const body = isObject(record) ? record : {};
-  const text = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined);
+/** What `mnema status --json` said awaits a judgment. */
+export interface AwaitingRead {
+  /** The decisions among what it served, in its order, each with its `ADR-n` when it said one. */
+  readonly items: Proposed[];
+  /** How many things `status` served in all (decisions, skills and tasks): its list is cut at 20. */
+  readonly served: number;
+  /** How many await a judgment in all, of any kind, as `status` counted them. */
+  readonly total: number;
+}
+
+/**
+ * The reading of `mnema status --json`. Undefined when the text is not that answer: one that
+ * carries no `awaitingJudgement` list is not an empty one.
+ */
+export function readStatus(stdout: string): AwaitingRead | undefined {
+  const answer = parse(stdout);
+  const awaiting = answer?.awaitingJudgement;
+  if (!Array.isArray(awaiting)) return undefined;
+  const items: Proposed[] = [];
+  for (const item of awaiting as unknown[]) {
+    if (!isObject(item)) continue;
+    const { id, title, adr, updatedAt, kind } = item;
+    if (kind !== 'decision' || typeof id !== 'string' || typeof title !== 'string') continue;
+    items.push({
+      id,
+      title,
+      at: typeof updatedAt === 'string' ? updatedAt : '',
+      ...(typeof adr === 'string' && adr !== '' ? { adr } : {}),
+    });
+  }
+  const total = answer?.awaitingJudgementTotal;
   return {
-    adr: text(body.adr),
-    rationale: text(body.rationale),
-    alternatives: text(body.alternatives),
+    items,
+    served: awaiting.length,
+    total: typeof total === 'number' && total >= awaiting.length ? total : awaiting.length,
   };
 }
 
-/** How much of the justification a tooltip carries: the rest is in the document of the decision. */
-const TOOLTIP_CHARS = 160;
+/** Whether `status` cut its list: there are more waiting than it served, so `search` is asked too. */
+export const wasCut = (read: AwaitingRead): boolean => read.total > read.served;
 
-/** What the tooltip of an item says: the title, the ADR and the start of why. The whole text opens on a click. */
-export function proposedTooltip(item: Proposed, detail: ProposedDetail | undefined): string {
-  const head = `${detail?.adr ?? item.id}: ${item.title}`;
-  const why = detail?.rationale;
-  if (why === undefined) return head;
-  const start = why.length > TOOLTIP_CHARS ? `${why.slice(0, TOOLTIP_CHARS - 1)}\u2026` : why;
-  return `${head}\n\n${start}`;
+/**
+ * The decisions `search` listed, each with the `ADR-n` `status` gave for the ones it served: the
+ * rest are listed by their id, as before. The count is `search`'s own, of decisions only.
+ */
+export function withAdrs(
+  listed: { items: Proposed[]; total: number },
+  served: readonly Proposed[],
+): { items: Proposed[]; total: number } {
+  const adrs = new Map(served.map((item) => [item.id, item.adr]));
+  return {
+    total: listed.total,
+    items: listed.items.map((item) => {
+      const adr = adrs.get(item.id);
+      return adr === undefined ? item : { ...item, adr };
+    }),
+  };
 }
+
+/** What the tooltip of an item says: the ADR and the title. The whole text opens on a click. */
+export const proposedTooltip = (item: Proposed): string => `${item.adr ?? item.id}: ${item.title}`;
 
 /** The two verbs a person has. */
 export type Judgment = 'accept' | 'reject';

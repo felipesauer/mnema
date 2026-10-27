@@ -64,7 +64,7 @@ const oneLined = (value: string | undefined): string | undefined =>
   value === undefined ? undefined : oneLine(value);
 
 /** When it was read, in UTC with the Z, as the events' own hours are written: `2026-10-27T14:03:09Z`. */
-const clock = (at: Date): string => at.toISOString().replace(/\.\d{3}Z$/, 'Z');
+export const clock = (at: Date): string => at.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 /** Who a record names: the identity, and the agent when it says one. */
 function actor(value: unknown): string | undefined {

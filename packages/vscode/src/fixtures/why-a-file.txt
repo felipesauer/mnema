@@ -1,0 +1,5 @@
+src/a.ts  ·  in the working tree
+  rules in force that address this path: 0
+  There is no git work tree here, so no commits were read.
+
+  Read from git just now; nothing was written to the record.
