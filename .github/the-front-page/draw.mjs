@@ -355,6 +355,88 @@ function banner(blocks, theme) {
   ].join('\n');
 }
 
+/** The size of the social card, the one every link preview takes: 1200 by 630. */
+export const CARD = Object.freeze({ w: 1200, h: 630 });
+
+/**
+ * A text broken into lines no wider than `limit`, each character counted at the monospace advance
+ * (`ADVANCE`), which a sans face never exceeds, so a line drawn in `SANS` always fits.
+ * @param {string} text
+ * @param {number} size
+ * @param {number} limit
+ * @returns {string[]}
+ */
+function wrapped(text, size, limit) {
+  /** @type {string[]} */
+  const lines = [];
+  let line = '';
+  for (const word of text.split(/\s+/)) {
+    const next = line === '' ? word : `${line} ${word}`;
+    if (line !== '' && [...next].length * size * ADVANCE > limit) {
+      lines.push(line);
+      line = word;
+    } else line = next;
+  }
+  if (line !== '') lines.push(line);
+  return lines;
+}
+
+/**
+ * The social card of the site, one picture for every page: a link preview takes a still image. The banner's
+ * wordmark and four cubes, drawn by the pieces the banner draws with and nothing that moves, on the dark
+ * page, and under them the pitch of the README, its line and its paragraph, as the only words. Each line
+ * is a `<text>` in the front page's sans face; the card is rasterized with those letters drawn.
+ * @param {{ blocks: readonly string[], pitch: { title: string, body: string } }} options
+ */
+export function socialCard({ blocks, pitch }) {
+  const theme = 'dark';
+  const paint = frontPalette(theme);
+  const accent = ACCENT[theme];
+  const { muted, text } = NEUTRAL[theme];
+  const columns = Math.max(...blocks.map((row) => [...row].length));
+  const markWidth = columns * CELL.w;
+  const middle = ((blocks.length - 1) * CELL.h) / 2;
+  const gap = 56;
+  const [blockPath, linePath] = wordmark(blocks, accent, 0, 0);
+  const { parts } = chain(accent, muted, markWidth + gap, middle, paint);
+  const scale = 1.1;
+  const left = 80;
+  const top = 84;
+  const limit = CARD.w - 2 * left;
+  /**
+   * @param {string[]} lines
+   * @param {number} size
+   * @param {string} weight
+   * @param {string} fill
+   * @param {number} y
+   * @param {number} step
+   */
+  const setLines = (lines, size, weight, fill, y, step) =>
+    lines.map(
+      (line, i) =>
+        `<text x="${left}" y="${n(y + i * step)}" font-family="${SANS}" font-size="${size}"${weight === '' ? '' : ` font-weight="${weight}"`} fill="${fill}">${escaped(line)}</text>`,
+    );
+  const title = wrapped(pitch.title, 52, limit);
+  const titleY = top + inkFoot(blocks) * scale + 96;
+  const body = wrapped(pitch.body, 28, limit);
+  const bodyY = titleY + (title.length - 1) * 64 + 64;
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${CARD.w}" height="${CARD.h}" viewBox="0 0 ${CARD.w} ${CARD.h}">`,
+    ...paint.defs,
+    `<rect width="${CARD.w}" height="${CARD.h}" fill="${PAGE[theme]}"/>`,
+    `<ellipse cx="${CARD.w / 2}" cy="${CARD.h / 2}" rx="${CARD.w / 2 - 8}" ry="${CARD.h / 2}" fill="url(#glow)"/>`,
+    `<g transform="translate(${left} ${top}) scale(${scale})">`,
+    blockPath,
+    linePath,
+    ...parts,
+    '</g>',
+    ...setLines(title, 52, '600', text, titleY, 64),
+    ...setLines(body, 28, '', muted, bodyY, 40),
+    '</svg>',
+    '',
+  ].join('\n');
+}
+
 // ---------------------------------------------------------------------------------------------
 // How it works
 

@@ -57,8 +57,10 @@ CLI and the MCP tools behave identically, because they are the same call.
 - **A page of the record that verifies itself**: `mnema site` writes one
   `index.html` from the committed (public) tree, by default under `.mnema/site/` (the record's own `.gitignore`
   keeps it out of git, and `mnema site` adds that line first to a record that lacks it); `--out <dir>` names another
-  directory, and one inside the record and outside `site/` is refused. The page lists the decisions in force, with a control
-  that shows the rest, the history of each, who authorized it, and the stored events. The
+  directory, and one inside the record and outside `site/` is refused. The page lists every decision as a card (its reasons,
+  who recorded and who accepted it, as a person or as an agent, its history and the paths it is addressed at) with the public
+  notes that belong to it, and a timeline; with JavaScript a filter opens on the decisions in force and narrows them by state,
+  identity, agent or person, day, text and path, and the stored events of a tail are drawn when it is opened. The
   page carries the record's files and runs the same verifier as `mnema verify` over them in
   the reader's browser, with no request and no key. Nothing from a private or machine-global
   tree is in it, and no script or style comes from elsewhere. What the verdict does and does
