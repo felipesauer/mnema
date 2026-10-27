@@ -28,7 +28,7 @@ a finding, and a good capture.
    Stacks, say the folder holds no record and how to start one, in sentences, with no blue button. Run
    `mnema: Refresh` from the palette: one message says the folder holds no record.
 2. **A folder with a `.mnema` and no `mnema` command.** Set `mnema.command` in your user settings to a
-   path that does not exist. The status bar item says `mnema not found`, with a warning
+   path that does not exist. The status bar item says "mnema not found", with a warning
    icon. The two views say the command is missing, and do not say nothing is pending. Hovering the
    item says why, and what to install or set, with a link to the `mnema.command` setting. Clicking
    it opens the mnema container.

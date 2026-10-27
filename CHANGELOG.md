@@ -91,7 +91,7 @@ with its own changelog.
 
 - **The VS Code extension's status bar item is short, and its tooltip is markdown.** The text is the level and, when decisions
   await a judgment, how many (`fully-signed · 2 to judge`, the same number as the container's badge); the count of channels
-  left it, and a missing command reads `mnema not found`. The tooltip has the level, a link to the container with the number
+  left it, and a missing command reads "mnema not found". The tooltip has the level, a link to the container with the number
   awaiting, the lines `mnema verify` printed in a code block (for a failure also the first issues it listed), the channels off
   by name with a link to the page that says what they carry, when it was read, and links to Refresh and to the setting. What
   came from the command line or the record is escaped, so it cannot become a link, and the commands a link may run are the

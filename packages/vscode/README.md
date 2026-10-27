@@ -146,7 +146,7 @@ and nothing is installed beside it. CI runs the same command, installs the file 
 four times (a folder with no `.mnema`, where it must not start on opening the folder and so must not run `mnema`;
 the same folder with the container opened, which does start the extension, and where `mnema` must still
 never be run and the bar and the badge must be empty; a folder
-with a `.mnema` and a `mnema.command` that does not exist, where the bar must say `mnema not found` and a
+with a `.mnema` and a `mnema.command` that does not exist, where the bar must say "mnema not found" and a
 click must open the container; and a folder with a real record and one proposed decision, read by the
 `mnema` built here, where the bar must carry a level and `1 to judge`, the tooltip what `mnema verify`
 printed, the click the container, the manifest's container its icon file and the badge the number 1). `pnpm --filter @mnema/vscode install-check` does the same
