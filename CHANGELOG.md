@@ -174,6 +174,42 @@ with its own changelog.
   one (Claude Code), against the ones the handlers read. `docs/evidence.md` has one row per host and says what was not
   measured (the `agent_key` option in VS Code and Cursor, and the payload after a question tool outside Claude Code).
 
+- **`bootstrap` names the channels that are off on this machine.** The reply carries one more line, of its own beside
+  the JSON, when a channel is off for the project (the two that begin off, until a person switches them on, or any a
+  person switched off): `Off on this machine: <names>. Only a person turns one on, with `mnema switch on <name>`.` It is
+  read from the effective state of the project's trees, so a channel a person switched on is not in it, and with
+  nothing off there is no line. It adds 33 tokens to the reply; the server's instructions, the tool's description and the
+  block committed into the repository are unchanged.
+- **`mnema` with nothing after it says where the project stands and what is off.** It prints a short summary on stdout
+  and exits 0 (it printed the whole catalogue on stderr and failed; `mnema --help` still prints the catalogue, and at a
+  terminal the name still asks what you want to do): what the product does in a sentence, whether a project is founded
+  here and how many decisions await a judgement, the channels that are off on this machine with the command that turns
+  one on, and three verbs to go on with. Where the record or the switches cannot be read it says so in one line, and says
+  nothing of what it could not read. `mnema switch` ends each off line with the command that turns it on, and
+  `mnema init` names the channels that begin off in two lines before its "Next" line.
+- **A page for the switches, generated from the table the code reads.** `docs/switches.md` lists every channel `mnema switch`
+  knows, where it begins (on, or off until a person switches it on) and the command that flips it. The listing
+  `docs/cli-reference.md` shows for `mnema switch` and the sentence of `plugin/README.md` that names the channels beginning off
+  are generated from the same table and compared with it by a test: the listing said 14 channels and showed 12.
+
+- **`mnema init` writes the mnema instructions into the files agent hosts read, and `mnema instructions` writes,
+  checks and removes them.** A short block says when to call the mnema tools (`bootstrap` at the opening,
+  `governing_rules` before changing a file, `record_decision` when a choice is settled, `capture_memory` for what the
+  code does not show), that a decision is born `proposed` and a person accepts it, that a subagent hands its decisions
+  back, the shell command where the tools are not connected, and what never goes in the record; it applies only where
+  the mnema tools are connected. It goes into `AGENTS.md` (created where there is none), into `CLAUDE.md`,
+  `.claude/CLAUDE.md` and `GEMINI.md` where they exist, and into three files of its own:
+  `.claude/rules/mnema-instructions.md`, `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`)
+  and `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`). Every copy is the same text, 1,524 characters,
+  between `<!-- mnema:begin v2 … -->` and `<!-- mnema:end -->`, after what a file of yours holds. A block whose text
+  mnema did not write is left as it is and said (exit 1), as is a symbolic link that leaves the project or leads
+  nowhere and a file that cannot be read or written (said with why and the command to try again; `init` still
+  founds the project and prints the rest); `--remove` takes the block out without gluing the line you wrote after it to
+  the one above, says "as it was" only when that is true, and deletes a file the block was all of; line endings
+  (CRLF) are kept, and markers inside a fenced code block are an example, not a block; the alpha's `<!-- MNEMA:START -->` block is not recognized and is never touched: the block is added beside it and `--remove` leaves it. `init` writes the
+  instructions only when it founds a project, so a block you took out stays out; `mnema doctor` names each file that
+  lacks this version's block. The Gemini CLI extension carries the same text as its context file (`contextFileName`).
+
 ### Changed
 
 - **The README and the install page say they describe the next version.** What has not reached npm yet is under Unreleased here.
@@ -333,41 +369,6 @@ with its own changelog.
   `link_knowledge` now prints, as the command line did, where the thing the link starts from lives when that tree does
   not travel (the result carried it and the server never printed it).
 
-- **`bootstrap` names the channels that are off on this machine.** The reply carries one more line, of its own beside
-  the JSON, when a channel is off for the project (the two that begin off, until a person switches them on, or any a
-  person switched off): `Off on this machine: <names>. Only a person turns one on, with `mnema switch on <name>`.` It is
-  read from the effective state of the project's trees, so a channel a person switched on is not in it, and with
-  nothing off there is no line. It adds 33 tokens to the reply; the server's instructions, the tool's description and the
-  block committed into the repository are unchanged.
-- **`mnema` with nothing after it says where the project stands and what is off.** It prints a short summary on stdout
-  and exits 0 (it printed the whole catalogue on stderr and failed; `mnema --help` still prints the catalogue, and at a
-  terminal the name still asks what you want to do): what the product does in a sentence, whether a project is founded
-  here and how many decisions await a judgement, the channels that are off on this machine with the command that turns
-  one on, and three verbs to go on with. Where the record or the switches cannot be read it says so in one line, and says
-  nothing of what it could not read. `mnema switch` ends each off line with the command that turns it on, and
-  `mnema init` names the channels that begin off in two lines before its "Next" line.
-- **A page for the switches, generated from the table the code reads.** `docs/switches.md` lists every channel `mnema switch`
-  knows, where it begins (on, or off until a person switches it on) and the command that flips it. The listing
-  `docs/cli-reference.md` shows for `mnema switch` and the sentence of `plugin/README.md` that names the channels beginning off
-  are generated from the same table and compared with it by a test: the listing said 14 channels and showed 12.
-
-- **`mnema init` writes the mnema instructions into the files agent hosts read, and `mnema instructions` writes,
-  checks and removes them.** A short block says when to call the mnema tools (`bootstrap` at the opening,
-  `governing_rules` before changing a file, `record_decision` when a choice is settled, `capture_memory` for what the
-  code does not show), that a decision is born `proposed` and a person accepts it, that a subagent hands its decisions
-  back, the shell command where the tools are not connected, and what never goes in the record; it applies only where
-  the mnema tools are connected. It goes into `AGENTS.md` (created where there is none), into `CLAUDE.md`,
-  `.claude/CLAUDE.md` and `GEMINI.md` where they exist, and into three files of its own:
-  `.claude/rules/mnema-instructions.md`, `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`)
-  and `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`). Every copy is the same text, 1,524 characters,
-  between `<!-- mnema:begin v2 … -->` and `<!-- mnema:end -->`, after what a file of yours holds. A block whose text
-  mnema did not write is left as it is and said (exit 1), as is a symbolic link that leaves the project or leads
-  nowhere and a file that cannot be read or written (said with why and the command to try again; `init` still
-  founds the project and prints the rest); `--remove` takes the block out without gluing the line you wrote after it to
-  the one above, says "as it was" only when that is true, and deletes a file the block was all of; line endings
-  (CRLF) are kept, and markers inside a fenced code block are an example, not a block; the alpha's `<!-- MNEMA:START -->` block is not recognized and is never touched: the block is added beside it and `--remove` leaves it. `init` writes the
-  instructions only when it founds a project, so a block you took out stays out; `mnema doctor` names each file that
-  lacks this version's block. The Gemini CLI extension carries the same text as its context file (`contextFileName`).
 - A write of the block into an instruction file is not taken for a decision written there, and `AGENTS.md`,
   `CLAUDE.md` and `GEMINI.md` are not counted as decision documents of a directory `mnema decision import` reads.
 
