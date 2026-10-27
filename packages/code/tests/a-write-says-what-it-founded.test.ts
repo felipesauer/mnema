@@ -205,14 +205,16 @@ describe('first writes of one new key made together', () => {
     // running the suite on 16 workers the last in line is given the refusal that budget exists to
     // give (measured once: TAIL_BUSY, process named, nothing appended). That is the lock doing its
     // work and not a failure of what this case asks, so a run refused for it is set aside; any
-    // other failure still fails the case, and at least one process must have landed.
+    // other failure still fails the case, and at least two processes must have landed.
     const refusedForTheLock = runs.filter(
       (ran) => ran.status !== 0 && ran.stderr.includes('TAIL_BUSY'),
     );
     for (const ran of runs.filter((one) => !refusedForTheLock.includes(one))) {
       expect(ran.status, ran.stderr).toBe(0);
     }
-    expect(refusedForTheLock.length).toBeLessThan(runs.length);
+    // A race needs two writers: with one process landing there is nothing to race.
+    const landed = runs.length - refusedForTheLock.length;
+    expect(landed).toBeGreaterThanOrEqual(2);
     // One founding on the record, beside the first identity, and one process says it made it.
     expect(foundingsIn(repo)).toBe(2);
     expect(

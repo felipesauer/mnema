@@ -22,8 +22,11 @@ workstation it is somebody's real record.
   when it ends, and fails the file if they differ, naming what appeared, was written or was
   removed. That one does look at the disk, because the checkout belongs to the run; the cost is
   that a person recording in the same checkout while the suite runs reddens the file that was
-  running. The private tree the worktrees of a clone share is left out for the same reason turned
-  around: the person's sessions in the main clone write it while the suite runs.
+  running. The private tree a clone is (`.git/mnema`, shared by its worktrees) is listed only on
+  the CI (`CI=true`, a fresh clone no session writes to), so a case that writes it with the
+  checkout as its working directory is caught there. Anywhere else it is left out, because the
+  person's own sessions (MCP, hooks) write it while the suite runs: locally that tree is not
+  seen.
 
 For the home, it asks what each process **will** resolve, never what the disk holds, so the same answer holds on
 a runner that has no `~/.mnema` and on a workstation where one is being written while the suite

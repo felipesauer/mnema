@@ -43,12 +43,15 @@
  *      The cost is said here: the window is the file, so a person recording in THIS checkout while
  *      the suite runs reddens the file that was running (the message says so), and a leak by one
  *      file is also named by the files that overlapped it. The lock and cache files under `locks/`
- *      are not a record and are not listed. THE SHARED PRIVATE TREE, in the git directory the
- *      worktrees of a clone have in common, is NOT listed, and that is a limit and not an oversight:
- *      the sessions of the person in the main clone write it while the suite runs (measured: the
- *      guard reddened seven files on a run in a worktree for writes that were theirs), so a write
- *      there would be an accusation against a case that did nothing. A case that writes it from a
- *      worktree also leaves that worktree's own installation id, which is listed.
+ *      are not a record and are not listed. THE SHARED PRIVATE TREE (the `mnema/` of the git directory a clone is, or that the worktrees of
+ *      a clone have in common) is listed ONLY ON THE CI (`CI=true`, a fresh clone with no session of
+ *      anyone writing to it), so a case that writes it with the checkout as its working directory is
+ *      caught there. Anywhere else it is NOT listed, and that is a limit and not an oversight: the
+ *      sessions of the person (MCP, hooks) write it while the suite runs, in the main clone as much
+ *      as from a worktree (measured: the guard reddened seven files for writes that were theirs), so
+ *      a write there would be an accusation against a case that did nothing. Locally, then, that
+ *      tree is not seen. A case that writes it from a worktree also leaves that worktree's own
+ *      installation id, which is listed.
  *
  * WHAT IT DOES NOT REACH, so nobody has to find it: a case that hands the core a `home` spelled as
  * the machine's by hand (in process, there is no boundary to stand at) and a grandchild that a
@@ -183,19 +186,20 @@ export function checkoutOf(from) {
 
 /**
  * The places a record of the checkout lives, as paths that may not exist yet: `.mnema/` beside the
- * code, and `mnema/` in the git directory of this checkout: the private tree itself in a clone, the
- * installation id of a linked worktree. The common directory a worktree shares with its main clone
- * is left out, and the header says why.
+ * code, and, in a linked worktree, the `mnema/` of its own git directory (its installation id). The
+ * private tree shared by a clone (its `.git/mnema`) is listed only when `onCi` says the run is a
+ * fresh checkout no session writes to; the header says why.
  *
  * @param {string} checkout
+ * @param {boolean} [onCi]
  * @returns {string[]}
  */
-export function recordPlacesOf(checkout) {
+export function recordPlacesOf(checkout, onCi = process.env.CI === 'true') {
   const places = [join(checkout, '.mnema')];
   const dotGit = join(checkout, '.git');
   try {
     if (lstatSync(dotGit).isDirectory()) {
-      places.push(join(dotGit, 'mnema'));
+      if (onCi) places.push(join(dotGit, 'mnema'));
     } else {
       // A linked worktree: `.git` is a file naming its own git directory.
       const named = /^gitdir:\s*(.+)$/m.exec(readFileSync(dotGit, 'utf-8'))?.[1];

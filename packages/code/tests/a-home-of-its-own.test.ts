@@ -212,7 +212,10 @@ describe('the record of the checkout is not written by a file of the suite', () 
     try {
       const clone = join(sandbox, 'clone');
       mkdirSync(join(clone, '.git'), { recursive: true });
-      expect(recordPlacesOf(clone)).toEqual([join(clone, '.mnema'), join(clone, '.git', 'mnema')]);
+      // Off the CI the sessions of the person write the clone's private tree: not listed. On the
+      // CI, a fresh clone, it is.
+      expect(recordPlacesOf(clone, false)).toEqual([join(clone, '.mnema')]);
+      expect(recordPlacesOf(clone, true)).toEqual([join(clone, '.mnema'), join(clone, '.git', 'mnema')]);
 
       const linked = join(sandbox, 'linked');
       const own = join(clone, '.git', 'worktrees', 'linked');
@@ -222,7 +225,8 @@ describe('the record of the checkout is not written by a file of the suite', () 
       writeFileSync(join(own, 'commondir'), '../..\n');
       // The shared private tree (`clone/.git/mnema`) is the main clone's sessions' to write, and
       // is not listed.
-      expect(recordPlacesOf(linked)).toEqual([join(linked, '.mnema'), join(own, 'mnema')]);
+      expect(recordPlacesOf(linked, false)).toEqual([join(linked, '.mnema'), join(own, 'mnema')]);
+      expect(recordPlacesOf(linked, true)).toEqual([join(linked, '.mnema'), join(own, 'mnema')]);
       expect(checkoutOf(join(linked, 'packages', 'code'))).toBe(linked);
     } finally {
       rmSync(sandbox, { recursive: true, force: true });
