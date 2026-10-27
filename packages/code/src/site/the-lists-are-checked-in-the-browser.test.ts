@@ -33,7 +33,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import { catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents } from '@mnema/core';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type PageRun, runInAVm } from '../../tests/support/a-page-in-a-vm.js';
 import { anAgentThatSignedAndWasRetired } from '../../tests/support/a-tail-from-another-machine.js';
 import { runDecision } from '../commands/decision.js';
@@ -49,8 +49,11 @@ import { pageModel } from './model.js';
 import { renderPage } from './page.js';
 import { theSiteVerifier } from './verifier-bundle.js';
 
-// Each case verifies a record in a vm, a second or more under load.
-vi.setConfig({ testTimeout: 60_000 });
+/**
+ * What a case here waits under. Each one verifies a record in a vm (about a second for a small record, and
+ * several under load) or builds the bundle; it says so at its own `describe`, and lifts nothing for any other case.
+ */
+const A_RECORD_IN_A_VM = 60_000;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FROZEN = join(HERE, '..', '..', '..', 'chain', 'src', 'chain', '__fixtures__');
@@ -182,7 +185,7 @@ function withCard(html: string, adr: string, edit: (card: string) => string): st
   return swapped(html, card, edit(card));
 }
 
-describe('an honest page', () => {
+describe('an honest page', { timeout: A_RECORD_IN_A_VM }, () => {
   it('says its lists match the events verified above, over a rich record', () => {
     const html = aRichRecord();
     const said = checked(html);
@@ -249,7 +252,7 @@ describe('an honest page', () => {
   });
 });
 
-describe('a server that lies about a list', () => {
+describe('a server that lies about a list', { timeout: A_RECORD_IN_A_VM }, () => {
   const LIES: readonly [string, (html: string) => string, RegExp][] = [
     [
       "(a) the word of a card's state",
@@ -452,7 +455,7 @@ describe('a server that lies about a list', () => {
   });
 });
 
-describe('a record that did not verify', () => {
+describe('a record that did not verify', { timeout: A_RECORD_IN_A_VM }, () => {
   it('is not checked, never matched: an edited event leaves the lists unchecked, saying why', () => {
     aRichRecord();
     const tails = join(repo, '.mnema', 'tails');
@@ -494,7 +497,7 @@ describe('a record that did not verify', () => {
   });
 });
 
-describe('what the script derives in the browser', () => {
+describe('what the script derives in the browser', { timeout: A_RECORD_IN_A_VM }, () => {
   it('is, value for value, what pageModel gives in Node over the same tree', () => {
     aRichRecord();
     const own = join(HERE, '..', '..', '..', '..', '.mnema');
@@ -536,7 +539,7 @@ describe('what the script derives in the browser', () => {
   });
 });
 
-describe('the bundle', () => {
+describe('the bundle', { timeout: A_RECORD_IN_A_VM }, () => {
   const buildScript = join(HERE, '..', '..', 'build', 'the-site-verifier.mjs');
   type Build = (extra?: { alias?: Record<string, string>; banner?: string }) => Promise<string>;
   const bundle = async (): Promise<Build> =>
