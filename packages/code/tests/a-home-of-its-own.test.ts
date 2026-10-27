@@ -15,17 +15,30 @@
  */
 
 import { exec, execFileSync, spawnSync } from 'node:child_process';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import {
+  checkoutOf,
   HOME_OF_ITS_OWN,
+  listRecordPlaces,
   reachesTheMachine,
+  recordPlacesOf,
   THE_MACHINES_HOME,
   THE_VARIABLE,
   takeCaught,
+  whatMovedBetween,
 } from '../../../.github/a-home-of-its-own/setup.mjs';
 import { codeOnly } from './support/reading-source.js';
 
@@ -190,5 +203,64 @@ describe('what it cannot stand in front of, counted', () => {
       )
       .map((file) => relative(ROOT, file));
     expect(builders).toEqual([]);
+  });
+});
+
+describe('the record of the checkout is not written by a file of the suite', () => {
+  it('looks in .mnema/ and in the mnema/ of the checkout’s own git directory, of a clone and of a linked worktree', () => {
+    const sandbox = mkdtempSync(join(tmpdir(), 'mnema-checkout-places-'));
+    try {
+      const clone = join(sandbox, 'clone');
+      mkdirSync(join(clone, '.git'), { recursive: true });
+      // Off the CI the sessions of the person write the clone's private tree: not listed. On the
+      // CI, a fresh clone, it is.
+      expect(recordPlacesOf(clone, false)).toEqual([join(clone, '.mnema')]);
+      expect(recordPlacesOf(clone, true)).toEqual([
+        join(clone, '.mnema'),
+        join(clone, '.git', 'mnema'),
+      ]);
+
+      const linked = join(sandbox, 'linked');
+      const own = join(clone, '.git', 'worktrees', 'linked');
+      mkdirSync(linked);
+      mkdirSync(own, { recursive: true });
+      writeFileSync(join(linked, '.git'), `gitdir: ${own}\n`);
+      writeFileSync(join(own, 'commondir'), '../..\n');
+      // The shared private tree (`clone/.git/mnema`) is the main clone's sessions' to write, and
+      // is not listed.
+      expect(recordPlacesOf(linked, false)).toEqual([join(linked, '.mnema'), join(own, 'mnema')]);
+      expect(recordPlacesOf(linked, true)).toEqual([join(linked, '.mnema'), join(own, 'mnema')]);
+      expect(checkoutOf(join(linked, 'packages', 'code'))).toBe(linked);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
+
+  it('names a file that appeared, one written to and one removed, and says nothing when nothing moved', () => {
+    const sandbox = mkdtempSync(join(tmpdir(), 'mnema-checkout-moved-'));
+    try {
+      const place = join(sandbox, '.mnema');
+      const absent = join(sandbox, 'absent');
+      mkdirSync(join(place, 'tails'), { recursive: true });
+      writeFileSync(join(place, 'tails', 'kept'), 'a');
+      writeFileSync(join(place, 'tails', 'grown'), 'a');
+      writeFileSync(join(place, 'tails', 'gone'), 'a');
+      mkdirSync(join(place, 'locks'));
+      writeFileSync(join(place, 'locks', 'projection.db'), 'a');
+      const before = listRecordPlaces([place, absent]);
+      expect(whatMovedBetween(before, listRecordPlaces([place, absent]))).toEqual([]);
+
+      writeFileSync(join(place, 'tails', 'grown'), 'longer than before');
+      rmSync(join(place, 'tails', 'gone'));
+      writeFileSync(join(place, 'stray'), 'x');
+      writeFileSync(join(place, 'locks', 'projection.db'), 'a cache is not a record');
+      expect(whatMovedBetween(before, listRecordPlaces([place, absent])).sort()).toEqual([
+        `appeared: ${join(place, 'stray')}`,
+        `removed: ${join(place, 'tails', 'gone')}`,
+        `written: ${join(place, 'tails', 'grown')}`,
+      ]);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
   });
 });

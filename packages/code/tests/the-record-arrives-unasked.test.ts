@@ -595,9 +595,13 @@ afterAll(() => {
 });
 
 /**
- * How long a case that runs EVERY declared command may take: each is a real `node` and, for most, a
- * real `mnema`, so the time grows with the hooks file. Twelve hooks took 5.1 s on a CI runner, over
- * the default 5 s, and 2.7 s to 3.7 s here alone.
+ * How long a case that starts the hooks may take: each is a real `node` and, for most, a real
+ * `mnema`, and a `mnema` costs about 0.25 s to start (its module graph, against 0.02 s for a bare
+ * `node`), so a case that runs two or three of them takes 1 to 3.4 s with the machine to itself.
+ * A case that runs EVERY declared command grows with the hooks file: twelve took 5.1 s on a CI
+ * runner, over the default 5 s. On a suite running on many workers the cases that start more than
+ * one stopped at 5 s while passing alone (6.1 s and 6.7 s at 16 workers, against 3.3 s and 3.4 s).
+ * The cases under a second keep the shared ceiling.
  */
 const EVERY_HOOK_RUN = 30_000;
 
@@ -640,7 +644,9 @@ describe('the record arrives unasked', () => {
     ]);
   });
 
-  it('says nothing at all when the document channel is switched OFF', () => {
+  it('says nothing at all when the document channel is switched OFF', {
+    timeout: EVERY_HOOK_RUN,
+  }, () => {
     // The behavioural half of the switch, on the harness that actually runs the handler the
     // way the host runs it. Switching the document off has to make a session open with
     // nothing added, and the mechanism is the one the handler already had: the verb refuses
@@ -672,7 +678,9 @@ describe('the record arrives unasked', () => {
     expect(again.status).toBe(0);
   });
 
-  it('says nothing at all when the notes channel is switched OFF', () => {
+  it('says nothing at all when the notes channel is switched OFF', {
+    timeout: EVERY_HOOK_RUN,
+  }, () => {
     // The same mechanism for the second text a session opens with, and its own switch: the
     // verb refuses on stderr with a non-zero exit, the shared rule reads that as silence,
     // and the DOCUMENT keeps arriving, which is why the two are two switches.
@@ -695,7 +703,7 @@ describe('the record arrives unasked', () => {
     expect(again.status).toBe(0);
   });
 
-  it('hands over exactly what the verb prints', () => {
+  it('hands over exactly what the verb prints', { timeout: EVERY_HOOK_RUN }, () => {
     // Byte for byte, with nothing of the plugin's own around it: a preamble here
     // would be a SECOND place deciding what the agent reads about what governs the
     // work, and two such places can come to disagree with the record.
@@ -736,7 +744,9 @@ describe('the record arrives unasked', () => {
     expect(brief(project).err).toBe('');
   });
 
-  it('hands a subagent the same document as it starts, under the event the host routes by', () => {
+  it('hands a subagent the same document as it starts, under the event the host routes by', {
+    timeout: EVERY_HOOK_RUN,
+  }, () => {
     // The brief of the session goes to the subagent that begins: the one verb, byte for byte, so
     // there is no second place deciding what a subagent reads about what governs the work. The
     // event is echoed as `SubagentStart`: a reply that names another is dropped by the host.
@@ -752,7 +762,9 @@ describe('the record arrives unasked', () => {
     expect(said.hookSpecificOutput?.additionalContext).toBe(document);
   });
 
-  it('hands a subagent nothing when the document channel is switched OFF', () => {
+  it('hands a subagent nothing when the document channel is switched OFF', {
+    timeout: EVERY_HOOK_RUN,
+  }, () => {
     // The same switch as the opening's, and not a second one: off, the verb refuses and every
     // non-zero outcome of a handler is silence. Put back, as the case above it for the session.
     const command = hookRunning(SUBAGENT_HOOK);
@@ -768,7 +780,7 @@ describe('the record arrives unasked', () => {
     expect(runHook(command, project).out).not.toBe('');
   });
 
-  it('says that the record does not chain, when it does not', () => {
+  it('says that the record does not chain, when it does not', { timeout: EVERY_HOOK_RUN }, () => {
     // WHAT THE DOCUMENT USED TO DO OVER A BROKEN RECORD. The verb writes the notice on
     // stderr and exits 0 (measured on the binary, and the three outcomes are in the
     // handler's own doc) and the handler dropped that stream at the spawn. So the
@@ -831,7 +843,9 @@ describe('the record arrives unasked', () => {
     expect(quiet).toBe(cli('brief', '--hook'));
   });
 
-  it('stops at a whole rule where a hook’s text would be replaced, and says so', () => {
+  it('stops at a whole rule where a hook’s text would be replaced, and says so', {
+    timeout: EVERY_HOOK_RUN,
+  }, () => {
     // WHAT THE HOST DOES PAST ITS CEILING, and why this case exists. A hook's text is handed to
     // the model whole up to a ceiling, and past it ALL of it is replaced by a file path and a
     // preview the model is not asked to open: measured on the binary. The file's copy of the document has no such reader, so it
@@ -982,7 +996,7 @@ describe('the record arrives unasked', () => {
     expect(said).toBe('a document of sorts\n\n\nand something to say');
   });
 
-  it('asks a binary older than the flag again without it', () => {
+  it('asks a binary older than the flag again without it', { timeout: EVERY_HOOK_RUN }, () => {
     // THE PLUGIN AND THE BINARY ARE INSTALLED APART, so a new plugin can meet a `mnema` on the
     // PATH that predates `--hook`. That binary refuses the flag with exit 1, and exit 1 is
     // silence: the session would open with no document and no notes, and no word about why.
@@ -1191,7 +1205,9 @@ describe('the record arrives unasked', () => {
 
     const pluginVersion = () => readJson<{ version: string }>(MANIFEST).version;
 
-    it('says a binary older than the plugin does not match it, after the document', () => {
+    it('says a binary older than the plugin does not match it, after the document', {
+      timeout: EVERY_HOOK_RUN,
+    }, () => {
       const ran = ranWith(binaryAt('0.0.1', false), DOCUMENT_HOOK, project);
       expect(ran.status).toBe(0);
       expect(ran.stderr).toBe('');
@@ -1218,7 +1234,7 @@ describe('the record arrives unasked', () => {
       expect(ranWith(dir, NOTES_HOOK, project).said).not.toContain('The mnema plugin is ');
     });
 
-    it('says nothing for a binary that agrees, or is newer', () => {
+    it('says nothing for a binary that agrees, or is newer', { timeout: EVERY_HOOK_RUN }, () => {
       for (const version of [pluginVersion(), '99.0.0']) {
         const ran = ranWith(binaryAt(version, false), DOCUMENT_HOOK, project);
         expect(ran.said).toBe(cliAt(project, 'brief', '--hook'));
@@ -1247,7 +1263,7 @@ describe('the record arrives unasked', () => {
     expect(context).not.toContain(PATTERN_BODY);
   });
 
-  it('carries the declaration of the channel it says it is', () => {
+  it('carries the declaration of the channel it says it is', { timeout: EVERY_HOOK_RUN }, () => {
     // THE BEHAVIOURAL HALF OF THE CHANNEL GUARD, on the sandbox this file already
     // builds. `the-channel-says-what-it-carries.test.ts` reads the source and requires
     // every handler that writes to a model to name a channel; what it cannot see from
@@ -1293,7 +1309,7 @@ describe('the record arrives unasked', () => {
     expect(context).not.toContain(PATTERN_NAME);
   });
 
-  it('says nothing where nothing is noted', () => {
+  it('says nothing where nothing is noted', { timeout: EVERY_HOOK_RUN }, () => {
     // A project with a record and no note: the verb prints nothing and exits 0, and the
     // handler hands the session nothing; the channel is silent where it has nothing to
     // say, which is the rule the per-edit push keeps. And it was TRIED.

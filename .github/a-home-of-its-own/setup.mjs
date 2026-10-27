@@ -32,6 +32,27 @@
  * environment alone, so the same answer holds on a runner with no `~/.mnema` and on a machine where
  * one exists.
  *
+ *   4. The record places OF THE CHECKOUT the suite runs in (its `.mnema/`, and the `mnema/` of its
+ *      own git directory) are listed when the file starts and again when it ends, and a file after
+ *      which they differ fails. A case that runs a verb with the checkout as its working directory
+ *      writes a record there (the committed tree, or the installation id a linked worktree keeps
+ *      in its own git directory), and nothing in its own lines shows it: the sandbox it built sits
+ *      beside it, empty and removed, while the record it meant not to touch grew. THIS ONE LOOKS AT
+ *      THE DISK, which the paragraph below refuses for the machine's home, and the difference is
+ *      the place: the checkout belongs to the run, and the machine's home belongs to the person.
+ *      The cost is said here: the window is the file, so a person recording in THIS checkout while
+ *      the suite runs reddens the file that was running (the message says so), and a leak by one
+ *      file is also named by the files that overlapped it. The lock and cache files under `locks/`
+ *      are not a record and are not listed. THE SHARED PRIVATE TREE (the `mnema/` of the git directory a clone is, or that the worktrees of
+ *      a clone have in common) is listed ONLY ON THE CI (`CI=true`, a fresh clone with no session of
+ *      anyone writing to it), so a case that writes it with the checkout as its working directory is
+ *      caught there. Anywhere else it is NOT listed, and that is a limit and not an oversight: the
+ *      sessions of the person (MCP, hooks) write it while the suite runs, in the main clone as much
+ *      as from a worktree (measured: the guard reddened seven files for writes that were theirs), so
+ *      a write there would be an accusation against a case that did nothing. Locally, then, that
+ *      tree is not seen. A case that writes it from a worktree also leaves that worktree's own
+ *      installation id, which is listed.
+ *
  * WHAT IT DOES NOT REACH, so nobody has to find it: a case that hands the core a `home` spelled as
  * the machine's by hand (in process, there is no boundary to stand at) and a grandchild that a
  * child starts with an environment built from nothing. `a-home-of-its-own.test.ts` counts both, and
@@ -42,10 +63,10 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { realpathSync, rmSync } from 'node:fs';
+import { lstatSync, readdirSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { createRequire, syncBuiltinESMExports } from 'node:module';
 import { tmpdir, userInfo } from 'node:os';
-import { isAbsolute, join, resolve, sep } from 'node:path';
+import { basename, dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
 import { afterAll, afterEach, expect } from 'vitest';
 
@@ -144,6 +165,107 @@ export function reachesTheMachine(env, startedWith = STARTED_WITH) {
   return reasons;
 }
 
+/**
+ * The directory of the checkout this process runs in: the nearest ancestor of its working directory
+ * that holds a `.git`, or the working directory itself when none does.
+ *
+ * @param {string} from
+ * @returns {string}
+ */
+export function checkoutOf(from) {
+  for (let at = resolve(from); ; at = dirname(at)) {
+    try {
+      lstatSync(join(at, '.git'));
+      return at;
+    } catch {
+      // No `.git` here: one level up.
+    }
+    if (dirname(at) === at) return resolve(from);
+  }
+}
+
+/**
+ * The places a record of the checkout lives, as paths that may not exist yet: `.mnema/` beside the
+ * code, and, in a linked worktree, the `mnema/` of its own git directory (its installation id). The
+ * private tree shared by a clone (its `.git/mnema`) is listed only when `onCi` says the run is a
+ * fresh checkout no session writes to; the header says why.
+ *
+ * @param {string} checkout
+ * @param {boolean} [onCi]
+ * @returns {string[]}
+ */
+export function recordPlacesOf(checkout, onCi = process.env.CI === 'true') {
+  const places = [join(checkout, '.mnema')];
+  const dotGit = join(checkout, '.git');
+  try {
+    if (lstatSync(dotGit).isDirectory()) {
+      if (onCi) places.push(join(dotGit, 'mnema'));
+    } else {
+      // A linked worktree: `.git` is a file naming its own git directory.
+      const named = /^gitdir:\s*(.+)$/m.exec(readFileSync(dotGit, 'utf-8'))?.[1];
+      if (named !== undefined) places.push(join(resolve(checkout, named.trim()), 'mnema'));
+    }
+  } catch {
+    // No such directory to look in: `.mnema/` is all there is.
+  }
+  return places;
+}
+
+/**
+ * What the places hold, one entry per path: size and modification time, so a file that appeared,
+ * one that was written to and one that went all differ. Symlinks are listed, not followed.
+ *
+ * @param {readonly string[]} places
+ * @returns {Map<string, string>}
+ */
+export function listRecordPlaces(places) {
+  /** @type {Map<string, string>} */
+  const listed = new Map();
+  /** @param {string} at */
+  const walk = (at) => {
+    let stat;
+    try {
+      stat = lstatSync(at);
+    } catch {
+      return; // gone between the listing and the look: nothing to say about it
+    }
+    listed.set(at, stat.isDirectory() ? 'dir' : `${stat.size} ${stat.mtimeMs}`);
+    if (!stat.isDirectory()) return;
+    if (basename(at) === 'locks') return; // lock and cache files: not a record
+    let names;
+    try {
+      names = readdirSync(at);
+    } catch {
+      return;
+    }
+    for (const name of names) walk(join(at, name));
+  };
+  for (const place of places) walk(place);
+  return listed;
+}
+
+/**
+ * What differs between two listings, in words: empty when nothing does.
+ *
+ * @param {Map<string, string>} before
+ * @param {Map<string, string>} after
+ * @returns {string[]}
+ */
+export function whatMovedBetween(before, after) {
+  /** @type {string[]} */
+  const moved = [];
+  for (const [path, state] of after) {
+    if (!before.has(path)) moved.push(`appeared: ${path}`);
+    else if (before.get(path) !== state) moved.push(`written: ${path}`);
+  }
+  for (const path of before.keys()) if (!after.has(path)) moved.push(`removed: ${path}`);
+  return moved;
+}
+
+const THE_CHECKOUT = checkoutOf(process.cwd());
+const THE_PLACES = recordPlacesOf(THE_CHECKOUT);
+const RECORD_BEFORE = listRecordPlaces(THE_PLACES);
+
 /** @type {string[]} */
 const caught = [];
 
@@ -235,4 +357,10 @@ afterEach(() => {
 
 afterAll(() => {
   rmSync(HOME_OF_ITS_OWN, { recursive: true, force: true });
+  const moved = whatMovedBetween(RECORD_BEFORE, listRecordPlaces(THE_PLACES));
+  if (moved.length > 0) {
+    expect.fail(
+      `The record of the checkout (${THE_CHECKOUT}) changed while this file ran. A case ran with the checkout as its working directory, or a person recorded here meanwhile:\n  ${moved.slice(0, 20).join('\n  ')}`,
+    );
+  }
 });

@@ -68,6 +68,13 @@ const upcasters = catalogUpcasters();
 
 /** A cadence high enough that no checkpoint ever fires on its own. */
 const NEVER = 10_000;
+
+/**
+ * The ceiling of the case that signs and appends 200 events before it reads: each append is a
+ * signature and an fsync, so it took 2.5 s alone on a machine at load 23 and
+ * stopped at the shared 5 s (5.1 s) in a suite running on 16 workers.
+ */
+const TWO_HUNDRED_APPENDS = 30_000;
 /** A segment cap so small that every append rotates: one entry per segment. */
 const ONE_PER_SEGMENT = 1;
 
@@ -203,7 +210,9 @@ describe('reading the tip of a tail', () => {
     expect(tip.map((e) => e.link.seq)).toEqual([2]);
   });
 
-  it('reads the lines above the coverage, not the segment holding them', () => {
+  it('reads the lines above the coverage, not the segment holding them', {
+    timeout: TWO_HUNDRED_APPENDS,
+  }, () => {
     const w = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(w, 200);
     expect(forceCheckpoint(w).toSeq).toBe(200);

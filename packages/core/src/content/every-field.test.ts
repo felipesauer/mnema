@@ -57,6 +57,19 @@ import { FIELD_BYTE_LIMIT } from './screen.js';
 import { detectSecrets } from './secrets.js';
 
 /**
+ * THE CEILING OF A CASE THAT DRIVES THE WHOLE CATALOG. A drive is synchronous work that cannot be
+ * shortened without ceasing to prove what this file proves: it generates a key, opens a chain and
+ * signs and fsyncs each event of a kind's setup and of the write itself, about 15 ms a kind. A case
+ * that drives every kind in one `it`, or every field of a kind, therefore takes 0.35 to 2.4 s with
+ * the machine to itself against the shared 5 s, and on a suite running on many workers they stopped
+ * at five seconds while passing alone (measured at 12 workers: 5.8 s and 7.9 s; at 16, 9.1 s for one
+ * that takes 2 s). The cases that drive ONE kind take 0.1 to 0.2 s and keep the shared ceiling.
+ * 30 s is room for a machine an order of magnitude slower than the one measured, not a removal,
+ * and it is written at each `it` that needs it because the ceiling belongs to the case.
+ */
+const EVERY_KIND_DRIVEN = 30_000;
+
+/**
  * The content door is total over the FIELDS, not only over the write points,
  * and the driving that proves it is DERIVED from the field classification
  * rather than typed out.
@@ -785,7 +798,9 @@ describe('every kind the catalog can hold is driven onto the chain', () => {
     expect(Object.keys(DRIVERS).sort()).toEqual([...CATALOG].sort());
   });
 
-  it('actually appends an event of the kind it claims to drive', () => {
+  it('actually appends an event of the kind it claims to drive', {
+    timeout: EVERY_KIND_DRIVEN,
+  }, () => {
     // A driver that wrote nothing, or wrote something else, would make every
     // assertion below vacuous for its kind.
     for (const kind of CATALOG) {
@@ -891,7 +906,7 @@ describe('a name carrying a credential refuses the write, on every field of ever
     });
   }
 
-  it('drove enough names to mean something', () => {
+  it('drove enough names to mean something', { timeout: EVERY_KIND_DRIVEN }, () => {
     // The vacuous form of every case above is a kind with no name field: the loop
     // does not run and the case passes. This drives the whole catalog once more and
     // counts what those loops WOULD run over, so a classification that quietly
@@ -907,15 +922,6 @@ describe('a name carrying a credential refuses the write, on every field of ever
     expect(new Set(driven.map((one) => one.split(' ')[0])).size).toBeGreaterThan(10);
   });
 });
-
-/**
- * The cases below that loop over `which` and `run` drive every kind of the catalog into a sandbox
- * of its own, once per kind. Measured with the suite running on two workers, they take 1.2 and
- * 1.15 s to refuse and 0.94 s to carry, against the shared 5 s; under a loaded runner a refusing
- * case has stopped at five seconds while passing alone. Nothing is spare, so the limit is given
- * room for a machine an order of magnitude slower than the one measured, not removed.
- */
-const EVERY_KIND_DRIVEN = 30_000;
 
 describe('the envelope’s own text goes through the door on every kind that carries it', () => {
   // `which` and `run` are the two fields a caller supplies on the ENVELOPE, so they
@@ -999,7 +1005,9 @@ describe('the size ceiling holds on every field the door owes', () => {
   // write accepts, observed in the clean pass), so nothing is listed here and a
   // field filled indirectly is charged to the input the caller actually hands in.
   for (const kind of CATALOG) {
-    it(`refuses an oversize value in any field ${kind} takes`, () => {
+    it(`refuses an oversize value in any field ${kind} takes`, {
+      timeout: EVERY_KIND_DRIVEN,
+    }, () => {
       const clean = drive(kind, poisoningBodies(kind));
       expect(clean.result.ok).toBe(true);
 
@@ -1068,7 +1076,9 @@ describe('an identifier is never screened, even when it looks like a credential'
     }
   });
 
-  it('keeps a minted id, an anchor and a state out of the door on every kind', () => {
+  it('keeps a minted id, an anchor and a state out of the door on every kind', {
+    timeout: EVERY_KIND_DRIVEN,
+  }, () => {
     // The general form of the same rule, over the whole catalog: nothing the record
     // derives ever comes back carrying a placeholder, however dirty the body beside
     // it was. Without this, a door made total over the fields would be one edit away
