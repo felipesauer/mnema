@@ -113,13 +113,17 @@ export function ensureTree(layout: ChainLayout): boolean {
     LOCKS_LINE,
   );
   // Likewise for the page `mnema site` writes under the tree: without the line a `git add`
-  // of the tree would publish it.
-  ensureLine(
-    gitignorePath(layout),
-    GITIGNORE_CONTENT,
-    (l) => l === SITE_LINE || l === 'site/',
-    SITE_LINE,
-  );
+  // of the tree would publish it. A file this call just wrote already holds it, from
+  // `GITIGNORE_CONTENT`: asked only of a file that was already there, so the content is the
+  // one place a new tree's line comes from.
+  if (!wrote) {
+    ensureLine(
+      gitignorePath(layout),
+      GITIGNORE_CONTENT,
+      (l) => l === SITE_LINE || l === 'site/',
+      SITE_LINE,
+    );
+  }
   return wrote;
 }
 
