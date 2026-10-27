@@ -199,6 +199,76 @@ export function verifyCommandOf(readme) {
 }
 
 /**
+ * The line the Quick start opens with, the one that installs: the first line of its code fence, up to the `#` that begins
+ * the note beside it. The hero offers this text to copy, so what a reader copies is what the README says to type.
+ */
+export function installLineOf(readme) {
+  const fence = /```[a-z]*\n([\s\S]*?)\n```/.exec(sectionOf(readme, 'Quick start'));
+  const line = ((fence?.[1] ?? '').split('\n')[0] ?? '').split('#')[0].trim();
+  if (line === '') throw new Error("the README's Quick start does not open with a command in a code fence");
+  return line;
+}
+
+/** The headings of the README's top table: the three cards, and the mark of the table they come from. */
+const CARD_TITLES = ['Remember', 'Enforce', 'Prove'];
+
+/**
+ * The three cards under the README's top picture: the `<th>` and the `<td>` of its table, in order, as plain text. The
+ * table is the one whose headings are `CARD_TITLES`, wherever it stands among the README's tables; none stops the build.
+ * @returns {{ title: string, body: string }[]}
+ */
+export function cardsOf(readme) {
+  const cellsOf = (table, tag) =>
+    [...table.matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, 'g'))].map((m) => textOfHtml(m[1] ?? ''));
+  const table = [...readme.matchAll(/<table>([\s\S]*?)<\/table>/g)]
+    .map((m) => m[1] ?? '')
+    .find((t) => cellsOf(t, 'th').join('|') === CARD_TITLES.join('|'));
+  if (table === undefined) {
+    throw new Error(`the README has no table with ${CARD_TITLES.join(', ')} for headings, and the hero reads its three cards`);
+  }
+  const titles = cellsOf(table, 'th');
+  const bodies = cellsOf(table, 'td');
+  if (bodies.length !== 3 || bodies.some((t) => t === '')) {
+    throw new Error(`the README's top table has ${titles.length} titles and ${bodies.length} cells, and the hero reads three and three`);
+  }
+  return titles.map((title, i) => ({ title, body: bodies[i] ?? '' }));
+}
+
+/** Text as HTML, with what a browser would read as markup written as text. */
+const asHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * The numbered steps of a README section, `N. **Title.** body`: the heading as the README writes it, and each step's title
+ * (without its full stop) and body as HTML, where the only markup is a `<code>` for what is in backticks. A step with a
+ * link, emphasis or tags in its body stops the build: this reader does not know how to show it, and a page that
+ * dropped the markup would say less than its source.
+ * @returns {{ heading: string, steps: { title: string, body: string }[] }}
+ */
+export function stepsOf(readme, heading) {
+  const steps = [];
+  for (const line of sectionOf(readme, heading).split('\n')) {
+    const m = /^(\d+)\. \*\*([^*]+?)\.\*\* (.+)$/.exec(line);
+    if (!m) {
+      if (/^\d+\. /.test(line)) {
+        throw new Error(`the README's "${heading}" has a numbered line the hero cannot read as "N. **Title.** body": ${line.slice(0, 40)}`);
+      }
+      continue;
+    }
+    const body = m[3] ?? '';
+    if (/\]\(|\*|<|\[/.test(body.replace(/`[^`]*`/g, ''))) {
+      throw new Error(`the README's step ${m[1]} has markup the hero cannot show: ${body.slice(0, 40)}`);
+    }
+    const html = body
+      .split(/(`[^`]*`)/)
+      .map((part) => (part.startsWith('`') ? `<code>${asHtml(part.slice(1, -1))}</code>` : asHtml(part)))
+      .join('');
+    steps.push({ title: m[2] ?? '', body: html });
+  }
+  if (steps.length !== 4) throw new Error(`the README's "${heading}" has ${steps.length} numbered steps, and the hero reads four`);
+  return { heading, steps };
+}
+
+/**
  * What the README says of a recording: the `alt` of its `<img>` and the caption beside it (`<sub>`), as HTML, the
  * links of the caption landed where they land on the site. The README's table cell is the source of both.
  */

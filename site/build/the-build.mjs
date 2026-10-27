@@ -4,7 +4,21 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { copyOf, docNames, factsOf, landingOf, llmsTxt, pageOf, recordingOf, themeCss, verifyCommandOf } from './the-pages.mjs';
+import {
+  cardsOf,
+  copyOf,
+  docNames,
+  factsOf,
+  installLineOf,
+  landingOf,
+  llmsTxt,
+  pageOf,
+  recordingOf,
+  stepsOf,
+  themeCss,
+  verifyCommandOf,
+  withoutWhatIsNotOnTheSite,
+} from './the-pages.mjs';
 import { theVerdictOfTheCommit } from './the-record.mjs';
 
 export const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -82,6 +96,13 @@ export async function prepare({ root = ROOT, site = SITE } = {}) {
     `${JSON.stringify({ command, output, sha: facts.sha, repoUrl: facts.repoUrl, caption, recording, copyTaken: [...taken].sort() }, null, 2)}\n`,
   );
 
+  // What the hero reads of the README: the line that installs, the three cards and the four steps.
+  const top = withoutWhatIsNotOnTheSite(readme, 'README.md');
+  writeFileSync(
+    into('src/generated/hero.json'),
+    `${JSON.stringify({ install: installLineOf(top), cards: cardsOf(top), how: stepsOf(top, 'How it works') }, null, 2)}\n`,
+  );
+
   for (const file of readdirSync(join(root, 'docs/assets'))) {
     cpSync(join(root, 'docs/assets', file), into(`public/assets/${file}`));
   }
@@ -90,11 +111,13 @@ export async function prepare({ root = ROOT, site = SITE } = {}) {
   }
 
   const { ACCENT } = await import(pathToFileURL(join(root, '.github/the-front-page/accent.mjs')).href);
-  const { PAGE } = await import(pathToFileURL(join(root, '.github/the-front-page/draw.mjs')).href);
+  const { PAGE, headerWordmark } = await import(pathToFileURL(join(root, '.github/the-front-page/draw.mjs')).href);
   writeFileSync(into('src/generated/theme.css'), themeCss({ ACCENT, PAGE }));
   const { drawIcon } = await import(pathToFileURL(join(root, 'packages/vscode/build/icon.mjs')).href);
   const { THE_BLOCKS } = await import(pathToFileURL(join(root, 'packages/code/dist/presentation/banner.js')).href);
   writeFileSync(into('public/favicon.png'), drawIcon(THE_BLOCKS));
+  // The head's wordmark: the banner's letters alone, from the same rows.
+  for (const theme of ['dark', 'light']) writeFileSync(into(`src/assets/wordmark-${theme}.svg`), headerWordmark(THE_BLOCKS, theme));
   writeFileSync(into('src/generated/the-build.json'), `${JSON.stringify({ version: facts.version, sha: facts.sha, repoUrl: facts.repoUrl })}\n`);
   return facts;
 }
