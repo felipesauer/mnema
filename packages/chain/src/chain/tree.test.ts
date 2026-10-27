@@ -107,17 +107,45 @@ describe('ensureTree: self-contained .gitignore', () => {
     const old = '# mine\n/private/\n/keys/*.key\n# my own line\n';
     writeFileSync(gitignorePath({ root }), old, 'utf-8');
     expect(ensureTree({ root })).toBe(false);
-    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(`${old}/locks/\n`);
+    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(`${old}/locks/\n/site/\n`);
+  });
+
+  it('adds only the missing site line to a .gitignore that has locks but not site, once', () => {
+    const old = '# mine\n/private/\n/locks/\n# my own line\n';
+    writeFileSync(gitignorePath({ root }), old, 'utf-8');
+    expect(ensureTree({ root })).toBe(false);
+    expect(ensureTree({ root })).toBe(false);
+    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(`${old}/site/\n`);
+  });
+
+  it('writes /site/ in a new tree, and git says the page under it is ignored', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'mnema-gitignore-site-'));
+    try {
+      execFileSync('git', ['init', '-q'], { cwd: repo });
+      const tree = join(repo, '.mnema');
+      ensureTree({ root: tree });
+      expect(readFileSync(gitignorePath({ root: tree }), 'utf-8').split('\n')).toContain('/site/');
+      const page = join('.mnema', 'site', 'index.html');
+      mkdirSync(join(repo, dirname(page)), { recursive: true });
+      writeFileSync(join(repo, page), '<html></html>');
+      expect(() => execFileSync('git', ['check-ignore', '-q', page], { cwd: repo })).not.toThrow();
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
   });
 
   it('adds the locks line after a last line that has no newline', () => {
     writeFileSync(gitignorePath({ root }), '/private/', 'utf-8');
     ensureTree({ root });
-    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe('/private/\n/locks/\n');
+    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe('/private/\n/locks/\n/site/\n');
   });
 
   it('leaves a .gitignore that already has the locks line byte for byte', () => {
-    for (const body of ['/private/\n/locks/\n', 'locks/\n/private/', '/private/\r\n/locks/\r\n']) {
+    for (const body of [
+      '/private/\n/locks/\n/site/\n',
+      'locks/\nsite/\n/private/',
+      '/private/\r\n/locks/\r\n/site/\r\n',
+    ]) {
       writeFileSync(gitignorePath({ root }), body, 'utf-8');
       ensureTree({ root });
       ensureTree({ root });
@@ -160,7 +188,7 @@ describe('ensureTree: a .gitattributes that keeps git from rewriting line ends',
   });
 
   it('writes it into a tree made before it existed, at the next write, and touches nothing else', () => {
-    const ignore = '/private/\n/locks/\n';
+    const ignore = '/private/\n/locks/\n/site/\n';
     writeFileSync(gitignorePath({ root }), ignore, 'utf-8');
     expect(ensureTree({ root })).toBe(false);
     expect(readFileSync(attributes(), 'utf-8')).toContain('\n* -text\n');

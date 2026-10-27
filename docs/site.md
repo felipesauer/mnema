@@ -1,6 +1,7 @@
 # A page of the record that verifies itself
 
 ```sh
+mnema site                  # writes .mnema/site/index.html
 mnema site --out _site      # writes _site/index.html
 ```
 
@@ -18,13 +19,22 @@ and not that the lists were written from those files: `mnema site` wrote them an
 does not derive them again. Only the committed (public) tree is in the file, and all of its
 text is: a repository that must not be read should not publish one.
 
+Without `--out` the page is written under the record, in `.mnema/site/`, and the record's own `.gitignore` is given the
+line `/site/` before the first byte, so a `git add .mnema` leaves it out: it is derived from the record and rebuilt at will,
+never committed. A record made before the line existed gets it the next time `mnema site` or `mnema init` runs, and
+`mnema doctor` asks git whether the page is ignored and whether git already tracks something under `.mnema/site/` (it
+says the command to stop tracking it, `git rm -r --cached .mnema/site`, and never runs it). A directory named by `--out`
+that is inside the record and outside `site/` is refused, by name, before anything is written: the folder whose contents
+are the proof receives nothing derived. Neither reader of the record reads `site/`.
+
 When the page sits inside a larger site, `mnema site --out _site --back-link /` adds one link at its top
 that goes back to the address given, labelled "Back" (the label is fixed). The address is an `http://` or `https://` address, or a path
 on the same site (one `/` first, or relative); a protocol-relative `//host`, a backslash, an `https:` with no `//` and any other
 scheme are refused, by name, before anything is written.
 Without the option the page is exactly the one above.
 
-To publish it on GitHub Pages, build it in a workflow. The CLI is what writes the page; the
+To publish it on GitHub Pages, build it in a workflow, with `--out _site` so that the artifact is outside the record (the
+default is for reading the page on your own machine). The CLI is what writes the page; the
 [Action](../packages/action/) reads and verifies the record, writes to it only if handed a `checker-key`, and is not involved:
 
 ```yaml

@@ -12,6 +12,17 @@ with its own changelog.
 
 ### Added
 
+- **`mnema site` writes under the record by default, and git leaves it out.** With no `--out` the page is written to
+  `.mnema/site/index.html` (the folder is the record's own, found by discovery, even from a folder below the project), and
+  the record's `.gitignore` gains `/site/`: a new record has it, an older one is given the line when `mnema site` or
+  `mnema init` runs (`init` in a project that exists now says it added it), and `mnema site` adds it before the page is
+  written. Before, `--out` was required, and a `git add .mnema` after writing the page to the obvious place staged it. An
+  `--out` inside the record and outside `site/` is refused (`OUT_IN_THE_RECORD`), resolved through links, with nothing
+  written; one under `site/` is taken. `mnema doctor` asks git whether `.mnema/site/index.html` would be ignored (it says
+  to run `mnema init`) and whether git tracks files under `.mnema/site/` (it names the count and `git rm -r --cached
+  .mnema/site`, and never runs it); it says nothing outside a repository or with no git. Both readers of the record skip
+  `site/`, as they skip anything else at its root, and the format page lists it.
+
 - **A site on GitHub Pages, built from the pages that already exist.** `site/` is a Starlight site in a tree of its own, with
   its own lockfile and pinned versions, outside the workspace and outside every published package. It holds no page of
   its own: the build copies the pages of `docs/` (title moved to the frontmatter, relative links sent to the site's page

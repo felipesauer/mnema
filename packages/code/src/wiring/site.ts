@@ -1,13 +1,16 @@
 /**
  * The `mnema site` wiring: what it declares, and what it writes.
  *
- * `mnema site --out <dir>`: the project's committed record as one HTML file, with the
+ * `mnema site [--out <dir>]`: the project's committed record as one HTML file, with the
  * verifier inside it.
  *
  * IT HAS NO `--private` OR `--global`. The page is meant to be published, and what is
  * published is what the repository already shows everyone; an option that put a private tree
  * into it would be the one way to leak a note, so it does not exist. It writes `index.html`
- * under the directory named and nothing else, and records nothing in the record.
+ * under the directory named (by default `<record>/site/`) and records nothing in the record. It
+ * is a reader that, when the page lands under the record, may add to the record's own
+ * `.gitignore` the `/site/` line it lacks (and the `.gitattributes` a tree made before it lacks),
+ * so that git leaves the page out; nothing else of the record is touched.
  */
 
 import type { Command } from 'commander';
@@ -25,7 +28,10 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
     .description(
       "write the project's committed record as one HTML page that verifies itself in the browser (records nothing)",
     )
-    .requiredOption('--out <dir>', 'the directory index.html is written under')
+    .option(
+      '--out <dir>',
+      "the directory index.html is written under (default: the record's own site/ folder, which its .gitignore keeps out of git)",
+    )
     .option(
       '--back-link <url>',
       'put one link, labelled "Back", to this address (http(s)://, or a path on the same site) at the top of the page',
@@ -46,15 +52,21 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
         'page is the same bytes it has always been; with it, the page opens with one link back',
         'to a site that hosts it, and nothing else about the page changes.',
         '',
+        "Without --out the page is written under the record, in .mnema/site/, and the record's",
+        '.gitignore is given the line /site/ first, so a `git add .mnema` leaves it out. A',
+        'directory named by --out that is inside the record and not under site/ is refused:',
+        "the record's folder holds only what is proof.",
+        '',
         'Examples:',
+        '  mnema site                       write .mnema/site/index.html',
         '  mnema site --out dist/record     write dist/record/index.html',
         '  mnema site --out dist/record --back-link /mnema/',
       ].join('\n'),
     )
-    .action(async (opts: { out: string; backLink?: string }) => {
+    .action(async (opts: { out?: string; backLink?: string }) => {
       const { runSite } = await import('../commands/site.js');
       const result = runSite(here(), {
-        out: opts.out,
+        ...(opts.out !== undefined ? { out: opts.out } : {}),
         ...(opts.backLink !== undefined ? { backLink: opts.backLink } : {}),
       });
       if (!result.ok) {

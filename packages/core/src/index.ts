@@ -277,6 +277,7 @@ export {
   type ResolvedTrees,
   type RoutedKind,
   reachableTrees,
+  realOfMaybeMissing,
   replayingBirthProbe,
   replayingRecordProbe,
   resolveScope,
