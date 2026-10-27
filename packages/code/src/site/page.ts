@@ -171,7 +171,7 @@ export const STYLE = `
 @media (prefers-color-scheme: dark) { :root { ${variables(PALETTE.dark)} } }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { max-width: 52rem; margin: 0 auto; padding: 1rem; background: var(--bg); color: var(--text); }
+body { max-width: 52rem; margin: 0 auto; padding: 1rem; background: var(--bg); color: var(--text); overflow-wrap: anywhere; }
 h1, h2, h3, h4 { line-height: 1.25; }
 h1 { margin: 0.5rem 0; }
 h2 { margin-top: 2rem; }
@@ -206,9 +206,9 @@ code { overflow-wrap: anywhere; }
 .timeline { padding-left: 1.5rem; }
 .timeline li { margin: 0.35rem 0; }
 .filters { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1rem 0 0.5rem; }
-.filters label { display: flex; flex-direction: column; font-size: 0.85em; color: var(--muted); }
-.filters select, .filters input, .filters button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--muted); border-radius: 0.25rem; padding: 0.25rem 0.5rem; max-width: 100%; }
-.filters button { align-self: flex-end; cursor: pointer; }
+.filters label { display: flex; flex-direction: column; flex: 1 1 10rem; min-width: 0; font-size: 0.85em; color: var(--muted); }
+.filters select, .filters input, .filters button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--muted); border-radius: 0.25rem; padding: 0.25rem 0.5rem; width: 100%; max-width: 100%; }
+.filters button { width: auto; align-self: flex-end; cursor: pointer; }
 details { margin: 0.5rem 0; }
 summary { cursor: pointer; }
 `;
