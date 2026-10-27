@@ -129,9 +129,17 @@ function compareContent(label: string, el: El, node: VNode, out: string[]): void
   }
 }
 
+/** The most differences one item names; a card that is something else altogether would name dozens. */
+const MOST_PER_ITEM = 4;
+
 function compareItem(label: string, el: El, node: VNode, out: string[]): void {
-  compareAttributes(label, el, node, out);
-  compareContent(label, el, node, out);
+  const mine: string[] = [];
+  compareAttributes(label, el, node, mine);
+  compareContent(label, el, node, mine);
+  out.push(...mine.slice(0, MOST_PER_ITEM));
+  if (mine.length > MOST_PER_ITEM) {
+    out.push(`${label}: and ${mine.length - MOST_PER_ITEM} more differences`);
+  }
 }
 
 /**
