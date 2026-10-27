@@ -63,6 +63,12 @@
           "default": "stack-index",
           "scope": "machine",
           "markdownDescription": "The folder holding the index of stacks (`index.json`), relative to the workspace folder. It is read by `mnema stack index`."
+        },
+        "mnema.statusBar.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "machine",
+          "markdownDescription": "Show the mnema item in the status bar. Set it in your user settings: a repository's own settings cannot hide it, because it says when `mnema verify` fails."
         }
       }
     },

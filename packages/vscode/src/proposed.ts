@@ -93,15 +93,6 @@ export function detailText(item: Proposed, detail: ProposedDetail | undefined): 
   return lines.join('\n');
 }
 
-/** The ids that are on the panel now and were not the last time. The first reading announces none. */
-export function newlyProposed(
-  before: ReadonlySet<string> | undefined,
-  now: readonly Proposed[],
-): Proposed[] {
-  if (before === undefined) return [];
-  return now.filter((item) => !before.has(item.id));
-}
-
 /** The two verbs a person has. */
 export type Judgment = 'accept' | 'reject';
 
