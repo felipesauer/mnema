@@ -724,7 +724,7 @@ when('the built site', () => {
     }
   });
 
-  it('puts no sentence in a stylesheet:a `content` that is not empty, or an `attr()`, is text the guards do not read', () => {
+  it('puts no sentence in a stylesheet: a `content` that is not empty, or an `attr()`, is text the guards do not read', () => {
     // CSS can draw text no HTML holds (`content: "..."`, or the value of an attribute by `attr()`), and the guards
     // that read the page read the page. Own stylesheets: nothing but `content: ''`, `""` or `none`. Built ones: the
     // same, less what a package the site stands on carries in its own files.
