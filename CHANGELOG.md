@@ -12,6 +12,17 @@ with its own changelog.
 
 ### Added
 
+- **`mnema site` writes under the record by default, and git leaves it out.** With no `--out` the page is written to
+  `.mnema/site/index.html` (the folder is the record's own, found by discovery, even from a folder below the project), and
+  the record's `.gitignore` gains `/site/`: a new record has it, an older one is given the line when `mnema site` or
+  `mnema init` runs (`init` in a project that exists now says it added it), and `mnema site` adds it before the page is
+  written. Before, `--out` was required, and a `git add .mnema` after writing the page to the obvious place staged it. An
+  `--out` inside the record and outside `site/` is refused (`OUT_IN_THE_RECORD`), resolved through links, with nothing
+  written; one under `site/` is taken. `mnema doctor` asks git whether `.mnema/site/index.html` would be ignored (it says
+  to run `mnema init` where the `/site/` line is missing, and that a rule re-includes the page where it is there) and whether git tracks files under `.mnema/site/` (it names the count and `git rm -r --cached
+  .mnema/site`, and never runs it); it says nothing outside a repository or with no git. Both readers of the record skip
+  `site/`, as they skip anything else at its root, and the format page lists it.
+
 - **A site on GitHub Pages, built from the pages that already exist.** `site/` is a Starlight site in a tree of its own, with
   its own lockfile and pinned versions, outside the workspace and outside every published package. It holds no page of
   its own: the build copies the pages of `docs/` (title moved to the frontmatter, relative links sent to the site's page
@@ -25,7 +36,12 @@ with its own changelog.
   checkout's version and commit, and `/record/` is byte for byte the page the command writes with `--back-link`. The
   sentence that the pages describe the next version is true on GitHub and npm and false on the site, which describes the
   published version: the source wraps it in `<!-- not-on-the-site -->` lines, the build takes out that stretch and nothing
-  else, a marker that does not pair stops the build, and the built site is held not to say it.
+  else, a marker that does not pair stops the build, and the built site is held not to say it. The theme reads at
+  WCAG AA in both themes: the ground and the greys are the front page's `PAGE` and a ramp between its two ends, and
+  the accent as text is the smallest mix of the other ground into `ACCENT` that reads at 4.5:1 on the ground and on
+  every ground Starlight maps to a grey (the light accent was 3.48:1 on white as a link and as the button's fill). A
+  case measures the pairs with a ratio of its own, and another reads the built style for a rule outside any layer. The
+  footer reads "commit" and its sha with a space, and its link takes the accent.
 - **A `Site` workflow.** On a pull request that touches what the site is made of it builds the site and runs those two cases
   (it is not a required check, and the path filter is inside the job). After a release it builds the commit the release tagged
   and deploys it to GitHub Pages from a job that holds `pages: write` and `id-token: write` and no secret; the site

@@ -34,9 +34,9 @@
  * about a directory that is none, with the anchor of whatever project lies above it.
  */
 
-import { statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { catalogUpcasters, ensureTree, privateKeyPath } from '@mnema/chain';
+import { catalogUpcasters, ensureTree, gitignorePath, privateKeyPath } from '@mnema/chain';
 import {
   chainRootForScope,
   type DiscoveryEnv,
@@ -123,7 +123,10 @@ export interface InitResult {
    * refusal, the code and the words a write prints, asked of the same function the write asks
    * (`recordedAnchorOf`), and the file those words' restore takes, where they name one.
    */
-  readonly completed?: Missing;
+  readonly completed?: Missing & {
+    /** The record's own `.gitignore` lacked a line and was given it (`ensureTree`). */
+    readonly gitignore?: true;
+  };
   readonly writeRefused?: {
     readonly code: IdentityUnavailableError['code'];
     readonly message: string;
@@ -213,10 +216,18 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
     };
     // What the founding leaves beside the record, and a project founded before it did lacks:
     // completed here, and nothing else of the project is touched.
+    //
+    // THE RECORD'S OWN `.gitignore` TOO: `ensureTree` appends to an older one the line it lacks
+    // (`/locks/`, `/site/`), and it is said here by comparing the file before and after, so the
+    // chain's public `ensureTree` keeps its signature.
+    const ignoreFile = gitignorePath({ root });
+    const ignoreBefore = existsSync(ignoreFile) ? readFileSync(ignoreFile, 'utf-8') : undefined;
+    ensureTree({ root });
+    const ignoreChanged = ignoreBefore !== readFileSync(ignoreFile, 'utf-8');
     const done = complete(ctx.cwd);
     const completed =
-      done.readme || done.editorconfig || done.prettierIgnore !== undefined
-        ? { completed: done }
+      done.readme || done.editorconfig || done.prettierIgnore !== undefined || ignoreChanged
+        ? { completed: { ...done, ...(ignoreChanged ? { gitignore: true as const } : {}) } }
         : {};
     const recorded = recordedAnchorOf(asked);
     if (recorded === undefined) {

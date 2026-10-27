@@ -270,21 +270,103 @@ export function docNames(files) {
   return new Set(files.filter((f) => /^docs\/[^/]+\.md$/.test(f)).map((f) => f.slice(5, -3)));
 }
 
-/** The colour file: the accent of each theme, from the one constant the front page is painted with. */
-export function accentCss(ACCENT) {
-  return [
-    ':root {',
-    `  --sl-color-accent: ${ACCENT.dark};`,
-    '  --sl-color-accent-high: var(--sl-color-accent);',
-    '  --sl-color-accent-low: color-mix(in srgb, var(--sl-color-accent) 22%, var(--sl-color-black));',
+const channelsOf = (hex) => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
+const hexOf = (rgb) => `#${rgb.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+
+/** `from` taken `share` (0 to 1) of the way toward `toward`, channel by channel in sRGB. */
+export function mix(from, toward, share) {
+  const [a, b] = [channelsOf(from), channelsOf(toward)];
+  return hexOf(a.map((c, i) => Math.round(c + ((b[i] ?? 0) - c) * share)));
+}
+
+/** WCAG 2 contrast ratio of two `#rrggbb` colours. */
+export function contrastOf(one, other) {
+  const lum = (hex) => {
+    const [r, g, b] = channelsOf(hex).map((c) => {
+      const v = c / 255;
+      return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+  };
+  const [hi, lo] = [lum(one), lum(other)].sort((x, y) => y - x);
+  return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
+}
+
+/**
+ * The colour of accent text: the smallest share (in steps of 1%) of `toward` mixed into `ink` that reads at
+ * `floor` or better on EVERY one of `grounds`. Throws when no share does, so a theme whose grounds cannot
+ * carry the accent stops the build instead of shipping unreadable links.
+ */
+export function textAccent({ ink, toward, grounds, floor }) {
+  for (let percent = 0; percent <= 100; percent++) {
+    const colour = mix(ink, toward, percent / 100);
+    if (grounds.every((ground) => contrastOf(colour, ground) >= floor)) return colour;
+  }
+  throw new Error(`no mix of ${ink} toward ${toward} reads at ${floor}:1 on ${grounds.join(', ')}`);
+}
+
+/** The floor for text: WCAG 2, level AA. */
+export const TEXT_FLOOR = 4.5;
+
+/**
+ * How far each grey of Starlight's ramp (`gray-1` the strongest, `gray-7` the faintest) sits from the page's
+ * ground toward its ink. Read off Starlight 0.42's own greys, so the chrome keeps its steps; the two ends are
+ * the front page's `PAGE`, so no colour is new.
+ */
+const RAMP = Object.freeze({
+  dark: [0.922, 0.733, 0.487, 0.267, 0.129, 0.052, 0.03],
+  light: [0.948, 0.871, 0.733, 0.513, 0.267, 0.078, 0.039],
+});
+
+/**
+ * The theme as data, per theme: every `--sl-color-<name>` the site sets. The ground is `PAGE[theme]`, the ink is
+ * the other theme's `PAGE`, the greys are the ramp between them, and the accent as text is calculated against
+ * the ground and against every ground Starlight maps to a grey (nav, sidebar, inline code), because the worst
+ * of them decides. Starlight draws the text of its primary button and of the current sidebar item in
+ * `--sl-color-black` (light) or `--sl-color-accent-low` (dark) over `--sl-color-text-accent`.
+ */
+export function themeOf({ ACCENT, PAGE }) {
+  const of = (theme, other) => {
+    const [ground, ink] = [PAGE[theme], PAGE[other]];
+    const [g1, g2, g3, g4, g5, g6, g7] = RAMP[theme].map((share) => mix(ground, ink, share));
+    const mapped = theme === 'dark' ? { nav: g6, sidebar: g6, code: g5 } : { nav: g7, sidebar: ground, code: g6 };
+    const text = textAccent({
+      ink: ACCENT[theme],
+      toward: ink,
+      grounds: [ground, mapped.nav, mapped.sidebar, mapped.code],
+      floor: TEXT_FLOOR,
+    });
+    return {
+      accent: ACCENT[theme],
+      'accent-high': text,
+      'accent-low': theme === 'dark' ? mix(ground, ACCENT[theme], 0.22) : mix(ink, ACCENT[theme], 0.2),
+      'text-accent': text,
+      black: ground,
+      white: ink,
+      'gray-1': g1,
+      'gray-2': g2,
+      'gray-3': g3,
+      'gray-4': g4,
+      'gray-5': g5,
+      'gray-6': g6,
+      'gray-7': g7,
+      'bg-nav': mapped.nav,
+      'bg-sidebar': mapped.sidebar,
+      'bg-inline-code': mapped.code,
+    };
+  };
+  return { dark: of('dark', 'light'), light: of('light', 'dark') };
+}
+
+/** The colour file: the values of `themeOf`, written as the variables Starlight reads, in no layer. */
+export function themeCss(colours) {
+  const rule = (selector, theme) => [
+    `${selector} {`,
+    ...Object.entries(theme).map(([name, value]) => `  --sl-color-${name}: ${value};`),
     '}',
-    ":root[data-theme='light'] {",
-    `  --sl-color-accent: ${ACCENT.light};`,
-    '  --sl-color-accent-high: color-mix(in srgb, var(--sl-color-accent) 70%, var(--sl-color-black));',
-    '  --sl-color-accent-low: color-mix(in srgb, var(--sl-color-accent) 20%, var(--sl-color-white));',
-    '}',
-    '',
-  ].join('\n');
+  ];
+  const { dark, light } = themeOf(colours);
+  return [...rule(':root', dark), ...rule(":root[data-theme='light']", light), ''].join('\n');
 }
 
 /** `llms.txt`: the convention's shape, from the pitch and the README's groups, each link to the raw page. */

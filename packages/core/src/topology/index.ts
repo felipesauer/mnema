@@ -37,6 +37,7 @@ export {
   type PrivateTreeVisibility,
   PrivateTreeVisibleError,
   privateTreeVisibility,
+  realOfMaybeMissing,
 } from './private-tree.js';
 export {
   type LeftBehind,

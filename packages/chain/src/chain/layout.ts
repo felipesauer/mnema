@@ -139,8 +139,11 @@ export function tailLockPath(layout: ChainLayout, tailId: string): string {
  * IT SHARES `locks/` WITH THE WRITERS' LOCKS, and that is a choice of where git already
  * looks away rather than a claim that it is a lock. Every tree's own `.gitignore` carries
  * `/locks/` (see `ensureTree`), the tree already has to be writable there for any write to
- * land, and a directory of its own would need a line in a `.gitignore` the chain never
- * touches once it exists, which every tree created before this has. It is derived and never
+ * land, and a directory of its own would need a line in a `.gitignore` that every tree
+ * created before this already has. That premise (the chain never touches a `.gitignore` once
+ * it exists, so a new line could not reach an old tree) was false from the start for `/locks/`
+ * and is false for `/site/`: `ensureTree` appends a missing line at the tree's next write. The
+ * sharing stays because it costs nothing, not because it was the only way. It is derived and never
  * the record: deleting it costs the next reader a rebuild and, bar the one edit it can miss (see
  * `CacheOptions.persist`), changes no answer, and a clone never carries it.
  */

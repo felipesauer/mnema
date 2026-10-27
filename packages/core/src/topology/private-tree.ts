@@ -105,7 +105,7 @@ export function privateTreeVisibility(trees: ResolvedTrees): PrivateTreeVisibili
  * `path` as the file system resolves it, for a path whose last parts may not exist yet: the
  * nearest ancestor that exists is resolved, and the rest is joined to it as written.
  */
-function realOfMaybeMissing(path: string): string {
+export function realOfMaybeMissing(path: string): string {
   let head = path;
   const rest: string[] = [];
   for (;;) {

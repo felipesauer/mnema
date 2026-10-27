@@ -18,8 +18,12 @@
  *   - A LINK THE BUILD WROTE POINTS AT A FILE GIT HOLDS, or at a page the build wrote.
  *   - THE LANDING IS A TRACKED MARKDOWN FILE, so the guards that read every page of the repository reach
  *     it, and each directive in it is a source the build can read.
- *   - NO COLOUR AND NO PICTURE IS WRITTEN IN `site/`: the accent is read from `accent.mjs`, the pictures
- *     from `docs/assets/`, the icon from `packages/vscode/build/icon.mjs`.
+ *   - NO COLOUR AND NO PICTURE IS WRITTEN IN `site/`: the theme is calculated from `ACCENT` (`accent.mjs`)
+ *     and `PAGE` (`draw.mjs`), the pictures are read from `docs/assets/`, the icon from
+ *     `packages/vscode/build/icon.mjs`.
+ *   - THE THEME READS AT WCAG AA: the accent as text on the ground and on every ground Starlight maps to a
+ *     grey, the text over the accent, the body and the muted text, in both themes, by a ratio written in
+ *     the test and not imported from the build.
  *   - /RECORD/ IS NOT WRITTEN FROM A RECORD THAT DOES NOT VERIFY: the build stops, and writes nothing.
  *
  * WHAT IT DOES NOT CHECK: how the pages look. A reviewer sees them in the pull request's preview.
@@ -45,6 +49,9 @@ import {
   pageOf,
   recordBackLink,
   rewriteLinks,
+  textAccent,
+  themeCss,
+  themeOf,
   titleOf,
   whereItLands,
   withoutWhatIsNotOnTheSite,
@@ -310,6 +317,131 @@ describe('the pages the build writes for this tree', () => {
     for (const [, sha, path] of raw) {
       expect(sha).toBe(facts.sha);
       expect(files, `llms.txt names ${path}`).toContain(path);
+    }
+  });
+});
+
+/** WCAG 2 contrast, written here on purpose: a mistake in the build's own formula must not pass its own test. */
+function wcag(one: string, other: string): number {
+  const lum = (hex: string): number => {
+    const [r, g, b] = [1, 3, 5].map((i) => {
+      const v = Number.parseInt(hex.slice(i, i + 2), 16) / 255;
+      return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    }) as [number, number, number];
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [hi, lo] = [lum(one), lum(other)].sort((x, y) => y - x) as [number, number];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+describe('the theme the build writes reads at WCAG AA in both themes', () => {
+  type Colours = Record<string, string>;
+  const colours = async (): Promise<{ dark: Colours; light: Colours; css: string }> => {
+    const { ACCENT } = await import('../../../.github/the-front-page/accent.mjs');
+    const { PAGE } = await import('../../../.github/the-front-page/draw.mjs');
+    const theme = themeOf({ ACCENT, PAGE }) as { dark: Colours; light: Colours };
+    return { ...theme, css: themeCss({ ACCENT, PAGE }) as string };
+  };
+
+  it('measures contrast as the standard does: the two values the standard gives for the accent', () => {
+    expect(wcag('#997dbf', '#ffffff').toFixed(2)).toBe('3.48');
+    expect(wcag('#0d1117', '#997dbf').toFixed(2)).toBe('5.44');
+  });
+
+  it('makes the accent as text read at 4.5:1 on the ground and on every ground Starlight maps to a grey', async () => {
+    const t = await colours();
+    for (const theme of ['dark', 'light'] as const) {
+      const c = t[theme];
+      for (const ground of ['black', 'bg-nav', 'bg-sidebar', 'bg-inline-code'] as const) {
+        const ratio = wcag(c['text-accent'] as string, c[ground] as string);
+        expect(ratio, `${theme}: accent text on ${ground}`).toBeGreaterThanOrEqual(4.5);
+      }
+      for (const name of ['accent-high', 'text-accent']) {
+        expect(c[name], `${theme}: ${name} is the colour of accent text`).toBe(c['text-accent']);
+      }
+    }
+  });
+
+  it('makes the text drawn over the accent read at 4.5:1: the primary button and the current item of the sidebar', async () => {
+    const t = await colours();
+    for (const theme of ['dark', 'light'] as const) {
+      const c = t[theme];
+      // Starlight draws the button in `--sl-color-black`, and the sidebar's current item in `--sl-color-text-invert`:
+      // `--sl-color-accent-low` in the dark theme and `--sl-color-black` in the light one.
+      for (const ink of ['black', theme === 'dark' ? 'accent-low' : 'black'] as const) {
+        expect(
+          wcag(c[ink] as string, c['text-accent'] as string),
+          `${theme}: ${ink} over the accent`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it('makes the body text and the muted text (the footer) read at 4.5:1 on the ground', async () => {
+    const t = await colours();
+    for (const theme of ['dark', 'light'] as const) {
+      const c = t[theme];
+      for (const grey of ['gray-2', 'gray-3']) {
+        expect(
+          wcag(c[grey] as string, c['black'] as string),
+          `${theme}: ${grey} on the ground`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it('takes the smallest mix of the other ground that passes, and stops the build when none does', async () => {
+    const t = await colours();
+    const { ACCENT } = await import('../../../.github/the-front-page/accent.mjs');
+    const { PAGE } = await import('../../../.github/the-front-page/draw.mjs');
+    expect(t.dark['text-accent'], 'the dark accent already passes, so it is not touched').toBe(
+      ACCENT.dark,
+    );
+    expect(t.light['text-accent'], 'the light accent had to be darkened').not.toBe(ACCENT.light);
+    const grounds = ['black', 'bg-nav', 'bg-sidebar', 'bg-inline-code'].map(
+      (n) => t.light[n] as string,
+    );
+    const mixed = (percent: number): string => {
+      const [a, b] = [ACCENT.light, PAGE.dark].map((h: string) =>
+        [1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16)),
+      ) as [number[], number[]];
+      return `#${a
+        .map((c, i) =>
+          Math.round(c + ((b[i] as number) - c) * (percent / 100))
+            .toString(16)
+            .padStart(2, '0'),
+        )
+        .join('')}`;
+    };
+    const found = [...Array(101).keys()].find((p) => mixed(p) === t.light['text-accent']);
+    expect(
+      found,
+      'the light accent text is a whole percent of the way to the dark ground',
+    ).toBeDefined();
+    const below = mixed((found as number) - 1);
+    expect(
+      grounds.some((g) => wcag(below, g) < 4.5),
+      'one percent less would already have passed everywhere',
+    ).toBe(true);
+    expect(() =>
+      textAccent({ ink: '#ffffff', toward: '#ffffff', grounds: ['#ffffff'], floor: 4.5 }),
+    ).toThrow(/reads at 4.5:1/);
+  });
+
+  it('writes what it measured: every value is in the rule of its theme, and the accent opens each rule', async () => {
+    const t = await colours();
+    const rules = {
+      dark: /^:root \{\n([\s\S]*?)\n\}/m.exec(t.css)?.[1],
+      light: /^:root\[data-theme='light'\] \{\n([\s\S]*?)\n\}/m.exec(t.css)?.[1],
+    };
+    for (const theme of ['dark', 'light'] as const) {
+      const rule = rules[theme] as string;
+      expect(rule, `${theme}: the rule is in the file`).toBeDefined();
+      expect(rule.startsWith(`  --sl-color-accent: ${t[theme]['accent']};`)).toBe(true);
+      expect(Object.keys(t[theme]).length, `${theme}: the whole theme`).toBe(16);
+      for (const [name, value] of Object.entries(t[theme])) {
+        expect(rule, `${theme}: ${name}`).toContain(`  --sl-color-${name}: ${value};`);
+      }
     }
   });
 });
