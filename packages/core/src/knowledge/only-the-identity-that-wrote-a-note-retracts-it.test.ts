@@ -286,4 +286,41 @@ describe('a note is the identity that first wrote it', () => {
       expect(retractNote(creator, { id: taken, reason: 'It was a key lookup.' }).ok).toBe(true);
     });
   }
+
+  it('serves the later writing when the same identity writes its note again, and lets it retract', () => {
+    const a = machine('mnema-author-a-');
+    const taken = memory(a, 'The cache is SQLite because the load is relational.');
+    const author = ensureFounded(a);
+    const cache = ProjectionCache.open(tree);
+    cache.rebuild();
+    const again = memoryCaptured(
+      { at: at(60), who: author, signerFp: a.writer.signerFingerprint, subject: taken },
+      { content: 'The cache is SQLite because the load is relational and small.' },
+    );
+    expect(appendEvent(a.writer, again).ok).toBe(true);
+    expect(retractNote(a, { id: taken, reason: 'It was a key lookup.' }).ok).toBe(true);
+    a.writer.checkpoint();
+
+    try {
+      cache.refresh();
+      const replayed = ProjectionCache.open(tree);
+      try {
+        replayed.rebuild();
+        for (const open of [cache, replayed]) {
+          const note = open.getMemory(taken);
+          expect(note?.content).toBe(
+            'The cache is SQLite because the load is relational and small.',
+          );
+          expect(note?.retracted?.who).toBe(author);
+        }
+      } finally {
+        replayed.close();
+      }
+    } finally {
+      cache.close();
+    }
+    const verdict = verify(tree, upcasters);
+    expect(verdict.ok).toBe(true);
+    expect(verdict.census).toEqual([]);
+  });
 });

@@ -10,6 +10,17 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A note is the identity that wrote it first, in every reader.** The read and the write took a note's author from its LAST
+  writing in the merged order, and `mnema verify` and the second reader from its last writing in the order of the tail ids. A
+  key of another identity that wrote the same id again with a later clock took the note: its content and its author were
+  served, and its retraction took the note out, while the census either said nothing or said that retraction was not applied.
+  Every reader now takes the author from the first writing in the merged order (FORMAT.md §6.4): a later writing by another
+  identity is not applied, the write refuses that identity's retraction (`NOT_THE_AUTHOR`), and both verifiers name the
+  writing in the census (`foreign-rewrite`), informational, exit unchanged. The product mints a note's id at its capture,
+  so no record it wrote holds such a writing.
+
 ### Changed
 
 - **The VS Code extension's icon is the banner's M.** It was a cube; it is now the first letter of the console's wordmark, in the banner's accent and block style on its dark page, in a rounded square with a thin lilac border, with the same letter behind it in a darker lilac, shifted down and to the right, as a solid shadow. It is drawn from the rows the console draws (`THE_BLOCKS`), so the icon and the banner cannot drift apart. It reaches the stores with the next published version.
