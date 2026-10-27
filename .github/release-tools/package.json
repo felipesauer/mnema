@@ -4,5 +4,8 @@
   "dependencies": {
     "@vscode/vsce": "4.0.0",
     "ovsx": "1.3.0"
+  },
+  "overrides": {
+    "@azure/msal-node": "^7.1.0"
   }
 }
