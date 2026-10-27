@@ -138,6 +138,25 @@ function wordmark(blocks, accent, x0, y0) {
 }
 
 /**
+ * The wordmark alone, with no chain of blocks beside it, for the head of the site: the letters of the banner,
+ * the same two paths from the same rows, in the accent of the theme and on no page of their own (the head is the
+ * page's). One picture per theme, because a picture the page shows as an image cannot take the colour of its text.
+ * @param {readonly string[]} blocks
+ * @param {'dark' | 'light'} theme
+ */
+export function headerWordmark(blocks, theme) {
+  const columns = Math.max(...blocks.map((row) => [...row].length));
+  const w = columns * CELL.w;
+  const h = inkFoot(blocks);
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${n(w)}" height="${n(h)}" viewBox="0 0 ${n(w)} ${n(h)}">`,
+    ...wordmark(blocks, ACCENT[theme], 0, 0),
+    '</svg>',
+    '',
+  ].join('\n');
+}
+
+/**
  * How far down the wordmark's ink reaches: a last row of shadow only ends at the lower stroke of
  * a double line on the middle of its cell, not at the cell's foot.
  * @param {readonly string[]} blocks
