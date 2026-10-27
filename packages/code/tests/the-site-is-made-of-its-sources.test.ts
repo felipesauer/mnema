@@ -786,7 +786,7 @@ describe("the wordmark in the head of the site is the banner's letters, and only
 
   it('is painted in the accent of its theme and in no other colour', async () => {
     const colours = await accent();
-    for (const theme of ['dark', 'light']) {
+    for (const theme of ['dark', 'light'] as const) {
       const svg = (await draw()).headerWordmark(THE_BLOCKS, theme) as string;
       expect([...new Set(svg.match(/#[0-9a-fA-F]{3,8}\b/g))]).toEqual([colours[theme]]);
     }
@@ -797,7 +797,7 @@ describe("the wordmark in the head of the site is the banner's letters, and only
     try {
       for (const file of ['landing.md', 'copy.md']) cpSync(join(SITE, file), join(site, file));
       await prepare({ root: ROOT, site });
-      for (const theme of ['dark', 'light']) {
+      for (const theme of ['dark', 'light'] as const) {
         expect(readFileSync(join(site, `src/assets/wordmark-${theme}.svg`), 'utf8')).toBe(
           (await draw()).headerWordmark(THE_BLOCKS, theme),
         );
