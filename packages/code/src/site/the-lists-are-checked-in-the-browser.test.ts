@@ -18,7 +18,15 @@
  *     export stops the BUILD, not a reader's browser.
  */
 
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -207,6 +215,17 @@ describe('an honest page', () => {
     });
     expect(html).not.toContain('<img src=x');
     const said = checked(html);
+    expect(said.issues).toEqual([]);
+    expect(said.state).toBe('match');
+  });
+
+  it("matches over a copy of this repository's own record, as many decisions and notes as it has", () => {
+    // The committed tree of this checkout, copied into a project of its own: the page is made from the copy.
+    cpSync(join(HERE, '..', '..', '..', '..', '.mnema'), join(repo, '.mnema'), { recursive: true });
+    const out = join(sandbox, 'own');
+    const done = runSite({ cwd: repo, env }, { out });
+    expect(done.ok && done.decisions).toBeGreaterThan(50);
+    const said = checked(readFileSync(join(out, 'index.html'), 'utf-8'));
     expect(said.issues).toEqual([]);
     expect(said.state).toBe('match');
   });
@@ -451,7 +470,8 @@ describe('a record that did not verify', () => {
 describe('what the script derives in the browser', () => {
   it('is, value for value, what pageModel gives in Node over the same tree', () => {
     aRichRecord();
-    for (const root of [join(repo, '.mnema'), join(FROZEN, 'witnessed-record')]) {
+    const own = join(HERE, '..', '..', '..', '..', '.mnema');
+    for (const root of [join(repo, '.mnema'), join(FROZEN, 'witnessed-record'), own]) {
       const files: Record<string, string> = {};
       const walk = (dir: string, prefix: string): void => {
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
