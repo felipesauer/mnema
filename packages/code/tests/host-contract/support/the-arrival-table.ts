@@ -62,6 +62,10 @@ const COPILOT_ENDS_AT_ITS_SUMMARY = notMeasured(
   'with `copilot -p` the host asks for its summary at the end of the run and the run ends; a second run that resumed the session sent the whole conversation again, the results and not the summary, so no request of a compacted conversation was seen',
 );
 
+const GEMINI_NEEDS_A_SECOND_TURN = notMeasured(
+  'in one `gemini -p` run the host asked for no summary although the usage it was told was a full window: its compression splits the history at a turn of the person after the first, and a run has one; no request of a compacted conversation was seen',
+);
+
 type TheTable = Record<ArrivalHost, Record<Arm, Record<Moment, Outcome>>>;
 
 export const THE_TABLE: TheTable = {
@@ -122,7 +126,20 @@ export const THE_TABLE: TheTable = {
     ),
     mnema: row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, absent),
   },
-  gemini: placeholder(),
+  gemini: {
+    ...placeholder(),
+    control: row(absent, absent, GEMINI_NEEDS_A_SECOND_TURN, NO_CHANNEL_AT_AN_EDIT),
+    'agents-md': row(absent, absent, GEMINI_NEEDS_A_SECOND_TURN, NO_CHANNEL_AT_AN_EDIT),
+    'host-file': row(arrived, arrived, GEMINI_NEEDS_A_SECOND_TURN, NO_CHANNEL_AT_AN_EDIT),
+    'at-reference': row(arrived, arrived, GEMINI_NEEDS_A_SECOND_TURN, NO_CHANNEL_AT_AN_EDIT),
+    'prose-reference': row(
+      { is: 'not-arrived', mentioned: true },
+      absent,
+      GEMINI_NEEDS_A_SECOND_TURN,
+      NO_CHANNEL_AT_AN_EDIT,
+    ),
+    mnema: row(arrived, arrived, GEMINI_NEEDS_A_SECOND_TURN, absent),
+  },
   qwen: placeholder(),
 };
 
