@@ -1285,7 +1285,8 @@ It also says when the project lacks what `mnema init` leaves beside the record, 
 `.mnema/.editorconfig`, or the line `.mnema/` in a `.prettierignore` where prettier is declared. It writes none: each
 finding says to run `mnema init`, which adds exactly that. (`--fix` takes a named target, and these are not among them.)
 Asked of git, in a repository, it says two more things about the page `mnema site` writes under the record: that git would
-not ignore `.mnema/site/index.html` (run `mnema init`, which adds `/site/` to `.mnema/.gitignore`), and that git already
+not ignore `.mnema/site/index.html` (where `.mnema/.gitignore` lacks `/site/` it says to run `mnema init`, which adds it;
+where the line is there it says a `!` rule re-includes the page, and `init` changes nothing), and that git already
 tracks files under `.mnema/site/`, with their count and the command to stop tracking them, `git rm -r --cached
 .mnema/site`, which the doctor never runs. Outside a repository, with no `git` on the `PATH` or when git does not
 answer, it says nothing of either.

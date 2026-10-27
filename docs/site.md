@@ -21,7 +21,7 @@ text is: a repository that must not be read should not publish one.
 
 Without `--out` the page is written under the record, in `.mnema/site/`, and the record's own `.gitignore` is given the
 line `/site/` before the first byte, so a `git add .mnema` leaves it out: it is derived from the record and rebuilt at will,
-never committed. A record made before the line existed gets it the next time `mnema site` or `mnema init` runs, and
+never committed. A record made before the line existed gets it the next time `mnema site` (without `--out`, or with one under `site/`) or `mnema init` runs: that appends `/site/` to `.mnema/.gitignore` (and `* -text` to `.mnema/.gitattributes`, which it creates if it is absent), a change in the record's folder that is yours to commit. A `mnema site --out _site` outside the record, as in the workflow below, touches nothing under `.mnema/`. And
 `mnema doctor` asks git whether the page is ignored and whether git already tracks something under `.mnema/site/` (it
 says the command to stop tracking it, `git rm -r --cached .mnema/site`, and never runs it). A directory named by `--out`
 that is inside the record and outside `site/` is refused, by name, before anything is written: the folder whose contents

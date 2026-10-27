@@ -252,6 +252,19 @@ describe('mnema doctor and the page', () => {
     expect(said()).toEqual([]);
   });
 
+  it('says a rule re-includes the page where the /site/ line is already there, and does not send to init', () => {
+    founded();
+    const file = gitignorePath({ root: join(repo, '.mnema') });
+    writeFileSync(file, `${readFileSync(file, 'utf-8')}!/site/\n`);
+    const lines = said();
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain('would not ignore');
+    expect(lines[0]).toContain('already lists /site/');
+    expect(lines[0]).toContain('re-includes site/');
+    expect(lines[0]).not.toContain('run `mnema init`');
+    expect(init().completed?.gitignore).toBeUndefined();
+  });
+
   it('counts what git tracks under site/ and names the command, which it never runs', () => {
     founded();
     expect(runSite({ cwd: repo, env }, {}).ok).toBe(true);

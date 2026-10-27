@@ -867,8 +867,8 @@ function askGit(
 
 /**
  * What git says of the page `mnema site` writes under the record: that it would not ignore
- * `<record>/site/index.html` (the fix is `mnema init`, which gives the record's `.gitignore` the
- * line), and that it TRACKS files under `<record>/site/` (the fix is `git rm -r --cached`, which
+ * `<record>/site/index.html` (where the record's `.gitignore` lacks the line the fix is `mnema init`;
+ * where it has the line, a rule that re-includes the page is the cause and `init` changes nothing), and that it TRACKS files under `<record>/site/` (the fix is `git rm -r --cached`, which
  * this never runs). Asked of git, as `privateTreeVisibility` is: outside a repository, with git
  * absent or out of time, or where git does not answer (128), it says nothing.
  */
@@ -884,9 +884,24 @@ function sitePageLines(ctx: DoctorContext, record: string): string[] {
     join(site, 'index.html'),
   ]);
   if (ignored?.status === 1) {
-    lines.push(
-      `git would not ignore ${oneLine(join(site, 'index.html'))}, the page \`mnema site\` writes there: a \`git add .mnema\` would stage it; run \`mnema init\` to add /site/ to .mnema/.gitignore.`,
-    );
+    const page = oneLine(join(site, 'index.html'));
+    const own = join(realOfMaybeMissing(record), '.gitignore');
+    const hasLine =
+      existsSync(own) &&
+      readFileSync(own, 'utf-8')
+        .split('\n')
+        .some((l) => l.trim() === '/site/' || l.trim() === 'site/');
+    const head = `git would not ignore ${page}, the page \`mnema site\` writes there: a \`git add .mnema\` would stage it`;
+    if (!hasLine) {
+      lines.push(`${head}; run \`mnema init\` to add /site/ to .mnema/.gitignore.`);
+    } else {
+      // The line is there and the page is still not ignored: a rule re-includes it, and `init`
+      // adds nothing. `check-ignore -v` cannot name that rule (it prints nothing for a path that
+      // is not ignored, measured with a `!/site/` line), so it is said without the name.
+      lines.push(
+        `${head}: .mnema/.gitignore already lists /site/, but a \`!\` rule in a .gitignore (this one or one above it) re-includes site/; find it and take it out, \`mnema init\` changes nothing here.`,
+      );
+    }
   }
   const tracked = askGit(ctx, project, ['ls-files', '-z', '--', site]);
   if (tracked?.status === 0) {

@@ -19,7 +19,7 @@ with its own changelog.
   written. Before, `--out` was required, and a `git add .mnema` after writing the page to the obvious place staged it. An
   `--out` inside the record and outside `site/` is refused (`OUT_IN_THE_RECORD`), resolved through links, with nothing
   written; one under `site/` is taken. `mnema doctor` asks git whether `.mnema/site/index.html` would be ignored (it says
-  to run `mnema init`) and whether git tracks files under `.mnema/site/` (it names the count and `git rm -r --cached
+  to run `mnema init` where the `/site/` line is missing, and that a rule re-includes the page where it is there) and whether git tracks files under `.mnema/site/` (it names the count and `git rm -r --cached
   .mnema/site`, and never runs it); it says nothing outside a repository or with no git. Both readers of the record skip
   `site/`, as they skip anything else at its root, and the format page lists it.
 
