@@ -62,7 +62,7 @@ describe('the site is built when the run says it must be', () => {
 });
 
 when('the built site', () => {
-  const pages = htmlFiles(DIST).filter(
+  const pages = (BUILT ? htmlFiles(DIST) : []).filter(
     (f) => !f.startsWith('record/') && !f.startsWith('pagefind/'),
   );
   const html = (page: string): string => readText(join(DIST, page));
