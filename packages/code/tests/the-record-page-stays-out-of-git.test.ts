@@ -1,3 +1,4 @@
+// @reads-the-tree
 /**
  * THE PAGE `mnema site` WRITES BY DEFAULT LIVES UNDER THE RECORD, AND GIT LEAVES IT OUT.
  *
@@ -93,7 +94,16 @@ function git(...args: string[]): string {
       'init.defaultBranch=main',
       ...args,
     ],
-    { cwd: repo, encoding: 'utf-8', env: gitEnv() },
+    {
+      cwd: repo,
+      encoding: 'utf-8',
+      env: {
+        PATH: process.env.PATH ?? '',
+        HOME: join(sandbox, 'git'),
+        GIT_CONFIG_NOSYSTEM: '1',
+        GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+      },
+    },
   );
   if (ran.status !== 0) throw new Error(`setup: git ${args.join(' ')}: ${ran.stderr}`);
   return ran.stdout;

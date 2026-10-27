@@ -413,14 +413,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the table row; the same row hands the whole restore over as a line',
   },
-  'docs/site.md: mnema site': {
-    times: 1,
-    why: 'the verb named in a sentence about what wrote the lists on the page; the section hands the line over, with its --out',
-  },
-  'README.md: mnema site': {
-    times: 2,
-    why: 'the verb named in the step and in the row that say the reader’s browser checks the page it writes; the page about it hands the line over, with its --out',
-  },
   'README.md: mnema link': {
     times: 1,
     why: 'the verb named in the step that says a rule is addressed at a path; the line needs a decision and a path, which the front page does not pick for the reader',
@@ -449,10 +441,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the same list, beside `commits`, `why` and `aging`; the package page hands the line over, with the decision',
   },
-  'docs/cli-reference.md: mnema site': {
-    times: 1,
-    why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
-  },
   'CHANGELOG.md: mnema rules-file': {
     times: 2,
     why: 'the verb named in the entry on a rule addressed at a directory, and in the known limits of the entry on the rules a project inherits, as a reader that does not read them; its `--help` hands the --host it needs',
@@ -461,14 +449,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the read named in the known limits of the entry on the rules a project inherits, as one that does not list the addresses the origin holds; the reference hands it over with the id',
   },
-  'CHANGELOG.md: mnema site': {
-    times: 4,
-    why: 'the verb named as what writes the page, the third reader the strict Ed25519 rule holds and the one that refuses a misnamed key, as what writes the page the site serves at /record/, and as the verb that takes --back-link; its `--help` hands the --out it needs',
-  },
-  'CONTRIBUTING.md: mnema site': {
-    times: 1,
-    why: 'the verb named as what writes the page the site serves at /record/; the page about it hands the line over, with its --out',
-  },
   'CHANGELOG.md: mnema stack add': {
     times: 1,
     why: 'the verb named, beside its removal, as what writes the adoption kinds; the entry above hands the line over with <source>',
@@ -476,10 +456,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   'CHANGELOG.md: mnema stack remove': {
     times: 1,
     why: 'the verb named, beside its adoption, as what writes the removal kind; its `--help` hands the name it needs',
-  },
-  'SECURITY.md: mnema site': {
-    times: 1,
-    why: 'the verb named as what writes the page whose reader is in scope; the page about it hands the line over',
   },
   'docs/features.md: mnema stack add': {
     times: 1,
@@ -723,7 +699,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 57, name: 111, flag: 4 },
+  'CHANGELOG.md': { line: 57, name: 117, flag: 4 },
   'CONTRIBUTING.md': { name: 1 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
@@ -736,7 +712,7 @@ export const HANDED_OVER: Readonly<
   'docs/how-it-works.md': { line: 2, name: 2 },
   'docs/install.md': { line: 4, name: 8 },
   'docs/packages.md': { line: 1, name: 2 },
-  'docs/site.md': { line: 2, name: 3 },
+  'docs/site.md': { line: 2, name: 7 },
   'docs/switches.md': { line: 20, name: 4 },
   'docs/verify-without-installing.md': { name: 1 },
   'docs/what-it-proves.md': { line: 7, name: 10 },
@@ -745,8 +721,9 @@ export const HANDED_OVER: Readonly<
   'packages/action/README.md': { line: 14, name: 12 },
   'packages/chain/FORMAT.md': { line: 3, name: 1 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
+  'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 114, name: 138, flag: 2 },
+  'docs/cli-reference.md': { line: 113, name: 142, flag: 2 },
   'packages/code/README.md': { line: 8, name: 13 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
@@ -754,7 +731,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/commands/brief.ts': { name: 1 },
   'packages/code/src/commands/check.ts': { line: 1 },
   'packages/code/src/commands/commit-hook.ts': { line: 1, name: 2 },
-  'packages/code/src/commands/doctor.ts': { line: 8, name: 7 },
+  'packages/code/src/commands/doctor.ts': { line: 8, name: 10 },
   'packages/code/src/commands/handback.ts': { line: 1 },
   'packages/code/src/commands/instructions.ts': { line: 1, name: 5 },
   'packages/code/src/commands/key-enroll.ts': { line: 3 },
@@ -813,7 +790,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/wiring/search.ts': { name: 1 },
   'packages/code/src/wiring/settled.ts': { line: 1 },
   'packages/code/src/wiring/show.ts': { name: 1 },
-  'packages/code/src/wiring/site.ts': { line: 2, name: 2 },
+  'packages/code/src/wiring/site.ts': { line: 2, name: 3 },
   'packages/code/src/wiring/skill.ts': { line: 1 },
   'packages/code/src/wiring/stack.ts': { line: 1 },
   'packages/code/src/wiring/switch.ts': { name: 2 },

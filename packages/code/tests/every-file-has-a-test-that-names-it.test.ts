@@ -1277,6 +1277,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-record-keeps-an-editorconfig.test.ts': 6,
   'packages/code/tests/the-record-may-have-moved.test.ts': 10,
   'packages/code/tests/the-record-meets-the-git-log.test.ts': 13,
+  'packages/code/tests/the-record-page-stays-out-of-git.test.ts': 12,
   'packages/code/tests/the-record-travels.test.ts': 14,
   'packages/code/tests/the-record-you-can-see.test.ts': 17,
   'packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts': 13,

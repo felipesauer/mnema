@@ -54,10 +54,10 @@ CLI and the MCP tools behave identically, because they are the same call.
   over which entity, in which session, signed by which key) and never a payload, for
   the reason `mnema audit exposure` exists. It writes to standard output and sends nothing
   anywhere; what it does and does not promise is in the table below.
-- **A page of the record that verifies itself**: `mnema site [--out <dir>]` writes one
+- **A page of the record that verifies itself**: `mnema site` writes one
   `index.html` from the committed (public) tree, by default under `.mnema/site/` (the record's own `.gitignore`
-  keeps it out of git, and `mnema site` adds that line first to a record that lacks it; an `--out` inside the
-  record and outside `site/` is refused): the decisions in force, with a control
+  keeps it out of git, and `mnema site` adds that line first to a record that lacks it); `--out <dir>` names another
+  directory, and one inside the record and outside `site/` is refused. The page lists the decisions in force, with a control
   that shows the rest, the history of each, who authorized it, and the stored events. The
   page carries the record's files and runs the same verifier as `mnema verify` over them in
   the reader's browser, with no request and no key. Nothing from a private or machine-global

@@ -851,7 +851,15 @@ function askGit(
     cwd,
     encoding: 'utf-8',
     timeout: GIT_BUDGET_MS,
-    env: { ...ctx.processEnv, GIT_OPTIONAL_LOCKS: '0' },
+    // The process's own HOME where it has one (git reads the user's global ignore file from it), and
+    // the one this run was handed where it has none: git resolves a missing one to the machine's.
+    env: {
+      ...ctx.processEnv,
+      ...(ctx.processEnv.HOME === undefined && ctx.env.home !== undefined
+        ? { HOME: ctx.env.home }
+        : {}),
+      GIT_OPTIONAL_LOCKS: '0',
+    },
   });
   if (asked.error !== undefined || asked.status === null) return undefined;
   return { status: asked.status, out: asked.stdout };
