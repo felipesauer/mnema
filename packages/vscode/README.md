@@ -17,11 +17,16 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   force address it, by what they do (`governs`, `asks-for-a-person`, `refuses-a-write`), read from
   `mnema rules <path> --json`. Clicking it lists them: the decision's name, what it does to the
   file, and who accepted it, as the record says. A file no rule in force addresses has no lens.
-- **A panel, "mnema: awaiting judgment", in the Explorer.** The decisions whose state is
+- **A container of its own in the activity bar, titled mnema, with the banner's M as its icon.** It holds
+  the two views below, "Awaiting Judgment" and "Stacks", and carries a badge: the number of decisions
+  awaiting a judgment, as many as `mnema` says exist (not only the ones listed), nothing at zero and
+  nothing when the list was not read. The icon is the first letter of the console's wordmark, drawn when
+  the extension is packed.
+- **A view, "Awaiting Judgment".** The decisions whose state is
   `proposed`, read from `mnema search --kind decision --state proposed --json`, each with the
   justification and the alternatives `mnema show <id> --json` holds for it, in its tooltip.
 - **Accept or reject, with the note.** Each item has an accept and a reject button (and the commands
-  `mnema: Accept Decision` and `mnema: Reject Decision`). The input box does not take an empty
+  Accept Decision and Reject Decision, listed as `mnema: Accept Decision` and `mnema: Reject Decision` in the Command Palette). The input box does not take an empty
   note, nor one of only spaces, and cancelling it sends nothing. What is sent is
   `mnema decision move accept <id> --note <note>` (or `reject`), started with an argument array and
   no shell, and what the command line answers is what is shown, a refusal included.
@@ -29,10 +34,10 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   the editor's file watcher on `.mnema/**`; when it has been quiet for 1.5 seconds it is read again,
   and a decision waiting now that was not waiting at the previous reading is announced once. There
   is no timer polling the record.
-- **A panel, "mnema: stacks", in the Explorer.** The stacks adopted for the project, read from
+- **A view, "Stacks".** The stacks adopted for the project, read from
   `mnema stack list --json`: each with its version, the tree it was adopted into, and whether its
   files are still as written. Its buttons and commands run the `stack` verb of the command line:
-  - `mnema: Add Stack` (from a folder, archive or git address) and `mnema: Add from Index` run `mnema stack add <source> --scope <scope> --dry-run` and show what it printed, the
+  - Add Stack (from a folder, archive or git address) and Add from Index run `mnema stack add <source> --scope <scope> --dry-run` and show what it printed, the
     whole plan, in the output channel "mnema stacks". Only after that is one question asked; if
     the person confirms, the write is `mnema stack add <source> --scope <scope> --expect <digest>`
     with the digest that plan printed, so the files written are the ones shown. From the index, the
@@ -40,25 +45,38 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
     The index is read by `mnema stack index` from the folder named by `mnema.stackIndex` (default
     `stack-index`, relative to the workspace folder); an entry the checkout does not hold is not
     installed from here, and the message names the digest to compare.
-  - `mnema: Show Stack`, `mnema: Compare Stack` and `mnema: Check Stack` run the verbs `show`,
+  - Show Stack, Compare Stack and Check Stack run the verbs `show`,
     `diff` and `check` of `stack` and print what they printed, a departure included.
-  - `mnema: Remove Stack` runs `mnema stack remove <name> --dry-run`, shows it, asks once, and only then removes;
-    `mnema: Export Stack` runs `mnema stack export <name> <folder>` into a folder the person types.
+  - Remove Stack runs `mnema stack remove <name> --dry-run`, shows it, asks once, and only then removes;
+    Export Stack runs `mnema stack export <name> <folder>` into a folder the person types.
 - **Icons and short titles.** Every command carries a codicon (`$(check)` accept, `$(close)` reject,
   `$(refresh)` refresh, `$(law)` rules over the file, `$(add)` and `$(library)` add a stack,
   `$(eye)` show, `$(diff)` compare, `$(checklist)` check, `$(trash)` remove, `$(export)` export), so the
-  buttons are icons and the command's title (one to three words) is their tooltip. A decision has accept
+  buttons are icons and the command's title (one to three words) is their tooltip. Every command is
+  in the category `mnema`, which is what puts `mnema: ` before its title in the Command Palette and in
+  a keybinding's list, so no title repeats it. A decision has accept
   and reject side by side; a stack has show, compare and check beside it, export in the context menu and
-  remove alone in the last group of it; the stacks view's title bar has add, add from the index and
-  refresh, and the decisions view's has refresh. The Command Palette lists the commands only where a
+  remove alone in the last group of it; the stacks view's title bar has add and refresh, with add from
+  the index in its `...` menu, and the decisions view's has refresh. The Command Palette lists the commands only where a
   workspace folder is open, and the rules command only over a file. Each input box and each choice has a
   title (with "1 of 2" where there are two steps), a placeholder that says what to type and stays open
   when focus moves; a note that is empty is refused with what to fix.
-- **What an empty view says.** A folder with no `.mnema` says so and points to `mnema init` and to
-  [the first record](../../docs/first-record.md); with a record, the decisions view says that nothing is
-  listed as awaiting a judgment (and that nothing is listed either when `mnema` could not run, which the
-  status bar shows) and links to the setting `mnema.command`, and the stacks view, when `mnema stack list` was read, offers the two ways to
-  add one, and otherwise says it has not listed the stacks (the status bar shows what `mnema` read). Whether the folder holds a `.mnema` is read from the disk, not from the command line.
+- **What an empty view says.** A folder with no `.mnema` says so and points to `mnema init` (run in a
+  terminal, which a link opens) and to [the first record](../../docs/first-record.md); with a record, the
+  decisions view says that nothing awaits a judgment only when the answer of `mnema search` was read and understood (the context key
+  `mnema.proposedRead`, the twin of `mnema.stacksRead`), and otherwise says it has not listed them, which
+  the status bar explains; the stacks view, when the answer of `mnema stack list` was read and understood, offers the two ways to
+  add one, and otherwise says it has not listed the stacks (the status bar shows what `mnema` read).
+  Every link sits inside a sentence: no line is only a link, because the editor draws such a line as a
+  wide blue button. Whether the folder holds a `.mnema` is read from the disk, not from the command line.
+- **A folder with no `.mnema` never has the command line run in it.** The container is there in every
+  folder, and opening one of its views starts the extension (measured in VS Code 1.143.1), so the
+  extension has one door to the command line, and the door does not start `mnema` unless the folder
+  holds a `.mnema`, looked for on the disk at every call (a record born later, by `mnema init` in a
+  terminal, is read at the next change under `.mnema/`). With none, the status bar item is hidden, the
+  badge is empty, no lens is drawn, the context key `mnema.cliMissing` stays false (no record is not "command not
+  found"), and a command that needs the command line says once: "This folder holds no .mnema record.
+  Run mnema init in a terminal here." The extension never runs `mnema init` itself.
 - **No button turns a hook on.** A stack may declare hooks; they are shown as the command line
   reports them, and a hook is on only when a person, at a terminal, read its script and typed its
   name (`mnema stack enable <stack> <hook> --from <source>`). The extension has no command for it and says where it is done; the
@@ -88,7 +106,7 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
 
 The extension needs the `mnema` command (from `@mnema/code`) where the editor can start it; the
 setting `mnema.command` names another executable if it is not on the `PATH`. It starts when the
-workspace holds a `.mnema` folder. The path of the executable comes only from your user settings
+workspace holds a `.mnema` folder, or when you open its container. The path of the executable comes only from your user settings
 (`mnema.command` is a machine-scoped setting, so a repository's `.vscode/settings.json` cannot set
 it), and the extension stays off in a workspace that is not trusted.
 
@@ -108,13 +126,16 @@ code --install-extension packages/vscode/mnema-*.vsix
 ```
 
 `package` bundles the extension into one file, `extension.cjs`, with no database in it, and has `vsce`,
-the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 25 KB:
+the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 27 KB:
 the extension reads the record only through the `mnema` command line, so nothing native rides along
 and nothing is installed beside it. CI runs the same command, installs the file into a real VS Code
-three times (a folder with no `.mnema`, where it must not start on opening the folder and so must not run `mnema` (opening one of its views, or running one of its commands, starts it, and from then on it runs the command line); a folder
+four times (a folder with no `.mnema`, where it must not start on opening the folder and so must not run `mnema`;
+the same folder with the container opened, which does start the extension, and where `mnema` must still
+never be run and the bar and the badge must be empty; a folder
 with a `.mnema` and a `mnema.command` that does not exist, where the bar must say the command was not
-found; and a folder with a real record read by the `mnema` built here, where the bar must carry a level
-and the tooltip what `mnema verify` printed). `pnpm --filter @mnema/vscode install-check` does the same
+found; and a folder with a real record and one proposed decision, read by the `mnema` built here, where the
+bar must carry a level, the tooltip what `mnema verify` printed, the manifest's container its icon file and the
+badge the number 1). `pnpm --filter @mnema/vscode install-check` does the same
 by hand, under `xvfb-run -a` on a machine without a screen. What no CI reads (a hover, a context menu,
 the light and high-contrast themes, a screen reader) has [a script for a person](../../plugin/captures/vscode-extension-script.md). CI keeps the file as an
 artifact of the run (`mnema-vscode-extension`). The only thing that sends the file anywhere is one job of
@@ -147,8 +168,13 @@ for that module; nothing downloads or starts an editor.
   watching, say) shows up at the next reading, which the status bar and the `mnema: Refresh` command
   start. It announces what is new between two readings in this window, so a decision that was
   already waiting when the window opened is listed and not announced.
-- It reads the first workspace folder only, and only that folder's record. The panel lists at most
-  200 decisions, and says in each tooltip how many exist when there are more.
+- It reads the first workspace folder only, and only that folder's record. The view lists at most
+  200 decisions, and says in each tooltip how many exist when there are more; the badge counts the
+  total `mnema` reports, so it can be larger than the list. It says "awaits a judgment" and nothing
+  of the record's soundness.
+- In a folder with no `.mnema` it asks the command line nothing and says nothing about the record:
+  the bar is not shown and the views teach `mnema init`. That is a statement about the folder on the
+  disk, not about anything `mnema` read.
 - The channels are read from the printed lines of `mnema switch`, which has no JSON form: if
   those lines change shape, the status bar shows the channels as not read rather than guessing.
 - It writes nothing of its own: the only writes are the verdict above and the stack acts (add,

@@ -29,14 +29,18 @@ describe('what the command line listed', () => {
         ],
       }),
     );
-    expect(stacks.map((s) => s.name)).toEqual(['a', 'c']);
-    expect(stackDescription(stacks[0] as never)).toBe('1.0.0 · public · sound');
-    expect(stackDescription(stacks[1] as never)).toBe('private · receipt refused');
+    expect(stacks?.map((s) => s.name)).toEqual(['a', 'c']);
+    expect(stackDescription(stacks?.[0] as never)).toBe('1.0.0 · public · sound');
+    expect(stackDescription(stacks?.[1] as never)).toBe('private · receipt refused');
   });
 
   it.each(['', 'nope', '{}', '{"stacks":3}'])('lists nothing out of %j', (text) => {
-    expect(readStacks(text)).toEqual([]);
+    expect(readStacks(text)).toBeUndefined();
     expect(readIndex(text)).toEqual([]);
+  });
+
+  it('reads a valid answer with no stacks as an empty list', () => {
+    expect(readStacks('{"stacks":[]}')).toEqual([]);
   });
 
   it('says DEPARTS for a stack that is not sound', () => {

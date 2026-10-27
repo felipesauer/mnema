@@ -49,11 +49,14 @@ function parse(stdout: string): Record<string, unknown> | undefined {
   }
 }
 
-/** The proposed decisions in an answer of `mnema search --json`, and how many exist in all. */
-export function readProposed(stdout: string): { items: Proposed[]; total: number } {
+/**
+ * The proposed decisions in an answer of `mnema search --json`, and how many exist in all.
+ * Undefined when the text is not that answer: an answer nobody understood is not an empty list.
+ */
+export function readProposed(stdout: string): { items: Proposed[]; total: number } | undefined {
   const answer = parse(stdout);
   const hits = answer?.hits;
-  if (!Array.isArray(hits)) return { items: [], total: 0 };
+  if (!Array.isArray(hits)) return undefined;
   const items: Proposed[] = [];
   for (const hit of hits as unknown[]) {
     if (!isObject(hit)) continue;
