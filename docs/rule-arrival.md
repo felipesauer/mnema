@@ -159,7 +159,8 @@ table.
 - **GitHub Copilot CLI.** `AGENTS.md`, its own instructions file and an `@` import all arrived at
   the start and late. The record arrived at the start and late, not at the edit. After a
   compaction is not measured: see the note.
-- **Gemini CLI.** Only `GEMINI.md` and what it imports arrived; `AGENTS.md` did not. The record arrived at the start and late, not at
+- **Gemini CLI.** Only `GEMINI.md` and what it imports arrived; `AGENTS.md` did not, with the default settings (its
+  `context.fileName` can list it). The record arrived at the start and late, not at
   the edit. After a compaction is not measured: see the note.
 - **Qwen Code.** `AGENTS.md`, `QWEN.md` and an `@` import arrived at every moment, as did the
   record, except at the edit.

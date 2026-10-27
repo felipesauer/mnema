@@ -79,6 +79,7 @@ describe('where a rule arrives in OpenCode', () => {
     expect(after, 'a request after the summary').toBeDefined();
     expect(JSON.stringify(before?.body['messages'])).toContain('toolu_stand_in_0002');
     expect(JSON.stringify(after?.body['messages'])).not.toContain('toolu_stand_in_0001');
+    expect(JSON.stringify(after?.body['messages'])).toContain(THE_SUMMARY);
 
     const arrived: Partial<Record<'start' | 'late' | 'compaction' | 'edit', boolean>> = {
       start: theSentinelIsIn(first?.body),
