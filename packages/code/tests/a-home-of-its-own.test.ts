@@ -215,7 +215,10 @@ describe('the record of the checkout is not written by a file of the suite', () 
       // Off the CI the sessions of the person write the clone's private tree: not listed. On the
       // CI, a fresh clone, it is.
       expect(recordPlacesOf(clone, false)).toEqual([join(clone, '.mnema')]);
-      expect(recordPlacesOf(clone, true)).toEqual([join(clone, '.mnema'), join(clone, '.git', 'mnema')]);
+      expect(recordPlacesOf(clone, true)).toEqual([
+        join(clone, '.mnema'),
+        join(clone, '.git', 'mnema'),
+      ]);
 
       const linked = join(sandbox, 'linked');
       const own = join(clone, '.git', 'worktrees', 'linked');
