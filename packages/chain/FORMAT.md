@@ -12,8 +12,8 @@ records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
 public keys removed, the product says broken over a signature it cannot verify, and this
-reader, unable to ask, says INCOMPLETE. And on a tail cut in the middle with no
-`tail.pruned`, the product calls the signed range a contradiction and says broken, while
+reader, unable to ask, says INCOMPLETE. And on a tail cut in the middle, the product
+calls the signed range a contradiction and says broken, while
 this reader reports a gap it cannot judge, because §3 leaves a reader of this document alone
 unable to tell an authorized cut from tampering. On a line holding bytes that are not UTF-8,
 found by JSONTestSuite, the two used to part: the product decoded them to U+FFFD and found the
@@ -31,7 +31,9 @@ test that holds it**. A claim with no test beside it is an intention, not a
 guarantee, and is marked as such. The version tags in this document are read out
 of the source by a guard (`packages/chain/src/format-doc.test.ts`), so a bump in
 the code reddens this file rather than leaving it describing a format nobody
-writes any more.
+writes any more. The same guard reads the counts above (the vectors, the aggregate
+digests, the points `gaps` lists) off `canonical-vectors.json` and off `gaps` itself,
+so a vector or a gap added reddens the sentence that counts them.
 
 ## The published vectors
 
@@ -178,12 +180,35 @@ citation there could be swapped by whoever can write the repository.
 
 Sequence numbers start at 0 and are contiguous within a tail; a verifier that
 meets a gap reports it and names where
-(`packages/chain/src/chain/waiver.test.ts`). **What authorizes a gap is not
-specified here.** There is a mechanism: the catalog has a `tail.pruned` kind, and
-the test named above is about waivers, and this document does not describe what a
-waiver is, where it lives, or what it signs. So a party reading only this document
-cannot tell an authorized cut from tampering, and the honest thing for them to do
-is report the gap and stop. That is a hole in this document, not in the format.
+(`packages/chain/src/chain/waiver.test.ts`, "leaves a PARTIAL cut as loud as it has
+always been"), and both readers refuse it, naming the `seq`
+(`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`, `reordered-lines`).
+
+**A cut has one account in the format, and it is for a WHOLE tail: the waiver.** A
+`tail.pruned` (`payload.tail`, `payload.throughHash`, `payload.eventCount`,
+`payload.reason`; its `subject` is the anchor the named tail served) is written on
+ANOTHER tail, before the cut, while the tail it names is still there. What it claims
+is checked against the disk by the writer, which refuses a waiver the named tail
+does not bear out (no events there, another head, another count, another anchor)
+and one naming the tail it is written to ("the door refuses a waiver the record does
+not bear out"); a reader checks its fields as §4.1 declares them and nothing more, because a
+moment after the cut nothing on disk can bear the claim out, and refusing the line
+would refuse the tail that holds it. What it does, in this product's `verify`: a
+committed key with no tail at all, which the census otherwise names with three
+possible readings (a merge that dropped it, a machine that never wrote, a removal),
+is named with the account instead: who authorized the cut, how many events, through
+which head. It moves neither the verdict nor the exit (same file, "a cut tail with a
+waiver: the note names the account"). The second reader beside this file does not
+read waivers, and names such a key as it names any key with no tail (§6.5). What it
+does not do: a waiver about a tail that is still present is never consulted, so it
+cures no break on it and covers no `seq` gap in it ("what a waiver does not touch").
+It is not permission either: anyone who can write to the record can sign one, and it
+names who did. Writing one removes nothing.
+
+**What authorizes a cut of PART of a tail is not specified here**, and no operation
+of this product makes one. So a party reading only this document cannot tell such a
+cut from tampering, and the honest thing for them to do is report the gap and stop.
+That is a hole in this document, not in the format.
 
 ## 4. The stored line, and where it is stored
 
@@ -788,8 +813,17 @@ own `who` at its point in the fold.** That is the whole rule; there is no
 "the anchor is my own key" shortcut. A lone key still founds its anchor, so one
 key is a one-member set.
 
-**Two of the three take effect only when they are themselves SIGNATURE-COVERED**,
-and this is the part a reader gets wrong by omission rather than by error. An
+**Some of these facts take effect only when they are themselves SIGNATURE-COVERED**,
+and this is the part a reader gets wrong by omission rather than by error. A
+`key.revoked`, a `checker.retired`, an `agent.retired` and a `backup.declared` (§6.5)
+always; an `identity.founded`, a `key.enrolled` and an `agent.enrolled` only when it
+would restore a key a covered `key.revoked` removed. The two bullets below give the
+reason for each half; the rows of `checker.retired`, `agent.retired` and
+`backup.declared` say the same of each. Both readers gate these seven kinds in the
+fold (`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`: "a
+residual re-enrolment does NOT undo a covered revocation: refused by both", "a
+retirement in the window no checkpoint covers: ignored by both", "a declaration no
+checkpoint covers: ignored by both, and the key still warns"). An
 event above the last checkpoint of its tail rests on the hash chain alone, and the
 entry hash takes no key, so a party with no key at all can append there.
 
@@ -1117,7 +1151,10 @@ said here rather than left to be discovered: no kind in the published vectors
 carries a `v` above 1, and no upcaster is published, so there is nothing for an
 outside reader to lift. The claim rests on the test above, which lives inside the
 codebase it is about. The first kind to gain a `v2` should gain a published vector
-for the old `v` alongside it.
+for the old `v` alongside it, and that is an intention, not a guarantee: the table of
+vectors is held total by KIND (`packages/chain/src/events/vectors.ts` does not compile
+while a kind has no row), not by `(kind, v)`, so nothing yet makes a new `v` bring its
+vector with it.
 
 The top-level keys of an event are the keys `event-schema.json` declares under
 `envelope`, plus `payload`: **nine envelope names, of which three are optional**. This
@@ -1537,7 +1574,11 @@ are listed in (MR2: "with no two heads on the same instant, the parts joined are
 signed by machines that had not seen each other; the reader names them whichever of the two the
 sequence puts last, and removes neither
 (`packages/core/src/projections/divergent-moves.test.ts`, "says the decision two machines moved
-out of `proposed`, with both moves as evidence"). Two moves out of one state where the writer of
+out of `proposed`, with both moves as evidence"). A move repeated byte for byte is one move read
+twice, not two: it is what a tail whose last entry was duplicated holds, a tail both readers
+refuse at the repeated `seq` (§3), and this product's reading says no divergence of it
+(`packages/core/src/projections/divergent-moves.test.ts`, "reads a move repeated byte for byte as
+one move: a duplicated entry, not a divergence"). Two moves out of one state where the writer of
 the second had seen the first are not that: the second is a move the workflow does not allow
 (§6.7), not applied and named in the census, and no divergence is said of it
 (`packages/core/src/projections/a-move-the-workflow-does-not-allow-is-not-applied.test.ts`,
