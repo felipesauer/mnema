@@ -1,4 +1,3 @@
-// @reads-the-tree
 /**
  * THE PAGE THAT SAYS WHERE A RULE ARRIVES IS THE TABLE THE HOST CASES HOLD, and the table says
  * only what it can back.
