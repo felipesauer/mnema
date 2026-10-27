@@ -28,7 +28,10 @@ import { codeOnly, sourceFiles } from '../../tests/support/reading-source.js';
 import { renderPage } from './page.js';
 import { theSiteVerifier } from './verifier-bundle.js';
 
-const BROWSER = join(dirname(fileURLToPath(import.meta.url)), 'browser');
+const SITE = dirname(fileURLToPath(import.meta.url));
+const BROWSER = join(SITE, 'browser');
+/** The two files outside `browser/` the script is bundled from: what the lists are, and what they are made of. */
+const BUNDLED_BESIDE = [join(SITE, 'model.ts'), join(SITE, 'view.ts')];
 
 /** What no file of the script may say, in code, with the reason it is here. */
 const SINKS: readonly { readonly name: string; readonly found: RegExp }[] = [
@@ -45,13 +48,16 @@ const SINKS: readonly { readonly name: string; readonly found: RegExp }[] = [
 const FORBIDDEN_ATTRIBUTE = /setAttribute\(\s*['"`](?:style|on[a-z]*)['"`]/i;
 
 describe('the script of the page', () => {
-  const files = sourceFiles(BROWSER);
+  const files = [...sourceFiles(BROWSER), ...BUNDLED_BESIDE];
 
-  it('is read whole: every file of the browser directory, the verifier and its shims among them', () => {
+  it('is read whole: every file of the browser directory, the verifier and its shims among them, and the model and the trees the lists are made of', () => {
     const names = files.map((file) => relative(BROWSER, file)).sort();
     expect(names).toEqual(
       expect.arrayContaining([
+        '../model.ts',
+        '../view.ts',
         'buffer.ts',
+        'check.ts',
         'crypto.ts',
         'entry.ts',
         'filters.ts',
