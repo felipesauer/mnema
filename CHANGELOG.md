@@ -30,7 +30,13 @@ with its own changelog.
   the accent as text is the smallest mix of the other ground into `ACCENT` that reads at 4.5:1 on the ground and on
   every ground Starlight maps to a grey (the light accent was 3.48:1 on white as a link and as the button's fill). A
   case measures the pairs with a ratio of its own, and another reads the built style for a rule outside any layer. The
-  footer reads "commit" and its sha with a space, and its link takes the accent.
+  footer reads "commit" and its sha with a space, and its link takes the accent. The landing shows the proof under its
+  title: the output of `mnema verify` on this repository's record, produced by the binary at build time on the `.mnema/`
+  of the commit (extracted outside the checkout, so an uncommitted change and the builder's private tree are not in it),
+  and the recording of a write refused, copied from `recordings/`; the button labels come from the README's Docs. A
+  fourth source of text, `site/copy.md`, holds the few words only the site needs (a caption), one line of at most twenty
+  words each, and the case that holds the landing to its sources now reads every element of the `<main>` and every `alt`,
+  `title` and `aria-label`, and finds nothing left over.
 - **A `Site` workflow.** On a pull request that touches what the site is made of it builds the site and runs those two cases
   (it is not a required check, and the path filter is inside the job). After a release it builds the commit the release tagged
   and deploys it to GitHub Pages from a job that holds `pages: write` and `id-token: write` and no secret; the site
