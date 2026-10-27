@@ -66,16 +66,25 @@
         }
       }
     },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mnema",
+          "title": "mnema",
+          "icon": "media/mnema.svg"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "mnema": [
         {
           "id": "mnema.proposed",
-          "name": "mnema: awaiting judgment",
+          "name": "Awaiting Judgment",
           "when": "workspaceFolderCount > 0"
         },
         {
           "id": "mnema.stacks",
-          "name": "mnema: stacks",
+          "name": "Stacks",
           "when": "workspaceFolderCount > 0"
         }
       ]
@@ -83,94 +92,110 @@
     "viewsWelcome": [
       {
         "view": "mnema.proposed",
-        "contents": "This folder holds no .mnema record, so there is nothing to list. Run mnema init in a terminal here to start one.\n[What a first record looks like](https://github.com/felipesauer/mnema/blob/main/docs/first-record.md)",
+        "contents": "This folder holds no .mnema record, so there is nothing to list. Run mnema init in a [terminal](command:workbench.action.terminal.new) here to start one; [what a first record looks like](https://github.com/felipesauer/mnema/blob/main/docs/first-record.md).",
         "when": "!mnema.hasRecord"
       },
       {
         "view": "mnema.proposed",
-        "contents": "The mnema command could not be used, so nothing is listed: this is not the same as nothing being pending. Install @mnema/code from its source ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with mnema.command.\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)\n[Refresh](command:mnema.refresh)",
+        "contents": "The mnema command could not be used, so nothing is listed, which is not the same as nothing pending. Install @mnema/code from its source ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with the mnema.command setting ([open it](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)); then [refresh](command:mnema.refresh).",
         "when": "mnema.hasRecord && mnema.cliMissing"
       },
       {
         "view": "mnema.proposed",
-        "contents": "No decision is listed as awaiting a judgment. If mnema could not run, nothing is listed either, and the status bar says what it read.\n[Refresh](command:mnema.refresh)\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)",
-        "when": "mnema.hasRecord && !mnema.cliMissing"
+        "contents": "Nothing awaits a judgment, as mnema reads it. [Refresh](command:mnema.refresh) reads it again.",
+        "when": "mnema.hasRecord && !mnema.cliMissing && mnema.proposedRead"
+      },
+      {
+        "view": "mnema.proposed",
+        "contents": "mnema has not listed the decisions awaiting a judgment. If it could not run, the status bar says what it read; [refresh](command:mnema.refresh) or [set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D).",
+        "when": "mnema.hasRecord && !mnema.cliMissing && !mnema.proposedRead"
       },
       {
         "view": "mnema.stacks",
-        "contents": "This folder holds no .mnema record, so no stack is adopted. Run mnema init in a terminal here to start one.\n[What a first record looks like](https://github.com/felipesauer/mnema/blob/main/docs/first-record.md)",
+        "contents": "This folder holds no .mnema record, so no stack is adopted. Run mnema init in a [terminal](command:workbench.action.terminal.new) here to start one; [what a first record looks like](https://github.com/felipesauer/mnema/blob/main/docs/first-record.md).",
         "when": "!mnema.hasRecord"
       },
       {
         "view": "mnema.stacks",
-        "contents": "The mnema command could not be used, so nothing is listed: this is not the same as nothing being pending. Install @mnema/code from its source ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with mnema.command.\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)\n[Refresh](command:mnema.refresh)",
+        "contents": "The mnema command could not be used, so nothing is listed, which is not the same as nothing pending. Install @mnema/code from its source ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with the mnema.command setting ([open it](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)); then [refresh](command:mnema.refresh).",
         "when": "mnema.hasRecord && mnema.cliMissing"
       },
       {
         "view": "mnema.stacks",
-        "contents": "No stack is adopted for this project, as mnema stack list reads it.\n[Add a stack](command:mnema.stacks.add)\n[Add a stack from the index](command:mnema.stacks.addFromIndex)",
+        "contents": "No stack is adopted for this project, as mnema stack list reads it. [Add one](command:mnema.stacks.add) from a folder, an archive or a git address, or [from the index](command:mnema.stacks.addFromIndex).",
         "when": "mnema.hasRecord && !mnema.cliMissing && mnema.stacksRead"
       },
       {
         "view": "mnema.stacks",
-        "contents": "mnema has not listed the stacks. If it could not run, the status bar says what it read.\n[Refresh](command:mnema.refresh)\n[Set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)",
+        "contents": "mnema has not listed the stacks. If it could not run, the status bar says what it read; [refresh](command:mnema.refresh) or [set the mnema command](command:workbench.action.openSettings?%5B%22mnema.command%22%5D).",
         "when": "mnema.hasRecord && !mnema.cliMissing && !mnema.stacksRead"
       }
     ],
     "commands": [
       {
         "command": "mnema.accept",
-        "title": "mnema: Accept Decision",
+        "title": "Accept Decision",
+        "category": "mnema",
         "icon": "$(check)"
       },
       {
         "command": "mnema.reject",
-        "title": "mnema: Reject Decision",
+        "title": "Reject Decision",
+        "category": "mnema",
         "icon": "$(close)"
       },
       {
         "command": "mnema.refresh",
-        "title": "mnema: Refresh",
+        "title": "Refresh",
+        "category": "mnema",
         "icon": "$(refresh)"
       },
       {
         "command": "mnema.showRules",
-        "title": "mnema: Show File Rules",
+        "title": "Show File Rules",
+        "category": "mnema",
         "icon": "$(law)"
       },
       {
         "command": "mnema.stacks.add",
-        "title": "mnema: Add Stack",
+        "title": "Add Stack",
+        "category": "mnema",
         "icon": "$(add)"
       },
       {
         "command": "mnema.stacks.addFromIndex",
-        "title": "mnema: Add from Index",
+        "title": "Add from Index",
+        "category": "mnema",
         "icon": "$(library)"
       },
       {
         "command": "mnema.stacks.show",
-        "title": "mnema: Show Stack",
+        "title": "Show Stack",
+        "category": "mnema",
         "icon": "$(eye)"
       },
       {
         "command": "mnema.stacks.diff",
-        "title": "mnema: Compare Stack",
+        "title": "Compare Stack",
+        "category": "mnema",
         "icon": "$(diff)"
       },
       {
         "command": "mnema.stacks.check",
-        "title": "mnema: Check Stack",
+        "title": "Check Stack",
+        "category": "mnema",
         "icon": "$(checklist)"
       },
       {
         "command": "mnema.stacks.remove",
-        "title": "mnema: Remove Stack",
+        "title": "Remove Stack",
+        "category": "mnema",
         "icon": "$(trash)"
       },
       {
         "command": "mnema.stacks.export",
-        "title": "mnema: Export Stack",
+        "title": "Export Stack",
+        "category": "mnema",
         "icon": "$(export)"
       }
     ],
@@ -249,14 +274,14 @@
           "group": "navigation@1"
         },
         {
-          "command": "mnema.stacks.addFromIndex",
+          "command": "mnema.refresh",
           "when": "view == mnema.stacks",
           "group": "navigation@2"
         },
         {
-          "command": "mnema.refresh",
+          "command": "mnema.stacks.addFromIndex",
           "when": "view == mnema.stacks",
-          "group": "navigation@3"
+          "group": "1_add@1"
         }
       ],
       "commandPalette": [
