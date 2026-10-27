@@ -30,8 +30,25 @@ import { theSiteVerifier } from './verifier-bundle.js';
 
 const SITE = dirname(fileURLToPath(import.meta.url));
 const BROWSER = join(SITE, 'browser');
-/** The two files outside `browser/` the script is bundled from: what the lists are, and what they are made of. */
-const BUNDLED_BESIDE = [join(SITE, 'model.ts'), join(SITE, 'view.ts')];
+/**
+ * Every file the script is bundled from that is not in `browser/`, found by following the relative
+ * imports from the entry the bundle starts at (what the lists are, what they are made of, and what
+ * those read in turn), so a file the bundle comes to carry is read without anyone adding it here.
+ */
+function bundledBeside(): string[] {
+  const seen = new Set<string>();
+  const follow = (file: string): void => {
+    if (seen.has(file)) return;
+    seen.add(file);
+    const source = readFileSync(file, 'utf-8');
+    for (const [, spec] of source.matchAll(/(?:from|import)\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g)) {
+      follow(join(dirname(file), (spec as string).replace(/\.js$/, '.ts')));
+    }
+  };
+  follow(join(BROWSER, 'entry.ts'));
+  return [...seen].filter((file) => dirname(file) !== BROWSER).sort();
+}
+const BUNDLED_BESIDE = bundledBeside();
 
 /** What no file of the script may say, in code, with the reason it is here. */
 const SINKS: readonly { readonly name: string; readonly found: RegExp }[] = [
@@ -54,6 +71,7 @@ describe('the script of the page', () => {
     const names = files.map((file) => relative(BROWSER, file)).sort();
     expect(names).toEqual(
       expect.arrayContaining([
+        '../../one-line.ts',
         '../model.ts',
         '../view.ts',
         'buffer.ts',

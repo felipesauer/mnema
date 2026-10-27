@@ -387,6 +387,46 @@ describe('a server that lies about a list', { timeout: A_RECORD_IN_A_VM }, () =>
       /^timeline entry 1: the page hides it$/,
     ],
     [
+      '(u) a whole card made up without the class a card carries, inside the list',
+      (html) =>
+        swapped(
+          html,
+          '<div id="decision-list">',
+          '<div id="decision-list">\n<div data-fake="1"><h3>ADR-99: a call nobody made</h3> <p>accepted</p></div>',
+        ),
+      /^the decision list holds an element that is not a decision card: a div saying "ADR-99: a call nobody made accepted"$/,
+    ],
+    [
+      '(v) a paragraph of text inside the list, outside every card',
+      (html) =>
+        swapped(
+          html,
+          '<div id="decision-list">',
+          '<div id="decision-list">\n<p>Every decision here was accepted by two people.</p>',
+        ),
+      /^the decision list holds an element that is not a decision card: a p saying "Every decision here was accepted by two people."$/,
+    ],
+    [
+      '(w) the real counts hidden and a false line beside it, with no id',
+      (html) =>
+        swapped(
+          html,
+          '<p id="counts"',
+          '<p class="counts-fake">9999 decisions, 0 notes.</p>\n<p hidden id="counts"',
+        ),
+      /^the page has an element that is not one of its parts: a p saying "9999 decisions, 0 notes."$/,
+    ],
+    [
+      '(x) text added to the notes list and to the timeline, outside every item',
+      (html) =>
+        swapped(
+          swapped(html, '<ul class="notes">', '<ul class="notes"><li>A note nobody wrote.</li>'),
+          '<ol class="timeline">',
+          '<ol class="timeline"><li>Nothing happened here.</li>',
+        ),
+      /^the timeline holds an element that is not an entry: a li saying "Nothing happened here."$/,
+    ],
+    [
       '(l) an "open" link pointed at another card',
       (html) =>
         swapped(

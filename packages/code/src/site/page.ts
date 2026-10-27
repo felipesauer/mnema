@@ -40,7 +40,7 @@
 import { createHash } from 'node:crypto';
 import { mix, textAccent } from './colour.js';
 import type { PageModel } from './model.js';
-import { listViews, type SiteTail, textOf, type VKid } from './view.js';
+import { listViews, NO_DECISIONS, type SiteTail, textOf, type VKid } from './view.js';
 
 export type { DecisionMove, PageDecision, PageModel, PageNote, TimelineEntry } from './model.js';
 export type { SiteTail } from './view.js';
@@ -269,7 +269,7 @@ export function renderPage(model: SiteModel, script: string, backLink?: string):
   const views = listViews(model);
   const decisions =
     views.decisions.length === 0
-      ? '<p>No decision is recorded in the public tree.</p>'
+      ? `<p>${NO_DECISIONS}</p>`
       : views.decisions.map((item) => html(item.node)).join('\n');
   const otherNotes =
     views.otherNotes.length === 0
@@ -306,7 +306,7 @@ ${backLink === undefined ? '' : `<p><a href="${escapeHtml(backLink)}">Back</a></
 <p id="lists-summary">${LISTS_UNCHECKED}</p>
 <ul id="lists-issues"></ul>
 </section>
-<p>The verdict above is the sentence <code>mnema verify</code> gives a fresh clone of the repository,
+<p id="about">The verdict above is the sentence <code>mnema verify</code> gives a fresh clone of the repository,
 computed in this browser by the same verifier (<code>@mnema/chain</code>) over the ${fileCount} file(s)
 this page carries, with no network request and no key of yours. It checks the hash chain and every
 checkpoint signature against the public keys carried with the files. It does not say that a key
@@ -314,7 +314,7 @@ belongs to the person a list names. The lists below were written from those file
 <code>mnema site</code>; once the record verifies, this browser derives them again from the files it
 verified, with the same TypeScript code the product runs, and names each difference between what it
 derived and what the page shows (the text of each decision, note and timeline entry, the attributes
-the filters read, the ids and the counts). That is not a second, independent reader: the Python reader
+the filters read, the ids and the counts). It reads the lists and the parts of this page, not the text around them, nor a style, nor what is wrapped around a field. That is not a second, independent reader: the Python reader
 verifies the chain and does not derive decisions. A page handed over by the party it checks carries its
 own script, so the check counts for more when the page is made again from a clone. Only the committed
 public tree is in this page (no private tree and no machine-global tree), and all of its text is.</p>

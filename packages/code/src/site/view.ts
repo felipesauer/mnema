@@ -402,6 +402,9 @@ export function listViews(model: PageModel & { readonly tails: readonly SiteTail
   };
 }
 
+/** What the decision list says when the record holds no decision. */
+export const NO_DECISIONS = 'No decision is recorded in the public tree.';
+
 /** The text a tree shows, in the order of the page. */
 export function textOf(kid: VKid): string {
   return typeof kid === 'string' ? kid : kid.kids.map(textOf).join('');

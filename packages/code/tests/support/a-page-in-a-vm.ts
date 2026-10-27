@@ -100,7 +100,12 @@ export class FakeElement {
     for (const listener of this.listeners.get(type) ?? []) listener();
   }
 
+  get tagName(): string {
+    return this.tag;
+  }
+
   querySelectorAll(selector: string): FakeElement[] {
+    if (selector === ':scope > *') return this.children.filter((child) => child.tag !== '#text');
     const found: FakeElement[] = [];
     const walk = (node: FakeElement): void => {
       for (const child of node.children) {
