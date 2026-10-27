@@ -29,7 +29,13 @@ import {
 import { join } from 'node:path';
 import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
-import { aSandbox, PLUGIN, type TheProjectToWrite, type TheSandbox } from './a-sandbox.js';
+import {
+  aSandbox,
+  PLUGIN,
+  type TheFilesToPut,
+  type TheProjectToWrite,
+  type TheSandbox,
+} from './a-sandbox.js';
 import { destinationsOrRefuse, refuseUnlessLoopbackOnly } from './the-host.js';
 import { startTheStandIn, type TheCall, type TheRequest } from './the-stand-in-api.js';
 
@@ -43,6 +49,8 @@ const KILLED = '\u0000killed\u0000';
 export interface TheOpencodeSpec {
   /** Writes the record the session opens on. */
   readonly project?: (project: TheProjectToWrite) => void;
+  /** Files put in the project after its record is written; see {@link TheFilesToPut}. */
+  readonly files?: TheFilesToPut;
   /** The call the stand-in makes, given the project; none: a session that only opens. */
   readonly call?: (project: string) => TheCall;
   /** The model's name: `gpt-` decides that the write tool offered is `apply_patch`. */
@@ -131,7 +139,7 @@ async function anOpencodeSession(
     throw new Error('strace is needed to read where the host connects, and it is not on the PATH');
   }
   const opencode = theOpencodeUnderTest();
-  const box = aSandbox('mnema-opencode-', spec.project);
+  const box = aSandbox('mnema-opencode-', spec.project, spec.files);
   keep(box);
   const standIn = await startTheStandIn(spec.call?.(box.project));
   const model = spec.model ?? 'claude-sonnet-4-5';

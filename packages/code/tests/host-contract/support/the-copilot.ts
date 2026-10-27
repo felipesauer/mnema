@@ -29,7 +29,13 @@ import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
 import { GIT_WITHOUT_MAINTENANCE } from '../../support/git-without-maintenance.js';
 import { sizedTo, theDeviceWasTheSizeAskedFor } from '../../support/pty.js';
-import { aSandbox, REPO, type TheProjectToWrite, type TheSandbox } from './a-sandbox.js';
+import {
+  aSandbox,
+  REPO,
+  type TheFilesToPut,
+  type TheProjectToWrite,
+  type TheSandbox,
+} from './a-sandbox.js';
 import { destinationsOrRefuse, refuseUnlessLoopbackOnly } from './the-host.js';
 import { startTheStandIn, type TheCall, type TheRequest } from './the-stand-in-api.js';
 
@@ -49,6 +55,8 @@ export const NO = '\u001b[B\r';
 export interface TheCopilotSpec {
   /** Writes the record the session opens on. */
   readonly project?: (project: TheProjectToWrite) => void;
+  /** Files put in the project after its record is written; see {@link TheFilesToPut}. */
+  readonly files?: TheFilesToPut;
   /** The call the stand-in makes, given the project; none: a session that only opens. */
   readonly call?: (project: string) => TheCall;
   /** The model's name: it decides which write tool is offered. `create`/`edit` unless it says otherwise. */
@@ -163,7 +171,7 @@ async function aCopilotSession(
     throw new Error('strace is needed to read where the host connects, and it is not on the PATH');
   }
   const copilot = theCopilotUnderTest();
-  const box = aSandbox('mnema-copilot-', spec.project);
+  const box = aSandbox('mnema-copilot-', spec.project, spec.files);
   keep(box);
   const copilotHome = join(box.root, 'copilot');
   mkdirSync(copilotHome, { recursive: true });

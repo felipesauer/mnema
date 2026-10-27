@@ -28,7 +28,13 @@ import { fileURLToPath } from 'node:url';
 import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
 import { GIT_WITHOUT_MAINTENANCE } from '../../support/git-without-maintenance.js';
-import { aSandbox, REPO, type TheProjectToWrite, type TheSandbox } from './a-sandbox.js';
+import {
+  aSandbox,
+  REPO,
+  type TheFilesToPut,
+  type TheProjectToWrite,
+  type TheSandbox,
+} from './a-sandbox.js';
 import { openWithOneRetry, sayInTheJobSummary } from './one-retry.js';
 import { destinationsOrRefuse, refuseUnlessLoopbackOnly } from './the-host.js';
 
@@ -54,6 +60,8 @@ export interface TheCodexRequest {
 export interface TheCodexSpec {
   /** Writes the record the session opens on. */
   readonly project?: (project: TheProjectToWrite) => void;
+  /** Files put in the project after its record is written; see {@link TheFilesToPut}. */
+  readonly files?: TheFilesToPut;
   /** The patch the stand-in makes Codex apply, relative to the project; none: a session that only opens. */
   readonly patch?: string;
   /**
@@ -237,7 +245,7 @@ async function aCodexSessionOnce(
     throw new Error('strace is needed to read where the host connects, and it is not on the PATH');
   }
   const codex = theCodexUnderTest();
-  const box = aSandbox('mnema-codex-', spec.project);
+  const box = aSandbox('mnema-codex-', spec.project, spec.files);
   keep(box);
   const codexHome = join(box.root, 'codex');
   mkdirSync(codexHome, { recursive: true });

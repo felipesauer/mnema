@@ -32,7 +32,13 @@ import type { AddressInfo } from 'node:net';
 import { join } from 'node:path';
 import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
-import { aSandbox, PLUGIN, type TheProjectToWrite, type TheSandbox } from './a-sandbox.js';
+import {
+  aSandbox,
+  PLUGIN,
+  type TheFilesToPut,
+  type TheProjectToWrite,
+  type TheSandbox,
+} from './a-sandbox.js';
 import { destinationsOrRefuse, refuseUnlessLoopbackOnly } from './the-host.js';
 import type { TheCall, TheRequest } from './the-stand-in-api.js';
 
@@ -49,6 +55,8 @@ const KILLED = '\u0000killed\u0000';
 export interface TheQwenSpec {
   /** Writes the record the session opens on. */
   readonly project?: (project: TheProjectToWrite) => void;
+  /** Files put in the project after its record is written; see {@link TheFilesToPut}. */
+  readonly files?: TheFilesToPut;
   /** The call the stand-in makes, given the project; none: a session that only opens. */
   readonly call?: (project: string) => TheCall;
   /** Whether the plugin is installed: yes unless a case says otherwise. */
@@ -262,7 +270,7 @@ async function aQwenSession(
     throw new Error('strace is needed to read where the host connects, and it is not on the PATH');
   }
   const qwen = theQwenUnderTest();
-  const box = aSandbox('mnema-qwen-', spec.project);
+  const box = aSandbox('mnema-qwen-', spec.project, spec.files);
   keep(box);
   const standIn = await startTheStandIn(spec.call?.(box.project));
 

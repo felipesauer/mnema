@@ -41,8 +41,14 @@ import { fileURLToPath } from 'node:url';
 import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
 import { GIT_WITHOUT_MAINTENANCE } from '../../support/git-without-maintenance.js';
-import { aSandbox, PLUGIN, type TheProjectToWrite } from './a-sandbox.js';
-import { startTheStandIn, type TheCall, type TheRequest } from './the-stand-in-api.js';
+import { aSandbox, PLUGIN, type TheFilesToPut, type TheProjectToWrite } from './a-sandbox.js';
+import {
+  startAScriptedStandIn,
+  startTheStandIn,
+  type TheCall,
+  type TheReply,
+  type TheRequest,
+} from './the-stand-in-api.js';
 
 const A_SERVER_THAT_TALKS = fileURLToPath(
   new URL('./a-server-that-talks-too-much.mjs', import.meta.url),
@@ -134,8 +140,17 @@ export interface TheSession {
 export interface TheSpec {
   /** Writes the record and the files the case stands on; `mnema` runs in the project. */
   readonly project?: (it: TheProjectToWrite) => void;
+  /** Files put in the project after its record is written; see {@link TheFilesToPut}. */
+  readonly files?: TheFilesToPut;
   /** The call the stand-in makes, given the project directory. None: a session that only opens. */
   readonly call?: (project: string) => TheCall;
+  /**
+   * What the stand-in answers each request with, given the project directory, in place of the one
+   * `call`: a session of several turns, or one whose conversation is compacted.
+   */
+  readonly script?: (
+    project: string,
+  ) => (body: Readonly<Record<string, unknown>>, before: readonly TheRequest[]) => TheReply;
   /** The text every turn that calls no tool closes with; a subagent's final reply is one. */
   readonly closing?: string;
   /** Whether the stand-in makes the call once in all, rather than at each request that offers it. */
@@ -254,7 +269,7 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
   refuseUnlessLoopbackOnly();
   needStrace();
 
-  const box = aSandbox('mnema-host-', spec.project);
+  const box = aSandbox('mnema-host-', spec.project, spec.files);
   const { home, project, bin, mnema } = box;
   const sandbox = box.root;
   const config = join(sandbox, 'claude-config');
@@ -277,7 +292,10 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
     }
   }
 
-  const standIn = await startTheStandIn(spec.call?.(project), spec.closing, spec.callOnce);
+  const standIn =
+    spec.script === undefined
+      ? await startTheStandIn(spec.call?.(project), spec.closing, spec.callOnce)
+      : await startAScriptedStandIn(spec.script(project));
   writeFileSync(
     join(config, '.claude.json'),
     JSON.stringify({
