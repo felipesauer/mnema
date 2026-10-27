@@ -16,7 +16,11 @@
  * The single rule, applied verbatim:
  *   - a memory EXISTS once its `memory.captured` is seen;
  *   - its CONTENT, its author (`who`), and its capture time (`at`) are read
- *     straight off that one event.
+ *     straight off that one event;
+ *   - the id is minted at the capture, so one id written twice is never the product's
+ *     writing. Should a record hold it, the note is the identity that wrote it FIRST in the
+ *     stream's order ({@link noteAuthorsOf}); a writing of the id by another identity is not
+ *     applied, and `verify` names it (FORMAT.md section 6.4).
  *
  * The filter, take only the knowledge kinds, is what gives the knowledge
  * domain its own view over the same shared tail: memories live in the same chain
@@ -79,6 +83,35 @@ export function retractionOf(
   return named?.find((retraction) => mayRetract(note.who, retraction.who));
 }
 
+/**
+ * Who each note is: by id, the `who` of the FIRST writing of it, a `memory.captured` or an
+ * `observation.recorded`, in the stream's order (the merged order of FORMAT.md section 6.2).
+ * One map over both kinds, since a note's id names one note whichever kind wrote it.
+ *
+ * The first and not the last: the last writing is whichever one the latest `at` stamped, and
+ * `at` is the signer's to write, so a key of any identity that wrote the id again with a later
+ * clock would take the note, its content and its retraction. The first is what the product's
+ * writer cannot be made to lose: it cites what it had read (the envelope's `after`), and a
+ * writing that cites the note comes after it in this order whatever its clock says.
+ */
+export function noteAuthorsOf(events: readonly CatalogEvent[]): Map<string, string> {
+  const authors = new Map<string, string>();
+  for (const event of events) {
+    if (event.kind !== 'memory.captured' && event.kind !== 'observation.recorded') continue;
+    if (!authors.has(event.subject)) authors.set(event.subject, event.who);
+  }
+  return authors;
+}
+
+/**
+ * Whether a writing of a note by `who` is applied: when `who` is the note's author ({@link
+ * mayRetract}, the same comparison on the anchor), so any key of the identity that wrote it
+ * writes it again and a key of another identity does not.
+ */
+export function writesTheNote(author: string | undefined, who: string): boolean {
+  return author === undefined || mayRetract(author, who);
+}
+
 /** A captured memory, as projected from its one event. */
 export interface MemoryProjection {
   /** The memory's id (the event subject). */
@@ -99,19 +132,35 @@ export interface MemoryProjection {
  * memory needs no completeness guard the way a task does: one event is the
  * whole fact, so seeing it is enough to project it.
  *
- * If two `memory.captured` events ever shared a subject (they cannot: the id is
- * minted per capture), the last seen would win, but that path is unreachable
- * by construction, so the fold stays a plain last-write map with no special
- * case.
+ * Two `memory.captured` events never share a subject when the product wrote them (the id is
+ * minted per capture). Should a record hold two, the note is its first writer's ({@link
+ * noteAuthorsOf}): a later writing by that identity is served in place of the earlier, and a
+ * writing by another identity is not applied.
  */
 export function projectKnowledge(events: readonly CatalogEvent[]): Map<string, MemoryProjection> {
-  const result = new Map<string, MemoryProjection>();
-  const retractions = retractionsOf(events);
+  return withTheirRetractions(events, memoryOf);
+}
+
+/**
+ * The notes `of` reads off the stream, each its author's ({@link writesTheNote}), and each with
+ * the retraction that takes it back, if one does.
+ */
+function withTheirRetractions<P extends { readonly id: string; readonly who: string }>(
+  events: readonly CatalogEvent[],
+  of: (event: CatalogEvent) => P | undefined,
+): Map<string, P & { readonly retracted?: NoteRetraction }> {
+  const authors = noteAuthorsOf(events);
+  const notes = new Map<string, P>();
   for (const event of events) {
-    const memory = memoryOf(event);
-    if (memory === undefined) continue;
-    const retracted = retractionOf(memory, retractions.get(memory.id));
-    result.set(memory.id, retracted !== undefined ? { ...memory, retracted } : memory);
+    const note = of(event);
+    if (note === undefined || !writesTheNote(authors.get(note.id), note.who)) continue;
+    notes.set(note.id, note);
+  }
+  const retractions = retractionsOf(events);
+  const result = new Map<string, P & { readonly retracted?: NoteRetraction }>();
+  for (const [id, note] of notes) {
+    const retracted = retractionOf(note, retractions.get(id));
+    result.set(id, retracted !== undefined ? { ...note, retracted } : note);
   }
   return result;
 }
@@ -161,18 +210,7 @@ export interface ObservationProjection {
 export function projectObservations(
   events: readonly CatalogEvent[],
 ): Map<string, ObservationProjection> {
-  const result = new Map<string, ObservationProjection>();
-  const retractions = retractionsOf(events);
-  for (const event of events) {
-    const observation = observationOf(event);
-    if (observation === undefined) continue;
-    const retracted = retractionOf(observation, retractions.get(observation.id));
-    result.set(
-      observation.id,
-      retracted !== undefined ? { ...observation, retracted } : observation,
-    );
-  }
-  return result;
+  return withTheirRetractions(events, observationOf);
 }
 
 /** The observation one event is, or undefined for any other kind: see {@link memoryOf}. */

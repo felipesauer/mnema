@@ -894,6 +894,27 @@ for its own `who`; what it lacks is authority over somebody else's note, so this
 note the tree does not hold has no author to compare with, and is neither applied nor named
 (`packages/core/src/knowledge/only-the-identity-that-wrote-a-note-retracts-it.test.ts`).
 
+**A note is the identity that wrote it first.** The `who` of a note, the one every comparison
+above is made with, is the `who` of the FIRST `memory.captured` or `observation.recorded` of its
+id in the merged order of §6.2, of either kind, since one id names one note. This product's
+writer mints a note's id at its capture, so it never writes one id twice; a record that holds a
+second writing of an id holds one made past it. A later writing by the same identity (any key of
+its anchor) is served in place of the earlier one. A writing by another identity is not applied:
+the note's content, author and capture time stay the first writer's, and a retraction that
+identity signs is a stranger's, as above. Like a stranger's retraction it is **not a break**,
+and this product's `verify` names it in its census, informational, with the exit unchanged
+("a note is the identity that first wrote it", in the test file above). The first writing and
+not the last, because the last is whichever writing the latest `at` stamped, and `at` is the
+signer's to write: a key of any identity would take a note, its content and its retraction by
+stamping a later clock. Nor the order of the tail ids, which begin with a key's fingerprint and
+are a signer's to choose. The merged order is what this product's writer cannot be made to lose:
+it cites the heads it had read (`after`), and a writing that cites the note comes after it
+whatever its clock says. What no order can settle is two writings no citation relates: there
+the earlier `at` is taken, which a hand-made writing can backdate; the reader then serves that
+one, and the census names the other, so the contest is shown whichever writing was taken. A
+binary from before this rule served the last writing in the merged order, and its `verify` took the
+author from the last writing in tail-id order, so the two could disagree.
+
 **A link is taken back the same way.** `link.retracted` (`payload.target`, `payload.rel`,
 `payload.reason`) names the edge a `knowledge.linked` asserted. A link has no id of its own, so
 the retraction names it as the link did: its `subject` is the link's subject, and `target` and
@@ -915,9 +936,10 @@ A retraction of an edge the tree does not hold at all is neither applied nor nam
 
 A verification of the format does not need either rule (they decide what a reader SERVES, not
 what verifies) and neither moves a verdict in either reader. The second reader beside this file
-names a retraction neither rule applies, as this product's `verify` does, and accepts the record
+names a retraction neither rule applies, and a writing of a note by an identity that did not
+write it first, as this product's `verify` does, and accepts the record
 (`packages/chain/src/chain/second-reader-agrees-on-what-is-not-applied.test.ts`, "by another
-identity, names both"). A binary from before the note rule
+identity, names both" and "written again and taken back by another identity"). A binary from before the note rule
 applied every note retraction, whoever signed it; a binary from before `link.retracted` refuses
 it as a (kind, v) its table does not hold (§4.1), so a record holding one does not verify there.
 
