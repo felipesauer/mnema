@@ -26,6 +26,8 @@ function folderWith(record: boolean): string {
   return dir;
 }
 const ok = (stdout: string): CliResult => ({ code: 0, stdout, stderr: '' });
+/** What the person sends by pressing Enter on a box, whatever it holds. */
+const ENTER = '\u0000enter';
 const hit = (id: string, title: string) => ({
   id,
   kind: 'decision',
@@ -100,6 +102,8 @@ function world(
     prompt: string;
     placeHolder: string;
     ignoreFocusOut: boolean;
+    value?: string;
+    valueSelection?: [number, number];
   }[] = [];
   let reply: string | undefined;
   type Tree = { getChildren(): never[]; getTreeItem(e: never): Record<string, unknown> };
@@ -111,6 +115,19 @@ function world(
   const pickOptions: { title: string; ignoreFocusOut?: boolean }[] = [];
   let choice: string | undefined;
   let lenses: { provideCodeLenses(d: never): Promise<unknown[]> } | undefined;
+  // The documents of the scheme the extension serves, as the editor holds them: read when opened,
+  // and read again when the provider says it changed.
+  type Address = { scheme: string; path: string; query: string; fsPath: string };
+  let content:
+    | {
+        onDidChange: (l: (u: Address) => void) => unknown;
+        provideTextDocumentContent(u: Address): Promise<string>;
+      }
+    | undefined;
+  const documents = new Map<string, { uri: Address; text: string }>();
+  const opened: Address[] = [];
+  let active: { document: { uri: Address } } | undefined;
+  const activeListeners: (() => void)[] = [];
   const api = {
     workspace: {
       workspaceFolders: [{ uri: { fsPath: root } }],
@@ -126,6 +143,26 @@ function world(
         settingListeners.push(l);
         return { dispose() {} };
       },
+      registerTextDocumentContentProvider: (
+        _scheme: string,
+        provider: NonNullable<typeof content>,
+      ) => {
+        content = provider;
+        provider.onDidChange(async (uri) => {
+          const known = documents.get(uri.query);
+          if (known !== undefined) known.text = await provider.provideTextDocumentContent(uri);
+        });
+        return { dispose() {} };
+      },
+      openTextDocument: async (uri: Address) => {
+        opened.push(uri);
+        const document = {
+          uri,
+          text: await (content as NonNullable<typeof content>).provideTextDocumentContent(uri),
+        };
+        documents.set(uri.query, document);
+        return document;
+      },
       createFileSystemWatcher: () => ({
         onDidChange: (l: () => void) => {
           watcher.change.push(l);
@@ -140,6 +177,12 @@ function world(
       }),
     },
     RelativePattern: class {},
+    Uri: {
+      from: (parts: { scheme: string; path: string; query: string }) => ({
+        ...parts,
+        fsPath: parts.path,
+      }),
+    },
     window: {
       createStatusBarItem: () => bar,
       createTreeView: (id: string, options: { treeDataProvider: Tree }) => {
@@ -162,7 +205,8 @@ function world(
         ignoreFocusOut: boolean;
       }) => {
         inputs.push({ validate: o.validateInput, ...o });
-        return reply;
+        // Enter on a box that holds a value sends that value.
+        return reply === ENTER ? (o as { value?: string }).value : reply;
       },
       showQuickPick: async (
         items: { label: string }[],
@@ -171,7 +215,10 @@ function world(
         pickOptions.push(options);
         picked.push(items.map((i) => i.label));
         const want = picks.shift();
-        return items.find((i) => i.label === want);
+        // A pick is made by the name a person reads: the codicon in front of it is not part of it.
+        return items.find(
+          (i) => i.label === want || i.label.replace(/^\$\([a-z-]+\) /, '') === want,
+        );
       },
       showInformationMessage: async (m: string, ...actions: string[]) => {
         shown.push(m);
@@ -181,7 +228,18 @@ function world(
         errors.push(m);
         return undefined;
       },
-      activeTextEditor: undefined,
+      get activeTextEditor() {
+        return active;
+      },
+      onDidChangeActiveTextEditor: (l: () => void) => {
+        activeListeners.push(l);
+        return { dispose() {} };
+      },
+      showTextDocument: async (document: { uri: Address }) => {
+        active = { document };
+        for (const l of activeListeners) l();
+        return undefined;
+      },
     },
     commands: {
       registerCommand: (id: string, cb: (...args: never[]) => unknown) => {
@@ -200,8 +258,14 @@ function world(
       },
     },
     EventEmitter: class {
-      event = () => ({ dispose() {} });
-      fire() {}
+      private listeners: ((e: unknown) => unknown)[] = [];
+      event = (l: (e: unknown) => unknown) => {
+        this.listeners.push(l);
+        return { dispose() {} };
+      };
+      fire(e: unknown) {
+        for (const l of this.listeners) l(e);
+      }
       dispose() {}
     },
     CodeLens: class {
@@ -223,6 +287,12 @@ function world(
     },
     ThemeColor: class {
       constructor(readonly id: string) {}
+    },
+    ThemeIcon: class {
+      constructor(
+        readonly id: string,
+        readonly color?: { id: string },
+      ) {}
     },
   } as unknown as VscodeApi;
   const started = activate(
@@ -271,6 +341,16 @@ function world(
       choice = v;
     },
     lenses: () => lenses as NonNullable<typeof lenses>,
+    /** The documents the extension serves that the editor has opened, and what each says now. */
+    documents,
+    opened,
+    /** The editor in front: a document the extension served, as `showTextDocument` made it so. */
+    active: () => active?.document.uri,
+    /** Brings an already opened document to the front, as a click on its tab does. */
+    focus: (query: string) => {
+      active = { document: documents.get(query) as NonNullable<ReturnType<typeof documents.get>> };
+      for (const l of activeListeners) l();
+    },
     /** The markdown of the status bar tooltip, as the editor was handed it. */
     tooltip: () => (bar.tooltip as { value: string }).value,
     trust: () => (bar.tooltip as { isTrusted: unknown }).isTrusted,
@@ -539,7 +619,7 @@ describe('a judgment goes through the verb of the command line, with a note', ()
     w.setReply('looks right');
     await w.command('mnema.accept')({ id: 'd1', title: 'Use X', scope: 'public', at: '' });
     expect(w.ran).toContainEqual(['decision', 'move', 'accept', 'd1', '--note', 'looks right']);
-    expect(w.shown).toContain('Decision ADR-1 (d1) → accepted');
+    expect(w.shown).toContain('ADR-1 accepted.');
   });
 
   it('rejects with the verb reject', async () => {
@@ -557,11 +637,7 @@ describe('a judgment goes through the verb of the command line, with a note', ()
     await w.command('mnema.accept')({ id: 'd1', title: 'Use X', scope: 'public', at: '' });
     await w.command('mnema.stacks.add')();
     await w.command('mnema.stacks.export')({ name: 'hello-stack', scope: 'public' });
-    expect(w.inputs.map((i) => i.title)).toEqual([
-      'mnema: Accept Decision',
-      'mnema: Add Stack (1 of 2)',
-      'mnema: Export Stack',
-    ]);
+    expect(w.inputs.map((i) => i.title)).toEqual(['Accept ADR-1', 'Add Stack', 'Export Stack']);
     for (const input of w.inputs) {
       expect(input.placeHolder, input.title).not.toBe('');
       expect(input.prompt, input.title).not.toBe('');
@@ -626,6 +702,438 @@ describe('a judgment goes through the verb of the command line, with a note', ()
     w.setReply('n');
     await w.command('mnema.accept')({ id: 'd1', title: 'Use X', scope: 'public', at: '' });
     expect(w.errors).toEqual(['mnema refused: Agents may not accept.']);
+  });
+});
+
+/** What the command line built for two decisions of a sample project: one proposed, one accepted. */
+const fixture = (name: string): string =>
+  readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8');
+const PROPOSED_ID = (JSON.parse(fixture('show-proposed')) as { id: string }).id;
+const ACCEPTED_ID = (JSON.parse(fixture('show-accepted')) as { id: string }).id;
+const STAMP = '2026-10-27, accepted in the VS Code extension, no reason typed';
+/** The same answer of `show`, said again after another move: only the state differs. */
+const movedTo = (name: string, state: string): CliResult => {
+  const answer = JSON.parse(fixture(name)) as { record: Record<string, unknown> };
+  answer.record.state = state;
+  return ok(JSON.stringify(answer));
+};
+const sample = (): Record<string, CliResult> => ({
+  ...base(),
+  [LIST]: listing(hit(PROPOSED_ID, 'Write migrations by hand')),
+  [`show ${PROPOSED_ID} --json`]: ok(fixture('show-proposed')),
+  [`show ${ACCEPTED_ID} --json`]: ok(fixture('show-accepted')),
+  rules: ok(
+    JSON.stringify({
+      rules: [
+        {
+          rule: ACCEPTED_ID,
+          kind: 'decision',
+          name: 'Use SQLite for the cache',
+          state: 'accepted',
+          acceptance: { by: 'mnid:a' },
+        },
+      ],
+    }),
+  ),
+});
+const proposal = { id: PROPOSED_ID, title: 'Write migrations by hand', scope: 'public', at: '' };
+/** The last value the extension set for a context key. */
+const keyOf = (w: ReturnType<typeof world>, key: string): unknown =>
+  w.executed.filter((call) => call[0] === 'setContext' && call[1] === key).at(-1)?.[2];
+
+describe('a decision opens whole, as what mnema show said', () => {
+  it('opens at the address of its id, named by its ADR, and asks the command line for it', async () => {
+    const w = world(sample());
+    await settle();
+    w.ran.length = 0;
+    await w.command('mnema.openDecision')(proposal);
+    expect(w.ran).toEqual([['show', PROPOSED_ID, '--json']]);
+    expect(w.opened).toHaveLength(1);
+    expect(w.opened[0]).toMatchObject({
+      scheme: 'mnema-decision',
+      path: '/ADR-2.md',
+      query: `id=${PROPOSED_ID}`,
+    });
+    const text = w.documents.get(`id=${PROPOSED_ID}`)?.text ?? '';
+    expect(text).toContain('# ADR-2: Write migrations by hand');
+    expect(text).toContain("The ORM's generator drifts from what we review.");
+    expect(text).toContain('- State: proposed');
+    expect(text).toContain(`\`mnema show ${PROPOSED_ID} --json\``);
+  });
+
+  it('is what a click on an item of the list runs, with that item', async () => {
+    const w = world(sample());
+    await settle();
+    const [item] = w.tree().getChildren();
+    const node = w.tree().getTreeItem(item as never);
+    expect(node.command).toEqual({
+      command: 'mnema.openDecision',
+      title: 'Open Decision',
+      arguments: [item],
+    });
+  });
+
+  it('asks which decision, from the palette, and opens the one picked', async () => {
+    const w = world(sample());
+    await settle();
+    w.picks.push('Write migrations by hand');
+    await w.command('mnema.openDecision')(undefined);
+    expect(w.picked.at(-1)).toEqual(['Write migrations by hand']);
+    expect(w.opened.map((u) => u.query)).toEqual([`id=${PROPOSED_ID}`]);
+  });
+
+  it('shows the alternatives and the moves an accepted decision carries, and a justification with a link or a tag as plain text', async () => {
+    const w = world(sample());
+    await settle();
+    w.picks.push('Use SQLite for the cache');
+    await w.command('mnema.showRules')('src/a.ts');
+    const text = w.documents.get(`id=${ACCEPTED_ID}`)?.text ?? '';
+    expect(text).toContain('## Alternatives\n\nRedis: a server to run');
+    expect(text).toContain('## Moves');
+    expect(text).toContain('[x](command:mnema.accept) <b>bold</b>');
+    expect(text).toContain('- State: accepted');
+  });
+
+  it('opens the rule a lens led to, whole, and shows no judgment button for one in force', async () => {
+    const w = world(sample());
+    await settle();
+    w.picks.push('Use SQLite for the cache');
+    await w.command('mnema.showRules')('src/a.ts');
+    expect(w.opened.map((u) => u.query)).toEqual([`id=${ACCEPTED_ID}`]);
+    expect(w.active()?.query).toBe(`id=${ACCEPTED_ID}`);
+    expect(keyOf(w, 'mnema.activeDecisionProposed')).toBe(false);
+  });
+
+  it('reads again each time it is opened: a decision that moved shows its new state', async () => {
+    const answers = sample();
+    const w = world(answers);
+    await settle();
+    await w.command('mnema.openDecision')(proposal);
+    expect(w.documents.get(`id=${PROPOSED_ID}`)?.text).toContain('- State: proposed');
+    answers[`show ${PROPOSED_ID} --json`] = movedTo('show-proposed', 'accepted');
+    await w.command('mnema.openDecision')(proposal);
+    expect(w.documents.get(`id=${PROPOSED_ID}`)?.text).toContain('- State: accepted');
+  });
+
+  it('reads again the documents that stay open at each reading of the record', async () => {
+    const answers = sample();
+    const w = world(answers);
+    await settle();
+    await w.command('mnema.openDecision')(proposal);
+    answers[`show ${PROPOSED_ID} --json`] = movedTo('show-proposed', 'accepted');
+    await w.command('mnema.refresh')();
+    await settle();
+    expect(w.documents.get(`id=${PROPOSED_ID}`)?.text).toContain('- State: accepted');
+    expect(keyOf(w, 'mnema.activeDecisionProposed')).toBe(false);
+  });
+
+  it('says whether the decision in front is proposed, for the buttons of the editor title', async () => {
+    const w = world(sample());
+    await settle();
+    await w.command('mnema.openDecision')(proposal);
+    expect(keyOf(w, 'mnema.activeDecisionProposed')).toBe(true);
+    w.focus(`id=${PROPOSED_ID}`);
+    expect(keyOf(w, 'mnema.activeDecisionProposed')).toBe(true);
+  });
+
+  it('shows the refusal of the command line when it cannot read the decision, and no field of one', async () => {
+    const answers = sample();
+    answers[`show ${PROPOSED_ID} --json`] = { code: 1, stdout: '', stderr: 'no such decision' };
+    const w = world(answers);
+    await settle();
+    await w.command('mnema.openDecision')(proposal);
+    const text = w.documents.get(`id=${PROPOSED_ID}`)?.text ?? '';
+    expect(text).toContain('mnema refused: no such decision');
+    expect(text).not.toContain('State');
+    expect(keyOf(w, 'mnema.activeDecisionProposed')).toBe(false);
+  });
+
+  it('takes the scope from what show said and never from the list', async () => {
+    const answers = sample();
+    answers[LIST] = ok(
+      JSON.stringify({
+        hits: [{ ...hit(PROPOSED_ID, 'Write migrations by hand'), scope: 'private' }],
+        total: 1,
+      }),
+    );
+    const w = world(answers);
+    await settle();
+    await w.command('mnema.openDecision')(proposal);
+    expect(w.documents.get(`id=${PROPOSED_ID}`)?.text).toContain('- Scope: public');
+    const noScope = JSON.parse(fixture('show-proposed')) as Record<string, unknown>;
+    delete noScope.scope;
+    answers[`show ${PROPOSED_ID} --json`] = ok(JSON.stringify(noScope));
+    await w.command('mnema.openDecision')(proposal);
+    expect(w.documents.get(`id=${PROPOSED_ID}`)?.text).not.toContain('Scope');
+  });
+
+  it('does not open in a folder with no record, and starts no process', async () => {
+    const w = world(sample(), undefined, folderWith(false));
+    await settle();
+    await w.command('mnema.openDecision')(proposal);
+    expect(w.opened).toEqual([]);
+    expect(w.ran).toEqual([]);
+    expect(w.shown).toContain(
+      'This folder holds no .mnema record. Run mnema init in a terminal here.',
+    );
+  });
+});
+
+describe('a decision is judged from the title of its editor, with a note the person sends', () => {
+  const accept = `decision move accept ${PROPOSED_ID} --note`;
+
+  /** The address of the decision in front, as the title buttons hand it to the command. */
+  async function opened(answers: Record<string, CliResult>) {
+    const w = world(answers);
+    await settle();
+    await w.command('mnema.openDecision')(proposal);
+    return { w, uri: w.active() };
+  }
+
+  it('accepts with the note typed, one decision, by the verb of the command line', async () => {
+    const { w, uri } = await opened({
+      ...sample(),
+      [`${accept} It fits the review process`]: ok(`Decision ADR-2 (${PROPOSED_ID}) → accepted\n`),
+    });
+    w.setReply('It fits the review process');
+    await w.command('mnema.accept')(uri);
+    expect(w.ran).toContainEqual([
+      'decision',
+      'move',
+      'accept',
+      PROPOSED_ID,
+      '--note',
+      'It fits the review process',
+    ]);
+    expect(w.shown).toContain('ADR-2 accepted.');
+    expect(w.inputs.at(-1)?.title).toBe('Accept ADR-2');
+    expect(w.inputs.at(-1)?.prompt).toBe(
+      '"Write migrations by hand". Enter keeps the stamp, or type a reason. The note is recorded with the verdict.',
+    );
+    expect(w.inputs.at(-1)?.placeHolder).toBe('Why? Required.');
+  });
+
+  it('rejects with the note typed, from the same buttons', async () => {
+    const { w, uri } = await opened(sample());
+    w.setReply('Conflicts with the review process');
+    await w.command('mnema.reject')(uri);
+    expect(w.ran).toContainEqual([
+      'decision',
+      'move',
+      'reject',
+      PROPOSED_ID,
+      '--note',
+      'Conflicts with the review process',
+    ]);
+    expect(w.inputs.at(-1)?.title).toBe('Reject ADR-2');
+  });
+
+  it('sends nothing when the note is empty, only spaces, or the box is cancelled', async () => {
+    const { w, uri } = await opened(sample());
+    for (const reply of ['', '   ', undefined]) {
+      w.setReply(reply);
+      await w.command('mnema.reject')(uri);
+      await w.command('mnema.accept')(uri);
+    }
+    expect(w.ran.some((args) => args[0] === 'decision')).toBe(false);
+  });
+
+  it('offers a true stamp on an accept, kept as it stands when the person only presses Enter', async () => {
+    vi.setSystemTime(new Date(2026, 9, 27, 10, 30));
+    const { w, uri } = await opened({
+      ...sample(),
+      [`${accept} ${STAMP}`]: ok('Decision ADR-2 (x) → accepted'),
+    });
+    w.setReply(ENTER);
+    await w.command('mnema.accept')(uri);
+    expect(w.inputs.at(-1)?.value).toBe(STAMP);
+    expect(w.inputs.at(-1)?.valueSelection).toEqual([0, STAMP.length]);
+    expect(w.ran).toContainEqual(['decision', 'move', 'accept', PROPOSED_ID, '--note', STAMP]);
+  });
+
+  it('sends the reason the person typed in place of the stamp', async () => {
+    vi.setSystemTime(new Date(2026, 9, 27, 10, 30));
+    const { w, uri } = await opened(sample());
+    w.setReply('Hand-written migrations are reviewed line by line');
+    await w.command('mnema.accept')(uri);
+    expect(w.ran).toContainEqual([
+      'decision',
+      'move',
+      'accept',
+      PROPOSED_ID,
+      '--note',
+      'Hand-written migrations are reviewed line by line',
+    ]);
+    expect(w.ran.flat()).not.toContain(STAMP);
+  });
+
+  it('offers no stamp on a reject: the box is empty and the reason has to be typed', async () => {
+    const { w, uri } = await opened(sample());
+    w.setReply(ENTER);
+    await w.command('mnema.reject')(uri);
+    expect(w.inputs.at(-1)?.value).toBeUndefined();
+    expect(w.inputs.at(-1)?.valueSelection).toBeUndefined();
+    expect(w.inputs.at(-1)?.validate('')).toBeDefined();
+    expect(w.inputs.at(-1)?.validate(STAMP)).toBeUndefined();
+    expect(w.ran.some((args) => args[0] === 'decision')).toBe(false);
+  });
+
+  it('never copies what the record says into the stamp: neither its justification nor its title', async () => {
+    vi.setSystemTime(new Date(2026, 9, 27, 10, 30));
+    const { w, uri } = await opened(sample());
+    w.setReply(ENTER);
+    await w.command('mnema.accept')(uri);
+    await w.command('mnema.accept')(proposal);
+    for (const input of w.inputs) {
+      expect(input.value, input.title).toBe(STAMP);
+      expect(input.value, input.title).not.toContain('ORM');
+      expect(input.value, input.title).not.toContain('migrations');
+    }
+    const notes = w.ran.filter((args) => args[0] === 'decision').map((args) => args[5]);
+    expect(notes).toEqual([STAMP, STAMP]);
+  });
+
+  it('judges one decision per act: every `decision move` has exactly one id', async () => {
+    const { w, uri } = await opened(sample());
+    w.setReply('a reason');
+    await w.command('mnema.accept')(uri);
+    await w.command('mnema.reject')(proposal);
+    const moves = w.ran.filter((args) => args[0] === 'decision');
+    expect(moves).toHaveLength(2);
+    for (const args of moves) {
+      expect(args).toHaveLength(6);
+      expect(args.slice(0, 2)).toEqual(['decision', 'move']);
+      expect(args[3]).toBe(PROPOSED_ID);
+    }
+  });
+
+  it('builds `decision move` in one place only: judgeArgs', () => {
+    const dir = new URL('.', import.meta.url);
+    const holders = readdirSync(dir).filter(
+      (name) =>
+        name.endsWith('.ts') &&
+        !name.endsWith('.test.ts') &&
+        /'decision',\s*'move'/.test(readFileSync(new URL(name, dir), 'utf8')),
+    );
+    expect(holders).toEqual(['proposed.ts']);
+    const source = readFileSync(new URL('./extension.ts', import.meta.url), 'utf8');
+    expect(source.match(/judgeArgs\(/g)).toHaveLength(1);
+  });
+
+  it('shows what the command line refused, and never says accepted when it did not', async () => {
+    const { w, uri } = await opened({
+      ...sample(),
+      [`${accept} n`]: { code: 1, stdout: '', stderr: 'Decision is not proposed.' },
+    });
+    w.setReply('n');
+    await w.command('mnema.accept')(uri);
+    expect(w.errors).toEqual(['mnema refused: Decision is not proposed.']);
+    expect(w.shown.join('\n')).not.toMatch(/accepted/);
+  });
+
+  it('shows a line it does not recognize as it came', async () => {
+    const { w, uri } = await opened({ ...sample(), [`${accept} n`]: ok('Recorded. Done.\n') });
+    w.setReply('n');
+    await w.command('mnema.accept')(uri);
+    expect(w.shown).toContain('Recorded. Done.');
+  });
+
+  it('puts the buttons on the title of the editor of a decision, only while it is proposed', () => {
+    const manifest = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as {
+      contributes: { menus: Record<string, { command: string; when: string; group: string }[]> };
+    };
+    const title = manifest.contributes.menus['editor/title'] ?? [];
+    expect(title.map((item) => [item.command, item.group])).toEqual([
+      ['mnema.accept', 'navigation@1'],
+      ['mnema.reject', 'navigation@2'],
+    ]);
+    for (const item of title) {
+      expect(item.when).toBe('resourceScheme == mnema-decision && mnema.activeDecisionProposed');
+    }
+  });
+});
+
+describe('every item of the views carries an icon for its state and a spoken name', () => {
+  /** Icons that read as a verdict: an item that awaits one, or departs, must never wear them. */
+  const VERDICT = /^(check|pass|pass-filled|verified|verified-filled|workspace-trusted|shield)$/;
+  const icon = (node: Record<string, unknown>) =>
+    node.iconPath as { id: string; color?: { id: string } };
+  const READY = {
+    name: 'hello-stack',
+    scope: 'public',
+    version: '1.0.0',
+    digest: 'a'.repeat(64),
+    files: 5,
+    changed: 0,
+    hooks: 0,
+    hooksOn: 0,
+    sound: true,
+  };
+
+  it('marks a proposal with a neutral icon and says it awaits a judgment', async () => {
+    const w = world(sample());
+    await settle();
+    const [item] = w.tree().getChildren();
+    const node = w.tree().getTreeItem(item as never);
+    expect(icon(node).id).toBe('circle-outline');
+    expect(icon(node).id).not.toMatch(VERDICT);
+    expect(node.accessibilityInformation).toEqual({
+      label: 'ADR-2, Write migrations by hand, awaits a judgment',
+    });
+  });
+
+  it('shows a short tooltip: the title, the ADR and the start of why', async () => {
+    const w = world(sample());
+    await settle();
+    const [item] = w.tree().getChildren();
+    expect(w.tree().getTreeItem(item as never).tooltip).toBe(
+      "ADR-2: Write migrations by hand\n\nThe ORM's generator drifts from what we review.",
+    );
+  });
+
+  it('marks a stack by what the command line reported, and no state icon is a verdict', async () => {
+    const departs = { ...READY, name: 'drifted', sound: false, changed: 2 };
+    const refused = { name: 'broken', scope: 'private', refused: 'digest differs', sound: false };
+    const w = world({
+      ...sample(),
+      [STACK_LIST]: ok(JSON.stringify({ stacks: [READY, departs, refused] })),
+    });
+    await settle();
+    const nodes = w
+      .stackTree()
+      .getChildren()
+      .map((stack) => w.stackTree().getTreeItem(stack));
+    expect(nodes.map((n) => [icon(n).id, icon(n).color?.id])).toEqual([
+      ['package', undefined],
+      ['warning', 'list.warningForeground'],
+      ['error', 'list.errorForeground'],
+    ]);
+    for (const node of nodes) expect(icon(node).id).not.toMatch(VERDICT);
+    expect(nodes.map((n) => (n.accessibilityInformation as { label: string }).label)).toEqual([
+      'hello-stack, public, sound',
+      'drifted, public, departs from what was written',
+      'broken, private, receipt refused',
+    ]);
+    // The colour is never the only sign: the text beside the icon says the state too.
+    expect(nodes.map((n) => n.description)).toEqual([
+      '1.0.0 · public · sound',
+      '1.0.0 · public · DEPARTS',
+      'private · receipt refused',
+    ]);
+  });
+
+  it('puts a codicon before each scope when asking where to install, and sends the bare name', async () => {
+    const w = world(sample());
+    await settle();
+    w.setReply('./my-stack');
+    w.picks.push('private');
+    w.choose(undefined);
+    await w.command('mnema.stacks.add')();
+    expect(w.picked.at(-1)).toEqual(['$(repo) public', '$(lock) private', '$(home) global']);
+    expect(w.pickOptions.at(-1)?.title).toBe('Add Stack');
+    expect(w.ran).toContainEqual(['stack', 'add', './my-stack', '--scope', 'private', '--dry-run']);
   });
 });
 
