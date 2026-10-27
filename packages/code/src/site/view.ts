@@ -14,8 +14,9 @@
  * EVERY NODE THAT SHOWS A FIELD OF THE MODEL CARRIES `data-field="<name>"`. The check compares each
  * one it finds in the page, so a node the page gained with a name this file does not make is itself a
  * difference, and so is one it lost. Besides the text, a field node's `href`, `aria-label` and
- * `data-state` are compared ({@link FIELD_ATTRIBUTES}): a link the page points elsewhere is a lie
- * the text alone does not tell. The attributes the filters read (`data-state`, `data-force`,
+ * `data-state`, `class` and `id` are compared ({@link FIELD_ATTRIBUTES}): a link the page points
+ * elsewhere, an anchor it drops or a class the filters read it changes are lies the text alone does
+ * not tell. The attributes the filters read (`data-state`, `data-force`,
  * `data-date`, `data-who`, `data-by` of a card) and the ids the links go to are the root's, and the
  * root's attributes are compared as well.
  *
@@ -51,7 +52,7 @@ export interface VNode {
 export type VKid = VNode | string;
 
 /** What a field node is compared by besides its text. */
-export const FIELD_ATTRIBUTES = ['href', 'aria-label', 'data-state'] as const;
+export const FIELD_ATTRIBUTES = ['href', 'aria-label', 'data-state', 'class', 'id'] as const;
 
 function h(tag: string, attrs: Record<string, string>, ...kids: (VKid | readonly VKid[])[]): VNode {
   return { tag, attrs, kids: kids.flat() };
@@ -168,7 +169,7 @@ function decisionView(
     h(
       'h3',
       {},
-      d.adrIsUnique ? h('span', { id: d.adr }) : [],
+      d.adrIsUnique ? h('span', { id: d.adr, 'data-field': 'anchor' }) : [],
       h('span', { 'data-field': 'adr' }, line(d.adr)),
       ' · ',
       h('span', { 'data-field': 'title' }, line(d.title)),

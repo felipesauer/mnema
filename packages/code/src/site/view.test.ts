@@ -91,6 +91,7 @@ describe('a decision card', () => {
       f.of === undefined ? f.name : `${f.name}@${f.of}`,
     );
     expect(fields).toEqual([
+      'anchor',
       'adr',
       'title',
       'state',
@@ -131,13 +132,23 @@ describe('a decision card', () => {
     ]);
   });
 
-  it('carries the claims a link and a state make as attributes of their field', () => {
+  it('carries the claims a link, an anchor, a class and a state make as attributes of their field', () => {
     const claims = fieldsOf(card as NonNullable<typeof card>)
       .filter((f) => Object.keys(f.attrs).length > 0)
       .map((f) => [f.name, f.attrs]);
     expect(claims).toEqual([
-      ['state', { 'data-state': 'accepted' }],
-      ['permalink', { href: '#ADR-1', 'aria-label': 'Permanent link to ADR-1' }],
+      ['anchor', { id: 'ADR-1' }],
+      ['state', { class: 'state', 'data-state': 'accepted' }],
+      [
+        'permalink',
+        { class: 'permalink', href: '#ADR-1', 'aria-label': 'Permanent link to ADR-1' },
+      ],
+      ['recorded-by', { class: 'badge' }],
+      ['accepted-by', { class: 'badge' }],
+      ['address-rel', { class: 'rel' }],
+      ['address-target', { class: 'target' }],
+      ['move-by', { class: 'badge' }],
+      ['note-by', { class: 'badge' }],
     ]);
   });
 });

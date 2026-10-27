@@ -357,6 +357,33 @@ describe('a server that lies about a list', () => {
       /^ADR-3: the page has a field named "invented" that the events do not give$/,
     ],
     [
+      '(p) the anchor of a card taken off, which no text shows',
+      (html) =>
+        withCard(html, 'ADR-3', (card) =>
+          swapped(
+            card,
+            '<span id="ADR-3" data-field="anchor"></span>',
+            '<span data-field="anchor"></span>',
+          ),
+        ),
+      /^ADR-3 \(anchor\): its attribute id says nothing; the events say "ADR-3"$/,
+    ],
+    [
+      '(q) the class that marks an address, which the path filter reads',
+      (html) =>
+        swapped(
+          html,
+          '<code class="target" data-field="address-target">',
+          '<code class="elsewhere" data-field="address-target">',
+        ),
+      /^ADR-1 \(address-target\): its attribute class says "elsewhere"; the events say "target"$/,
+    ],
+    [
+      '(r) an entry of the timeline hidden by the server',
+      (html) => swapped(html, '<li class="entry" data-kind', '<li class="entry" hidden data-kind'),
+      /^timeline entry 1: the page hides it$/,
+    ],
+    [
       '(l) an "open" link pointed at another card',
       (html) =>
         swapped(

@@ -12,7 +12,8 @@
  *   - every `[data-field]` node of each decision card, note, timeline entry and tail summary: its
  *     name, its text and the attributes that carry a claim (`href`, `aria-label`, `data-state`). A
  *     node whose name the events do not give is a difference, and so is one the page lost;
- *   - the root of each of those items: its `id`, its `class` and the `data-*` the filters read;
+ *   - the root of each of those items: its `id`, its `class` and the `data-*` the filters read, and
+ *     that the page does not hide an entry, a note apart or a tail (only the filters hide a card);
  *   - the whole text of each item, with white space collapsed: a sentence put in or taken out of a
  *     card outside any field shows here and nowhere else;
  *   - the ids the page has and the events do not give, and the other way round, their order, the
@@ -132,8 +133,10 @@ function compareContent(label: string, el: El, node: VNode, out: string[]): void
 /** The most differences one item names; a card that is something else altogether would name dozens. */
 const MOST_PER_ITEM = 4;
 
-function compareItem(label: string, el: El, node: VNode, out: string[]): void {
+function compareItem(label: string, el: El, node: VNode, out: string[], mayBeHidden = false): void {
   const mine: string[] = [];
+  // Nothing but the filters hides a card; an entry, a note apart or a tail that the page hides is hidden by the server.
+  if (!mayBeHidden && el.hidden === true) mine.push(`${label}: the page hides it`);
   compareAttributes(label, el, node, mine);
   compareContent(label, el, node, mine);
   out.push(...mine.slice(0, MOST_PER_ITEM));
@@ -195,7 +198,7 @@ export function checkLists(page: Doc, derived: Derived): string[] {
     adrOf,
     out,
   )) {
-    compareItem(item.label, el, item.node, out);
+    compareItem(item.label, el, item.node, out, true);
   }
 
   const apart = page.getElementById('other-notes');
@@ -230,6 +233,7 @@ export function checkLists(page: Doc, derived: Derived): string[] {
     out,
   )) {
     compareAttributes(item.label, el, item.node, out);
+    if (el.hidden === true) out.push(`${item.label}: the page hides it`);
     const summary = Array.from(el.querySelectorAll('summary'))[0];
     const wanted = item.node.kids[0];
     if (summary === undefined) out.push(`${item.label}: its summary is missing from the page`);

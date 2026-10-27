@@ -160,10 +160,10 @@ describe('mnema site', () => {
     const page = pageOf(out);
     expect(page).toContain('Keep money in integer cents');
     expect(page).toMatch(
-      /class="card decision in-force"[^>]*><h3><span id="ADR-1"><\/span><span data-field="adr">ADR-1<\/span> · <span data-field="title">Keep money in integer cents/,
+      /class="card decision in-force"[^>]*><h3><span id="ADR-1" data-field="anchor"><\/span><span data-field="adr">ADR-1<\/span> · <span data-field="title">Keep money in integer cents/,
     );
     expect(page).toMatch(
-      /class="card decision not-in-force"[^>]*><h3><span id="ADR-2"><\/span><span data-field="adr">ADR-2<\/span> · <span data-field="title">Store dates as local time/,
+      /class="card decision not-in-force"[^>]*><h3><span id="ADR-2" data-field="anchor"><\/span><span data-field="adr">ADR-2<\/span> · <span data-field="title">Store dates as local time/,
     );
     expect(page).not.toContain('type="checkbox"');
     expect(page).toContain('agreed in review');

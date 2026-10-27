@@ -236,7 +236,9 @@ describe('the page', () => {
         false,
       );
     }
-    expect(page).toContain(`<h3><span id="ADR-1"></span><span data-field="adr">ADR-1</span> · `);
+    expect(page).toContain(
+      `<h3><span id="ADR-1" data-field="anchor"></span><span data-field="adr">ADR-1</span> · `,
+    );
     expect(page).toContain(`<code class="target" data-field="address-target">${shown}</code>`);
     expect(page).toContain(
       `<code data-field="note-retracted-who">${shown}</code> <span class="badge" data-field="note-retracted-by">agent ${shown}</span>`,
