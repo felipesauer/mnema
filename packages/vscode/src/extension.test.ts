@@ -722,6 +722,7 @@ describe('what awaits a judgment is a number on the side bar icon', () => {
     answers[LIST] = { code: 1, stdout: '', stderr: 'boom' };
     await w.command('mnema.refresh')();
     expect(w.badge()).toBeUndefined();
+    expect(w.bar.text).toBe('$(book) fully-signed');
     expect(w.tree().getChildren()).toEqual([]);
     expect(w.executed.filter((e) => e[1] === 'mnema.proposedRead').map((e) => e[2])).toEqual([
       true,
