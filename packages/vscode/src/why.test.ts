@@ -19,7 +19,7 @@ describe('the document of mnema why', () => {
     }
     expect(WHY_SCHEME).toBe('mnema-why');
     expect(pathOfQuery('path=a')).toBeUndefined();
-    expect(pathOfQuery('path=%E0%A4%A&at=1')).toBeUndefined();
+    expect(pathOfQuery('path=%ZZ&at=1')).toBeUndefined();
     expect(pathOfQuery('')).toBeUndefined();
   });
 
