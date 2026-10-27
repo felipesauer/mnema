@@ -446,8 +446,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the entry on a rule addressed at a directory, and in the known limits of the entry on the rules a project inherits, as a reader that does not read them; its `--help` hands the --host it needs',
   },
   'CHANGELOG.md: mnema show': {
-    times: 1,
-    why: 'the read named in the known limits of the entry on the rules a project inherits, as one that does not list the addresses the origin holds; the reference hands it over with the id',
+    times: 2,
+    why: 'the read named in the known limits of the entry on the rules a project inherits, as one that does not list the addresses the origin holds, and in the entry on the VS Code extension that no longer asks it for each proposal; the reference hands it over with the id',
   },
   'CHANGELOG.md: mnema stack add': {
     times: 1,
@@ -510,12 +510,12 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the hook named in the entry that says it reads the agent from the environment, the flag winning, and in the one on the rules a project inherits; the package page hands the whole line over, with its host',
   },
   'CHANGELOG.md: mnema rules': {
-    times: 2,
-    why: 'the verb named twice in the entry on the rules a project inherits, as a reader of the rules over a path; the reference hands it over with the path',
+    times: 3,
+    why: 'the verb named twice in the entry on the rules a project inherits, as a reader of the rules over a path, and once in the entry on the VS Code extension that puts the path after the double dash; the reference hands it over with the path',
   },
   'CHANGELOG.md: mnema why': {
-    times: 1,
-    why: 'the verb named in the entry on the rules a project inherits, beside `rules`; the reference hands it over with a path or a commit',
+    times: 2,
+    why: 'the verb named in the entry on the rules a project inherits, beside `rules`, and in the entry on the VS Code extension that shows what it printed in a document; the reference hands it over with a path or a commit',
   },
   'docs/cli-reference.md: mnema before-a-write': {
     times: 1,
@@ -530,8 +530,16 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the list item on a record that inherits another, as a reader of the rules over a path; the reference hands it over with the path',
   },
   'docs/features.md: mnema why': {
+    times: 2,
+    why: 'the verb named beside `rules` in the list item on a record that inherits another, and in the item on the VS Code extension that shows what it printed in a document; the reference hands it over with a path or a commit',
+  },
+  'docs/packages.md: mnema why': {
     times: 1,
-    why: 'the verb named beside `rules` in the list item on a record that inherits another; the reference hands it over with a path or a commit',
+    why: 'the verb named in the row of the VS Code extension, as the document it opens for a file; the reference hands it over with a path or a commit',
+  },
+  'plugin/captures/vscode-extension-script.md: mnema why': {
+    times: 1,
+    why: 'the verb named in the case that reads the document the extension opens for a file, as what it printed; the reference hands it over with a path or a commit',
   },
   'packages/code/README.md: mnema inherit set': {
     times: 1,
@@ -618,8 +626,12 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'names the read a person uses, in the sentence about what nothing records',
   },
   'packages/vscode/README.md: mnema show': {
+    times: 2,
+    why: 'names the read whose answer a decision document holds, in the sentence about when it was read, and the read no longer run for each proposal, in the sentence about what the item tooltip holds',
+  },
+  'packages/vscode/README.md: mnema why': {
     times: 1,
-    why: 'names the read whose answer a decision document holds, in the sentence about when it was read',
+    why: 'names the verb whose output the document of a file holds, in the sentence about what it printed; the reference hands it over with a path or a commit',
   },
 };
 
@@ -703,19 +715,19 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 57, name: 121, flag: 4 },
+  'CHANGELOG.md': { line: 64, name: 127, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
   'docs/convergence.md': { line: 4, name: 4 },
   'docs/evidence.md': { line: 1, flag: 1 },
-  'docs/features.md': { line: 10, name: 15 },
+  'docs/features.md': { line: 10, name: 16 },
   'docs/first-record.md': { line: 2, name: 7 },
   'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 2 },
   'docs/install.md': { line: 4, name: 8 },
-  'docs/packages.md': { line: 1, name: 2 },
+  'docs/packages.md': { line: 2, name: 3 },
   'docs/site.md': { line: 3, name: 7 },
   'docs/switches.md': { line: 20, name: 4 },
   'docs/verify-without-installing.md': { name: 1 },
@@ -816,15 +828,16 @@ export const HANDED_OVER: Readonly<
   'packages/sdk/README.md': { line: 2, name: 4 },
   'packages/stacks/README.md': { line: 1, name: 2 },
   'packages/vscode/CHANGELOG.md': { name: 1 },
-  'packages/vscode/README.md': { line: 15, name: 19 },
+  'packages/vscode/README.md': { line: 20, name: 24 },
   'packages/vscode/media/walkthrough/verify.md': { name: 1 },
   'packages/vscode/src/decision.ts': { line: 1 },
   'packages/vscode/src/stacks.ts': { line: 1 },
+  'packages/vscode/src/why.ts': { line: 1 },
   'plugin/README.md': { line: 38, name: 26, flag: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },
   'plugin/captures/cursor-ide-script.md': { line: 4, name: 2 },
   'plugin/captures/cursor-script.md': { line: 3, name: 3 },
-  'plugin/captures/vscode-extension-script.md': { name: 4 },
+  'plugin/captures/vscode-extension-script.md': { name: 5 },
   'plugin/gemini/GEMINI.md': { line: 1 },
   'plugin/gemini/hooks/mnema.mjs': { line: 1, name: 2 },
   'plugin/hooks/edit-asks-a-person.mjs': { name: 1 },

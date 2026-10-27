@@ -1,0 +1,33 @@
+{
+  "resume": {
+    "actor": "mnid:48a6169bf8a8f21f372e0c4713b6a1d63a53b7d13361bbdcdffea272bf14a6f0",
+    "lastRun": null,
+    "focus": {
+      "openRuns": []
+    }
+  },
+  "work": [],
+  "workTotal": 0,
+  "skills": [],
+  "decisions": [],
+  "decisionsTotal": 0,
+  "awaitingJudgement": [
+    {
+      "kind": "decision",
+      "id": "01a17f27-1da9-7000-94f6-889fba6b638b",
+      "adr": "ADR-2",
+      "title": "Keep the CLI free of a daemon",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:57:12.396Z"
+    },
+    {
+      "kind": "decision",
+      "id": "01a17f27-1bc4-7000-a9aa-6fdc4cf4842d",
+      "adr": "ADR-1",
+      "title": "Use SQLite for the cache",
+      "state": "proposed",
+      "updatedAt": "2026-10-27T20:57:11.931Z"
+    }
+  ],
+  "awaitingJudgementTotal": 2
+}

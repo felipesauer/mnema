@@ -24,6 +24,18 @@ with its own changelog.
   a test of the main suite; the control must never arrive. The cases run in each host's job, on the pinned version on every
   pull request and on the newest every week.
 
+- **The VS Code extension has a "What To Do" pick, a "Why Is This File Like This?" command and a mark on the `.mnema` folder.**
+  `mnema: What To Do` (the Command Palette, the `...` menu of the awaiting view, a link in the status bar's tooltip) is a quick pick
+  made of one `mnema status --json` read when it opens: a line per decision awaiting a judgment, in the order `mnema` gave, each
+  opening that decision whole, and a line `N more await a judgment` when `mnema` counted more than it listed (it serves 20, and its
+  count also holds skills and tasks); with no record it offers a terminal, with no command it offers the setting, and it has no line
+  that judges and recommends nothing. `mnema: Why Is This File Like This?` (the Explorer's and the editor's context menu, the
+  palette), over a file of the open folder, runs `mnema why -- <path>` and shows what it printed in a read-only document under a
+  header that says what was asked and when. In the Explorer the `.mnema` folder wears the badge `M` and the accent of the front page
+  (the colour `mnema.recordFolder`, which a theme can override) with a tooltip that says what the folder is; no file is marked,
+  because the command line does not list the addresses its rules cover and an unmarked file would look as if no rule reached it. The
+  mark is a comparison of two paths: it starts no process. The check in a real editor opens the why document over a committed file.
+
 - **`mnema site` writes under the record by default, and git leaves it out.** With no `--out` the page is written to
   `.mnema/site/index.html` (the folder is the record's own, found by discovery, even from a folder below the project), and
   the record's `.gitignore` gains `/site/`: a new record has it, an older one is given the line when `mnema site` or
@@ -107,6 +119,20 @@ with its own changelog.
 
 ### Changed
 
+- **The VS Code extension starts far fewer `mnema` processes per reading.** The decisions awaiting a judgment come from one
+  `mnema status --json` (with the `ADR-n` of each), and `mnema search` is asked too only when `status` served fewer than it counted,
+  so the view still lists up to 200; the one `mnema show` per new proposal is gone, and with it the justification in an item's
+  tooltip (which is now the ADR and the title: the whole text is in the document a click opens). `mnema --version` is asked at the
+  start, on Refresh, when `mnema.command` changes, and in the reading in which a call came back with no exit code (which is how a
+  command that vanished mid-session is told), no longer at each change of the record. `mnema verify`, `mnema verify --json` and
+  `mnema switch` run at the start, on Refresh and after an act of the person's, and after a change of the record at most once in
+  ten seconds with a last run at the end of a burst, so the bar is at most about ten seconds behind the record and its tooltip says
+  when it read; they are not run while the item is switched off. `mnema stack list --json` runs only while the Stacks view is on
+  screen, or on Refresh. Measured against a recorder in place of the command line: 8 processes to start with two proposals became
+  5 (6 with the Stacks view shown), a change of the record 6 became 1, and twenty changes 1.6 seconds apart 120 became 32. The badge
+  and the bar count decisions (what `status` also counts, skills and tasks, is not a decision to judge here, and What To Do says
+  it exists). The path of `mnema rules` and `mnema why` goes after `--` (`mnema rules --json -- <path>`), so a file named `-x`
+  gets its lens: before, the path came first and `mnema` read a file named `-x` as an option it does not have, so that file never had one.
 - **The page `mnema site` writes reads like a page.** Each decision is a card (state, reasons, what was turned down, who
   recorded and who accepted it, supersedes and superseded-by as links, the history, the paths it is addressed at), with an
   anchor by its number (`#ADR-12`, only where no other decision on the page carries it) and a permanent link, and under it the

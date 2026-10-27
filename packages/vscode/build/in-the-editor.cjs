@@ -121,6 +121,12 @@ exports.run = async () => {
       );
     }
     const lines = asked();
+    // What it cost to settle, written to the log of the run: the processes started until the bar and the badge were read.
+    console.log(`record: ${lines.length} mnema processes until settled: ${JSON.stringify(lines)}`);
+    const colors = extension.packageJSON.contributes.colors ?? [];
+    if (colors.length !== 1 || !/^mnema\.recordFolder$/.test(colors[0].id)) {
+      throw new Error('the installed manifest does not declare the colour of the record folder');
+    }
     for (const wanted of ['--version', 'verify --json', 'verify']) {
       if (!lines.includes(wanted)) {
         throw new Error(`mnema was never asked "${wanted}": ${JSON.stringify(lines)}`);
@@ -163,6 +169,21 @@ exports.run = async () => {
     }
     if (!asked().includes(`show ${decision} --json`)) {
       throw new Error(`mnema was never asked to show the decision: ${JSON.stringify(asked())}`);
+    }
+    // Why a file is the way it is opens as a document of its own: the words of the command line.
+    const why = byTitle('Why Is This File Like This?');
+    if (why === undefined) throw new Error('the installed manifest has no why command');
+    require('node:fs').writeFileSync(process.env.MNEMA_CHECK_LOG, '');
+    const file = vscode.Uri.file(join(vscode.workspace.workspaceFolders[0].uri.fsPath, 'src', 'a.ts'));
+    await vscode.commands.executeCommand(why, file);
+    const explained = await until('the why document to open', () =>
+      vscode.workspace.textDocuments.find((d) => d.uri.scheme === 'mnema-why'),
+    );
+    if (!explained.getText().includes('rules in force that address this path')) {
+      throw new Error(`the why document does not carry what mnema said: ${JSON.stringify(explained.getText())}`);
+    }
+    if (!asked().includes('why -- src/a.ts')) {
+      throw new Error(`mnema was never asked why: ${JSON.stringify(asked())}`);
     }
   } else {
     throw new Error(`unknown scenario ${scenario}`);
