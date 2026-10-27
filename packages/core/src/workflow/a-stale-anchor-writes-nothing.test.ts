@@ -524,7 +524,13 @@ describe('a checkout the key left writes nothing, through every write of the sur
     expect([...driven, ...Object.keys(APPENDS_NOTHING)].sort()).toEqual(exported);
   });
 
-  it('refuses each one and appends nothing, and the member it did not leave writes the same call', () => {
+  // Every write the surface exports is driven twice here, once refused and once as the control,
+  // each a signed append in a root of its own: 3.0 s alone on a machine at load 23, 5.6 s at 16 workers.
+  const EVERY_WRITE_TWICE = 30_000;
+
+  it('refuses each one and appends nothing, and the member it did not leave writes the same call', {
+    timeout: EVERY_WRITE_TWICE,
+  }, () => {
     const shape = aCheckoutTheKeyLeft();
     // The trap is really there: the recorded identity does not count the key any more.
     expect(shape.left.writer.anchor).toBe(shape.anchor);

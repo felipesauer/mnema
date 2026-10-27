@@ -86,7 +86,7 @@ _mnema_flags() {
     'check') echo '-h --help -V --version --color' ;;
     'check declare') echo '--which -h --help -V --version --color' ;;
     'check run') echo '--key --timeout -h --help -V --version --color' ;;
-    'site') echo '--out -h --help -V --version --color' ;;
+    'site') echo '--out --back-link -h --help -V --version --color' ;;
     'search') echo '--kind --scope --state --from --to --limit --json -h --help -V --version --color' ;;
     'show') echo '--json -h --help -V --version --color' ;;
     'timeline') echo '--json -h --help -V --version --color' ;;

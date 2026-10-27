@@ -10,9 +10,37 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **A site on GitHub Pages, built from the pages that already exist.** `site/` is a Starlight site in a tree of its own, with
+  its own lockfile and pinned versions, outside the workspace and outside every published package. It holds no page of
+  its own: the build copies the pages of `docs/` (title moved to the frontmatter, relative links sent to the site's page
+  or to the file on GitHub at the commit) and the landing is made of the README's Why, Quick start, What it is not and
+  What it proves sections and of the description of `@mnema/code`. The sidebar is the README's own Docs groups. The
+  accent, the pictures and the favicon are read from `accent.mjs`, `docs/assets/` and the icon the extension draws; no
+  colour or picture is written in `site/`. `/record/` is what `mnema site` writes of the committed record, from the binary
+  built at the same commit, and the build stops when `mnema verify` does not pass. The footer names the version and the
+  commit the site was built from, and `llms.txt` and `robots.txt` are generated beside the sitemap. Two cases hold the
+  built site to its sources: no link goes nowhere, no sentence, colour or picture is the site's own, the footer is the
+  checkout's version and commit, and `/record/` is byte for byte the page the command writes with `--back-link`. The
+  sentence that the pages describe the next version is true on GitHub and npm and false on the site, which describes the
+  published version: the source wraps it in `<!-- not-on-the-site -->` lines, the build takes out that stretch and nothing
+  else, a marker that does not pair stops the build, and the built site is held not to say it.
+- **A `Site` workflow.** On a pull request that touches what the site is made of it builds the site and runs those two cases
+  (it is not a required check, and the path filter is inside the job). After a release it builds the commit the release tagged
+  and deploys it to GitHub Pages from a job that holds `pages: write` and `id-token: write` and no secret; the site
+  describes the published version, and a deploy that fails touches no publication. `site/` has a weekly Dependabot entry and
+  is read by the advisory scan beside the workspace lockfile.
+- **`--back-link` on `mnema site`.** Puts one link back to the address at the top of the page it writes, for a page that
+  sits inside a site, labelled "Back" (the label is fixed): an `http://` or `https://` address, or a path on the same site,
+  with the address escaped. A protocol-relative `//host`, a backslash, an `https:` with no `//`, any other scheme
+  (`javascript:`, `data:`) and an address with white space are refused before anything is written. Without the option the page is byte for
+  byte the one the command wrote before. The site's `/record/` is built with it, pointing at the site's root.
+
 ### Fixed
 
 - **The host contract holds the Copilot CLI 1.0.104.** The weekly run against the newest Copilot CLI failed on the weight of the 27 definitions: from 1.0.103 the host marks each one `defer_loading` (21 bytes each) and drops a `cache_control` from one, so they weigh 51,540 bytes and 11,942 tokens instead of 51,010 and 11,762. The pinned version is now 1.0.104 and the figure on the evidence page is the new one.
+- **The check of the links after a merge no longer accuses a page the server did not answer for.** An address that ended on HTTP 408, 502, 503 or 504 after three attempts was counted as broken, as five badges were once when the badge host timed out; it is now listed as unreachable and opens no issue, like a rate limit (429) or no answer at all. A 404, a 410 or a 500 still count as broken.
 - **A note is the identity that wrote it first, in every reader.** The read and the write took a note's author from its LAST
   writing in the merged order, and `mnema verify` and the second reader from its last writing in the order of the tail ids. A
   key of another identity that wrote the same id again with a later clock took the note: its content and its author were
@@ -31,6 +59,10 @@ with its own changelog.
 ### Changed
 
 - **The VS Code extension's icon is the banner's M.** It was a cube; it is now the first letter of the console's wordmark, in the banner's accent and block style on its dark page, in a rounded square with a thin lilac border, with the same letter behind it in a darker lilac, shifted down and to the right, as a solid shadow. It is drawn from the rows the console draws (`THE_BLOCKS`), so the icon and the banner cannot drift apart. It reaches the stores with the next published version.
+
+### Security
+
+- **`@azure/msal-node` is lifted to 7.1 by an override, closing GHSA-xcx6-jx8p-x3h5.** It reached the tree only through the VS Code extension's packing tool (`@vscode/vsce` -> `@azure/identity`, which still asks for 6.x), a development dependency that no published package ships. The workspace and the release job's own tool folder now resolve it to 7.1.1, the extension still packs the same twelve files, and the advisory scan no longer ignores the advisory.
 
 ## [0.1.3] - 2026-10-26
 

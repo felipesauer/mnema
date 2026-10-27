@@ -60,7 +60,9 @@ CLI and the MCP tools behave identically, because they are the same call.
   page carries the record's files and runs the same verifier as `mnema verify` over them in
   the reader's browser, with no request and no key. Nothing from a private or machine-global
   tree is in it, and no script or style comes from elsewhere. What the verdict does and does
-  not prove is in the table below.
+  not prove is in the table below. `--back-link <url>` puts one link, labelled "Back", to that
+  address (an `http(s)://` address or a path on the same site) at the top of the page, for a page that sits inside a site;
+  without it the page is the same bytes, and a `//host`, a backslash, an `https:` with no `//` or any other scheme is refused.
 - **A brief an agent reads without being asked**: `mnema brief` prints the
   decisions in force and the adopted patterns as markdown, which the plugin below hands to
   every session, and `mnema brief > MNEMA.md` puts in a file of its own. The redirection

@@ -26,6 +26,10 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
       "write the project's committed record as one HTML page that verifies itself in the browser (records nothing)",
     )
     .requiredOption('--out <dir>', 'the directory index.html is written under')
+    .option(
+      '--back-link <url>',
+      'put one link, labelled "Back", to this address (http(s)://, or a path on the same site) at the top of the page',
+    )
     .addHelpText(
       'after',
       [
@@ -38,15 +42,21 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
         '`mnema verify` over them, with no request and no key: the sentence on the page is the',
         'one `mnema verify` gives a fresh clone. It checks the chain and the checkpoint',
         'signatures; it does not check the lists on the page against the files. Everything is',
-        'inside the one file: no script or style comes from elsewhere.',
+        'inside the one file: no script or style comes from elsewhere. Without --back-link the',
+        'page is the same bytes it has always been; with it, the page opens with one link back',
+        'to a site that hosts it, and nothing else about the page changes.',
         '',
         'Examples:',
         '  mnema site --out dist/record     write dist/record/index.html',
+        '  mnema site --out dist/record --back-link /mnema/',
       ].join('\n'),
     )
-    .action(async (opts: { out: string }) => {
+    .action(async (opts: { out: string; backLink?: string }) => {
       const { runSite } = await import('../commands/site.js');
-      const result = runSite(here(), { out: opts.out });
+      const result = runSite(here(), {
+        out: opts.out,
+        ...(opts.backLink !== undefined ? { backLink: opts.backLink } : {}),
+      });
       if (!result.ok) {
         reportRefusal(
           wiring,

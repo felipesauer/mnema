@@ -107,3 +107,19 @@ describe('the page', () => {
     );
   });
 });
+
+describe('the link back', () => {
+  it('is not there without the option, and the page is the same bytes', () => {
+    const plain = renderPage(model([decision({})]), '/*v*/');
+    expect(plain).not.toContain('>Back<');
+    expect(plain).toContain('<body>\n<h1>The record</h1>');
+  });
+
+  it('is one link before the title, and the address is escaped', () => {
+    const page = renderPage(model([]), '/*v*/', '/mnema/?a=1&b="<x>');
+    expect(page).toContain(
+      '<body>\n<p><a href="/mnema/?a=1&amp;b=&quot;&lt;x&gt;">Back</a></p>\n<h1>The record</h1>',
+    );
+    expect(page.match(/>Back</g)).toHaveLength(1);
+  });
+});

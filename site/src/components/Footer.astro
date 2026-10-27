@@ -1,0 +1,10 @@
+---
+import Default from '@astrojs/starlight/components/Footer.astro';
+import built from '../generated/the-build.json';
+---
+
+<Default {...Astro.props}><slot /></Default>
+<p class="the-build">
+  mnema <span data-version>{built.version}</span> · commit
+  <a data-commit href={`${built.repoUrl}/commit/${built.sha}`}>{built.sha.slice(0, 12)}</a>
+</p>

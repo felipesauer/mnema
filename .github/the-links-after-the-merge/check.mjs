@@ -27,7 +27,8 @@
  * A NETWORK FAILURE IS NOT A BROKEN LINK. Each address is asked up to three times with a wait
  * between the attempts (a file that has just been pushed can lag behind a cache). An address that
  * ends on an HTTP error is broken. An address that ends on no answer at all, or on a rate limit,
- * is UNREACHABLE: it is printed and never opens an issue, because a runner that lost its DNS
+ * is UNREACHABLE (so is one that ends on a 408, 429, 502, 503 or 504, where the server said it
+ * did not answer): it is printed and never opens an issue, because a runner that lost its DNS
  * must not accuse the page. If nothing at all could be reached the reading is refused (exit 2)
  * for the reason the other instruments in `.github/` refuse: an instrument that checked nothing
  * reads exactly like one that found nothing.
@@ -58,6 +59,14 @@ export const THE_TITLE = 'A link or an image on a README does not answer on main
 /** How many times an address is asked before it counts, and the wait before each retry. */
 export const ATTEMPTS = 3;
 export const WAITS_IN_MS = [10_000, 30_000];
+
+/**
+ * The statuses that say the server did not answer, not that the address is wrong: 408 (it gave up
+ * waiting for the request), 429 (it is rate limiting this runner), and 502, 503 and 504 (a gateway
+ * or the server itself could not answer in time). 404 and 410 say the page is gone, and 500 is an
+ * answer from the page itself, so those stay broken.
+ */
+const SAYS_NOTHING_ABOUT_THE_ADDRESS = new Set([408, 429, 502, 503, 504]);
 
 /** The phrase a reading that asked nothing prints. */
 export const NOTHING_ASKED =
@@ -209,7 +218,7 @@ export function addressToAsk(url) {
 
 /**
  * ONE ADDRESS, asked up to `attempts` times. `status` is the last HTTP status, or `null` when the
- * last attempt got no answer at all or a rate limit: the two things that say nothing about the
+ * last attempt got no answer at all or a status that says the server did not answer: the two things that say nothing about the
  * page.
  *
  * @param {string} url
@@ -226,7 +235,7 @@ async function askOne(url, { fetch: ask, wait, attempts }) {
       const response = await ask(addressToAsk(url), { method: 'GET', redirect: 'follow' });
       await response.body?.cancel();
       if (response.status < 400) return response.status;
-      last = response.status === 429 ? null : response.status;
+      last = SAYS_NOTHING_ABOUT_THE_ADDRESS.has(response.status) ? null : response.status;
     } catch {
       last = null;
     }
