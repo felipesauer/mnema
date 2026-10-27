@@ -58,6 +58,10 @@ const THE_ARMS_IN_A_FILE_ARE_READ_AGAIN = row(arrived, arrived, arrived, NO_CHAN
 const noSuchPlace = (why: string): Record<Moment, Outcome> =>
   row(notApplicable(why), notApplicable(why), notApplicable(why), notApplicable(why));
 
+const COPILOT_ENDS_AT_ITS_SUMMARY = notMeasured(
+  'with `copilot -p` the host asks for its summary at the end of the run and the run ends; a second run that resumed the session sent the whole conversation again, the results and not the summary, so no request of a compacted conversation was seen',
+);
+
 type TheTable = Record<ArrivalHost, Record<Arm, Record<Moment, Outcome>>>;
 
 export const THE_TABLE: TheTable = {
@@ -104,7 +108,20 @@ export const THE_TABLE: TheTable = {
     ),
     mnema: row(arrived, arrived, arrived, absent),
   },
-  copilot: placeholder(),
+  copilot: {
+    ...placeholder(),
+    control: row(absent, absent, COPILOT_ENDS_AT_ITS_SUMMARY, NO_CHANNEL_AT_AN_EDIT),
+    'agents-md': row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, NO_CHANNEL_AT_AN_EDIT),
+    'host-file': row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, NO_CHANNEL_AT_AN_EDIT),
+    'at-reference': row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, NO_CHANNEL_AT_AN_EDIT),
+    'prose-reference': row(
+      { is: 'not-arrived', mentioned: true },
+      absent,
+      COPILOT_ENDS_AT_ITS_SUMMARY,
+      NO_CHANNEL_AT_AN_EDIT,
+    ),
+    mnema: row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, absent),
+  },
   gemini: placeholder(),
   qwen: placeholder(),
 };
