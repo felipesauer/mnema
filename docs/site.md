@@ -45,7 +45,8 @@ with the same TypeScript the command writes them with (bundled into the page), a
 text of every decision card, note and timeline entry, the attributes the filters read, which decisions, notes, entries and
 tails there are and in what order, and the counts. It says `match`, or names each difference by its item (`ADR-9
 (state): the page says "accepted"; the events say "proposed"`, `ADR-12 is on the page and not in the events`). Over a record
-that did not verify it says the lists were not checked, and it never says `match`. A difference is not a verdict on the chain:
+that did not verify it says the lists were not checked, and it never says `match`; without JavaScript the lists are all
+there and the page says it has not checked them. A difference is not a verdict on the chain:
 the chain's line is the verifier's and does not change.
 
 That is not a second, independent reader: it is the product's own code run twice, and it can only catch a page that
