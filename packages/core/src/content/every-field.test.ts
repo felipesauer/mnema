@@ -10,7 +10,7 @@ import {
   openChainForWriting,
   type TransitionFields,
 } from '@mnema/chain';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { declareCheck, enrollChecker, retireChecker, runRuleChecks } from '../checks/operations.js';
 import { requestEnrollment } from '../identity/handshake.js';
 import {
@@ -57,18 +57,17 @@ import { FIELD_BYTE_LIMIT } from './screen.js';
 import { detectSecrets } from './secrets.js';
 
 /**
- * THE BUDGET OF THIS FILE. Every case here drives the catalog into sandboxes of its own, and a
- * drive is synchronous work that cannot be shortened without ceasing to prove what the file
- * proves: it generates a key, opens a chain and signs and fsyncs each event of a kind's setup and
- * of the write itself. The cases that drive the whole catalog in one `it` (the two per envelope
- * field, "drove enough names", "actually appends", the minted-id sweep) take 0.7 to 2.4 s on a
- * quiet machine against the shared 5 s. On a suite running on many workers they stopped at five
- * seconds while passing alone: measured at 12 workers, two of them took 5.8 s and 7.9 s, and an
- * earlier version of this file gave only the two envelope cases room, so the next one in line
- * failed instead. The budget is therefore the file's, given room for a machine an order of
- * magnitude slower than the one measured, not removed.
+ * THE CEILING OF A CASE THAT DRIVES THE WHOLE CATALOG. A drive is synchronous work that cannot be
+ * shortened without ceasing to prove what this file proves: it generates a key, opens a chain and
+ * signs and fsyncs each event of a kind's setup and of the write itself, about 15 ms a kind. A case
+ * that drives every kind in one `it`, or every field of a kind, therefore takes 0.35 to 2.4 s with
+ * the machine to itself against the shared 5 s, and on a suite running on many workers they stopped
+ * at five seconds while passing alone (measured at 12 workers: 5.8 s and 7.9 s; at 16, 9.1 s for one
+ * that takes 2 s). The cases that drive ONE kind take 0.1 to 0.2 s and keep the shared ceiling.
+ * 30 s is room for a machine an order of magnitude slower than the one measured, not a removal,
+ * and it is written at each `it` that needs it because the ceiling belongs to the case.
  */
-vi.setConfig({ testTimeout: 30_000 });
+const EVERY_KIND_DRIVEN = 30_000;
 
 /**
  * The content door is total over the FIELDS, not only over the write points,
@@ -799,7 +798,9 @@ describe('every kind the catalog can hold is driven onto the chain', () => {
     expect(Object.keys(DRIVERS).sort()).toEqual([...CATALOG].sort());
   });
 
-  it('actually appends an event of the kind it claims to drive', () => {
+  it('actually appends an event of the kind it claims to drive', {
+    timeout: EVERY_KIND_DRIVEN,
+  }, () => {
     // A driver that wrote nothing, or wrote something else, would make every
     // assertion below vacuous for its kind.
     for (const kind of CATALOG) {
@@ -905,7 +906,7 @@ describe('a name carrying a credential refuses the write, on every field of ever
     });
   }
 
-  it('drove enough names to mean something', () => {
+  it('drove enough names to mean something', { timeout: EVERY_KIND_DRIVEN }, () => {
     // The vacuous form of every case above is a kind with no name field: the loop
     // does not run and the case passes. This drives the whole catalog once more and
     // counts what those loops WOULD run over, so a classification that quietly
@@ -942,7 +943,9 @@ describe('the envelope’s own text goes through the door on every kind that car
   });
 
   for (const path of shared) {
-    it(`carries "${path}" untouched, wherever a write puts it on the chain`, () => {
+    it(`carries "${path}" untouched, wherever a write puts it on the chain`, {
+      timeout: EVERY_KIND_DRIVEN,
+    }, () => {
       let carried = 0;
       for (const kind of CATALOG) {
         const driven = drive(kind, poisoningBodies(kind));
@@ -966,7 +969,9 @@ describe('the envelope’s own text goes through the door on every kind that car
       expect(carried, `no event carried "${path}"`).toBeGreaterThan(0);
     });
 
-    it(`refuses "${path}" carrying a credential, on every kind that takes it`, () => {
+    it(`refuses "${path}" carrying a credential, on every kind that takes it`, {
+      timeout: EVERY_KIND_DRIVEN,
+    }, () => {
       // The envelope's own axis for the refusal, and the shape that caught `which`
       // unscreened in the first place: driven ACROSS the surface at once, because a
       // per-kind proof would say the same thing twenty times and still miss a kind
@@ -1000,7 +1005,9 @@ describe('the size ceiling holds on every field the door owes', () => {
   // write accepts, observed in the clean pass), so nothing is listed here and a
   // field filled indirectly is charged to the input the caller actually hands in.
   for (const kind of CATALOG) {
-    it(`refuses an oversize value in any field ${kind} takes`, () => {
+    it(`refuses an oversize value in any field ${kind} takes`, {
+      timeout: EVERY_KIND_DRIVEN,
+    }, () => {
       const clean = drive(kind, poisoningBodies(kind));
       expect(clean.result.ok).toBe(true);
 
@@ -1069,7 +1076,9 @@ describe('an identifier is never screened, even when it looks like a credential'
     }
   });
 
-  it('keeps a minted id, an anchor and a state out of the door on every kind', () => {
+  it('keeps a minted id, an anchor and a state out of the door on every kind', {
+    timeout: EVERY_KIND_DRIVEN,
+  }, () => {
     // The general form of the same rule, over the whole catalog: nothing the record
     // derives ever comes back carrying a placeholder, however dirty the body beside
     // it was. Without this, a door made total over the fields would be one edit away
