@@ -9,6 +9,21 @@
 import { decisionDisposition } from '@mnema/context';
 import { isDecisionState } from '@mnema/core';
 
+/**
+ * The arguments of a verb that takes a path: the options first, then `--`, then the path. After
+ * `--` everything is a path to the command line, so a file named `-x` or `--json` is read as the
+ * file it is and not as an option it does not have. This is the one place that places a path.
+ */
+export const pathArgs = (verb: string, path: string, options: readonly string[] = []): string[] => [
+  verb,
+  ...options,
+  '--',
+  path,
+];
+
+/** The command that reads the rules in force over a file. */
+export const rulesArgs = (path: string): string[] => pathArgs('rules', path, ['--json']);
+
 /** What a rule does to the file it addresses. */
 export type Relation = 'governs' | 'asks-for-a-person' | 'refuses-a-write';
 

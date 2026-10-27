@@ -18,7 +18,7 @@ never *tested*. It expires with the version it was read on.
 | [`cursor-ide-capture.template.json`](cursor-ide-capture.template.json) | The shape of the result for the editor, named `cursor-ide-<date>.json`. None has been made yet: the host table says of the editor only what its documentation says. |
 | [`antigravity-cli-script.md`](antigravity-cli-script.md) | The same, for Antigravity's command line (`agy`): a home of its own, a probe in the host's own hook dialect, eight cases, and what a capture lets the host table change. |
 | [`antigravity-cli-capture.template.json`](antigravity-cli-capture.template.json) | The shape of the result for it, named `antigravity-cli-<date>.json`. None has been made yet: the host table says of it only what its documentation says. |
-| [`vscode-extension-script.md`](vscode-extension-script.md) | The script a person follows to read what the install check in CI cannot see in the VS Code extension: eight cases (hover, context menu, three themes, a screen reader, zoom, the walkthrough), each `held`, `did-not-hold` or `not-run`. |
+| [`vscode-extension-script.md`](vscode-extension-script.md) | The script a person follows to read what the install check in CI cannot see in the VS Code extension: ten cases (hover, context menu, three themes, a screen reader, what to do now and why a file is the way it is, the mark on the record folder, zoom, the walkthrough), each `held`, `did-not-hold` or `not-run`. |
 
 What a capture holds is what the standard for a test execution record asks of one: the environment
 (the date, the exact version of the agent and the SHA-256 of the file that ran, the machine), who read
