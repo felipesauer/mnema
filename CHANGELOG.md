@@ -85,8 +85,8 @@ with its own changelog.
   command line, which starts no `mnema` process unless the folder holds a `.mnema` on the disk at that call: in a folder with no
   record the status bar item is hidden, no lens is drawn, the context key `mnema.cliMissing` stays false and a command says once
   that the folder holds no record. A new context key, `mnema.proposedRead`, lets the decisions view say that nothing awaits a
-  judgment only when the list was read. The check that starts the packaged file in a real editor has a fourth scenario, which opens
-  the container in a folder with no `.mnema`, and the file check reads the container's icon in the `.vsix`.
+  judgment only when the list was read and understood: an answer with exit code 0 that is not the JSON the view expects (or the stacks view's, with `mnema.stacksRead`, which had the same gap) counts as not read, with no badge. The check that starts the packaged file in a real editor has a fourth scenario, which opens
+  the container in a folder with no `.mnema`, and the file check reads the container's icon in the `.vsix` and refuses any `fill` or `stroke` in it that is not `currentColor` or `none`.
 - **The VS Code extension's icon is the banner's M.** It was a cube; it is now the first letter of the console's wordmark, in the banner's accent and block style on its dark page, in a rounded square with a thin lilac border, with the same letter behind it in a darker lilac, shifted down and to the right, as a solid shadow. It is drawn from the rows the console draws (`THE_BLOCKS`), so the icon and the banner cannot drift apart. It reaches the stores with the next published version.
 
 ### Security

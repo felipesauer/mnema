@@ -63,9 +63,9 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   when focus moves; a note that is empty is refused with what to fix.
 - **What an empty view says.** A folder with no `.mnema` says so and points to `mnema init` (run in a
   terminal, which a link opens) and to [the first record](../../docs/first-record.md); with a record, the
-  decisions view says that nothing awaits a judgment only when `mnema search` was read (the context key
+  decisions view says that nothing awaits a judgment only when the answer of `mnema search` was read and understood (the context key
   `mnema.proposedRead`, the twin of `mnema.stacksRead`), and otherwise says it has not listed them, which
-  the status bar explains; the stacks view, when `mnema stack list` was read, offers the two ways to
+  the status bar explains; the stacks view, when the answer of `mnema stack list` was read and understood, offers the two ways to
   add one, and otherwise says it has not listed the stacks (the status bar shows what `mnema` read).
   Every link sits inside a sentence: no line is only a link, because the editor draws such a line as a
   wide blue button. Whether the folder holds a `.mnema` is read from the disk, not from the command line.
