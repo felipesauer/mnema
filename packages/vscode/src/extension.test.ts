@@ -2073,6 +2073,28 @@ describe('the record is read with few processes, and the work waits for what is 
     expect(verifies(w)).toBe(1);
   });
 
+  it('does not paint the level before it holds the count that goes with it, whichever answer is slower', async () => {
+    const answers = withTwo();
+    const slowStatus: Run = async (args) => {
+      if (args[0] === 'status') await new Promise((resolve) => setTimeout(resolve, 500));
+      return answers[args.join(' ')] ?? { code: 1, stdout: '', stderr: 'no answer' };
+    };
+    const w = world({}, slowStatus, undefined, false, hiddenStacks);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(w.bar.text).toBe('mnema: reading');
+    await vi.advanceTimersByTimeAsync(500);
+    expect(w.bar.text).toBe('$(book) fully-signed · 2 to judge');
+    const slowVerify: Run = async (args) => {
+      if (args[0] === 'verify') await new Promise((resolve) => setTimeout(resolve, 500));
+      return answers[args.join(' ')] ?? { code: 1, stdout: '', stderr: 'no answer' };
+    };
+    const other = world({}, slowVerify, undefined, false, hiddenStacks);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(other.bar.text).toBe('mnema: reading');
+    await vi.advanceTimersByTimeAsync(500);
+    expect(other.bar.text).toBe('$(book) fully-signed · 2 to judge');
+  });
+
   it('keeps the level it last read, with the count that is new, between two verifications', async () => {
     const answers = withTwo();
     const w = await started(answers);

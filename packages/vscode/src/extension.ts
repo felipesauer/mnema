@@ -446,8 +446,12 @@ export function activate(
     if (lost) await afterLost();
   };
 
-  /** The verification: `mnema verify --json`, `mnema verify` and `mnema switch`. True when a call was lost. */
-  async function readBar(): Promise<boolean> {
+  /**
+   * The verification: `mnema verify --json`, `mnema verify` and `mnema switch`. True when a call was
+   * lost. The bar is painted at the end unless the reading that asked for it paints once, when it
+   * holds the count of what awaits too, so the level is never shown for a moment without it.
+   */
+  async function readBar(paint = true): Promise<boolean> {
     verifiedAt = Date.now();
     if (trailing !== undefined) clearTimeout(trailing);
     trailing = undefined;
@@ -474,7 +478,7 @@ export function activate(
       ],
       readAt: new Date(),
     };
-    paintBar();
+    if (paint) paintBar();
     return [verify, coverage, channels].some((result) => result.code === null);
   }
 
@@ -492,7 +496,7 @@ export function activate(
   }
 
   /** What awaits a judgment: one `mnema status --json`, and `mnema search` too only when status cut its list. */
-  async function readProposals(): Promise<boolean> {
+  async function readProposals(paint = true): Promise<boolean> {
     const status = await read(STATUS_ARGS);
     let lost = status.code === null;
     const awaiting = status.code === 0 ? readStatus(status.stdout) : undefined;
@@ -516,7 +520,7 @@ export function activate(
     session.proposed = listed?.items ?? [];
     session.total = listed?.total;
     setAwaiting(session.total);
-    paintBar();
+    if (paint) paintBar();
     treeChanged.fire();
     return lost;
   }
@@ -584,10 +588,12 @@ export function activate(
       void api.commands.executeCommand('setContext', 'mnema.stacksRead', false);
     }
     const lost = await Promise.all([
-      verifyNow ? readBar() : false,
-      readProposals(),
+      verifyNow ? readBar(false) : false,
+      readProposals(false),
       stacksNow ? readStackList() : false,
     ]);
+    // One painting for the reading, with the level and the count that were read together.
+    paintBar();
     if (lost.some(Boolean)) await afterLost();
   }
 
