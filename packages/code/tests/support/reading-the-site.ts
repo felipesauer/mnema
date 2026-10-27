@@ -72,6 +72,114 @@ export function proseBlocks(html: string): string[] {
     .filter((t) => t !== '');
 }
 
+const VOID = new Set([
+  'img',
+  'br',
+  'hr',
+  'input',
+  'meta',
+  'link',
+  'source',
+  'wbr',
+  'area',
+  'col',
+  'base',
+  'embed',
+  'track',
+]);
+/** Elements that run inside a line of text: their words belong to the block around them. */
+const INLINE = new Set([
+  'a',
+  'abbr',
+  'b',
+  'bdi',
+  'bdo',
+  'cite',
+  'code',
+  'data',
+  'del',
+  'dfn',
+  'em',
+  'i',
+  'ins',
+  'kbd',
+  'mark',
+  'q',
+  's',
+  'samp',
+  'small',
+  'span',
+  'strong',
+  'sub',
+  'sup',
+  'time',
+  'u',
+  'var',
+]);
+/** The attributes whose value a reader is shown or told. */
+const SPOKEN = ['alt', 'title', 'aria-label'];
+
+/**
+ * Every piece of text a reader gets from the `<main>` of a page, as blocks: the words of the nearest element that is
+ * not a phrase inside a line (a paragraph, a heading, a `div`, a figure caption, a button), and the `alt`, `title` and
+ * `aria-label` of any element. Out of it, and only these: scripts, styles and pictures drawn in `<svg>`, the blocks of
+ * code the Expressive Code draws, the heading anchors, the footer's line of build (`the-build`), the commit link (`data-commit`) and the verdict (`<pre
+ * data-verdict>`), which a case of its own holds byte for byte. A button link (`sl-link-button`) is a block of its own.
+ * `stripped` is the same `<main>` with the same exclusions cut out by patterns, so that a case can ask whether the
+ * blocks hold ALL the text that is left.
+ */
+export function blocksOfMain(html: string): { text: string[]; spoken: string[]; stripped: string } {
+  const main = /<main\b[^>]*>([\s\S]*)<\/main>/.exec(html)?.[1] ?? '';
+  const text: string[] = [];
+  const spoken: string[] = [];
+  type Open = { tag: string; skip: boolean; block: boolean; words: string[] };
+  const stack: Open[] = [{ tag: '#main', skip: false, block: true, words: [] }];
+  const skipped = (): boolean => stack.some((o) => o.skip);
+  const flush = (o: Open): void => {
+    const said = textOf(o.words.join(''));
+    if (said !== '') text.push(said);
+  };
+  const owner = (): Open => [...stack].reverse().find((o) => o.block) as Open;
+  for (const m of main.matchAll(/<!--[\s\S]*?-->|<(\/?)([a-zA-Z][\w-]*)([^>]*)>|[^<]+/g)) {
+    const [raw, closing, name, attrs = ''] = m;
+    if (name === undefined) {
+      if (!raw.startsWith('<!--') && !skipped()) owner().words.push(raw);
+      continue;
+    }
+    const tag = name.toLowerCase();
+    if (closing === '/') {
+      const at = stack.map((o) => o.tag).lastIndexOf(tag);
+      if (at > 0) {
+        for (const o of stack.splice(at).reverse()) if (o.block && !o.skip) flush(o);
+      }
+      continue;
+    }
+    const cls = /\sclass="([^"]*)"/.exec(attrs)?.[1] ?? '';
+    const skip =
+      ['script', 'style', 'svg'].includes(tag) ||
+      /\bexpressive-code\b|\bsl-anchor-link\b|\bthe-build\b/.test(cls) ||
+      /\sdata-commit\b/.test(attrs) ||
+      (tag === 'pre' && /\sdata-verdict\b/.test(attrs));
+    if (!skipped() && !['script', 'style', 'svg'].includes(tag)) {
+      for (const a of SPOKEN) {
+        const v = new RegExp(`\\s${a}="([^"]*)"`).exec(attrs)?.[1];
+        if (v !== undefined && textOf(v) !== '') spoken.push(textOf(v));
+      }
+    }
+    if (VOID.has(tag) || attrs.trimEnd().endsWith('/')) continue;
+    const block = !INLINE.has(tag) || /\bsl-link-button\b/.test(cls);
+    stack.push({ tag, skip, block, words: [] });
+  }
+  for (const o of stack) if (o.block && !o.skip) flush(o);
+  const stripped = main
+    .replace(/<div class="expressive-code">[\s\S]*?<\/figure><\/div>/g, '')
+    .replace(/<a class="sl-anchor-link"[\s\S]*?<\/a>/g, '')
+    .replace(/<p class="the-build[^"]*">[\s\S]*?<\/p>/g, '')
+    .replace(/<a\b[^>]*\sdata-commit\b[^>]*>[\s\S]*?<\/a>/g, '')
+    .replace(/<pre\b[^>]*\sdata-verdict\b[^>]*>[\s\S]*?<\/pre>/g, '');
+  return { text, spoken, stripped };
+}
+
 /** Every address a page points at: links, images, stylesheets and scripts. */
 export function addressesOf(html: string): string[] {
   return [...html.matchAll(/<(?:a|img|link|script)\b[^>]*?\s(?:href|src)="([^"]*)"/g)].map((m) =>

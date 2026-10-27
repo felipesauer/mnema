@@ -29,7 +29,7 @@
  * WHAT IT DOES NOT CHECK: how the pages look. A reviewer sees them in the pull request's preview.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   cpSync,
   existsSync,
@@ -45,18 +45,23 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { prepare } from '../../../site/build/the-build.mjs';
 import {
+  copyOf,
+  landingOf,
   llmsTxt,
   pageOf,
   recordBackLink,
+  recordingOf,
   rewriteLinks,
   textAccent,
   themeCss,
   themeOf,
   titleOf,
+  verifyCommandOf,
   whereItLands,
   withoutWhatIsNotOnTheSite,
 } from '../../../site/build/the-pages.mjs';
-import { writeTheRecord } from '../../../site/build/the-record.mjs';
+import { theVerdictOfTheCommit, writeTheRecord } from '../../../site/build/the-record.mjs';
+import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 import { head, ROOT, SITE, tracked } from './support/reading-the-site.js';
 
 const FACTS = {
@@ -199,7 +204,7 @@ describe('the pages the build writes for this tree', () => {
 
   beforeAll(async () => {
     site = mkdtempSync(join(tmpdir(), 'the-site-'));
-    cpSync(join(SITE, 'landing.md'), join(site, 'landing.md'));
+    for (const file of ['landing.md', 'copy.md']) cpSync(join(SITE, file), join(site, file));
     facts = await prepare({ root: ROOT, site });
   }, 60_000);
   afterAll(() => rmSync(site, { recursive: true, force: true }));
@@ -302,6 +307,39 @@ describe('the pages the build writes for this tree', () => {
       expect(landing).toContain(`## ${heading}\n`);
     }
     expect(landing).toContain('template: splash');
+  });
+
+  it('take every entry of site/copy.md, and the file holds none that nothing takes', () => {
+    const proof = JSON.parse(read('src/generated/proof.json')) as { copyTaken: string[] };
+    const keys = [
+      ...(copyOf(readFileSync(join(SITE, 'copy.md'), 'utf8')) as Map<string, string>).keys(),
+    ];
+    expect(keys.length).toBeGreaterThan(0);
+    expect(proof.copyTaken, 'an entry of site/copy.md that no page takes is an orphan').toEqual(
+      keys.sort(),
+    );
+  });
+
+  it('write the proof: the command of the Quick start, the verdict at this commit, and the recording as it is', () => {
+    const proof = JSON.parse(read('src/generated/proof.json')) as {
+      command: string;
+      output: string;
+      sha: string;
+      recording: { src: string; alt: string; width: number; height: number };
+    };
+    expect(proof.sha).toBe(facts.sha);
+    expect(proof.command).toBe('mnema verify');
+    expect(proof.output).toMatch(/^public: /);
+    expect(proof.output).not.toMatch(/^private:/m);
+    expect(proof.recording.src).toBe(`${facts.base}/recordings/a-write-refused.gif`);
+    const gif = readFileSync(join(ROOT, 'recordings/a-write-refused.gif'));
+    expect(proof.recording).toMatchObject({
+      width: gif.readUInt16LE(6),
+      height: gif.readUInt16LE(8),
+    });
+    expect(readFileSync(join(site, 'public/recordings/a-write-refused.gif')).equals(gif)).toBe(
+      true,
+    );
   });
 
   it('write llms.txt with a link to the raw page of each Markdown file the README lists', () => {
@@ -443,6 +481,223 @@ describe('the theme the build writes reads at WCAG AA in both themes', () => {
         expect(rule, `${theme}: ${name}`).toContain(`  --sl-color-${name}: ${value};`);
       }
     }
+  });
+});
+
+describe('what the landing reads of the README to show the proof', () => {
+  const real = readFileSync(join(ROOT, 'README.md'), 'utf8');
+  const quick = (...lines: string[]): string =>
+    ['## Quick start', '', '```sh', ...lines, '```', '', '## Next', ''].join('\n');
+
+  it('takes the command of the one line of the Quick start that starts with `mnema verify`, up to the `#`', () => {
+    expect(verifyCommandOf(quick('mnema init', 'mnema verify   # reads it, and says so'))).toBe(
+      'mnema verify',
+    );
+    expect(verifyCommandOf(quick('mnema verify'))).toBe('mnema verify');
+    expect(verifyCommandOf(real)).toBe('mnema verify');
+  });
+
+  it('stops when the Quick start has no such line, or two', () => {
+    expect(() => verifyCommandOf(quick('mnema init'))).toThrow(/mnema verify/);
+    expect(() => verifyCommandOf(quick('mnema verify', 'mnema verify --json'))).toThrow(
+      /mnema verify/,
+    );
+  });
+
+  const cell = (src: string, alt: string, sub: string): string =>
+    `<td><img src="${src}" alt="${alt}"><br><sub>${sub}</sub></td>`;
+
+  it('takes the words of the README for a recording: its alt and its caption, the links landed', () => {
+    const readme = [
+      cell('recordings/one.gif', 'Alt one', 'Caption one.'),
+      cell(
+        'recordings/two.gif',
+        'Alt two',
+        'Caption <code>two</code> by <a href="recordings/two.sh"><code>two.sh</code></a>.',
+      ),
+    ].join('\n');
+    const got = recordingOf({ readme, path: 'recordings/two.gif', facts: FACTS, docs: DOCS }) as {
+      alt: string;
+      caption: string;
+    };
+    expect(got.alt).toBe('Alt two');
+    expect(got.caption).toBe(
+      'Caption <code>two</code> by <a href="https://github.com/o/r/blob/abc123/recordings/two.sh"><code>two.sh</code></a>.',
+    );
+  });
+
+  it('stops when the README has no cell for that recording', () => {
+    expect(() =>
+      recordingOf({
+        readme: cell('recordings/one.gif', 'a', 'b'),
+        path: 'recordings/two.gif',
+        facts: FACTS,
+        docs: DOCS,
+      }),
+    ).toThrow(/recordings\/two\.gif/);
+  });
+
+  it('reads the real README: the recording of a write refused, with the words the README gives it', () => {
+    const got = recordingOf({
+      readme: real,
+      path: 'recordings/a-write-refused.gif',
+      facts: { ...FACTS, repoUrl: 'https://github.com/felipesauer/mnema', sha: 'f'.repeat(40) },
+      docs: DOCS,
+    }) as { alt: string; caption: string };
+    expect(got.alt).toBe("An agent's write refused by a rule addressed at its path");
+    expect(got.caption).toContain('A write refused: the rule addressed at the path');
+    expect(got.caption).toContain(
+      `href="https://github.com/felipesauer/mnema/blob/${'f'.repeat(40)}/recordings/a-write-refused.sh"`,
+    );
+  });
+
+  const landing = (body: string, copy?: (key: string) => string): string =>
+    landingOf({
+      template: `---\ntitle: {{pitch.title}}\nbutton: {{label Install}}\n---\n\n${body}\n`,
+      readme: real,
+      facts: FACTS,
+      docs: DOCS,
+      copy,
+    }) as string;
+
+  it('fills {{label X}} with the label the README gives its Docs, and stops for one it does not', () => {
+    expect(landing('')).toContain('button: "Install"');
+    expect(() => landing('{{label Record}}')).toThrow(/no link labelled "Record"/);
+  });
+
+  it('fills {{copy key}} from the microcopy, and stops for a key it does not hold', () => {
+    const copy = (key: string): string => {
+      if (key !== 'a-key') throw new Error(`the copy has no "${key}"`);
+      return 'A line of copy.';
+    };
+    expect(landing('{{copy a-key}}', copy)).toContain('A line of copy.');
+    expect(() => landing('{{copy other}}', copy)).toThrow(/no "other"/);
+  });
+});
+
+describe('site/copy.md is microcopy: a line for a key, and nothing that is a page', () => {
+  const file = (...entries: string[]): string =>
+    ['# Site copy', '', 'What this file is.', '', ...entries].join('\n');
+  const words = (n: number): string => Array.from({ length: n }, (_, i) => `w${i}`).join(' ');
+
+  it('reads a key and its one line, and ignores the title and the opening sentence', () => {
+    const got = copyOf(file('## a-key', 'One line.', '', '## b-key', 'Another line.')) as Map<
+      string,
+      string
+    >;
+    expect([...got]).toEqual([
+      ['a-key', 'One line.'],
+      ['b-key', 'Another line.'],
+    ]);
+  });
+
+  it('allows twenty words and stops at twenty-one', () => {
+    expect((copyOf(file('## a-key', words(20))) as Map<string, string>).get('a-key')).toBe(
+      words(20),
+    );
+    expect(() => copyOf(file('## a-key', words(21)))).toThrow(/a-key.*20 words/);
+  });
+
+  it('stops on a repeated key, an empty entry, an entry of two lines and a key that is not kebab-case', () => {
+    expect(() => copyOf(file('## a-key', 'One.', '', '## a-key', 'Two.'))).toThrow(/a-key.*twice/);
+    expect(() => copyOf(file('## a-key', '', '## b-key', 'Two.'))).toThrow(/a-key.*empty/);
+    expect(() => copyOf(file('## a-key', 'One.', 'Still one?'))).toThrow(/a-key.*one line/);
+    expect(() => copyOf(file('## A Key', 'One.'))).toThrow(/A Key/);
+  });
+
+  it('is read, as it stands, without a stop: the real file', () => {
+    const real = copyOf(readFileSync(join(SITE, 'copy.md'), 'utf8')) as Map<string, string>;
+    expect(real.size).toBeGreaterThan(0);
+  });
+});
+
+describe('the verdict the landing shows is the one of the committed tree', () => {
+  const dirs: string[] = [];
+  afterAll(() => {
+    for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
+  });
+  const home = mkdtempSync(join(tmpdir(), 'the-verdict-home-'));
+  dirs.push(home);
+  const identity = {
+    HOME: home,
+    PATH: process.env.PATH ?? '',
+    GIT_AUTHOR_NAME: 'a',
+    GIT_AUTHOR_EMAIL: 'a@example.com',
+    GIT_COMMITTER_NAME: 'a',
+    GIT_COMMITTER_EMAIL: 'a@example.com',
+  };
+  const git = (cwd: string, ...args: string[]): string =>
+    execFileSync('git', args, {
+      cwd,
+      stdio: 'pipe',
+      env: { ...identity, GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
+      encoding: 'utf8',
+    });
+
+  /** A throwaway repository holding a copy of this repository's record, and the path of one of its tails. */
+  function copyOfTheRecord(): { repo: string; tail: string } {
+    const repo = mkdtempSync(join(tmpdir(), 'the-verdict-'));
+    dirs.push(repo);
+    git(repo, 'init', '-q');
+    cpSync(join(ROOT, '.mnema'), join(repo, '.mnema'), { recursive: true });
+    const tails = join(repo, '.mnema', 'tails');
+    const tail = readdirSync(tails)
+      .map((d) => join(tails, d, '000001.jsonl'))
+      .find(existsSync) as string;
+    return { repo, tail };
+  }
+
+  /** One byte of the title of the first event, changed. */
+  function change(tail: string): void {
+    const text = readFileSync(tail, 'utf8');
+    const at = text.indexOf('"title":"') + '"title":"'.length;
+    expect(at).toBeGreaterThan('"title":"'.length);
+    writeFileSync(tail, text.slice(0, at) + (text[at] === 'Z' ? 'Y' : 'Z') + text.slice(at + 1));
+  }
+
+  it('is the verdict of what git holds, not of what the working tree says now', () => {
+    const { repo, tail } = copyOfTheRecord();
+    git(repo, 'add', '.mnema');
+    git(repo, 'commit', '-q', '-m', 'the record');
+    const sha = git(repo, 'rev-parse', 'HEAD').trim();
+    change(tail);
+
+    const working = spawnSync(
+      process.execPath,
+      [join(ROOT, 'packages/code/dist/cli.js'), 'verify'],
+      {
+        cwd: repo,
+        env: { HOME: home, PATH: process.env.PATH ?? '' },
+        encoding: 'utf8',
+      },
+    );
+    expect(working.status, 'the changed working tree does not verify').not.toBe(0);
+
+    const said = theVerdictOfTheCommit({
+      root: ROOT,
+      repo,
+      sha,
+      command: 'mnema verify',
+    }) as string;
+    expect(said).toMatch(/^public: /);
+    expect(said.trimEnd().split('\n')).toHaveLength(1);
+  }, 60_000);
+
+  it('stops, and says so, when the committed record does not verify', () => {
+    const { repo, tail } = copyOfTheRecord();
+    change(tail);
+    git(repo, 'add', '.mnema');
+    git(repo, 'commit', '-q', '-m', 'a record that was changed');
+    const sha = git(repo, 'rev-parse', 'HEAD').trim();
+    expect(() => theVerdictOfTheCommit({ root: ROOT, repo, sha, command: 'mnema verify' })).toThrow(
+      /does not verify/,
+    );
+  }, 60_000);
+
+  it('refuses a command that is not one of mnema', () => {
+    expect(() => theVerdictOfTheCommit({ root: ROOT, sha: 'x', command: 'echo hi' })).toThrow(
+      /mnema/,
+    );
   });
 });
 

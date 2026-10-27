@@ -76,7 +76,7 @@ jobs:
             say ref ""
             say deploy false
             # Inside the job and not in the trigger: a path filter on the trigger leaves a required check pending forever.
-            if git diff --name-only HEAD^1 HEAD | grep -Eq '^(site/|docs/|README\.md$|\.github/the-front-page/|\.github/workflows/site\.yml$|packages/code/src/site/|packages/code/src/presentation/banner\.ts$|packages/code/build/the-site-verifier\.mjs$|packages/code/package\.json$|packages/vscode/build/icon\.mjs$|\.mnema/)'; then
+            if git diff --name-only HEAD^1 HEAD | grep -Eq '^(site/|docs/|README\.md$|\.github/the-front-page/|\.github/workflows/site\.yml$|packages/code/src/site/|packages/code/src/presentation/banner\.ts$|packages/code/build/the-site-verifier\.mjs$|packages/code/package\.json$|packages/vscode/build/icon\.mjs$|recordings/|\.mnema/)'; then
               say build true
             else
               say build false

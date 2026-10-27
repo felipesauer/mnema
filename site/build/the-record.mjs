@@ -23,6 +23,38 @@ function run(root, cwd, args) {
 }
 
 /**
+ * What `command` (a line of the README that starts with `mnema`) prints on the record COMMITTED at `sha`, and only
+ * on the public tree: `.mnema/` is extracted from the commit into a directory of its own outside the repository, and
+ * the binary built under `root` runs there with a home of its own. The working tree of the checkout is never read, so
+ * a file changed and not committed, and the private tree of whoever builds, are not in the verdict. Throws when the
+ * command does not pass; returns what it printed, byte for byte.
+ * @param {{ root: string, repo?: string, sha: string, command: string }} options
+ */
+export function theVerdictOfTheCommit({ root, repo = root, sha, command }) {
+  const [program, ...args] = command.trim().split(/\s+/);
+  if (program !== 'mnema') throw new Error(`the verdict is of a command of mnema, and "${command}" is not one`);
+  const dir = mkdtempSync(join(tmpdir(), 'the-verdict-of-the-commit-'));
+  try {
+    const tar = join(dir, 'record.tar');
+    const archived = spawnSync('git', ['archive', '--format=tar', '-o', tar, sha, '.mnema'], { cwd: repo, encoding: 'utf8' });
+    if (archived.status !== 0) throw new Error(`the record of ${sha} could not be extracted:\n${archived.stderr}`);
+    const tree = join(dir, 'tree');
+    mkdirSync(tree);
+    const unpacked = spawnSync('tar', ['-xf', tar, '-C', tree], { encoding: 'utf8' });
+    if (unpacked.status !== 0) throw new Error(`the record of ${sha} could not be unpacked:\n${unpacked.stderr}`);
+    const init = spawnSync('git', ['init', '-q', tree], { encoding: 'utf8' });
+    if (init.status !== 0) throw new Error(`a directory for the record of ${sha} could not be made:\n${init.stderr}`);
+    const said = run(root, tree, args);
+    if (said.status !== 0) {
+      throw new Error(`the record at ${sha} does not verify, so its verdict is not shown:\n${said.stdout}${said.stderr}`);
+    }
+    return said.stdout;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/**
  * Writes `<out>/index.html` from the record committed under `cwd`, with the binary built under `root`.
  * With `backLink` the page carries one link back to the site (`mnema site --back-link`).
  * Throws when `mnema verify` does not pass, or when `mnema site` refuses or says the record does not verify.
