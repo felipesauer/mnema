@@ -1,4 +1,4 @@
-/* No colour is written here: the accent is generated from the one constant the front page is painted with. */
+/* No colour is written here: the theme is generated from the two constants the front page is painted with. */
 
 /* The pictures change with the theme of the SITE, which a reader may have chosen by hand. */
 :root[data-theme='dark'] .only-light,
@@ -10,4 +10,9 @@
   margin-top: 1rem;
   font-size: var(--sl-text-xs);
   color: var(--sl-color-gray-3);
+}
+
+.the-build a {
+  color: var(--sl-color-text-accent);
+  text-decoration: underline;
 }
