@@ -1,4 +1,5 @@
-"""Section 6.4 - a note or a link taken back by an identity that did not write it.
+"""Section 6.4 - a note or a link taken back, or a note written again, by an identity that did not
+write it.
 
 Only the identity that wrote a note takes it back, and only one that asserted a link withdraws
 it. The comparison is on the anchor - the event's `who` - and not on the key. A retraction whose
@@ -6,6 +7,10 @@ it. The comparison is on the anchor - the event's `who` - and not on the key. A 
 and its key speaks for its own `who`; what it lacks is authority over somebody else's note. So
 this reader names it, as a note, and the verdict does not move.
 
+    memory.captured, observation.recorded
+                     a note is the identity that wrote it FIRST, in the merged order of
+                     section 6.2; a writing of the same id by another identity is not
+                     applied
     note.retracted   names a memory.captured or observation.recorded by its subject
                      not applied when its `who` is not that note's `who`
                      neither applied nor named when the record holds no such note
@@ -14,8 +19,9 @@ this reader names it, as a note, and the verdict does not move.
                      identity did; neither applied nor named when nobody asserted it
 
 The authors are read over every tail first, so a retraction is judged whatever tail, or order,
-its note or its link sits in. Of two writings of one note, the one read last names its author:
-the tails in id order, each in `seq` order.
+its note or its link sits in. Of two writings of one note, the FIRST in the merged order names its
+author: the order the product's read takes it in, never the order of the tail ids, which begin
+with a key's fingerprint and so are a signer's to choose.
 """
 
 from __future__ import annotations
@@ -24,6 +30,7 @@ import json
 from typing import NamedTuple
 
 from .canonical import utf16_order
+from .enrolment import merged_order
 from .entry import Entry
 
 NOTE_KINDS = ("memory.captured", "observation.recorded")
@@ -41,17 +48,19 @@ def _shown(value: object) -> str:
 
 
 def foreign_retractions(entries_by_tail: dict[str, list[Entry]]) -> list[Foreign]:
-    """Every retraction that is not applied, in tail order and then `seq` order."""
+    """Every retraction, and every writing of a note, that is not applied, in tail order and then
+    `seq` order."""
     tails = sorted(entries_by_tail, key=utf16_order)
     authors: dict[str, object] = {}
+    for _tail, entry in merged_order(entries_by_tail).order:
+        if entry.event.get("kind") in NOTE_KINDS:
+            authors.setdefault(str(entry.event.get("subject")), entry.event.get("who"))
     asserters: dict[str, list[object]] = {}
     for tail in tails:
         for entry in entries_by_tail[tail]:
             event = entry.event
             kind = event.get("kind")
-            if kind in NOTE_KINDS:
-                authors[str(event.get("subject"))] = event.get("who")
-            elif kind == "knowledge.linked":
+            if kind == "knowledge.linked":
                 linked = asserters.setdefault(_edge(event), [])
                 if event.get("who") not in linked:
                     linked.append(event.get("who"))
@@ -61,7 +70,22 @@ def foreign_retractions(entries_by_tail: dict[str, list[Entry]]) -> list[Foreign
             event = entry.event
             kind = event.get("kind")
             who = event.get("who")
-            if kind == "note.retracted":
+            if kind in NOTE_KINDS:
+                author = authors.get(str(event.get("subject")))
+                if author is None or author == who:
+                    continue
+                found.append(
+                    Foreign(
+                        tail,
+                        entry.seq,
+                        "foreign-rewrite",
+                        f"a {kind} of {_shown(event.get('subject'))} signed by {_shown(who)}, "
+                        f"which did not write it first ({_shown(author)} did) - a note is the "
+                        "identity that wrote it first, so this writing is not applied and the note "
+                        "stands as its author wrote it",
+                    )
+                )
+            elif kind == "note.retracted":
                 author = authors.get(str(event.get("subject")))
                 if author is None or author == who:
                     continue

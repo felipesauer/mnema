@@ -200,6 +200,7 @@ export type CensusNote =
   | EmptyTailNote
   | PartialFinalLineNote
   | ForeignRetractionNote
+  | ForeignRewriteNote
   | ForeignLinkRetractionNote
   | IllegalMoveNote
   | RetiredCheckerNote
@@ -361,6 +362,30 @@ export interface ForeignRetractionNote {
   /** The identity that wrote the note. */
   readonly author: string;
   /** Where the retraction sits. */
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * A `memory.captured` or `observation.recorded` of an id another identity wrote FIRST, in the
+ * merged order of every tail (FORMAT.md section 6.4). A note is the identity that wrote it
+ * first, so no reader applies this writing: the note's content, author and retraction stay the
+ * first writer's. The product mints a note's id at its capture, so only a writing made past it
+ * can name an id another identity holds.
+ *
+ * Not a break, for the reason a {@link ForeignRetractionNote} is not: the event is intact and
+ * its key speaks for its own `who`; what it lacks is authority over somebody else's note.
+ */
+export interface ForeignRewriteNote {
+  readonly kind: 'foreign-rewrite';
+  /** The note it writes again (the event's subject). */
+  readonly note: string;
+  /** The identity that signed this writing. */
+  readonly by: string;
+  /** The identity that wrote the note first. */
+  readonly author: string;
+  /** Where the writing sits. */
   readonly tail: string;
   readonly seq: number;
   readonly detail: string;
@@ -987,7 +1012,7 @@ function verifyReading(
     ),
     ...[...empty].map(emptyTail),
     ...notes,
-    ...foreignRetractions(tails, entriesByTail),
+    ...foreignNotes(tails, entriesByTail),
     ...foreignLinkRetractions(tails, entriesByTail),
     ...movesNotApplied(entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
@@ -1297,50 +1322,59 @@ function keysWithoutTail(
 
 /**
  * Every `note.retracted` whose `who` may not retract the note it names ({@link mayRetract}),
- * in tail order. The notes' authors are read over every tail first, so a retraction is judged
- * whatever tail, or order, its note sits in.
+ * and every writing of a note by an identity that did not write it first ({@link
+ * ForeignRewriteNote}), in tail order. A note is the identity that wrote it FIRST in the merged
+ * order of every tail, the order the product's read takes the note's author in, so the authors
+ * are read over that order before anything is judged, and a writing or a retraction is judged
+ * whatever tail its note sits in.
  */
-function foreignRetractions(
+function foreignNotes(
   tails: readonly string[],
   entriesByTail: ReadonlyMap<string, readonly Entry[]>,
-): ForeignRetractionNote[] {
+): (ForeignRetractionNote | ForeignRewriteNote)[] {
   const authors = new Map<string, string>();
-  for (const tail of tails) {
-    for (const { event } of entriesByTail.get(tail) ?? []) {
-      if (event.kind === 'memory.captured' || event.kind === 'observation.recorded') {
-        authors.set(event.subject, event.who);
-      }
+  for (const { event } of mergedOrder(entriesByTail).order) {
+    if (event.kind === 'memory.captured' || event.kind === 'observation.recorded') {
+      if (!authors.has(event.subject)) authors.set(event.subject, event.who);
     }
   }
-  const found: ForeignRetractionNote[] = [];
+  const found: (ForeignRetractionNote | ForeignRewriteNote)[] = [];
   for (const tail of tails) {
     for (const { event, link } of entriesByTail.get(tail) ?? []) {
-      if (event.kind !== 'note.retracted') continue;
+      const rewrite = event.kind === 'memory.captured' || event.kind === 'observation.recorded';
+      if (!rewrite && event.kind !== 'note.retracted') continue;
       const author = authors.get(event.subject);
       if (author === undefined || mayRetract(author, event.who)) continue;
-      found.push({
-        kind: 'foreign-retraction',
-        note: event.subject,
-        by: event.who,
-        author,
-        tail,
-        seq: link.seq,
-        detail:
-          `a retraction of ${oneLine(event.subject)} signed by ${oneLine(event.who)}, which did not ` +
-          `write it (${oneLine(author)} did): only the identity that wrote a note takes it back, ` +
-          'so it is not applied and the note is still served',
-      });
+      const where = { note: event.subject, by: event.who, author, tail, seq: link.seq };
+      found.push(
+        rewrite
+          ? {
+              kind: 'foreign-rewrite',
+              ...where,
+              detail:
+                `a ${event.kind} of ${oneLine(event.subject)} signed by ${oneLine(event.who)}, ` +
+                `which did not write it first (${oneLine(author)} did): a note is the identity ` +
+                'that wrote it first, so this writing is not applied and the note is served as its author wrote it',
+            }
+          : {
+              kind: 'foreign-retraction',
+              ...where,
+              detail:
+                `a retraction of ${oneLine(event.subject)} signed by ${oneLine(event.who)}, which did not ` +
+                `write it (${oneLine(author)} did): only the identity that wrote a note takes it back, ` +
+                'so it is not applied and the note is still served',
+            },
+      );
     }
   }
   return found;
 }
 
 /**
- * Every move the workflow does not allow (FORMAT.md section 6.7), judged in the merged order of
- * every tail and named in that order. The order is merged again here rather than borrowed from
- * the identity fold, so the census asks the same function the readers ask (`illegalMoves`).
+ * The merged order of every tail of one record ("Reading many tails" in FORMAT.md): each event
+ * with its tail's index and its position in it, and the citations the order honoured.
  */
-function movesNotApplied(entriesByTail: ReadonlyMap<string, readonly Entry[]>): IllegalMoveNote[] {
+function mergedOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>) {
   const tails = [...entriesByTail].map(([tail, entries]) => ({ tail, entries }));
   const entryAt = (tail: number, position: number): Entry =>
     (tails[tail] as (typeof tails)[number]).entries[position] as Entry;
@@ -1358,7 +1392,17 @@ function movesNotApplied(entriesByTail: ReadonlyMap<string, readonly Entry[]>): 
     cursors[tail] = position + 1;
     return { event: entryAt(tail, position).event as CatalogEvent, tail, position };
   });
-  return [...illegalMoves(order, merged.held)].map(([index, ruling]) => {
+  return { tails, entryAt, order, held: merged.held };
+}
+
+/**
+ * Every move the workflow does not allow (FORMAT.md section 6.7), judged in the merged order of
+ * every tail and named in that order. The order is merged again here rather than borrowed from
+ * the identity fold, so the census asks the same function the readers ask (`illegalMoves`).
+ */
+function movesNotApplied(entriesByTail: ReadonlyMap<string, readonly Entry[]>): IllegalMoveNote[] {
+  const { tails, entryAt, order, held } = mergedOrder(entriesByTail);
+  return [...illegalMoves(order, held)].map(([index, ruling]) => {
     const { event, tail, position } = order[index] as (typeof order)[number];
     const entry = entryAt(tail, position);
     return {
@@ -2132,6 +2176,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => str
     `${count} tail(s) ending in a dropped partial line (see census: informational, not a break)`,
   'foreign-retraction': (count) =>
     `${count} retraction(s) by an identity that did not write the note, not applied (see census: informational, not a break)`,
+  'foreign-rewrite': (count) =>
+    `${count} writing(s) of a note by an identity that did not write it first, not applied (see census: informational, not a break)`,
   'foreign-link-retraction': (count) =>
     `${count} link retraction(s) by an identity that did not record the link, not applied (see census: informational, not a break)`,
   'illegal-move': (count) =>

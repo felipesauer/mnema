@@ -497,17 +497,20 @@ const ITS_OWN_LIFECYCLE = {
 } as const;
 
 /**
- * Reads what `id` names in this tree's ordered stream. A retraction counts only when its
- * identity may retract the note ({@link mayRetract}), the rule the read applies, so a
- * stranger's retraction neither hides the note nor stands in its author's way.
+ * Reads what `id` names in this tree's ordered stream. The note is the identity that wrote it
+ * FIRST, the rule the read applies ({@link noteAuthorsOf}), so another identity that writes
+ * the id again neither takes the note nor its retraction. A retraction counts only when its
+ * identity may retract the note ({@link mayRetract}), so a stranger's retraction neither hides
+ * the note nor stands in its author's way.
  */
 function standingOf(events: readonly CatalogEvent[], id: string): Standing {
   let note: { readonly note: 'memory' | 'observation'; readonly who: string } | undefined;
   const retractions: { readonly at: string; readonly who: string }[] = [];
   for (const event of events) {
     if (event.subject !== id) continue;
-    if (event.kind === 'memory.captured') note = { note: 'memory', who: event.who };
-    else if (event.kind === 'observation.recorded') note = { note: 'observation', who: event.who };
+    if (event.kind === 'memory.captured') note ??= { note: 'memory', who: event.who };
+    else if (event.kind === 'observation.recorded')
+      note ??= { note: 'observation', who: event.who };
     else if (event.kind === 'note.retracted') retractions.push({ at: event.at, who: event.who });
     else {
       const what = NOT_A_NOTE[event.kind];

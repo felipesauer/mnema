@@ -96,7 +96,11 @@ function bothReaders(record: string) {
     .flatMap((note): Named[] => {
       if (note.kind === 'illegal-move')
         return [{ tail: note.tail, seq: note.seq, rule: note.rule }];
-      if (note.kind === 'foreign-retraction' || note.kind === 'foreign-link-retraction') {
+      if (
+        note.kind === 'foreign-retraction' ||
+        note.kind === 'foreign-rewrite' ||
+        note.kind === 'foreign-link-retraction'
+      ) {
         return [{ tail: note.tail, seq: note.seq, rule: note.kind }];
       }
       return [];
@@ -584,4 +588,40 @@ describe('a note or a link taken back (§6.4): both readers name the same retrac
     },
     CASE_TIMEOUT,
   );
+
+  // A note is the identity that wrote it first in the merged order. The second writer writes the
+  // same id again, later, and takes it back: both readers name the writing and the retraction,
+  // whichever of the two tails sorts first by id, since the tail order is a key's to choose.
+  for (const creatorTail of ['first', 'last'] as const) {
+    it(
+      `written again and taken back by another identity, names both (the creator's tail sorts ${creatorTail})`,
+      () => {
+        const record = fresh('mnema-rewrite-record-');
+        const one = machine(record);
+        const two = machine(record);
+        const oneFirst = one.writer.tail < two.writer.tail;
+        const [creator, intruder] =
+          (creatorTail === 'first') === oneFirst ? [one, two] : [two, one];
+        creator.writer.append(
+          memoryCaptured(creator.env('m-1', undefined, 10), { content: 'node 24' }),
+        );
+        intruder.writer.append(
+          memoryCaptured(intruder.env('m-1', undefined, 20), { content: 'node 26' }),
+        );
+        intruder.writer.append(noteRetracted(intruder.env('m-1', undefined, 30), { reason: 'r' }));
+        one.writer.checkpoint();
+        two.writer.checkpoint();
+        const said = bothReaders(record);
+        expect(said.product).toEqual([
+          { tail: intruder.writer.tail, seq: 1, rule: 'foreign-rewrite' },
+          { tail: intruder.writer.tail, seq: 2, rule: 'foreign-retraction' },
+        ]);
+        expect(said.second).toEqual(said.product);
+        expect(said.productOk).toBe(true);
+        expect(said.secondFails).toEqual([]);
+        expect(said.secondVerdict).toBe('VERIFIED');
+      },
+      CASE_TIMEOUT,
+    );
+  }
 });

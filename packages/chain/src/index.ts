@@ -159,6 +159,7 @@ export {
   type EmptyTailNote,
   type ForeignLinkRetractionNote,
   type ForeignRetractionNote,
+  type ForeignRewriteNote,
   isEmptyTail,
   type KeyWithoutTailNote,
   type PartialFinalLineNote,

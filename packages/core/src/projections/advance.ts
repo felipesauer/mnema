@@ -14,7 +14,8 @@
  *     entities they touch, and a record ten times larger costs the same;
  *   - the folds that keep no accumulator (a memory, an observation, a handoff, a link, a
  *     switch) are one event each, and the rule of each is the function the replay applies
- *     (`memoryOf`, `linkOf`, …), and a link retraction is folded by the rule the replay
+ *     (`memoryOf`, `linkOf`, …), a note's writing by the rule that keeps it its first writer's
+ *     (`writesTheNote`), and a link retraction is folded by the rule the replay
  *     applies (`withdraws`);
  *   - the full-text index replaces the rows of the entities that changed, by rowid;
  *   - the reference index appends, as it always did; the facts about identity append;
@@ -62,9 +63,11 @@ import {
   handoffOf,
   memoryOf,
   type NoteRetraction,
+  noteAuthorsOf,
   observationOf,
   retractionOf,
   retractionsOf,
+  writesTheNote,
 } from './knowledge.js';
 import {
   advanceLinks,
@@ -134,6 +137,34 @@ function lastOf<P>(
     if (row !== undefined) last.set(idOf(row), row);
   }
   return [...last.values()];
+}
+
+/**
+ * The notes the arrivals wrote, each by the rule the replay applies ({@link writesTheNote}): a
+ * note is the identity that wrote it first, which for an id the cache holds already is the
+ * row's (memory or observation, one id names one note), since the arrivals follow it, and for
+ * any other id the first arrival that writes it. A writing by another identity is not applied;
+ * a note its author writes again keeps the retraction its row holds, as it does in the replay.
+ */
+function notesArrived<
+  P extends { readonly id: string; readonly who: string; readonly retracted?: NoteRetraction },
+>(
+  arrived: readonly CatalogEvent[],
+  of: (event: CatalogEvent) => P | undefined,
+  stored: (id: string) => P | null,
+  authorOf: (id: string) => string | undefined,
+): P[] {
+  const result = new Map<string, P>();
+  for (const event of arrived) {
+    const note = of(event);
+    if (note === undefined || !writesTheNote(authorOf(note.id), note.who)) continue;
+    const before = result.get(note.id) ?? stored(note.id);
+    result.set(
+      note.id,
+      before?.retracted !== undefined ? { ...note, retracted: before.retracted } : note,
+    );
+  }
+  return [...result.values()];
 }
 
 /**
@@ -281,9 +312,12 @@ export function advance(
     // batch: either way the note is projected again with the retraction the replay would
     // have given it, and written over the row it was.
     const retractions = retractionsOf(arrived);
+    const firstArrived = noteAuthorsOf(arrived);
+    const authorOf = (id: string): string | undefined =>
+      getMemory(db, id)?.who ?? getObservation(db, id)?.who ?? firstArrived.get(id);
     const memories = fed.has('memories')
       ? withRetractions(
-          lastOf(arrived, memoryOf, (memory) => memory.id),
+          notesArrived(arrived, memoryOf, (id) => getMemory(db, id), authorOf),
           retractions,
           (id) => getMemory(db, id),
         )
@@ -291,7 +325,7 @@ export function advance(
     materializeMemories(db, memories, true);
     const observations = fed.has('observations')
       ? withRetractions(
-          lastOf(arrived, observationOf, (observation) => observation.id),
+          notesArrived(arrived, observationOf, (id) => getObservation(db, id), authorOf),
           retractions,
           (id) => getObservation(db, id),
         )
