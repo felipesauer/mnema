@@ -17,7 +17,6 @@ import {
   type Judgment,
   judgeArgs,
   LIST_ARGS,
-  newlyProposed,
   noteProblem,
   type Proposed,
   type ProposedDetail,
@@ -47,7 +46,16 @@ import {
   stackDescription,
   stackTooltip,
 } from './stacks.js';
-import { type Channel, describeBar, readChannels, readCli, readVerdict } from './status.js';
+import {
+  awaitingPhrase,
+  type Channel,
+  CONTAINER_COMMAND,
+  describeBar,
+  readChannels,
+  readCli,
+  readVerdict,
+  TOOLTIP_COMMANDS,
+} from './status.js';
 
 /** How long the record has to be quiet before it is read again. */
 export const QUIET_MS = 1500;
@@ -79,9 +87,11 @@ export interface VscodeApi {
   readonly RelativePattern: new (base: string, pattern: string) => unknown;
   readonly window: {
     createStatusBarItem(alignment: number): {
+      name: string | undefined;
       text: string;
-      tooltip: string;
-      command: string | { command: string; title: string; arguments: unknown[] };
+      tooltip: MarkdownLike | string;
+      command: string;
+      backgroundColor: unknown;
       accessibilityInformation: { label: string; role?: string } | undefined;
       show(): void;
       hide(): void;
@@ -126,6 +136,15 @@ export interface VscodeApi {
   readonly TreeItem: new (label: string, state: number) => TreeItemLike;
   readonly TreeItemCollapsibleState: { readonly None: number };
   readonly StatusBarAlignment: { readonly Left: number };
+  readonly MarkdownString: new (value: string) => MarkdownLike;
+  readonly ThemeColor: new (id: string) => unknown;
+}
+
+/** The markdown of a tooltip: trusted for the commands listed, and without HTML. */
+interface MarkdownLike {
+  readonly value: string;
+  isTrusted?: boolean | { readonly enabledCommands: readonly string[] };
+  supportHtml?: boolean;
 }
 
 interface DocumentLike {
@@ -163,15 +182,17 @@ interface Session {
   proposed: Proposed[];
   stacks: AdoptedStack[];
   total: number;
-  seen: Set<string> | undefined;
   channels: Channel[] | undefined;
 }
 
 /** What the extension hands to whoever activated it: what it shows now, read only. */
 export interface Shown {
   readonly text: string;
+  /** The markdown of the tooltip, as it was handed to the editor. */
   readonly tooltip: string;
-  /** Whether the status bar item is shown: it is not in a folder with no `.mnema`. */
+  /** What a click on the status bar item runs. */
+  readonly command: string;
+  /** Whether the status bar item is shown: it is not in a folder with no `.mnema`, nor when the setting hides it. */
   readonly visible: boolean;
   /** What the side bar icon carries: the decisions awaiting a judgment, or nothing. */
   readonly badge: BadgeLike | undefined;
@@ -185,7 +206,7 @@ function badgeFor(total: number | undefined): BadgeLike | undefined {
   if (total === undefined || total <= 0) return undefined;
   return {
     value: total,
-    tooltip: total === 1 ? '1 decision awaits a judgment' : `${total} decisions await a judgment`,
+    tooltip: awaitingPhrase(total),
   };
 }
 
@@ -229,7 +250,6 @@ export function activate(
     proposed: [],
     stacks: [],
     total: 0,
-    seen: undefined,
     channels: undefined,
   };
   const keep = <T extends Disposable>(d: T): T => {
@@ -242,20 +262,22 @@ export function activate(
   const lensesChanged = keep(new api.EventEmitter<void>());
   const bar = keep(api.window.createStatusBarItem(api.StatusBarAlignment.Left));
   let barVisible = false;
-  const showBar = (): void => {
-    barVisible = true;
-    bar.show();
+  // The setting is the person's, on this machine: it is read each time the bar is placed.
+  const barEnabled = (): boolean =>
+    api.workspace.getConfiguration('mnema').get<boolean>('statusBar.enabled', true);
+  // A folder with no record shows no bar item (there is nothing for it to say), and neither does
+  // a person who switched it off.
+  const placeBar = (): void => {
+    barVisible = hasRecord() && barEnabled();
+    if (barVisible) bar.show();
+    else bar.hide();
   };
-  const hideBar = (): void => {
-    barVisible = false;
-    bar.hide();
-  };
-  bar.command = 'mnema.refresh';
+  bar.name = 'mnema';
+  bar.command = CONTAINER_COMMAND;
   bar.text = 'mnema: reading';
   bar.tooltip = '';
   bar.accessibilityInformation = { label: 'mnema: reading', role: 'button' };
-  // A folder with no record shows no bar item: there is nothing for it to say.
-  if (hasRecord()) showBar();
+  placeBar();
 
   /** The view that lists what awaits a judgment carries the number on the side bar icon. */
   let proposedView: TreeViewLike | undefined;
@@ -265,18 +287,17 @@ export function activate(
   };
 
   function applyBar(shown: ReturnType<typeof describeBar>): void {
-    showBar();
+    placeBar();
     bar.text = shown.text;
-    bar.tooltip = shown.tooltip;
+    const tooltip = new api.MarkdownString(shown.tooltip);
+    tooltip.isTrusted = { enabledCommands: TOOLTIP_COMMANDS };
+    tooltip.supportHtml = false;
+    bar.tooltip = tooltip;
     bar.accessibilityInformation = shown.accessibility;
-    bar.command =
-      shown.action === 'settings'
-        ? {
-            command: 'workbench.action.openSettings',
-            title: 'mnema: Set the mnema command',
-            arguments: ['mnema.command'],
-          }
-        : 'mnema.refresh';
+    bar.command = shown.command;
+    bar.backgroundColor = shown.warning
+      ? new api.ThemeColor('statusBarItem.warningBackground')
+      : undefined;
   }
 
   async function refresh(): Promise<void> {
@@ -293,11 +314,10 @@ export function activate(
       session.stacks = [];
       session.total = 0;
       session.channels = undefined;
-      session.seen = undefined;
       void api.commands.executeCommand('setContext', 'mnema.cliMissing', false);
       void api.commands.executeCommand('setContext', 'mnema.proposedRead', false);
       void api.commands.executeCommand('setContext', 'mnema.stacksRead', false);
-      hideBar();
+      placeBar();
       setAwaiting(undefined);
       stacksChanged.fire();
       treeChanged.fire();
@@ -320,7 +340,9 @@ export function activate(
           cli,
           verdict: { kind: 'unreadable' },
           channels: undefined,
-          coverage: undefined,
+          printed: [],
+          awaiting: undefined,
+          readAt: new Date(),
         }),
       );
       stacksChanged.fire();
@@ -340,16 +362,29 @@ export function activate(
     void api.commands.executeCommand('setContext', 'mnema.stacksRead', listedStacks !== undefined);
     stacksChanged.fire();
     session.channels = channels.code === 0 ? readChannels(channels.stdout) : undefined;
+    const listed = list.code === 0 ? readProposed(list.stdout) : undefined;
+    const verdict = readVerdict(verify.stdout);
+    const lines = (text: string, most: number): string[] =>
+      text
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line !== '')
+        .slice(0, most);
     applyBar(
       describeBar({
         cli,
-        verdict: readVerdict(verify.stdout),
+        verdict,
         channels: session.channels,
-        // The words are the command line's own, as many lines as it printed up to a few.
-        coverage: coverage.stdout.trim().split('\n').slice(0, 6).join('\n') || undefined,
+        // The words are the command line's own: what `mnema verify` printed, up to a few lines,
+        // and when it failed, the first issues it listed on its error output.
+        printed: [
+          ...lines(coverage.stdout, 6),
+          ...(verdict.kind === 'failed' ? lines(coverage.stderr, 3) : []),
+        ],
+        awaiting: listed?.total,
+        readAt: new Date(),
       }),
     );
-    const listed = list.code === 0 ? readProposed(list.stdout) : undefined;
     void api.commands.executeCommand('setContext', 'mnema.proposedRead', listed !== undefined);
     if (listed === undefined) {
       // A list that was not read is not an empty one: the view says it did not read, and no number is shown.
@@ -361,8 +396,6 @@ export function activate(
     }
     const { items, total } = listed;
     setAwaiting(total);
-    const fresh = newlyProposed(session.seen, items);
-    session.seen = new Set(items.map((item) => item.id));
     session.proposed = items;
     session.total = total;
     await Promise.all(
@@ -374,16 +407,6 @@ export function activate(
         }),
     );
     treeChanged.fire();
-    if (fresh.length > 0) {
-      const first = fresh[0];
-      const what =
-        fresh.length === 1 && first !== undefined
-          ? `a decision was proposed: ${first.title}`
-          : `${fresh.length} decisions were proposed`;
-      void api.window.showInformationMessage(`mnema: ${what}`, 'Review').then((choice) => {
-        if (choice === 'Review') void api.commands.executeCommand('mnema.proposed.focus');
-      });
-    }
   }
 
   async function rulesOver(path: string): Promise<RuleView[]> {
@@ -729,6 +752,7 @@ export function activate(
   keep(
     api.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('mnema.command')) void refresh();
+      else if (e.affectsConfiguration('mnema.statusBar.enabled')) placeBar();
     }),
   );
   keep({ dispose: () => timer !== undefined && clearTimeout(timer) } as Disposable);
@@ -737,7 +761,8 @@ export function activate(
   return {
     shown: () => ({
       text: bar.text,
-      tooltip: bar.tooltip,
+      tooltip: typeof bar.tooltip === 'string' ? bar.tooltip : bar.tooltip.value,
+      command: bar.command,
       visible: barVisible,
       badge: proposedView?.badge,
     }),

@@ -8,5 +8,5 @@ This extension never reads the record itself. Every list, rule and verdict it sh
 - Or, if it is installed somewhere the editor does not look, set the `mnema.command` setting to
   the path of the executable. It is a user setting: a repository's own settings cannot change it.
 
-When the command cannot be run, the status bar says "command not found" and the mnema views say
+When the command cannot be run, the status bar says "mnema not found" and the mnema views say
 the command is missing, which is not the same as nothing being pending.

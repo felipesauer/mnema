@@ -28,19 +28,26 @@ a finding, and a good capture.
    Stacks, say the folder holds no record and how to start one, in sentences, with no blue button. Run
    `mnema: Refresh` from the palette: one message says the folder holds no record.
 2. **A folder with a `.mnema` and no `mnema` command.** Set `mnema.command` in your user settings to a
-   path that does not exist. The status bar item says the command was not found, with a warning
+   path that does not exist. The status bar item says "mnema not found", with a warning
    icon. The two views say the command is missing, and do not say nothing is pending. Hovering the
-   item says what to install or set. Clicking it opens the `mnema.command` setting.
-3. **One decision awaiting a judgment.** The view lists it, and the mnema icon in the activity bar carries the badge 1. A notification says a decision was
-   proposed, with a Review action. Each item shows two icon buttons (accept, reject), not text.
+   item says why, and what to install or set, with a link to the `mnema.command` setting. Clicking
+   it opens the mnema container.
+3. **One decision awaiting a judgment.** The view lists it, and the mnema icon in the activity bar carries the badge 1. The
+   status bar says the level and `1 to judge`. Propose another from a terminal: the badge and the bar go to 2 and
+   no notification appears. Each item shows two icon buttons (accept, reject), not text.
 4. **Accept with an empty note.** The input box refuses it and says why; nothing is recorded.
 5. **The lens.** Open a file under an address a decision in force names: the lens above its first
    line says how many rules govern it, and clicking it opens the list.
 6. **The status bar on three themes.** Light, dark and high contrast. The icon and the text are
    legible on each. The item never shows a check mark or a seal: only the level `mnema verify`
-   printed. Hover it: the lines are the ones `mnema verify` printed.
+   printed, and `N to judge` when something awaits. Hover it: the tooltip is markdown, and the lines
+   in its block are the ones `mnema verify` printed. Change one byte of a file in `.mnema/tails/` in a
+   throwaway copy and refresh: the item takes the warning background of the theme and the tooltip
+   says what failed. Set `mnema.statusBar.enabled` to false in the user settings: the item goes away
+   with no reload; a `.vscode/settings.json` that sets it has no effect.
 7. **A screen reader** (Orca, NVDA or VoiceOver). It announces the status bar item as a button with the
-   label the extension set, and reads the items of both views.
+   label the extension set (the whole sentence, "mnema: fully-signed, 1 decision awaits a judgment"),
+   and reads the items of both views.
 8. **Zoom to 200 percent, and the walkthrough.** The views, the welcome texts and the status bar item
    stay usable. Open **Help > Welcome > Walkthroughs** and read the three steps: the words match what
    `mnema init` and `mnema verify` do, and none says the record is safe or verified.
