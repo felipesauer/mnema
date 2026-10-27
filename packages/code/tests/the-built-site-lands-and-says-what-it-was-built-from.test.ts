@@ -620,7 +620,7 @@ when('the built site', () => {
     expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
   });
 
-  it('draws the card as the SVG of the front page rasterized with its letters, and not as the same SVG without them', async () => {
+  it('draws the card as the SVG of the front page rasterized with its letters, and not as the same SVG without its words or with them backwards', async () => {
     const require = createRequire(join(SITE, 'package.json'));
     const sharp = require('sharp') as (input: Buffer) => {
       png: () => { toBuffer: () => Promise<Buffer> };
@@ -639,12 +639,22 @@ when('the built site', () => {
       built.equals(await sharp(Buffer.from(svg)).png().toBuffer()),
       'og.png is not the card of the front page',
     ).toBe(true);
+    // Without its <text> the card is another picture; and with each line written backwards it is another one still, but
+    // only if the machine has a face to draw letters with: a machine with none draws the same boxes for any string.
     const bare = svg.replace(/<text\b[^>]*>[^<]*<\/text>/g, '');
+    const backwards = svg.replace(
+      /(<text\b[^>]*>)([^<]*)(<\/text>)/g,
+      (_all, open: string, words: string, close: string) =>
+        `${open}${[...words].reverse().join('')}${close}`,
+    );
     expect(bare).not.toBe(svg);
-    expect(
-      built.equals(await sharp(Buffer.from(bare)).png().toBuffer()),
-      'og.png has no letters: the machine that built it drew the card without its text',
-    ).toBe(false);
+    expect(backwards).not.toBe(svg);
+    for (const other of [bare, backwards]) {
+      expect(
+        built.equals(await sharp(Buffer.from(other)).png().toBuffer()),
+        'og.png has no letters: the machine that built it drew the card without a face for its text',
+      ).toBe(false);
+    }
   });
 
   it('serves a 404 that leads into the site: three links at least, to pages the site holds', () => {
