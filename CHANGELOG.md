@@ -80,6 +80,8 @@ with its own changelog.
 
 - **`@azure/msal-node` is lifted to 7.1 by an override, closing GHSA-xcx6-jx8p-x3h5.** It reached the tree only through the VS Code extension's packing tool (`@vscode/vsce` -> `@azure/identity`, which still asks for 6.x), a development dependency that no published package ships. The workspace and the release job's own tool folder now resolve it to 7.1.1, the extension still packs the same twelve files, and the advisory scan no longer ignores the advisory.
 
+- **`qs` resolves to 6.16.1 everywhere, closing GHSA-6pq8-jhm2-2vcw.** The advisory is a denial of service: `qs.stringify` with `arrayFormat: 'comma'` throws an uncaught `TypeError` on an array element that carries a non-callable own `toString`. The published package already received the fixed version through `body-parser` (the `body-parser` override and the 6.16.1 entry for `express`), and mnema's MCP server speaks stdio and never starts express, so the path was not reachable from `@mnema/code`. The one copy left at 6.16.0 came from the VS Code extension's packing tool (`@vscode/vsce` -> `typed-rest-client`), a development dependency that no published package ships; the lockfile now points it at 6.16.1, a version its range already accepts.
+
 ## [0.1.3] - 2026-10-26
 
 ### Added
