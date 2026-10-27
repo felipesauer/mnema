@@ -8,9 +8,9 @@
  *
  * AFTER A COMPACTION IS NOT TAKEN. The stand-in reports a full window after the third call, and
  * the host made no request for a summary: in one `gemini -p` run there is a single turn of the
- * person, and the host's compression splits the history at a turn of the person after the first
- * (`findCompressSplitPoint`, read in the bundle of 0.63.0), so it compresses nothing. No request of
- * a compacted conversation was seen, so the table says it was not measured. The case below
+ * person, and the host's compression finds nothing to compress until there is a second turn of the
+ * person or a closing text of the model (`findCompressSplitPoint`, read in the bundle of 0.63.0).
+ * No request of a compacted conversation was seen, so the table says it was not measured. The case below
  * requires that the host asked for no summary, so that a version that does is red and the cell is
  * taken up.
  *
