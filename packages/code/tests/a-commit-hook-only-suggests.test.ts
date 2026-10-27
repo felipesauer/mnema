@@ -319,7 +319,7 @@ describe('a commit with the hook installed', () => {
 });
 
 describe('where git keeps the block in the message, nothing is written', () => {
-  const REAL = (): string => bin('real-bin', `exec "${process.execPath}" "${CLI}" "$@"`);
+  const realBin = (): string => bin('real-bin', `exec "${process.execPath}" "${CLI}" "$@"`);
 
   /** Stages a governed file and returns the environment of a commit that opens the editor. */
   function stageGoverned(file: string): { env: Record<string, string>; seen: string } {
@@ -327,7 +327,7 @@ describe('where git keeps the block in the message, nothing is written', () => {
     writeFileSync(join(repo, file), `${Math.random()}`);
     git(['add', file]);
     const { command, seen } = editor();
-    return { env: envWith(REAL(), { GIT_EDITOR: command, GIT_MERGE_AUTOEDIT: 'yes' }), seen };
+    return { env: envWith(realBin(), { GIT_EDITOR: command, GIT_MERGE_AUTOEDIT: 'yes' }), seen };
   }
 
   const cited = (): boolean => git(['log', '--format=%B']).stdout.includes('Mnema-Decision');
