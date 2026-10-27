@@ -274,9 +274,7 @@ export function landingOf({
   readme: source,
   facts,
   docs,
-  copy = (key) => {
-    throw new Error(`the landing template asks for {{copy ${key}}}, and no copy was given`);
-  },
+  copy,
 }) {
   const readme = withoutWhatIsNotOnTheSite(source, 'README.md');
   const pitch = pitchOf(readme);
@@ -302,7 +300,10 @@ export function landingOf({
       if (key in simple) value = simple[key];
       else if (key.startsWith('link ')) value = whereItLands(label(key.slice(5)).target, 'README.md', facts, docs);
       else if (key.startsWith('label ')) value = label(key.slice(6)).label;
-      else if (key.startsWith('copy ')) value = copy(key.slice(5));
+      else if (key.startsWith('copy ')) {
+        if (copy === undefined) throw new Error(`the landing template asks for {{${key}}}, and no microcopy was given`);
+        value = copy(key.slice(5));
+      }
       else if (key.startsWith('section ')) {
         const heading = key.slice(8);
         value = `## ${heading}\n\n${rewriteLinks(pictureAsTwoImages(sectionOf(readme, heading)), 'README.md', facts, docs)}`;
