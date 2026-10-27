@@ -213,7 +213,7 @@ export function activate(
    * The one door to the command line. The side bar container is there in every folder, and opening
    * its view starts the extension, so in a folder with no `.mnema` nothing may start a `mnema`
    * process: this is the only place that calls `runner()`, and it answers with a refusal, without
-   * starting anything, when there is no record. (`the-command-line-is-never-run-without-a-record`.)
+   * starting anything, when there is no record. The describe "in a folder with no .mnema the command line is never run" holds it.
    */
   const read: Run = async (args) =>
     hasRecord() ? runner()(args) : { code: 1, stdout: '', stderr: NO_RECORD };
