@@ -4,7 +4,8 @@
  * It opens the packed file (with the system `unzip`, which a runner has) and fails unless the
  * manifest inside is the one a store takes: published by `mnema`, not `private`, with its icon, its
  * changelog and its readme in the file, the icon a 128 by 128 PNG, and the side bar's icon the
- * monochrome SVG the manifest names. It needs no token and sends
+ * monochrome SVG the manifest names and the status bar's icon font a real TrueType file with the
+ * tables a browser sanitizer asks for. It needs no token and sends
  * nothing: it is the proof, before any store is asked, that the file is acceptable as it stands.
  */
 
@@ -53,6 +54,30 @@ else {
         refusals.push(`the container icon sets ${name}="${value}", not currentColor or none`);
     }
   }
+}
+// The status bar's M is a glyph of a font the manifest names: the file is in the vsix, is TrueType, and
+// holds the tables the editor's sanitizer asks of a web font (one it refuses draws nothing, silently).
+const FONT_TABLES = ['OS/2', 'cmap', 'glyf', 'head', 'hhea', 'hmtx', 'loca', 'maxp', 'name', 'post'];
+const icons = Object.entries(manifest.contributes?.icons ?? {});
+if (icons.length === 0) refusals.push('the manifest names no icon font in contributes.icons');
+for (const [id, icon] of icons) {
+  const fontPath = icon?.default?.fontPath;
+  const inside = `extension/${fontPath}`;
+  if (typeof fontPath !== 'string' || !listing.includes(inside)) {
+    refusals.push(`${id}: the font ${fontPath} is not in the file`);
+    continue;
+  }
+  const font = read(inside);
+  if (font.length < 12 || font.readUInt32BE(0) !== 0x00010000) {
+    refusals.push(`${id}: ${fontPath} does not begin as a TrueType file`);
+    continue;
+  }
+  const found = new Set();
+  for (let i = 0; i < font.readUInt16BE(4); i++) found.add(font.toString('latin1', 12 + 16 * i, 16 + 16 * i));
+  for (const table of FONT_TABLES)
+    if (!found.has(table)) refusals.push(`${id}: ${fontPath} has no ${table} table`);
+  if (!/^\\E[0-9A-F]{3}$/i.test(icon.default.fontCharacter ?? ''))
+    refusals.push(`${id}: the character ${icon.default.fontCharacter} is not a private-use escape`);
 }
 const identity = read('extension.vsixmanifest').toString('utf8').match(/<Identity [^>]*>/)?.[0] ?? '';
 if (!/Publisher="mnema"/.test(identity)) refusals.push(`the vsix manifest says ${identity}`);

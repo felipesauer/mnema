@@ -107,6 +107,13 @@ with its own changelog.
 
 ### Changed
 
+- **The VS Code extension shows the mnema M in the status bar.** Wherever `mnema verify` was read, the item wears the M of the
+  console's wordmark instead of a book or an info mark (the level, strong or weak, stays in the word beside it); a failed
+  check keeps the editor's error icon and an unreadable answer its question mark, so a record that does not verify never wears the
+  mark as if it were ordinary. The M is a glyph of an icon font (`contributes.icons`, `mnema-m`) that `package` writes from the
+  wordmark's blocks with no new dependency, as it writes the side bar's SVG; the check on the packed file refuses a font without the
+  tables the editor's sanitizer asks for, and the check in a real editor finds the installed font and a bar whose text names it.
+
 - **The VS Code extension starts far fewer `mnema` processes per reading.** The decisions awaiting a judgment come from one
   `mnema status --json` (with the `ADR-n` of each), and `mnema search` is asked too only when `status` served fewer than it counted,
   so the view still lists up to 200; the one `mnema show` per new proposal is gone, and with it the justification in an item's

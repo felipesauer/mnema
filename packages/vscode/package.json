@@ -84,6 +84,15 @@
         }
       }
     ],
+    "icons": {
+      "mnema-m": {
+        "description": "The mnema mark",
+        "default": {
+          "fontPath": "media/mnema-icons.ttf",
+          "fontCharacter": "\\E000"
+        }
+      }
+    },
     "viewsContainers": {
       "activitybar": [
         {
