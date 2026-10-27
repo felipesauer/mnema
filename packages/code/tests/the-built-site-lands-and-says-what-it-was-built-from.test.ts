@@ -68,22 +68,23 @@ const GITHUB = 'https://github.com/felipesauer/mnema';
  * long source holds somewhere, so being found inside the text proves nothing for it, and it must be a
  * whole line of a source; a longer block need only be found in the text.
  */
-function sourcesSay(text: string): (block: string) => boolean {
+function sourcesSay(text: string, steps = ''): (block: string) => boolean {
   const corpus = norm(text);
   // A line that is one element of HTML (a table's `<th>`) is a line of its text: the words are the source's.
   const words = (l: string): string =>
     (/^\s*<(\w+)\b[^>]*>([^<]*)<\/\1>\s*$/.exec(l)?.[2] ?? l).replace(/^\s*(?:#+|[-*|])\s*/, '');
   const lines = new Set(text.split('\n').map((l) => norm(words(l))));
-  // The bold lead-in of a numbered step (`1. **Record.** ...`) is a label the README sets apart: a line of its own.
-  for (const m of text.matchAll(/^\d+\. \*\*([^*]+?)\.\*\*/gm)) lines.add(norm(m[1] ?? ''));
+  // The bold lead-in of a numbered step (`1. **Record.** ...`) of the section the landing's steps come from is a label
+  // the README sets apart: a line of its own. Anywhere else a numbered bold word is not a block the landing may type.
+  for (const m of steps.matchAll(/^\d+\. \*\*([^*]+?)\.\*\*/gm)) lines.add(norm(m[1] ?? ''));
   return (block) =>
     block.split(' ').length < 4 ? lines.has(norm(block)) : corpus.includes(norm(block));
 }
 
 describe('a short block of the landing is held to a whole line of a source', () => {
-  const say = sourcesSay(
-    '# Why mnema\n\nHello there, and welcome to the long paragraph.\n- A label\n<th align="center">A cell</th>\n1. **A step.** Its words.\n',
-  );
+  const text =
+    '# Why mnema\n\nHello there, and welcome to the long paragraph.\n- A label\n<th align="center">A cell</th>\n1. **A step.** Its words.\n2. **Other.** More words.\n';
+  const say = sourcesSay(text, '1. **A step.** Its words.\n');
 
   it('passes a heading or a label that is a line of a source, and a long block found inside it', () => {
     expect(say('Why mnema')).toBe(true);
@@ -97,6 +98,7 @@ describe('a short block of the landing is held to a whole line of a source', () 
     expect(say('Hello.')).toBe(false);
     expect(say('Hello there')).toBe(false);
     expect(say('align center')).toBe(false);
+    expect(say('Other')).toBe(false);
     expect(say('long paragraph')).toBe(false);
   });
 });
@@ -242,6 +244,10 @@ when('the built site', () => {
     return (lines[0] ?? '').split('#')[0]?.trim() ?? '';
   };
 
+  /** The README's "How it works" section: where the landing's steps, and their bold lead-ins, come from. */
+  const howItWorks = (): string =>
+    /\n## How it works\n([\s\S]*?)(?=\n## )/.exec(readText(join(ROOT, 'README.md')))?.[1] ?? '';
+
   const landingCorpus = (): string =>
     [
       readText(join(ROOT, 'README.md')),
@@ -255,7 +261,7 @@ when('the built site', () => {
     ].join('\n');
 
   it('has no sentence of its own on the landing: each block is in the README, a page of docs/, the description or an entry of site/copy.md', () => {
-    const say = sourcesSay(landingCorpus());
+    const say = sourcesSay(landingCorpus(), howItWorks());
     const landing = html('index.html');
     const hero = [
       ...landing.matchAll(/<(?:h1|p)\b(?![^>]*the-build)[^>]*>([\s\S]*?)<\/(?:h1|p)>/g),
@@ -272,7 +278,7 @@ when('the built site', () => {
   });
 
   it('has no sentence of its own anywhere in the <main> of the landing: every block, every alt, title and aria-label, and nothing left over', () => {
-    const say = sourcesSay(landingCorpus());
+    const say = sourcesSay(landingCorpus(), howItWorks());
     // The command shown beside the verdict is a line of the Quick start read up to its `#`: a source, as the case below holds.
     const command = verifyCommandInReadme();
     const { text, spoken, stripped } = blocksOfMain(html('index.html'));
@@ -542,7 +548,7 @@ when('the built site', () => {
     expect(html('index.html')).toMatch(/<h2 id="how-it-works">How it works<\/h2>/);
   });
 
-  it("puts in the head of every page the banner's wordmark, with the name of the repository, and no title in letters", async () => {
+  it("puts in the head of every page the banner's wordmark, the name of the repository read once, and no title in letters", async () => {
     const { headerWordmark } = await import(
       pathToFileURL(join(ROOT, '.github/the-front-page/draw.mjs')).href
     );
@@ -556,9 +562,16 @@ when('the built site', () => {
         /<a href="[^"]*" class="site-title[^>]*>([\s\S]*?)<\/a>/.exec(html(page))?.[1] ?? '';
       const images = [...title.matchAll(/<img\b[^>]*>/g)].map((m) => m[0]);
       expect(images, `${page}: one wordmark per theme`).toHaveLength(2);
+      expect(
+        [...title.matchAll(/<span class="sr-only[^"]*"[^>]*>([^<]*)<\/span>/g)].map((m) => m[1]),
+        `${page}: the title is named once, by the repository's name`,
+      ).toEqual([name]);
       for (const [i, theme] of ['dark', 'light'].entries()) {
         const img = images[i] ?? '';
-        expect(/\salt="([^"]*)"/.exec(img)?.[1], `${page}: the name`).toBe(name);
+        // The name is read once: the images are decoration and the `sr-only` of the title says it.
+        // An empty `alt` is written bare (`alt`) or as `alt=""`; no `alt` at all would not be an empty one.
+        const alt = /\salt(?:="([^"]*)")?(?=[\s>])/.exec(img);
+        expect(alt?.[1] ?? (alt ? '' : '?'), `${page}: no second name in the image`).toBe('');
         const src = /\ssrc="([^"]*)"/.exec(img)?.[1] ?? '';
         expect(src, `${page}: the ${theme} wordmark`).toContain(`wordmark-${theme}.`);
         expect(

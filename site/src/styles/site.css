@@ -103,8 +103,17 @@
   }
 }
 
-/* The title smaller and the banner larger than Starlight's defaults, where there is room for both. */
+/* The title smaller and the banner larger than Starlight's defaults, where there is room for both: the picture's column
+   widens (7fr 4fr to 6fr 5fr) and the picture fills it up to 32rem (25rem). Below 50rem the hero stays as Starlight draws it. */
 @media (min-width: 50rem) {
+  .hero {
+    grid-template-columns: 6fr 5fr;
+  }
+
+  .hero > img {
+    width: min(100%, 32rem);
+  }
+
   .hero h1 {
     font-size: clamp(var(--sl-text-4xl), 4vw, var(--sl-text-5xl));
   }

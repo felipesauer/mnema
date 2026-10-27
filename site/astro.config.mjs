@@ -17,7 +17,7 @@ export default defineConfig({
     starlight({
       title: 'mnema',
       favicon: '/favicon.png',
-      logo: { dark: './src/assets/wordmark-dark.svg', light: './src/assets/wordmark-light.svg', alt: facts.name, replacesTitle: true },
+      logo: { dark: './src/assets/wordmark-dark.svg', light: './src/assets/wordmark-light.svg', alt: '', replacesTitle: true },
       social: [{ icon: 'github', label: 'GitHub', href: facts.repoUrl }],
       sidebar: [...sidebar, { label: 'Record', link: '/record/' }],
       customCss: ['./src/generated/theme.css', './src/styles/site.css'],

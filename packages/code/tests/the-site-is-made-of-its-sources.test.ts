@@ -720,19 +720,27 @@ describe('what the hero reads of the README: the line that installs, the three c
     expect(() => installLineOf(quick('# only a note'))).toThrow(/does not open with a command/);
   });
 
-  it('takes the three headings and the three cells of the table, and stops for any other count', () => {
-    expect(cardsOf(table(['A', 'B', 'C'], ['one <b>x</b>', 'two', 'three']))).toEqual([
-      { title: 'A', body: 'one x' },
-      { title: 'B', body: 'two' },
-      { title: 'C', body: 'three' },
+  it('takes the three headings and the three cells of the cards table, and stops for any other table', () => {
+    const cards = ['Remember', 'Enforce', 'Prove'];
+    expect(cardsOf(table(cards, ['one <b>x</b>', 'two', 'three']))).toEqual([
+      { title: 'Remember', body: 'one x' },
+      { title: 'Enforce', body: 'two' },
+      { title: 'Prove', body: 'three' },
     ]);
-    expect(() => cardsOf(table(['A', 'B'], ['one', 'two']))).toThrow(/2 titles and 2 cells/);
-    expect(() => cardsOf(table(['A', 'B', 'C', 'D'], ['1', '2', '3', '4']))).toThrow(/4 titles/);
-    expect((cardsOf(real) as { title: string }[]).map((c) => c.title)).toEqual([
-      'Remember',
-      'Enforce',
-      'Prove',
-    ]);
+    expect(() => cardsOf(table(['Remember', 'Enforce'], ['one', 'two']))).toThrow(
+      /no table with Remember, Enforce, Prove/,
+    );
+    expect(() => cardsOf(table(['A', 'B', 'C'], ['1', '2', '3']))).toThrow(/no table with/);
+    expect(() => cardsOf(table(cards, ['1', '', '3']))).toThrow(/3 titles and 3 cells/);
+    expect((cardsOf(real) as { title: string }[]).map((c) => c.title)).toEqual(cards);
+  });
+
+  it('reads the table of the cards and not the first table of the README', () => {
+    const above = table(['x', 'y', 'z'], ['a', 'b', 'c']);
+    const got = cardsOf(
+      `${above}\n${table(['Remember', 'Enforce', 'Prove'], ['one', 'two', 'three'])}`,
+    );
+    expect((got as { body: string }[]).map((c) => c.body)).toEqual(['one', 'two', 'three']);
   });
 
   const four = ['1. **A.** one', '2. **B.** two `c<d>`', '3. **C.** three', '4. **D.** four'];
@@ -756,6 +764,15 @@ describe('what the hero reads of the README: the line that installs, the three c
       /5 numbered steps/,
     );
     expect(() => stepsOf(how(...four), 'Nope')).toThrow(/no section "Nope"/);
+  });
+
+  it('stops for a numbered line that is not `N. **Title.** body`, and does not drop it', () => {
+    expect(() => stepsOf(how(...four, '5. Verify it again.'), 'How it works')).toThrow(
+      /numbered line/,
+    );
+    expect(() => stepsOf(how(...four.slice(0, 3), '4. D without bold.'), 'How it works')).toThrow(
+      /numbered line.*4\. D/,
+    );
   });
 });
 
