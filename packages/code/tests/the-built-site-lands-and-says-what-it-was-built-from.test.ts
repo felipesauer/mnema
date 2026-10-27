@@ -70,25 +70,33 @@ const GITHUB = 'https://github.com/felipesauer/mnema';
  */
 function sourcesSay(text: string): (block: string) => boolean {
   const corpus = norm(text);
-  const lines = new Set(text.split('\n').map((l) => norm(l.replace(/^\s*(?:#+|[-*|])\s*/, ''))));
+  // A line that is one element of HTML (a table's `<th>`) is a line of its text: the words are the source's.
+  const words = (l: string): string =>
+    (/^\s*<(\w+)\b[^>]*>([^<]*)<\/\1>\s*$/.exec(l)?.[2] ?? l).replace(/^\s*(?:#+|[-*|])\s*/, '');
+  const lines = new Set(text.split('\n').map((l) => norm(words(l))));
+  // The bold lead-in of a numbered step (`1. **Record.** ...`) is a label the README sets apart: a line of its own.
+  for (const m of text.matchAll(/^\d+\. \*\*([^*]+?)\.\*\*/gm)) lines.add(norm(m[1] ?? ''));
   return (block) =>
     block.split(' ').length < 4 ? lines.has(norm(block)) : corpus.includes(norm(block));
 }
 
 describe('a short block of the landing is held to a whole line of a source', () => {
   const say = sourcesSay(
-    '# Why mnema\n\nHello there, and welcome to the long paragraph.\n- A label\n',
+    '# Why mnema\n\nHello there, and welcome to the long paragraph.\n- A label\n<th align="center">A cell</th>\n1. **A step.** Its words.\n',
   );
 
   it('passes a heading or a label that is a line of a source, and a long block found inside it', () => {
     expect(say('Why mnema')).toBe(true);
     expect(say('A label')).toBe(true);
+    expect(say('A cell')).toBe(true);
+    expect(say('A step')).toBe(true);
     expect(say('Hello there, and welcome to the long paragraph.')).toBe(true);
   });
 
   it('refuses a short block that is only words inside a longer line', () => {
     expect(say('Hello.')).toBe(false);
     expect(say('Hello there')).toBe(false);
+    expect(say('align center')).toBe(false);
     expect(say('long paragraph')).toBe(false);
   });
 });
@@ -484,6 +492,80 @@ when('the built site', () => {
       expect(html(other), `${other} carries the proof`).not.toMatch(
         /the-proof|data-verdict|a-write-refused/,
       );
+    }
+  });
+
+  it('offers on the landing the line the README opens its Quick start with, and copies exactly it', () => {
+    const readme = readText(join(ROOT, 'README.md'));
+    const quick = /\n## Quick start\n[\s\S]*?```sh\n([^\n]*)\n/.exec(readme)?.[1] ?? '';
+    const line = quick.split('#')[0]?.trim() ?? '';
+    expect(line, 'the Quick start opens with a command').toMatch(/^\S/);
+    const install =
+      /<div class="the-install">([\s\S]*?)<\/figure><\/div><\/div>/.exec(html('index.html'))?.[1] ??
+      '';
+    expect(install, 'the landing has the install line').not.toBe('');
+    expect(textOf(/<pre\b[\s\S]*?<\/pre>/.exec(install)?.[0] ?? '')).toBe(line);
+    expect(/data-code="([^"]*)"/.exec(install)?.[1], 'what the button copies').toBe(line);
+  });
+
+  it('shows as cards the cells of the README table and the steps of its How it works, in the README order', () => {
+    const readme = readText(join(ROOT, 'README.md'));
+    const table = /<table>([\s\S]*?)<\/table>/.exec(readme)?.[1] ?? '';
+    const cell = (tag: string): string[] =>
+      [...table.matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, 'g'))].map((m) =>
+        textOf(m[1] ?? ''),
+      );
+    const steps = [
+      ...(/\n## How it works\n([\s\S]*?)\n## /.exec(readme)?.[1] ?? '').matchAll(
+        /^\d\. \*\*([^*]+?)\.\*\* (.+)$/gm,
+      ),
+    ];
+    const grids = [
+      ...html('index.html').matchAll(
+        /<div class="card-grid[^"]*">([\s\S]*?)<\/div><\/div>(?=<(?:section|h2|\/main|div class="the-|footer))/g,
+      ),
+    ];
+    const cardsOf = (grid: string): { title: string; body: string }[] =>
+      [...grid.matchAll(/<article class="card[^"]*">[\s\S]*?<\/article>/g)].map((a) => ({
+        title: norm(textOf(/<p class="title[^"]*">([\s\S]*?)<\/p>/.exec(a[0])?.[1] ?? '')),
+        body: norm(textOf(/<div class="body[^"]*">([\s\S]*?)<\/div>/.exec(a[0])?.[1] ?? '')),
+      }));
+    expect(grids.length, 'two grids of cards: the table and the steps').toBe(2);
+    expect(cardsOf(grids[0]?.[1] ?? '')).toEqual(
+      cell('th').map((title, i) => ({ title: norm(title), body: norm(cell('td')[i] ?? '?') })),
+    );
+    expect(cell('th')).toHaveLength(3);
+    expect(steps).toHaveLength(4);
+    expect(cardsOf(grids[1]?.[1] ?? '')).toEqual(
+      steps.map((m) => ({ title: norm(m[1] ?? '?'), body: norm(m[2] ?? '') })),
+    );
+    expect(html('index.html')).toMatch(/<h2 id="how-it-works">How it works<\/h2>/);
+  });
+
+  it("puts in the head of every page the banner's wordmark, with the name of the repository, and no title in letters", async () => {
+    const { headerWordmark } = await import(
+      pathToFileURL(join(ROOT, '.github/the-front-page/draw.mjs')).href
+    );
+    const { THE_BLOCKS } = await import('../src/presentation/banner.js');
+    const rootPackage = JSON.parse(readText(join(ROOT, 'package.json'))) as {
+      repository: { url: string };
+    };
+    const name = /\/([^/.]+)(?:\.git)?$/.exec(rootPackage.repository.url)?.[1] ?? '?';
+    for (const page of ['index.html', '404.html', 'docs/install/index.html']) {
+      const title =
+        /<a href="[^"]*" class="site-title[^>]*>([\s\S]*?)<\/a>/.exec(html(page))?.[1] ?? '';
+      const images = [...title.matchAll(/<img\b[^>]*>/g)].map((m) => m[0]);
+      expect(images, `${page}: one wordmark per theme`).toHaveLength(2);
+      for (const [i, theme] of ['dark', 'light'].entries()) {
+        const img = images[i] ?? '';
+        expect(/\salt="([^"]*)"/.exec(img)?.[1], `${page}: the name`).toBe(name);
+        const src = /\ssrc="([^"]*)"/.exec(img)?.[1] ?? '';
+        expect(src, `${page}: the ${theme} wordmark`).toContain(`wordmark-${theme}.`);
+        expect(
+          readText(join(DIST, src.slice(BASE.length))),
+          `${page}: the ${theme} wordmark is drawn from the rows`,
+        ).toBe(headerWordmark(THE_BLOCKS, theme));
+      }
     }
   });
 

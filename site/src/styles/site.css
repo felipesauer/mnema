@@ -79,3 +79,39 @@
     display: none;
   }
 }
+
+/* The head: the wordmark in place of the title, at the height of a line of the bar. */
+.site-title img {
+  height: 1.1rem;
+  width: auto;
+}
+
+/* The hero's install line and cards. Only Starlight's variables. */
+.the-install {
+  margin-block: 2rem 1rem;
+  min-width: 0;
+}
+
+.the-install .expressive-code {
+  max-width: 100%;
+}
+
+/* Three cards in a row where the page is wide: two would leave the third alone on a line. */
+@media (min-width: 72rem) {
+  .the-three .card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* The title smaller and the banner larger than Starlight's defaults, where there is room for both. */
+@media (min-width: 50rem) {
+  .hero h1 {
+    font-size: clamp(var(--sl-text-4xl), 4vw, var(--sl-text-5xl));
+  }
+}
+
+main h2#how-it-works {
+  margin-top: 3rem;
+  font-size: var(--sl-text-h2);
+  line-height: var(--sl-line-height-headings);
+}
