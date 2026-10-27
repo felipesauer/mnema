@@ -10,6 +10,10 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Changed
+
+- **The VS Code extension's icon is the banner's M.** It was a cube; it is now the first letter of the console's wordmark, in the banner's accent and block style on its dark page, in a rounded square with a thin lilac border. It is drawn from the rows the console draws (`THE_BLOCKS`), so the icon and the banner cannot drift apart. It reaches the stores with the next published version.
+
 ## [0.1.3] - 2026-10-26
 
 ### Added
