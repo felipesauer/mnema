@@ -3,7 +3,7 @@ import Default from '@astrojs/starlight/components/Hero.astro';
 import proof from '../generated/proof.json';
 
 // Only the landing carries the proof: any page with a `hero` in its frontmatter draws this component.
-const isLanding = Astro.locals.starlightRoute.id === 'index';
+const isLanding = Astro.locals.starlightRoute.id === '';
 const { command, output, sha, repoUrl, caption, recording } = proof;
 ---
 
