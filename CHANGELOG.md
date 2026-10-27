@@ -88,8 +88,8 @@ with its own changelog.
   JavaScript every decision, note and timeline entry is listed, where a checkbox and a rule of style used to hide the rest. The
   verification now starts after the first paint. The stored events are no longer written into the page a second time: opening
   a tail draws its lines from the files the page already carries for the verification (the same text, a byte that is not UTF-8
-  as U+FFFD), so without JavaScript they are not drawn. At this repository's own record the page went from SIZEBEFORE to
-  SIZEAFTER bytes. What the page lists is still written by the command and still not checked against the files in the browser.
+  as U+FFFD), so without JavaScript they are not drawn. At this repository's own record the page went from 1,328,541 to
+  1,042,443 bytes (321 KB to 261 KB gzipped), and a record of 2,112 events made by the product's own writers from 6,002,316 to 4,889,518 bytes. What the page lists is still written by the command and still not checked against the files in the browser.
 
 - **The VS Code extension has a container of its own in the activity bar, with the M, and a badge.** The two views, now
   "Awaiting Judgment" and "Stacks", left the Explorer (below Outline and Timeline, collapsed) for a container titled mnema whose
