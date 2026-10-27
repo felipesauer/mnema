@@ -121,7 +121,12 @@ that is published depends on it). It holds no page of its own: the pages of `doc
 copied into it by the build, under paths git ignores, and the pictures and the icon are read from the files that
 already hold them. The theme is calculated from `ACCENT` and `PAGE` (the two constants the front page is painted with):
 the accent as text is the smallest mix of the other ground into the accent that reads at 4.5:1 on the ground and on every
-ground Starlight maps to a grey, and a case measures that, so a colour of the site that falls under AA fails the suite. The page at `/record/` is what `mnema site` writes of this repository's record, from the binary
+ground Starlight maps to a grey, and a case measures that, so a colour of the site that falls under AA fails the suite. The landing shows the proof: the output of `mnema verify` on the `.mnema/` of the commit (extracted outside the checkout and
+run by the binary built at the same commit, with the command the README's Quick start shows, so an uncommitted change and the
+private tree of whoever builds are not in it) and the recording `recordings/a-write-refused.gif`, copied as it is. The few words
+no other page holds (a caption) are in [`site/copy.md`](site/copy.md), the fourth source beside the README, `docs/` and the
+description of `@mnema/code`: one line each, at most twenty words, every entry used by the build; the case on the landing reads
+every element of its `<main>` and finds each in a source, and no stylesheet may draw text of its own (a `content` that is not empty, or an `attr()`: a case reads the site's CSS and the built one). The page at `/record/` is what `mnema site` writes of this repository's record, from the binary
 built at the same commit, with `--back-link` to the site's root. A stretch of a source that is true of the repository and
 not of the published version the site describes (the sentence that the pages describe the next version) is wrapped in
 `<!-- not-on-the-site -->` and `<!-- /not-on-the-site -->` lines of their own; the build takes out that stretch and nothing
