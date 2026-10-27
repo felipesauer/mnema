@@ -99,9 +99,24 @@ function runInAPage(page: string, script: string): Shown {
     getElementById: (id: string) => elements[id] ?? null,
     createElement: () => element(),
   };
-  const context = vm.createContext({ TextEncoder, TextDecoder, atob, btoa, URL, document });
+  // The script verifies after the first paint, by a timer: the page here has no paint, so the timer
+  // is run by hand once the script has run, which is the moment a browser would have drawn.
+  const pending: (() => void)[] = [];
+  const setTimeout = (callback: () => void): number => pending.push(callback);
+  const context = vm.createContext({
+    TextEncoder,
+    TextDecoder,
+    atob,
+    btoa,
+    URL,
+    document,
+    setTimeout,
+  });
   vm.runInContext('delete globalThis.SharedArrayBuffer', context);
   vm.runInContext(script, context);
+  expect(pending, 'the script verifies later, not while it loads').toHaveLength(1);
+  expect(elements['verdict-status']?.attributes['data-state']).toBeUndefined();
+  for (const callback of pending) callback();
   const status = elements['verdict-status'] as FakeElement;
   const issues = elements['verdict-issues'] as FakeElement;
   return {

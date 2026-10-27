@@ -12,11 +12,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { A_PERSON } from '../one-line.js';
 import { theSiteVerifier } from '../site/verifier-bundle.js';
 import { runDecision } from './decision.js';
 import { runDecisionTransition } from './decision-transition.js';
 import { runInit } from './init.js';
+import { runLink } from './link.js';
 import { runMemory } from './memory.js';
+import { runObserve } from './observe.js';
+import { runRetract } from './retract.js';
 import { runSite } from './site.js';
 
 let sandbox: string;
@@ -142,7 +146,7 @@ describe('mnema site', () => {
     expect(readFileSync(file, 'utf-8')).toBe('not a directory');
   });
 
-  it('writes one index.html with the decisions in force first and the rest behind a control', () => {
+  it('writes one index.html with every decision visible, the ones in force marked, and no control that hides the rest', () => {
     runInit({ cwd: repo, env });
     decide('Keep money in integer cents', 'public', 'accept');
     decide('Store dates as local time', 'public', 'reject');
@@ -155,12 +159,77 @@ describe('mnema site', () => {
     expect(readdirSync(out)).toEqual(['index.html']);
     const page = pageOf(out);
     expect(page).toContain('Keep money in integer cents');
-    expect(page).toMatch(/class="decision in-force"[^>]*><h3>ADR-1 · Keep money in integer cents/);
     expect(page).toMatch(
-      /class="decision not-in-force"[^>]*><h3>ADR-2 · Store dates as local time/,
+      /class="card decision in-force"[^>]*><h3><span id="ADR-1"><\/span>ADR-1 · Keep money in integer cents/,
     );
-    expect(page).toContain('<input type="checkbox" id="all">');
+    expect(page).toMatch(
+      /class="card decision not-in-force"[^>]*><h3><span id="ADR-2"><\/span>ADR-2 · Store dates as local time/,
+    );
+    expect(page).not.toContain('type="checkbox"');
     expect(page).toContain('agreed in review');
+  });
+
+  it('does not write the stored lines a second time: they are drawn in the browser from the files the page carries', () => {
+    runInit({ cwd: repo, env });
+    decide('Keep money in integer cents', 'public', 'accept');
+    const out = join(sandbox, 'out');
+    const done = runSite({ cwd: repo, env }, { out });
+    expect(done.ok && done.events).toBeGreaterThan(0);
+    const whole = pageOf(out);
+    // The script holds the words the chain reads lines by, so it is the page without it that is read here.
+    const page = whole.replace(/<script[\s\S]*?<\/script>/g, '');
+    expect(page.length).toBeLessThan(whole.length);
+    // A stored line begins `{"event":`. In the page it can only be inside the base64 of a file.
+    expect(page).not.toContain('{"event"');
+    expect(page).not.toContain('{&quot;event&quot;');
+    expect(whole).toContain('"tails/');
+    expect(page).toContain('<details class="tail" data-tail="');
+    expect(page).toMatch(/<summary><code>[^<]+<\/code>: \d+ event\(s\)<\/summary><pre><\/pre>/);
+  });
+
+  it('shows the public notes under the decision they belong to, and a note taken back whole with why', () => {
+    runInit({ cwd: repo, env });
+    const rule = decide('Keep money in integer cents', 'public', 'accept');
+    const here = { cwd: repo, env };
+    const seen = runObserve(here, {
+      about: rule.id,
+      topic: 'rounding',
+      text: 'half to even in the ledger',
+      scope: 'public',
+      which: 'claude-code',
+    });
+    const kept = runMemory(here, { content: 'the invoice export rounds twice', scope: 'public' });
+    const loose = runMemory(here, {
+      content: 'a note about nothing in particular',
+      scope: 'public',
+    });
+    const gone = runMemory(here, { content: 'cents are a unit of the past', scope: 'public' });
+    if (!seen.ok || !kept.ok || !loose.ok || !gone.ok) throw new Error('setup: a note was refused');
+    for (const id of [kept.id, gone.id]) {
+      const linked = runLink(here, {
+        subject: id,
+        target: rule.id,
+        rel: 'relates-to',
+        scope: 'public',
+      });
+      expect(linked.ok).toBe(true);
+    }
+    expect(runRetract(here, { id: gone.id, reason: 'it was a draft' }).ok).toBe(true);
+    const out = join(sandbox, 'out');
+    expect(runSite(here, { out }).ok).toBe(true);
+    const page = pageOf(out);
+    const card = /<article[^>]*id="[^"]*"[^>]*>[\s\S]*?<\/article>/.exec(page)?.[0] as string;
+    expect(card).toContain('half to even in the ledger');
+    expect(card).toContain('the invoice export rounds twice');
+    expect(card).toContain('cents are a unit of the past');
+    expect(card).toContain('Why: it was a draft');
+    expect(card).toContain('<span class="badge">agent claude-code</span>');
+    expect(card).toContain(`<span class="badge">${A_PERSON}</span>`);
+    // The note that is about no decision is on the page, and not under one.
+    expect(card).not.toContain('a note about nothing in particular');
+    expect(page.slice(page.indexOf('id="other-notes"'))).toContain(
+      'a note about nothing in particular',
+    );
   });
 
   it('never reads the private tree: a private note and a private rule are in no byte of the page', () => {
@@ -172,11 +241,34 @@ describe('mnema site', () => {
       { content: 'PRIVATE-NOTE-91bc kept to myself', scope: 'private' },
     );
     expect(note.ok).toBe(true);
+    // A private observation about a PUBLIC decision, and a private link to it: the page is of the public tree.
+    const rule = decide('A public rule', 'public', 'accept');
+    const seen = runObserve(
+      { cwd: repo, env },
+      {
+        about: rule.id,
+        topic: 'PRIVATE-TOPIC-3d2e',
+        text: 'PRIVATE-OBS-5a60 about it',
+        scope: 'private',
+      },
+    );
+    expect(seen.ok).toBe(true);
+    if (note.ok) {
+      runLink(
+        { cwd: repo, env },
+        { subject: note.id, target: rule.id, rel: 'relates-to', scope: 'private' },
+      );
+    }
     const out = join(sandbox, 'out');
     const done = runSite({ cwd: repo, env }, { out });
     expect(done.ok).toBe(true);
     const bytes = readFileSync(join(out, 'index.html'));
-    for (const secret of ['PRIVATE-RULE-7f3a', 'PRIVATE-NOTE-91bc']) {
+    for (const secret of [
+      'PRIVATE-RULE-7f3a',
+      'PRIVATE-NOTE-91bc',
+      'PRIVATE-TOPIC-3d2e',
+      'PRIVATE-OBS-5a60',
+    ]) {
       expect(bytes.includes(secret), `the page holds ${secret}`).toBe(false);
       // The record's files travel base64-encoded, so the plain search above cannot see inside
       // them: look through the encoding, which is the way a stranger would.

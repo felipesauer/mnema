@@ -9,11 +9,21 @@
  * It is built into ONE script (`dist/site-verifier.js`) that has no import and reaches for
  * nothing outside itself, and the same script is what the verdict test runs in a context
  * with no `Buffer`, no `require` and no filesystem.
+ *
+ * The same script wires what the page lets a reader do: the filters of the decision list
+ * (`filters.ts`) and the drawing of a tail's raw lines when it is opened (`tails.ts`). It does
+ * both BEFORE it verifies, and it verifies after the first paint: the verification takes a
+ * while (780 ms over this repository's own record, 5 s at two thousand events), and a page that
+ * answered a keypress only once it was done would feel broken. Until the verdict is there the
+ * page says it is verifying, and says so as a status a reader's software announces.
  */
 
 import { catalogUpcasters, verifyChain } from '@mnema/chain';
 import { fromBase64 } from './buffer.js';
+import type { Doc } from './dom.js';
+import { wireFilters } from './filters.js';
 import { mount } from './fs.js';
+import { wireTails } from './tails.js';
 
 /** The verdict as the page shows it: the chain's words, unchanged. */
 export interface RecordVerdict {
@@ -105,15 +115,32 @@ export function showVerdict(page: Page, files: Readonly<Record<string, string>>)
 }
 
 const here = globalThis as {
-  document?: Page;
+  document?: Page & Partial<Doc>;
+  requestAnimationFrame?: (callback: () => void) => unknown;
+  setTimeout?: (callback: () => void, ms: number) => unknown;
   mnemaSite?: { verifyRecord: typeof verifyRecord };
 };
 here.mnemaSite = { verifyRecord };
+
+/**
+ * Runs `work` once the browser has drawn the page: a timer set from inside a frame callback fires
+ * after that frame is painted. Where there is no frame callback, the timer alone.
+ */
+function afterTheFirstPaint(work: () => void): void {
+  const later = (): unknown => here.setTimeout?.(work, 0);
+  if (here.requestAnimationFrame !== undefined) here.requestAnimationFrame(later);
+  else later();
+}
 
 if (here.document !== undefined) {
   const page = here.document;
   const carried = page.getElementById('record-files');
   if (carried?.textContent) {
-    showVerdict(page, JSON.parse(carried.textContent) as Record<string, string>);
+    const files = JSON.parse(carried.textContent) as Record<string, string>;
+    if (typeof page.querySelectorAll === 'function') {
+      wireFilters(page as Doc);
+      wireTails(page as Doc, files);
+    }
+    afterTheFirstPaint(() => showVerdict(page, files));
   }
 }
