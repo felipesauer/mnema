@@ -45,7 +45,7 @@
  *     `the-record-arrives-unasked`, which run all six.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   copyFileSync,
   globSync,
@@ -113,12 +113,9 @@ afterEach(() => {
 
 /** What a command said, whether or not it exited zero. */
 function ran(command: string, args: readonly string[], cwd: string): string {
-  try {
-    return execFileSync(command, [...args], { cwd, encoding: 'utf-8', stdio: 'pipe' });
-  } catch (why) {
-    const said = why as { stdout?: string; stderr?: string };
-    return `${said.stdout ?? ''}${said.stderr ?? ''}`;
-  }
+  // Both streams, on success too: biome 2.6.3 moved its "Checked N files" line from stdout to stderr.
+  const done = spawnSync(command, [...args], { cwd, encoding: 'utf-8' });
+  return `${done.stdout ?? ''}${done.stderr ?? ''}`;
 }
 
 describe('the same globs reach every instrument this repository ships or runs', () => {

@@ -585,13 +585,13 @@ describe('past what a hook carries, the rules stop at a whole one and say so', (
   // text arrives whole up to 10,000 UTF-16 code units, and past it the host hands over a file
   // path and a preview instead. Four rules whose names are as
   // long as a title the product takes cross it at one path; each is a record the CLI writes.
-  const LONG = (n: number): string =>
+  const longTitle = (n: number): string =>
     `Rule ${n}: ${'every invoice is issued in the currency of the contract, '.repeat(52).trimEnd()}`;
 
   it('hands over no more than the host carries, whole rules in the order they came', async () => {
     const ids: string[] = [];
     for (const n of [1, 2, 3, 4]) {
-      const rule = await ruleInForce(LONG(n));
+      const rule = await ruleInForce(longTitle(n));
       await addressAt(rule, 'src/collate');
       ids.push(rule);
     }

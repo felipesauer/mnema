@@ -737,20 +737,20 @@ describe('every verb says if it writes', () => {
       'task next': (f) => ['task', 'next', f.task],
       'task guard': (f) => ['task', 'guard', 'submit', f.task, '--actor', f.anchor],
       'skill provenance': () => ['skill', 'provenance'],
-      'stack list': () => ['stack', 'list', '--to', STACK_TO()],
+      'stack list': () => ['stack', 'list', '--to', stackTo()],
       'stack index': () => ['stack', 'index', STACK_INDEX],
-      'stack show': () => ['stack', 'show', 'hello-stack', '--to', STACK_TO()],
-      'stack diff': () => ['stack', 'diff', 'hello-stack', '--to', STACK_TO()],
-      'stack check': () => ['stack', 'check', '--to', STACK_TO()],
+      'stack show': () => ['stack', 'show', 'hello-stack', '--to', stackTo()],
+      'stack diff': () => ['stack', 'diff', 'hello-stack', '--to', stackTo()],
+      'stack check': () => ['stack', 'check', '--to', stackTo()],
     };
     // The stack the four `stack` readers look at: installed into a folder of its own, which
     // records nothing, so the readers are measured against a receipt that really exists.
-    const STACK_TO = (): string => join(sandbox, 'stack-to');
+    const stackTo = (): string => join(sandbox, 'stack-to');
     const STACK_INDEX = fileURLToPath(new URL('../../../stack-index', import.meta.url));
     const HELLO_STACK = fileURLToPath(
       new URL('../../stacks/fixtures/hello-stack', import.meta.url),
     );
-    const planned = await mnema(['stack', 'add', HELLO_STACK, '--dry-run', '--to', STACK_TO()]);
+    const planned = await mnema(['stack', 'add', HELLO_STACK, '--dry-run', '--to', stackTo()]);
     const wanted = /digest {3}([0-9a-f]{64})/.exec(planned.out.join('\n'))?.[1];
     expect(wanted, planned.out.join(' / ')).toBeDefined();
     const installed = await mnema([
@@ -758,7 +758,7 @@ describe('every verb says if it writes', () => {
       'add',
       HELLO_STACK,
       '--to',
-      STACK_TO(),
+      stackTo(),
       '--expect',
       wanted as string,
     ]);
