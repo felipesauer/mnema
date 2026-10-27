@@ -102,6 +102,7 @@ try {
     mkdirSync(join(userData, 'User'), { recursive: true });
     mkdirSync(home);
     writeFileSync(log, '');
+    let decisionId = '';
     const command =
       scenario.command === 'wrapper' ? wrapper(`mnema-${scenario.name}`, log, home) : scenario.command;
     if (scenario.record) {
@@ -116,6 +117,9 @@ try {
           { cwd: workspace, env: { PATH: process.env.PATH } },
         );
         if (proposed.status !== 0) throw new Error(`mnema decision record failed: ${proposed.stderr}`);
+        // The id the editor check opens whole: `Recorded decision ADR-1 (<id>)`.
+        decisionId = /\(([0-9a-f-]{36})\)/.exec(String(proposed.stdout))?.[1] ?? '';
+        if (decisionId === '') throw new Error(`no decision id in: ${proposed.stdout}`);
         writeFileSync(log, '');
       } else {
         mkdirSync(join(workspace, '.mnema'));
@@ -126,7 +130,11 @@ try {
       vscodeExecutablePath: executable,
       extensionDevelopmentPath: stub,
       extensionTestsPath: join(pkgDir, 'build', 'in-the-editor.cjs'),
-      extensionTestsEnv: { MNEMA_CHECK: scenario.name, MNEMA_CHECK_LOG: log },
+      extensionTestsEnv: {
+        MNEMA_CHECK: scenario.name,
+        MNEMA_CHECK_LOG: log,
+        MNEMA_CHECK_DECISION: decisionId,
+      },
       // `--disable-gpu`: under `xvfb` there is no GPU, and on some runner images the renderer hangs
       // trying to use one (the window is then reported unresponsive and the run exits with 1).
       launchArgs: [

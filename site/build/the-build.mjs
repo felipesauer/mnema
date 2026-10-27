@@ -10,11 +10,12 @@ import {
   docNames,
   factsOf,
   installLineOf,
-  landingOf,
   llmsTxt,
   pageOf,
+  pitchOf,
   recordingOf,
   stepsOf,
+  templateOf,
   themeCss,
   verifyCommandOf,
   withoutWhatIsNotOnTheSite,
@@ -28,6 +29,7 @@ export const ROOT = resolve(SITE, '..');
 export const WRITTEN = Object.freeze([
   'src/content/docs/docs',
   'src/content/docs/index.md',
+  'src/content/docs/404.md',
   'src/assets',
   'src/generated',
   'public',
@@ -80,8 +82,11 @@ export async function prepare({ root = ROOT, site = SITE } = {}) {
     return text;
   };
 
-  const template = readFileSync(join(site, 'landing.md'), 'utf8');
-  writeFileSync(into('src/content/docs/index.md'), landingOf({ template, readme, facts, docs, copy }));
+  // The two pages that are not a page of `docs/`: each is a tracked template, filled the same way.
+  for (const [template, page] of [['landing.md', 'index.md'], ['not-found.md', '404.md']]) {
+    const text = readFileSync(join(site, template), 'utf8');
+    writeFileSync(into(`src/content/docs/${page}`), templateOf({ template: text, readme, facts, docs, copy }));
+  }
 
   // The proof: the verdict of the record committed at this sha, run with the command the Quick start shows, and
   // the recording the README holds, copied as it is.
@@ -120,6 +125,23 @@ export async function prepare({ root = ROOT, site = SITE } = {}) {
   for (const theme of ['dark', 'light']) writeFileSync(into(`src/assets/wordmark-${theme}.svg`), headerWordmark(THE_BLOCKS, theme));
   writeFileSync(into('src/generated/the-build.json'), `${JSON.stringify({ version: facts.version, sha: facts.sha, repoUrl: facts.repoUrl })}\n`);
   return facts;
+}
+
+/**
+ * The social card, `og.png` at the root of the built site: the front page's `socialCard` of the banner's rows and the
+ * README's pitch, rasterized by `sharp` (which `astro` already installs; `site/package.json` names it). Run after
+ * `astro build` and from `site/`, where `sharp` is: the main suite runs `prepare` with no `site/node_modules`, so
+ * the card is not part of it.
+ * @returns {Promise<Buffer>} the PNG written
+ */
+export async function writeTheCard({ root = ROOT, out = join(SITE, 'dist') } = {}) {
+  const { socialCard } = await import(pathToFileURL(join(root, '.github/the-front-page/draw.mjs')).href);
+  const { THE_BLOCKS } = await import(pathToFileURL(join(root, 'packages/code/dist/presentation/banner.js')).href);
+  const { default: sharp } = await import('sharp');
+  const pitch = pitchOf(withoutWhatIsNotOnTheSite(readFileSync(join(root, 'README.md'), 'utf8'), 'README.md'));
+  const png = await sharp(Buffer.from(socialCard({ blocks: THE_BLOCKS, pitch }))).png().toBuffer();
+  writeFileSync(join(out, 'og.png'), png);
+  return png;
 }
 
 /** What goes beside the built pages: `llms.txt` and `robots.txt`, from the same sources. */

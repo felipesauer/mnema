@@ -33,6 +33,7 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -277,25 +278,31 @@ when('the built site', () => {
     }
   });
 
-  it('has no sentence of its own anywhere in the <main> of the landing: every block, every alt, title and aria-label, and nothing left over', () => {
-    const say = sourcesSay(landingCorpus(), howItWorks());
-    // The command shown beside the verdict is a line of the Quick start read up to its `#`: a source, as the case below holds.
-    const command = verifyCommandInReadme();
-    const { text, spoken, stripped } = blocksOfMain(html('index.html'));
-    expect(text.length, 'the <main> has text').toBeGreaterThan(15);
-    expect(spoken.length, 'the <main> has pictures with words').toBeGreaterThan(0);
-    for (const block of [...text, ...spoken]) {
-      expect(
-        block === command || say(block),
-        `the <main> of the landing says what no source says: ${block.slice(0, 120)}`,
-      ).toBe(true);
-    }
-    // Totality: the letters and numbers of the <main>, less the exclusions, are the letters and numbers of the blocks.
-    const letters = (s: string): string => [...norm(s)].sort().join('');
-    expect(letters(textOf(stripped)), 'text of the <main> that no block holds').toBe(
-      letters(text.join(' ')),
-    );
-  });
+  it.each([
+    ['index.html', 15, 1],
+    ['404.html', 3, 0],
+  ])(
+    'has no sentence of its own anywhere in the <main> of %s: every block, every alt, title and aria-label, and nothing left over',
+    (page, least, pictures) => {
+      const say = sourcesSay(landingCorpus(), howItWorks());
+      // The command shown beside the verdict is a line of the Quick start read up to its `#`: a source, as the case below holds.
+      const command = verifyCommandInReadme();
+      const { text, spoken, stripped } = blocksOfMain(html(page));
+      expect(text.length, 'the <main> has text').toBeGreaterThan(least);
+      expect(spoken.length, 'the <main> has pictures with words').toBeGreaterThanOrEqual(pictures);
+      for (const block of [...text, ...spoken]) {
+        expect(
+          block === command || say(block),
+          `the <main> of ${page} says what no source says: ${block.slice(0, 120)}`,
+        ).toBe(true);
+      }
+      // Totality: the letters and numbers of the <main>, less the exclusions, are the letters and numbers of the blocks.
+      const letters = (s: string): string => [...norm(s)].sort().join('');
+      expect(letters(textOf(stripped)), 'text of the <main> that no block holds').toBe(
+        letters(text.join(' ')),
+      );
+    },
+  );
 
   it('paints in the one accent and shows the bytes of the pictures: nothing drawn for the site', async () => {
     const { ACCENT } = (await import(
@@ -579,6 +586,141 @@ when('the built site', () => {
           `${page}: the ${theme} wordmark is drawn from the rows`,
         ).toBe(headerWordmark(THE_BLOCKS, theme));
       }
+    }
+  });
+
+  /** The `content` of every `<meta>` of a page whose `property` or `name` is `key`. */
+  const metas = (page: string, key: string): string[] =>
+    [
+      ...html(page).matchAll(
+        new RegExp(`<meta\\s+(?:property|name)="${key}"\\s+content="([^"]*)"\\s*/?>`, 'g'),
+      ),
+    ].map((m) => (m[1] ?? '').replace(/&#39;/g, "'").replace(/&amp;/g, '&'));
+
+  it('declares on every page the one social card, at its address on the published site, and the card is a 1200 by 630 PNG', () => {
+    const card = `https://felipesauer.github.io${BASE}/og.png`;
+    const title = textOf(/<h3>([\s\S]*?)<\/h3>/.exec(readText(join(ROOT, 'README.md')))?.[1] ?? '');
+    for (const page of pages) {
+      for (const key of ['og:image', 'twitter:image']) {
+        expect(metas(page, key), `${page}: ${key}`).toEqual([card]);
+      }
+      expect(metas(page, 'og:image:width'), `${page}: width`).toEqual(['1200']);
+      expect(metas(page, 'og:image:height'), `${page}: height`).toEqual(['630']);
+      for (const key of ['og:image:alt', 'twitter:image:alt']) {
+        expect(metas(page, key), `${page}: ${key}`).toEqual([title]);
+      }
+      // The type is said once, and the landing is the one page that is not an article.
+      expect(metas(page, 'og:type'), `${page}: the type`).toEqual([
+        page === 'index.html' ? 'website' : 'article',
+      ]);
+    }
+    const png = readFileSync(join(DIST, 'og.png'));
+    expect(png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))).toBe(true);
+    expect(png.subarray(12, 16).toString('latin1')).toBe('IHDR');
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+  });
+
+  it('draws the card as the SVG of the front page rasterized with its letters, and not as the same SVG without its words or with them backwards', async () => {
+    const require = createRequire(join(SITE, 'package.json'));
+    const sharp = require('sharp') as (input: Buffer) => {
+      png: () => { toBuffer: () => Promise<Buffer> };
+    };
+    const { socialCard } = await import(
+      pathToFileURL(join(ROOT, '.github/the-front-page/draw.mjs')).href
+    );
+    const { THE_BLOCKS } = await import('../src/presentation/banner.js');
+    const { pitchOf } = await import('../../../site/build/the-pages.mjs');
+    const svg = socialCard({
+      blocks: THE_BLOCKS,
+      pitch: pitchOf(readText(join(ROOT, 'README.md'))),
+    }) as string;
+    const built = readFileSync(join(DIST, 'og.png'));
+    expect(
+      built.equals(await sharp(Buffer.from(svg)).png().toBuffer()),
+      'og.png is not the card of the front page',
+    ).toBe(true);
+    // Without its <text> the card is another picture; and with each line written backwards it is another one still, but
+    // only if the machine has a face to draw letters with: a machine with none draws the same boxes for any string.
+    const bare = svg.replace(/<text\b[^>]*>[^<]*<\/text>/g, '');
+    const backwards = svg.replace(
+      /(<text\b[^>]*>)([^<]*)(<\/text>)/g,
+      (_all, open: string, words: string, close: string) =>
+        `${open}${[...words].reverse().join('')}${close}`,
+    );
+    expect(bare).not.toBe(svg);
+    expect(backwards).not.toBe(svg);
+    for (const other of [bare, backwards]) {
+      expect(
+        built.equals(await sharp(Buffer.from(other)).png().toBuffer()),
+        'og.png has no letters: the machine that built it drew the card without a face for its text',
+      ).toBe(false);
+    }
+  }, 60_000);
+
+  it('serves a 404 that leads into the site: three links at least, to pages the site holds', () => {
+    const page = html('404.html');
+    const main = /<main\b[^>]*>([\s\S]*)<\/main>/.exec(page)?.[1] ?? '';
+    const into = [...main.matchAll(/<a\b[^>]*\shref="([^"]*)"/g)]
+      .map((m) => m[1] ?? '')
+      .filter((a) => a.startsWith(`${BASE}/`));
+    expect(into.length).toBeGreaterThanOrEqual(3);
+    expect(into).toContain(`${BASE}/record/`);
+    expect(main).not.toContain('try using the search bar');
+    expect(page).not.toMatch(/the-proof|data-verdict/);
+  });
+
+  /** The top-level entries of the sidebar of a page, each as its HTML. */
+  const topOfSidebar = (page: string): string[] => {
+    const pane = /<sl-sidebar-state-persist\b[^>]*>([\s\S]*?)<\/sl-sidebar-state-persist>/.exec(
+      html(page),
+    )?.[1];
+    const clean = (pane ?? '')
+      .replace(/<script[\s\S]*?<\/script>/g, '')
+      .replace(/<svg[\s\S]*?<\/svg>/g, '');
+    const out: string[] = [];
+    let ul = 0;
+    let li = 0;
+    let from = 0;
+    for (const m of clean.matchAll(/<(\/?)(ul|li)\b[^>]*>/g)) {
+      const [raw, closing, tag] = m;
+      if (tag === 'ul') ul += closing === '/' ? -1 : 1;
+      else if (closing === '/') {
+        li--;
+        if (ul === 1 && li === 0) out.push(clean.slice(from, (m.index ?? 0) + raw.length));
+      } else {
+        if (ul === 1 && li === 0) from = m.index ?? 0;
+        li++;
+      }
+    }
+    return out;
+  };
+
+  it('lists the record page once, inside the group Verify of the sidebar, and no entry of the sidebar is outside a group', () => {
+    const readme = readText(join(ROOT, 'README.md'));
+    const docs = /\n## Docs\n([\s\S]*?)\n## /.exec(readme)?.[1] ?? '';
+    const groups = [...docs.matchAll(/^- \*\*([^*]+?)\.\*\*/gm)].map((m) => m[1]);
+    for (const page of ['docs/install/index.html', 'docs/site/index.html']) {
+      const top = topOfSidebar(page);
+      expect(top.length, `${page}: the sidebar has entries`).toBeGreaterThan(3);
+      for (const entry of top) {
+        expect(entry.startsWith('<li'), page).toBe(true);
+        expect(/^<li[^>]*>\s*<details\b/.test(entry), `${page}: an entry outside a group`).toBe(
+          true,
+        );
+      }
+      expect(
+        top.map((e) => textOf(/<summary\b[\s\S]*?<\/summary>/.exec(e)?.[0] ?? '')),
+        `${page}: the groups of the README`,
+      ).toEqual(groups);
+      const holders = top.filter((e) => e.includes(`href="${BASE}/record/"`));
+      expect(holders, `${page}: the record page is in one group`).toHaveLength(1);
+      expect(textOf(/<summary\b[\s\S]*?<\/summary>/.exec(holders[0] ?? '')?.[0] ?? '')).toBe(
+        'Verify',
+      );
+      expect(
+        (top.join('').match(new RegExp(`<a\\b[^>]*href="${BASE}/record/"`, 'g')) ?? []).length,
+        `${page}: the record page is listed once in the sidebar`,
+      ).toBe(1);
     }
   });
 

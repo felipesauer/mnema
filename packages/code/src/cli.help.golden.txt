@@ -849,15 +849,20 @@ $ mnema site --help
 |
 | The page holds the committed (public) tree and nothing else: no private tree, no
 | machine-global tree, and all of that tree's text, so publish it only where the
-| repository itself may be read. It lists the decisions in force (a control shows the
-| rest), their history and who authorized them, and the stored events. It also carries
-| the files the record is made of, and the browser runs the same verifier as
-| `mnema verify` over them, with no request and no key: the sentence on the page is the
-| one `mnema verify` gives a fresh clone. It checks the chain and the checkpoint
-| signatures; it does not check the lists on the page against the files. Everything is
-| inside the one file: no script or style comes from elsewhere. Without --back-link the
-| page is the same bytes it has always been; with it, the page opens with one link back
-| to a site that hosts it, and nothing else about the page changes.
+| repository itself may be read. It lists every decision as a card (its reasons, who
+| recorded it and who accepted it, a person or an agent, its history and the paths it
+| is addressed at) with the public notes that belong to it, and a timeline of the
+| record. With JavaScript, a filter opens on the decisions in force and narrows them
+| by state, identity, agent or person, day, text and path, and the page says how many
+| it shows; without it, every decision is listed. The stored events of a tail are
+| drawn when it is opened, from the files the page carries, and are not written into
+| the page twice. Those files are what the record is made of, and the browser runs the
+| same verifier as `mnema verify` over them, with no request and no key: the sentence
+| on the page is the one `mnema verify` gives a fresh clone. It checks the chain and
+| the checkpoint signatures; it does not check the lists on the page against the
+| files. Everything is inside the one file: no script or style comes from elsewhere.
+| Without --back-link the page has no link to a site; with it, the page opens with one
+| link back to a site that hosts it, and nothing else about the page changes.
 |
 | Without --out the page is written under the record, in .mnema/site/, and the record's
 | .gitignore is given the line /site/ first, so a `git add .mnema` leaves it out. A

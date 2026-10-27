@@ -1,0 +1,17 @@
+{
+  "kind": "decision",
+  "id": "01a17ec1-82a8-7000-aa02-882530aee21f",
+  "scope": "public",
+  "record": {
+    "id": "01a17ec1-82a8-7000-aa02-882530aee21f",
+    "adr": "ADR-2",
+    "title": "Write migrations by hand",
+    "rationale": "The ORM's generator drifts from what we review.",
+    "state": "proposed",
+    "createdAt": "2026-10-27T19:06:13.563Z",
+    "updatedAt": "2026-10-27T19:06:13.563Z",
+    "recordedBy": {
+      "who": "mnid:a92f630c70a3c0b1a7838dbbb6355a008f5613bcb88b8e926fe352afd16f8775"
+    }
+  }
+}

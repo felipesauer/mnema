@@ -151,6 +151,12 @@
         "icon": "$(close)"
       },
       {
+        "command": "mnema.openDecision",
+        "title": "Open Decision",
+        "category": "mnema",
+        "icon": "$(go-to-file)"
+      },
+      {
         "command": "mnema.refresh",
         "title": "Refresh",
         "category": "mnema",
@@ -220,12 +226,12 @@
         {
           "command": "mnema.accept",
           "when": "view == mnema.proposed",
-          "group": "1_review@1"
+          "group": "1_accept@1"
         },
         {
           "command": "mnema.reject",
           "when": "view == mnema.proposed",
-          "group": "1_review@2"
+          "group": "2_reject@1"
         },
         {
           "command": "mnema.stacks.show",
@@ -290,6 +296,18 @@
           "group": "1_add@1"
         }
       ],
+      "editor/title": [
+        {
+          "command": "mnema.accept",
+          "when": "resourceScheme == mnema-decision && mnema.activeDecisionProposed",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mnema.reject",
+          "when": "resourceScheme == mnema-decision && mnema.activeDecisionProposed",
+          "group": "navigation@2"
+        }
+      ],
       "commandPalette": [
         {
           "command": "mnema.accept",
@@ -297,6 +315,10 @@
         },
         {
           "command": "mnema.reject",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "mnema.openDecision",
           "when": "workspaceFolderCount > 0"
         },
         {
@@ -384,6 +406,7 @@
     "install-check": "node build/install-the-vsix.mjs"
   },
   "devDependencies": {
+    "@mnema/chain": "workspace:*",
     "@mnema/context": "workspace:*",
     "@mnema/core": "workspace:*",
     "@vscode/test-electron": "^3.1.0",

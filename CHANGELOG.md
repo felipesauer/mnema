@@ -65,7 +65,16 @@ with its own changelog.
   Enforce, Prove) and, after the proof, the four steps of How it works, each read from the README and stopping the build when
   its shape changes (a table of other than three columns, a step with a link, other than four steps). The title in the
   head of the site is the wordmark of the banner, the same letters drawn from the same rows without the chain of cubes,
-  in the accent of each theme.
+  in the accent of each theme. One social card serves every page: `socialCard` in `.github/the-front-page/draw.mjs` draws
+  the banner's wordmark and cubes on the dark page with the README's line and paragraph as its only words, and the build
+  rasterizes it to `og.png` (1200 by 630) with `sharp`, which `astro` already installs and `site/package.json` now names
+  at the version the lockfile holds, so the set of packages in the lockfile is the same. Every page declares it in
+  `og:image` and `twitter:image` at its address on the published site, with its size and the README's line as the alt;
+  the landing is `og:type` website and the others stay articles. The 404 is a page of the site's own
+  (`site/not-found.md`): a line of `site/copy.md` and links, with the labels of the README's Docs, to the install page, to
+  how each claim is held, to the page that verifies itself and to `/record/`. The record page is an item of the sidebar's
+  Verify group, after the page that describes it, under a label that `site/copy.md` holds, and the build stops when that
+  group or item is not in the README.
 - **A `Site` workflow.** On a pull request that touches what the site is made of it builds the site and runs those two cases
   (it is not a required check, and the path filter is inside the job). After a release it builds the commit the release tagged
   and deploys it to GitHub Pages from a job that holds `pages: write` and `id-token: write` and no secret; the site
@@ -98,6 +107,26 @@ with its own changelog.
 
 ### Changed
 
+- **The page `mnema site` writes reads like a page.** Each decision is a card (state, reasons, what was turned down, who
+  recorded and who accepted it, supersedes and superseded-by as links, the history, the paths it is addressed at), with an
+  anchor by its number (`#ADR-12`, only where no other decision on the page carries it) and a permanent link, and under it the
+  public observations and memories that belong to it (a note taken back stays whole, with when, by whom and why; one that
+  belongs to no decision is listed apart); a timeline lists each act in the record's order. Each act carries a badge worded as
+  the show verb words it, `a person` or `agent <name>`, beside the identity. The page has a main, a link that skips to the
+  decisions, a verdict announced as a status, keyboard focus that shows, a layout that reads at 360 px, and a light and a dark
+  palette at WCAG AA (the dark verified green was 3.59:1 and the broken red 2.90:1) taken from the banner's accent and ground,
+  with the accent darkened for small text by the rule the site's theme uses. With JavaScript, a filter opens on the decisions
+  in force and narrows them by state, identity, agent or person, the day recorded, text and path (by segment: `packages/code`
+  covers `packages/code/src/x.ts` and `packages`, not `packages/codex`), and says how many of how many it shows; without
+  JavaScript every decision, note and timeline entry is listed, where a checkbox and a rule of style used to hide the rest. The
+  A link to a decision the filter hides opens it by giving the filter way, a path typed with spaces around it is trimmed
+  before it is matched, and every field of the record is drawn the way the show verb words it (an override, a bell or an escape
+  is shown as an escape, a title is one line); the stored lines of a tail stay as stored.
+  The verification now starts after the first paint. The stored events are no longer written into the page a second time: opening
+  a tail draws its lines from the files the page already carries for the verification (the same text, a byte that is not UTF-8
+  as U+FFFD), so without JavaScript they are not drawn. At this repository's own record the page went from 1,328,541 to
+  1,042,443 bytes (321 KB to 261 KB gzipped), and a record of 2,112 events made by the product's own writers from 6,002,316 to 4,889,518 bytes. What the page lists is still written by the command and still not checked against the files in the browser.
+
 - **The VS Code extension has a container of its own in the activity bar, with the M, and a badge.** The two views, now
   "Awaiting Judgment" and "Stacks", left the Explorer (below Outline and Timeline, collapsed) for a container titled mnema whose
   icon is the first letter of the console's wordmark, drawn into a monochrome SVG when the extension is packed from the same
@@ -123,6 +152,22 @@ with its own changelog.
   included, and the item wears the theme's warning background when `mnema verify` fails. The new setting
   `mnema.statusBar.enabled` hides it; it is machine-scoped, like `mnema.command`, so a repository cannot hide the item that says
   when verify fails.
+
+- **A decision opens whole in the VS Code extension, and is judged from the title of its editor.** Clicking a proposal (or
+  picking a rule from a file's lens) opens a read-only plain text document, `ADR-n`, with what the command line's `show` verb answered
+  (title, state, scope, who recorded and accepted it, when, the justification, the alternatives and the moves), the command and
+  the time it was read at the top, read again at each opening and each reading of the record; its address carries the id, never
+  the ADR number. What the record wrote is laid out by the rule the command line's `show` applies (one line for a title or a field, control bytes
+  written as visible escapes), and the hour it was read is in UTC with the Z. While it is `proposed` its editor's title carries accept and reject, which go through the same note box and the
+  same decision move as the buttons beside the items, one decision at a time; the context menu keeps them in separate
+  groups. The note stays required in the format, the gate, the command line and the MCP server. In the extension the accept box
+  starts with a true stamp, `<the day>, accepted in the VS Code extension, no reason typed`, selected, so Enter records it and
+  typing replaces it by a reason; the reject box starts empty and needs a reason typed, and the stamp never carries what the
+  record says. Each item has an icon for its state (a neutral one for a proposal, never a check mark; `package`, `warning` or
+  `error` for a stack by what `stack list` reported) and a spoken name; tooltips are short, boxes and picks lose the `mnema:`
+  prefix and the step counts, a scope is picked by a codicon and its name, and the toast after a verdict reads `ADR-2 accepted.`
+  from the command line's own line (a line of another shape is shown as it came). The check in a real editor opens the
+  proposed decision and reads the document.
 
 ### Removed
 

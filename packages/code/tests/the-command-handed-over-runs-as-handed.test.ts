@@ -617,6 +617,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'names the read a person uses, in the sentence about what nothing records',
   },
+  'packages/vscode/README.md: mnema show': {
+    times: 1,
+    why: 'names the read whose answer a decision document holds, in the sentence about when it was read',
+  },
 };
 
 /**
@@ -699,7 +703,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 57, name: 120, flag: 4 },
+  'CHANGELOG.md': { line: 57, name: 121, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
@@ -812,8 +816,9 @@ export const HANDED_OVER: Readonly<
   'packages/sdk/README.md': { line: 2, name: 4 },
   'packages/stacks/README.md': { line: 1, name: 2 },
   'packages/vscode/CHANGELOG.md': { name: 1 },
-  'packages/vscode/README.md': { line: 13, name: 17 },
+  'packages/vscode/README.md': { line: 15, name: 19 },
   'packages/vscode/media/walkthrough/verify.md': { name: 1 },
+  'packages/vscode/src/decision.ts': { line: 1 },
   'packages/vscode/src/stacks.ts': { line: 1 },
   'plugin/README.md': { line: 38, name: 26, flag: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },

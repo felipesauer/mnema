@@ -2,6 +2,11 @@
 title: {{pitch.title}}
 description: {{description}}
 template: splash
+head:
+  - tag: meta
+    attrs:
+      property: og:type
+      content: website
 hero:
   tagline: {{pitch.body}}
   image:

@@ -12,4 +12,5 @@ starts it, and then the views of the mnema container in the side bar list what t
 reports: the decisions awaiting a judgment and the stacks adopted.
 
 Nothing is recorded by opening a folder: the extension only reads, and writes only when you accept
-or reject a decision, or add or remove a stack, through the same command line.
+or reject a decision (after reading it whole, from its editor, with a note), or add or remove a stack,
+through the same command line.
