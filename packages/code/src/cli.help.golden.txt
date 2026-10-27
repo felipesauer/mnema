@@ -859,8 +859,11 @@ $ mnema site --help
 | the page twice. Those files are what the record is made of, and the browser runs the
 | same verifier as `mnema verify` over them, with no request and no key: the sentence
 | on the page is the one `mnema verify` gives a fresh clone. It checks the chain and
-| the checkpoint signatures; it does not check the lists on the page against the
-| files. Everything is inside the one file: no script or style comes from elsewhere.
+| the checkpoint signatures. Once the record verifies, the page derives its lists again
+| from those files, with the same TypeScript the command writes them with, and names
+| each difference from what it shows, or says they match: the product run twice, not
+| a second reader. Everything is inside the one file: no script or style comes from
+| elsewhere.
 | Without --back-link the page has no link to a site; with it, the page opens with one
 | link back to a site that hosts it, and nothing else about the page changes.
 |

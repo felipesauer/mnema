@@ -36,11 +36,25 @@ what lets a clone say that key as a backup rather than as a key whose tail is mi
 written into the page a second time: opening a tail under Events draws its lines from those files, so without
 JavaScript they are not drawn (the files are still in the page, in base64).
 
-What the verdict does not cover: it checks the hash chain and the checkpoint signatures
-against the public keys the page carries, not that a key belongs to the person a list names,
-and not that the lists were written from those files: `mnema site` wrote them and the page
-does not derive them again. Only the committed (public) tree is in the file, and all of its
-text is: a repository that must not be read should not publish one.
+What the verdict covers: the hash chain and the checkpoint signatures against the public keys the page carries.
+It does not say that a key belongs to the person a list names.
+
+The lists are another line, beside the verdict. `mnema site` writes them into the page, so a reader without JavaScript
+has them. Once the verdict is `verified`, the page derives them again in the browser, from the files it just verified,
+with the same TypeScript the command writes them with (bundled into the page), and holds what it shows against that: the
+text of every decision card, note and timeline entry, the attributes the filters read, which decisions, notes, entries and
+tails there are and in what order, and the counts. It says `match`, or names each difference by its item (`ADR-9
+(state): the page says "accepted"; the events say "proposed"`, `ADR-12 is on the page and not in the events`). Over a record
+that did not verify it says the lists were not checked, and it never says `match`. A difference is not a verdict on the chain:
+the chain's line is the verifier's and does not change.
+
+That is not a second, independent reader: it is the product's own code run twice, and it can only catch a page that
+disagrees with it. The Python reader verifies the chain and does not derive decisions. A page handed over by the party it
+checks carries the script that checks it, so the check is worth most when the page is made again from a clone. It does not
+read a style (a rule that hides a card, a colour) and says nothing about one.
+
+Only the committed (public) tree is in the file, and all of its text is: a repository that must not be read should not
+publish one.
 
 Without `--out` the page is written under the record, in `.mnema/site/`, and the record's own `.gitignore` is given the
 line `/site/` before the first byte, so a `git add .mnema` leaves it out: it is derived from the record and rebuilt at will,

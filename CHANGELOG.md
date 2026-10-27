@@ -95,6 +95,16 @@ with its own changelog.
 
 ### Changed
 
+- **The page `mnema site` writes checks its own lists against the events it verified.** The decisions, notes and timeline were
+  written by the command and nothing in the browser looked at them, so a green verdict stood beside lists it did not cover. Now,
+  once the verdict is `verified`, the page derives the lists again in the browser from the files it verified, with the same
+  TypeScript the command writes them with (the page's script now bundles the model and the projections it reads, and the build
+  refuses a bundle that names a `node:` module or calls `require(`), and says `match` or names each difference by its item: a
+  state word, a `data-state`, a card taken away or made up, the text of a note, a badge, the counts, an entry of the timeline in
+  another place, a move missing from a history, a sentence added outside every field. Over a record that did not verify it says the
+  lists were not checked. It is not a second, independent reader (the Python reader verifies the chain and does not derive
+  decisions), it reads no style, and a page handed over by the party it checks carries the script that checks it.
+
 - **The page `mnema site` writes reads like a page.** Each decision is a card (state, reasons, what was turned down, who
   recorded and who accepted it, supersedes and superseded-by as links, the history, the paths it is addressed at), with an
   anchor by its number (`#ADR-12`, only where no other decision on the page carries it) and a permanent link, and under it the
@@ -113,7 +123,7 @@ with its own changelog.
   The verification now starts after the first paint. The stored events are no longer written into the page a second time: opening
   a tail draws its lines from the files the page already carries for the verification (the same text, a byte that is not UTF-8
   as U+FFFD), so without JavaScript they are not drawn. At this repository's own record the page went from 1,328,541 to
-  1,042,443 bytes (321 KB to 261 KB gzipped), and a record of 2,112 events made by the product's own writers from 6,002,316 to 4,889,518 bytes. What the page lists is still written by the command and still not checked against the files in the browser.
+  1,042,443 bytes (321 KB to 261 KB gzipped), and a record of 2,112 events made by the product's own writers from 6,002,316 to 4,889,518 bytes.
 
 - **The VS Code extension has a container of its own in the activity bar, with the M, and a badge.** The two views, now
   "Awaiting Judgment" and "Stacks", left the Explorer (below Outline and Timeline, collapsed) for a container titled mnema whose
