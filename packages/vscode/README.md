@@ -30,10 +30,11 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   note, nor one of only spaces, and cancelling it sends nothing. What is sent is
   `mnema decision move accept <id> --note <note>` (or `reject`), started with an argument array and
   no shell, and what the command line answers is what is shown, a refusal included.
-- **A notice when a decision is proposed while the window is open.** The record is watched through
-  the editor's file watcher on `.mnema/**`; when it has been quiet for 1.5 seconds it is read again,
-  and a decision waiting now that was not waiting at the previous reading is announced once. There
-  is no timer polling the record.
+- **No notification per proposal.** The record is watched through the editor's file watcher on
+  `.mnema/**`; when it has been quiet for 1.5 seconds it is read again, and a decision proposed
+  meanwhile raises the badge on the container's icon and the count in the status bar. Nothing
+  interrupts: no message is shown for a proposal, and there is no setting for one. There is no timer
+  polling the record.
 - **A view, "Stacks".** The stacks adopted for the project, read from
   `mnema stack list --json`: each with its version, the tree it was adopted into, and whether its
   files are still as written. Its buttons and commands run the `stack` verb of the command line:
@@ -84,15 +85,28 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
 - **The status bar.** The level `mnema verify --json` reports for the record, with a codicon that follows
   it (a book for `fully-signed` and `externally-witnessed`, an info mark for a weaker level, an error
   mark for a failure, a question mark for an answer it could not read; never a check mark or a seal),
-  and how many of the channels `mnema switch` lists ([what they are](../../docs/switches.md)) are off.
-  The tooltip is the text `mnema verify` printed, line by line (up to six), then the channels off by
-  name: what a level covers is what the command line says, and the extension adds no sentence of its
-  own about it. The item has an accessibility label and the role of a button. Clicking it reads again.
+  and, when decisions await a judgment, how many (`fully-signed · 2 to judge`, the same number as the
+  badge). The text is short on purpose: nothing about the channels is in it. The tooltip, in markdown,
+  has the level, a link to the container with the number awaiting, the lines `mnema verify` printed
+  (up to six, in a code block, as they came; for a failure also the first three issues it listed),
+  the channels off by name with a link to [what they are](../../docs/switches.md), the time of the
+  reading, and links to Refresh and to the setting. What a level covers is what the command line
+  says, and the extension adds no sentence of its own about it. The words that came from the command
+  line or from the record are escaped, so a name or a line written by someone else cannot become a
+  link, and the only commands a link may run are the container, Refresh and the settings editor:
+  never a verdict. A click on the item opens the container, in every state. When `mnema verify`
+  fails the item wears the theme's warning background and the tooltip carries what failed; a weaker
+  level is not a warning. The item has an accessibility label that spells the whole sentence out
+  ("mnema: fully-signed, 2 decisions await a judgment") and the role of a button.
+- **The setting `mnema.statusBar.enabled`** hides the item (default on). It is machine-scoped, like
+  `mnema.command`: a repository's `.vscode/settings.json` cannot hide an item that says when
+  `mnema verify` fails. It takes effect without a reload.
 - **A missing command is not "nothing pending".** Before anything else the extension asks
   `mnema --version`. When the command cannot be started, answers as no mnema does, or is older than
   0.1.2 (the version the extension is written against), the views say the command is missing and how to
   fix it (install `@mnema/code` from source, or set `mnema.command`), nothing else is asked of it, and
-  the status bar says "command not found" and, clicked, opens the `mnema.command` setting. The context
+  the status bar says "mnema not found", its tooltip says why and links to the `mnema.command`
+  setting, and a click on it opens the container, whose views carry the same link. The context
   key `mnema.cliMissing` carries it, and it clears at the next reading that finds a working command.
   The setting is read again at every reading, and changing `mnema.command` starts one, so a corrected
   setting needs no reload. A command that did not answer `--version` within 60 seconds is reported as
@@ -132,10 +146,10 @@ and nothing is installed beside it. CI runs the same command, installs the file 
 four times (a folder with no `.mnema`, where it must not start on opening the folder and so must not run `mnema`;
 the same folder with the container opened, which does start the extension, and where `mnema` must still
 never be run and the bar and the badge must be empty; a folder
-with a `.mnema` and a `mnema.command` that does not exist, where the bar must say the command was not
-found; and a folder with a real record and one proposed decision, read by the `mnema` built here, where the
-bar must carry a level, the tooltip what `mnema verify` printed, the manifest's container its icon file and the
-badge the number 1). `pnpm --filter @mnema/vscode install-check` does the same
+with a `.mnema` and a `mnema.command` that does not exist, where the bar must say `mnema not found` and a
+click must open the container; and a folder with a real record and one proposed decision, read by the
+`mnema` built here, where the bar must carry a level and `1 to judge`, the tooltip what `mnema verify`
+printed, the click the container, the manifest's container its icon file and the badge the number 1). `pnpm --filter @mnema/vscode install-check` does the same
 by hand, under `xvfb-run -a` on a machine without a screen. What no CI reads (a hover, a context menu,
 the light and high-contrast themes, a screen reader) has [a script for a person](../../plugin/captures/vscode-extension-script.md). CI keeps the file as an
 artifact of the run (`mnema-vscode-extension`). The only thing that sends the file anywhere is one job of
@@ -154,7 +168,8 @@ for that module; nothing downloads or starts an editor.
 
 - It proves nothing itself. Every verdict, every rule and every state shown is what the `mnema`
   command line printed, and the extension adds no second verifier: `mnema verify` is the check, and
-  the status bar shows only the level it reports, never what that level does not cover.
+  the status bar shows only the level it reports, never what that level does not cover. Its tooltip
+  holds the lines `mnema verify` printed, in a block, and nothing the extension says of them.
 - "A rule in force" is a decision whose state the record's own classification calls in force; a
   proposed, rejected or superseded decision gets no lens. A rule whose recorded address matches the
   file is the one the command line named: no path is matched here.
@@ -163,11 +178,10 @@ for that module; nothing downloads or starts an editor.
   the `mnema` it starts is on that machine.
 - The note is required before anything is sent, which is the extension asking for what the command
   would refuse without it; it is not a judgment of what a good note is.
-- A decision that never reaches a watcher is not announced. The notice depends on the editor
-  reporting a change under `.mnema/`; a change it does not report (a folder excluded from
-  watching, say) shows up at the next reading, which the status bar and the `mnema: Refresh` command
-  start. It announces what is new between two readings in this window, so a decision that was
-  already waiting when the window opened is listed and not announced.
+- A decision that never reaches a watcher is not counted until the next reading. The badge and the
+  bar depend on the editor reporting a change under `.mnema/`; a change it does not report (a
+  folder excluded from watching, say) shows up at the next reading, which the `mnema: Refresh`
+  command and the link in the tooltip start.
 - It reads the first workspace folder only, and only that folder's record. The view lists at most
   200 decisions, and says in each tooltip how many exist when there are more; the badge counts the
   total `mnema` reports, so it can be larger than the list. It says "awaits a judgment" and nothing
@@ -176,7 +190,7 @@ for that module; nothing downloads or starts an editor.
   the bar is not shown and the views teach `mnema init`. That is a statement about the folder on the
   disk, not about anything `mnema` read.
 - The channels are read from the printed lines of `mnema switch`, which has no JSON form: if
-  those lines change shape, the status bar shows the channels as not read rather than guessing.
+  those lines change shape, the tooltip says the channels were not read rather than guessing.
 - It writes nothing of its own: the only writes are the verdict above and the stack acts (add,
   remove, export), each made by `mnema`. A stack's plan, its signature line and its refusals are
   the command line's text, not this extension's: nothing here says that a stack is safe, and a

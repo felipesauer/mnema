@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type CliResult, createRun, type Run } from './cli.js';
 import { activate, QUIET_MS, type VscodeApi } from './extension.js';
-import { MIN_CLI_VERSION } from './status.js';
+import { CONTAINER_COMMAND, MIN_CLI_VERSION, TOOLTIP_COMMANDS } from './status.js';
 
 /** The folders a test made: each holds a real `.mnema`, because the extension reads the disk for it. */
 const made: string[] = [];
@@ -58,7 +58,7 @@ function world(
   root: string = folderWith(true),
   rereadSetting = false,
 ) {
-  const setting = { command: 'mnema' };
+  const setting = { command: 'mnema', statusBarEnabled: true };
   const settingListeners: ((e: { affectsConfiguration(s: string): boolean }) => void)[] = [];
   const makeRuns: string[] = [];
   const ran: string[][] = [];
@@ -77,9 +77,11 @@ function world(
   const commands = new Map<string, (...args: never[]) => unknown>();
   const watcher = { change: [] as (() => void)[], create: [] as (() => void)[] };
   const bar = {
+    name: undefined as string | undefined,
     text: '',
-    tooltip: '',
-    command: '' as unknown,
+    tooltip: '' as unknown,
+    command: '',
+    backgroundColor: undefined as unknown,
     accessibilityInformation: undefined as unknown,
     visible: false,
     show() {
@@ -113,7 +115,12 @@ function world(
     workspace: {
       workspaceFolders: [{ uri: { fsPath: root } }],
       getConfiguration: () => ({
-        get: <T>(k: string, d: T) => (k === 'command' ? (setting.command as T) : d),
+        get: <T>(k: string, d: T) =>
+          k === 'command'
+            ? (setting.command as T)
+            : k === 'statusBar.enabled'
+              ? (setting.statusBarEnabled as T)
+              : d,
       }),
       onDidChangeConfiguration: (l: (e: { affectsConfiguration(s: string): boolean }) => void) => {
         settingListeners.push(l);
@@ -209,6 +216,14 @@ function world(
     },
     TreeItemCollapsibleState: { None: 0 },
     StatusBarAlignment: { Left: 1 },
+    MarkdownString: class {
+      isTrusted: unknown;
+      supportHtml: unknown;
+      constructor(readonly value: string) {}
+    },
+    ThemeColor: class {
+      constructor(readonly id: string) {}
+    },
   } as unknown as VscodeApi;
   const started = activate(
     { subscriptions: [] },
@@ -256,6 +271,10 @@ function world(
       choice = v;
     },
     lenses: () => lenses as NonNullable<typeof lenses>,
+    /** The markdown of the status bar tooltip, as the editor was handed it. */
+    tooltip: () => (bar.tooltip as { value: string }).value,
+    trust: () => (bar.tooltip as { isTrusted: unknown }).isTrusted,
+    html: () => (bar.tooltip as { supportHtml: unknown }).supportHtml,
   };
 }
 
@@ -284,43 +303,147 @@ afterEach(() => {
 const settle = () => vi.advanceTimersByTimeAsync(0);
 
 describe('the extension reads the record through the command line', () => {
-  it('shows the verdict and the channels in the status bar', async () => {
+  it('shows the level and what awaits in the status bar, and the detail in its tooltip', async () => {
     const w = world(base());
     await settle();
-    expect(w.bar.text).toBe('$(book) mnema: fully-signed · 1 of 2 channels off');
-    expect(w.bar.tooltip).toBe(`${COVERAGE}\n\noff: user-corrections`);
+    expect(w.bar.name).toBe('mnema');
+    expect(w.bar.text).toBe('$(book) fully-signed · 1 to judge');
     expect(w.bar.accessibilityInformation).toEqual({
-      label: 'mnema: fully-signed, 1 of 2 channels off',
+      label: 'mnema: fully-signed, 1 decision awaits a judgment',
       role: 'button',
     });
-    expect(w.bar.command).toBe('mnema.refresh');
+    expect(w.bar.backgroundColor).toBeUndefined();
+    const tip = w.tooltip();
+    expect(tip).toContain('[1 decision awaits a judgment](command:workbench.view.extension.mnema)');
+    expect(tip).toContain(`\`\`\`\n${COVERAGE}\n\`\`\``);
+    expect(tip).toContain('Channels off: user\\-corrections');
+    expect(tip).toMatch(/Read at \d\d:\d\d:\d\d/);
     expect(w.executed).toContainEqual(['setContext', 'mnema.cliMissing', false]);
     expect(w.started?.shown()).toEqual({
       text: w.bar.text,
-      tooltip: w.bar.tooltip,
+      tooltip: tip,
+      command: CONTAINER_COMMAND,
       visible: true,
       badge: { value: 1, tooltip: '1 decision awaits a judgment' },
     });
   });
 
-  it('says the command is missing, apart from nothing pending, and sends the bar to the setting', async () => {
+  it('trusts the commands the tooltip lists and no other, and never a verb that judges', async () => {
+    const w = world(base());
+    await settle();
+    expect(w.trust()).toEqual({ enabledCommands: TOOLTIP_COMMANDS });
+    expect(w.html()).toBe(false);
+    expect(TOOLTIP_COMMANDS).not.toContain('mnema.accept');
+    expect(TOOLTIP_COMMANDS).not.toContain('mnema.reject');
+    // Every command a link in the tooltip runs is one the editor was told to trust.
+    for (const link of w.tooltip().matchAll(/\(command:([^)?]+)/g)) {
+      expect(TOOLTIP_COMMANDS).toContain(link[1]);
+    }
+  });
+
+  it('opens the container on a click, in every state', async () => {
+    const answers: Record<string, CliResult> = { ...base() };
+    const w = world(answers);
+    await settle();
+    expect(w.bar.command).toBe('workbench.view.extension.mnema');
+    answers['--version'] = { code: null, stdout: '', stderr: 'spawn mnema ENOENT' };
+    await w.command('mnema.refresh')();
+    expect(w.bar.text).toBe('$(warning) mnema not found');
+    expect(w.bar.command).toBe('workbench.view.extension.mnema');
+    answers['--version'] = ok(`${MIN_CLI_VERSION}\n`);
+    answers['verify --json'] = ok('{"ok": false, "record": {"ok": false, "level": "broken"}}');
+    await w.command('mnema.refresh')();
+    expect(w.bar.command).toBe('workbench.view.extension.mnema');
+  });
+
+  it('wears the warning background of the theme when mnema verify failed, and says what failed', async () => {
+    const answers: Record<string, CliResult> = {
+      ...base(),
+      'verify --json': ok('{"ok": true, "record": {"ok": false, "level": "broken"}}'),
+    };
+    const w = world(answers);
+    await settle();
+    expect(w.bar.text).toBe('$(error) verify failed · 1 to judge');
+    expect(w.bar.backgroundColor).toEqual({ id: 'statusBarItem.warningBackground' });
+    expect(w.tooltip()).toContain(COVERAGE);
+    // A later reading that verifies takes the color away again.
+    answers['verify --json'] = VERIFY;
+    await w.command('mnema.refresh')();
+    expect(w.bar.backgroundColor).toBeUndefined();
+  });
+
+  it('carries the issues mnema verify listed on its error output when it failed, as they came', async () => {
+    const answers: Record<string, CliResult> = {
+      ...base(),
+      'verify --json': ok('{"ok": true, "record": {"ok": false, "level": "broken"}}'),
+      verify: {
+        code: 1,
+        stdout: 'public: local integrity FAILED: see issues\n',
+        stderr: '  issue [T1] public tail#3: entry hash mismatch\n',
+      },
+    };
+    const w = world(answers);
+    await settle();
+    expect(w.tooltip()).toContain('public: local integrity FAILED: see issues');
+    expect(w.tooltip()).toContain('issue [T1] public tail#3: entry hash mismatch');
+  });
+
+  it('shows a lens text that carries a command link as plain text, never as a link', async () => {
+    const channel = '[judge](command:mnema.accept)';
+    const hostile = `${channel} \`x\` <b>y</b>`;
+    const answers: Record<string, CliResult> = {
+      ...base(),
+      switch: ok(`2 channel(s):\n  ${channel}  off  y\n  brief-document  on  x\n`),
+      verify: ok(`${hostile}\n\`\`\`\n[z](command:mnema.reject)\n`),
+    };
+    const w = world(answers);
+    await settle();
+    const tip = w.tooltip();
+    // Outside the code blocks there is no link left: every punctuation mark of the name is escaped.
+    const outside = tip.replace(/(`{3,})\n[\s\S]*?\n\1/g, '');
+    expect(outside).toContain('\\[judge\\]\\(command\\:mnema\\.accept\\)');
+    expect(outside).not.toContain('[judge](command:mnema.accept)');
+    // What `mnema verify` printed is in a fence longer than any run of backticks it carries.
+    expect(tip).toContain('````\n' + `${hostile}\n\`\`\`\n[z](command:mnema.reject)` + '\n````');
+  });
+
+  it('is shown and hidden by the setting, without a reload, and no repository can hide it', async () => {
+    const w = world(base());
+    await settle();
+    expect(w.bar.visible).toBe(true);
+    w.setting.statusBarEnabled = false;
+    for (const l of w.settingListeners)
+      l({ affectsConfiguration: (s) => s === 'mnema.statusBar.enabled' });
+    expect(w.bar.visible).toBe(false);
+    // A reading while it is off does not bring it back.
+    await w.command('mnema.refresh')();
+    expect(w.bar.visible).toBe(false);
+    expect(w.started?.shown().visible).toBe(false);
+    w.setting.statusBarEnabled = true;
+    for (const l of w.settingListeners)
+      l({ affectsConfiguration: (s) => s === 'mnema.statusBar.enabled' });
+    expect(w.bar.visible).toBe(true);
+    const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+    expect(manifest.contributes.configuration.properties['mnema.statusBar.enabled'].scope).toBe(
+      'machine',
+    );
+  });
+
+  it('says the command is missing, apart from nothing pending, and keeps the click on the container', async () => {
     const w = world({
       ...base(),
       '--version': { code: null, stdout: '', stderr: 'spawn mnema ENOENT' },
     });
     await settle();
     expect(w.executed).toContainEqual(['setContext', 'mnema.cliMissing', true]);
-    expect(w.bar.text).toBe('$(warning) mnema: command not found');
-    expect(w.bar.tooltip).toContain('spawn mnema ENOENT');
+    expect(w.bar.text).toBe('$(warning) mnema not found');
+    expect(w.tooltip()).toContain('spawn mnema ENOENT');
+    expect(w.tooltip()).toContain('mnema.command');
     expect(w.bar.accessibilityInformation).toEqual({
       label: 'mnema: command not found',
       role: 'button',
     });
-    expect(w.bar.command).toEqual({
-      command: 'workbench.action.openSettings',
-      title: 'mnema: Set the mnema command',
-      arguments: ['mnema.command'],
-    });
+    expect(w.bar.command).toBe(CONTAINER_COMMAND);
     // Nothing else is asked of a command that is not there, and no verdict is shown.
     expect(w.ran).toEqual([['--version']]);
     expect(w.tree().getChildren()).toEqual([]);
@@ -339,8 +462,8 @@ describe('the extension reads the record through the command line', () => {
       true,
       false,
     ]);
-    expect(w.bar.text).toBe('$(book) mnema: fully-signed · 1 of 2 channels off');
-    expect(w.bar.command).toBe('mnema.refresh');
+    expect(w.bar.text).toBe('$(book) fully-signed · 1 to judge');
+    expect(w.bar.command).toBe(CONTAINER_COMMAND);
     expect(w.tree().getChildren()).toHaveLength(1);
   });
 
@@ -348,25 +471,25 @@ describe('the extension reads the record through the command line', () => {
     const w = world(base(), undefined, undefined, true);
     w.setting.command = 'typo';
     await w.command('mnema.refresh')();
-    expect(w.bar.text).toBe('$(warning) mnema: command not found');
-    expect(w.bar.tooltip).toContain('spawn typo ENOENT');
+    expect(w.bar.text).toBe('$(warning) mnema not found');
+    expect(w.tooltip()).toContain('spawn typo ENOENT');
 
     // Changing the setting is enough: the editor says so, and no Refresh is asked for.
     w.setting.command = 'good';
     const unrelated = { affectsConfiguration: (s: string) => s === 'editor.fontSize' };
     for (const l of w.settingListeners) l(unrelated);
     await settle();
-    expect(w.bar.text).toBe('$(warning) mnema: command not found');
+    expect(w.bar.text).toBe('$(warning) mnema not found');
     for (const l of w.settingListeners) l({ affectsConfiguration: (s) => s === 'mnema.command' });
     await settle();
-    expect(w.bar.text).toBe('$(book) mnema: fully-signed · 1 of 2 channels off');
+    expect(w.bar.text).toBe('$(book) fully-signed · 1 to judge');
     expect(w.makeRuns.at(-1)).toBe('good');
 
     // And a Refresh alone reads it too, with no event.
     w.setting.command = 'typo-again';
     await w.command('mnema.refresh')();
     expect(w.makeRuns.at(-1)).toBe('typo-again');
-    expect(w.bar.text).toBe('$(warning) mnema: command not found');
+    expect(w.bar.text).toBe('$(warning) mnema not found');
   });
 
   it('tells the empty views whether the folder holds a record, by what is on disk and not by what the command line said', async () => {
@@ -506,18 +629,21 @@ describe('a judgment goes through the verb of the command line, with a note', ()
   });
 });
 
-describe('the record is watched, and a new proposal is announced once', () => {
-  it('says nothing at the first reading, then announces the one that arrived', async () => {
+describe('the record is watched, and a new proposal raises the badge and the bar and shows no notification', () => {
+  it('moves the badge and the bar by one when a proposal arrives, and says nothing', async () => {
     const w = world(base());
     await settle();
     expect(w.shown).toEqual([]);
+    expect(w.badge()?.value).toBe(1);
     w.answers[LIST] = listing(hit('d1', 'Use X'), hit('d2', 'Use Y'));
     w.watcher.change[0]?.();
     await vi.advanceTimersByTimeAsync(QUIET_MS);
-    expect(w.shown).toEqual(['mnema: a decision was proposed: Use Y']);
-    w.watcher.change[0]?.();
-    await vi.advanceTimersByTimeAsync(QUIET_MS);
-    expect(w.shown).toHaveLength(1);
+    expect(w.shown).toEqual([]);
+    expect(w.badge()?.value).toBe(2);
+    expect(w.bar.text).toBe('$(book) fully-signed · 2 to judge');
+    expect(w.bar.accessibilityInformation).toMatchObject({
+      label: 'mnema: fully-signed, 2 decisions await a judgment',
+    });
   });
 
   it('reads once for a burst of changes, not once per change', async () => {
@@ -657,7 +783,7 @@ describe('in a folder with no .mnema the command line is never run', () => {
     await vi.advanceTimersByTimeAsync(QUIET_MS);
     expect(w.ran).toContainEqual(['--version']);
     expect(w.bar.visible).toBe(true);
-    expect(w.bar.text).toBe('$(book) mnema: fully-signed · 1 of 2 channels off');
+    expect(w.bar.text).toBe('$(book) fully-signed · 1 to judge');
     expect(w.badge()?.value).toBe(1);
   });
 

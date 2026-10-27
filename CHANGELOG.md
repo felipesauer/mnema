@@ -89,6 +89,22 @@ with its own changelog.
   the container in a folder with no `.mnema`, and the file check reads the container's icon in the `.vsix` and refuses any `fill` or `stroke` in it that is not `currentColor` or `none`.
 - **The VS Code extension's icon is the banner's M.** It was a cube; it is now the first letter of the console's wordmark, in the banner's accent and block style on its dark page, in a rounded square with a thin lilac border, with the same letter behind it in a darker lilac, shifted down and to the right, as a solid shadow. It is drawn from the rows the console draws (`THE_BLOCKS`), so the icon and the banner cannot drift apart. It reaches the stores with the next published version.
 
+- **The VS Code extension's status bar item is short, and its tooltip is markdown.** The text is the level and, when decisions
+  await a judgment, how many (`fully-signed · 2 to judge`, the same number as the container's badge); the count of channels
+  left it, and a missing command reads `mnema not found`. The tooltip has the level, a link to the container with the number
+  awaiting, the lines `mnema verify` printed in a code block (for a failure also the first issues it listed), the channels off
+  by name with a link to the page that says what they carry, when it was read, and links to Refresh and to the setting. What
+  came from the command line or the record is escaped, so it cannot become a link, and the commands a link may run are the
+  container, Refresh and the settings editor, never a verdict. A click opens the container in every state, the missing command
+  included, and the item wears the theme's warning background when `mnema verify` fails. The new setting
+  `mnema.statusBar.enabled` hides it; it is machine-scoped, like `mnema.command`, so a repository cannot hide the item that says
+  when verify fails.
+
+### Removed
+
+- **The VS Code extension no longer shows a message when a decision is proposed.** The badge on the container's icon and the
+  count in the status bar carry the notice, with no interruption and no setting to bring it back.
+
 ### Security
 
 - **`@azure/msal-node` is lifted to 7.1 by an override, closing GHSA-xcx6-jx8p-x3h5.** It reached the tree only through the VS Code extension's packing tool (`@vscode/vsce` -> `@azure/identity`, which still asks for 6.x), a development dependency that no published package ships. The workspace and the release job's own tool folder now resolve it to 7.1.1, the extension still packs the same twelve files, and the advisory scan no longer ignores the advisory.

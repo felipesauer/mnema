@@ -18,7 +18,13 @@ interface Manifest {
     configuration: {
       properties: Record<
         string,
-        { scope?: unknown; description?: unknown; markdownDescription?: unknown }
+        {
+          scope?: unknown;
+          type?: unknown;
+          default?: unknown;
+          description?: unknown;
+          markdownDescription?: unknown;
+        }
       >;
     };
     viewsContainers?: { activitybar?: { id: string; title: string; icon: string }[] };
@@ -49,6 +55,13 @@ const { commands, menus, views, viewsWelcome } = manifest.contributes;
 describe('the extension manifest', () => {
   it('reads the executable only from the user or machine settings, never from a repository', () => {
     expect(manifest.contributes.configuration.properties['mnema.command']?.scope).toBe('machine');
+  });
+
+  it('lets only the person hide the status bar item, because it says when verify fails: the setting is machine-scoped, on by default', () => {
+    const setting = manifest.contributes.configuration.properties['mnema.statusBar.enabled'];
+    expect(setting?.scope).toBe('machine');
+    expect(setting?.type).toBe('boolean');
+    expect(setting?.default).toBe(true);
   });
 
   it('does not run in a workspace that is not trusted', () => {
