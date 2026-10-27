@@ -590,6 +590,7 @@ complete -c mnema -f -n '__mnema_at "check run"' -l color -x -a 'auto always nev
 
 # mnema site
 complete -c mnema -f -n '__mnema_at "site"' -l out -r
+complete -c mnema -f -n '__mnema_at "site"' -l back-link -r
 complete -c mnema -f -n '__mnema_at "site"' -s h -l help
 complete -c mnema -f -n '__mnema_at "site"' -s V -l version
 complete -c mnema -f -n '__mnema_at "site"' -l color -x -a 'auto always never'
