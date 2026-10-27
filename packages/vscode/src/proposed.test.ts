@@ -73,8 +73,8 @@ describe('the decisions waiting for a judgment', () => {
   });
 
   it('announces what is new since the last reading, and nothing on the first', () => {
-    const a = readProposed(JSON.stringify({ hits: [hit('a')] }))?.items;
-    const ab = readProposed(JSON.stringify({ hits: [hit('a'), hit('b')] }))?.items;
+    const a = readProposed(JSON.stringify({ hits: [hit('a')] }))?.items ?? [];
+    const ab = readProposed(JSON.stringify({ hits: [hit('a'), hit('b')] }))?.items ?? [];
     expect(newlyProposed(undefined, ab)).toEqual([]);
     expect(newlyProposed(new Set(['a']), ab).map((i) => i.id)).toEqual(['b']);
     expect(newlyProposed(new Set(['a', 'b']), a)).toEqual([]);
