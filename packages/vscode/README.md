@@ -39,7 +39,7 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   the ADR number, which two decisions can share) that says which decision it is. A `show` that fails
   is shown as the command line said it. It is plain text, not a web page or a preview: a link or a
   tag in a justification is just characters. What the record wrote goes through the same rule
-  `mnema show` applies: a title or a field is one line, and a control byte (an escape, a bell, a
+  the command line's `show` applies: a title or a field is one line, and a control byte (an escape, a bell, a
   right-to-left override) is written as its visible `\u00xx` escape, so a title cannot forge a
   `State` line. The hour it was read at is in UTC with the Z, like the events' own hours. A
   document you close is no longer read again.

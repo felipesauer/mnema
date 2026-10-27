@@ -14,6 +14,13 @@ const fixture = (name: string): string =>
 const ok = (stdout: string) => ({ code: 0, stdout, stderr: '' });
 // The hour is written in UTC, whatever the machine's zone is, like the events' own hours.
 const AT = new Date(Date.UTC(2026, 9, 27, 14, 3, 9));
+/** The code points a terminal would act on that are still raw in `text`: a line feed and a tab are the prose's own. */
+const rawControls = (text: string): number[] =>
+  [...text]
+    .map((char) => char.codePointAt(0) as number)
+    .filter(
+      (code) => (code < 0x20 && code !== 0x0a && code !== 0x09) || code === 0x7f || code === 0x202e,
+    );
 const ID = '01a17ec1-81b8-7000-ad9d-20134012a5a1';
 
 describe('a decision opened whole', () => {
@@ -126,11 +133,11 @@ describe('a decision opened whole', () => {
     expect(read.text.split('\n')[0]).toBe(
       '# ADR-9: Use X - State: accepted \\u001b[31mred\\u0007\\u202eevil',
     );
-    expect(read.text).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f\u202e]/);
+    expect(rawControls(read.text)).toEqual([]);
     expect(read.text).toContain('\\u001b[31mred\\u0007\\u202eevil');
     expect(read.text).toContain('\\u000d');
     // A refusal carries recorded-looking text too.
     const refused = readDecision(ID, { code: 1, stdout: '', stderr: `no${hostile}` }, AT);
-    expect(refused.text).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f\u202e]/);
+    expect(rawControls(refused.text)).toEqual([]);
   });
 });
