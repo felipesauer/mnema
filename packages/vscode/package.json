@@ -2,7 +2,7 @@
   "name": "@mnema/vscode",
   "displayName": "mnema",
   "publisher": "mnema",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "Shows the rules in force over the open file, the decisions waiting for a judgment and the stacks adopted for the project, as the mnema command line reports them.",
   "icon": "icon.png",

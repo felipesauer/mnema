@@ -1,6 +1,6 @@
 {
   "name": "@mnema/code",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Your decisions, handed to your agents' sessions and held at the edits they govern: append-only and signed in the repository, and checkable by anyone.",
   "keywords": [
     "mcp",
