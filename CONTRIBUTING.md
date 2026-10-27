@@ -114,6 +114,28 @@ real run of a host did with each. A change to the `description` is the change th
 for, since that line decides when the skill is offered. If an eval is added later, this section
 names how to run it.
 
+## The site
+
+The site is in [`site/`](site/), a tree of its own with its own lockfile (it is not a workspace package and nothing
+that is published depends on it). It holds no page of its own: the pages of `docs/` and the sections of the README are
+copied into it by the build, under paths git ignores, and the pictures, the accent and the icon are read from the files
+that already hold them. The page at `/record/` is what `mnema site` writes of this repository's record, from the binary
+built at the same commit. To build it, from the root of a built checkout:
+
+```sh
+pnpm build
+npm ci --ignore-scripts --prefix site
+npm run build --prefix site       # writes site/dist
+```
+
+The build stops when the record does not verify. Two cases hold what it wrote to its sources (the pages, the links
+between them, the sentences, the accent and the pictures, the version and the commit in the footer):
+[`the-site-is-made-of-its-sources.test.ts`](packages/code/tests/the-site-is-made-of-its-sources.test.ts) runs in the
+suite, and [`the-built-site-lands-and-says-what-it-was-built-from.test.ts`](packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts)
+reads `site/dist`, so it stands down until the site is built; with `THE_SITE_MUST_BE_BUILT=1` a missing build is the
+failure, as in the `Site` workflow. That workflow builds the site on a pull request that touches what it is made of, and
+deploys to GitHub Pages only after a release, from the commit the release tagged.
+
 ## Releases
 
 **Publishing to npm is the maintainer's own act**: the first version was published by hand, and from then on

@@ -1,0 +1,175 @@
+name: Site
+
+# THE SITE IS BUILT ON A PULL REQUEST AND PUBLISHED ONLY FROM A RELEASE. The site (`site/`) describes the version
+# npm serves, so nothing on `main` that has not been released is deployed.
+#
+# ON A PULL REQUEST it builds the site and holds the built pages to their sources (the two cases named below), and
+# deploys nothing. The check is not one a pull request must carry (the repository's Settings decide that, not this
+# file). The job runs on EVERY pull request and decides inside whether the change reaches the site, so that
+# if it ever becomes a required check it does not wait forever on a pull request that touches nothing of it.
+#
+# AFTER A RELEASE it builds the commit the release tagged and deploys it to GitHub Pages. `release.yml` creates the tag
+# with the job's own token, and an event made by that token starts no workflow, so this one is started by the end of the
+# `Release` run (`workflow_run`) and asks the tag itself: it deploys only when `v<root version>` points at the commit that
+# run was for. A push that published nothing, or a release whose tag is not there, ends here green and deploys nothing.
+# The deploy is not a step of `release.yml`: a Pages outage must not be able to fail a publication that already happened.
+# By hand, `workflow_dispatch` with a tag publishes that tag again.
+#
+# THE DEPLOY JOB HOLDS NO SECRET AND NO CODE OF THE REPOSITORY. It has `pages: write` and `id-token: write` and nothing
+# else, runs no checkout and no install, and takes the one artifact the build job uploaded. Everything that runs the
+# repository's code or the site's dependencies is in the build job, whose token reads the contents and nothing more.
+# Pages is enabled in the repository's Settings (source: GitHub Actions); until it is, the deploy job fails and the
+# build job is unaffected.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The release tag to publish again, for example v0.1.4.'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  plan:
+    name: what is to be built
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      ref: ${{ steps.plan.outputs.ref }}
+      build: ${{ steps.plan.outputs.build }}
+      deploy: ${{ steps.plan.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # A pull request: the merge commit and its first parent, to see what the change touches.
+          # A run that ends a release: the commit it was for.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || (github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag)) || '' }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Decide what is built and whether it is published
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          TAG: ${{ inputs.tag }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          say() { printf '%s=%s\n' "$1" "$2" >> "$GITHUB_OUTPUT"; }
+          if [ "$EVENT" = "pull_request" ]; then
+            say ref ""
+            say deploy false
+            # Inside the job and not in the trigger: a path filter on the trigger leaves a required check pending forever.
+            if git diff --name-only HEAD^1 HEAD | grep -Eq '^(site/|docs/|README\.md$|\.github/the-front-page/|\.github/workflows/site\.yml$|packages/code/src/site/|packages/code/src/presentation/banner\.ts$|packages/code/build/the-site-verifier\.mjs$|packages/code/package\.json$|packages/vscode/build/icon\.mjs$|\.mnema/)'; then
+              say build true
+            else
+              say build false
+              echo "This change reaches nothing the site is made of."
+            fi
+            exit 0
+          fi
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            say ref "refs/tags/$TAG"
+            say build true
+            say deploy true
+            exit 0
+          fi
+          # The end of a Release run: only a push to main, and only when the root version's tag points at that very commit.
+          say ref "$RUN_SHA"
+          say build false
+          say deploy false
+          if [ "$RUN_EVENT" != "push" ] || [ "$RUN_BRANCH" != "main" ]; then
+            echo "The Release run was not a push to main."
+            exit 0
+          fi
+          version="$(node -p "require('./package.json').version")"
+          tagged="$(git ls-remote "https://github.com/$REPOSITORY.git" "refs/tags/v$version" "refs/tags/v$version^{}" | cut -f1 | sort -u)"
+          if [ "$tagged" = "$RUN_SHA" ]; then
+            say build true
+            say deploy true
+            echo "v$version is the tag of $RUN_SHA: the site is built and published."
+          else
+            echo "v$version is not the tag of $RUN_SHA: nothing to publish."
+          fi
+
+  build:
+    name: the site builds and says what it was made from
+    needs: plan
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: needs.plan.outputs.build == 'true'
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: needs.plan.outputs.build == 'true'
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: needs.plan.outputs.build == 'true'
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      # The binary of this very commit writes /record/ and the cases that read the site run it.
+      - name: Build the packages
+        if: needs.plan.outputs.build == 'true'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      # The site's own dependencies, from its own lockfile, with no install script.
+      - name: Install the site's dependencies
+        if: needs.plan.outputs.build == 'true'
+        run: npm ci --ignore-scripts --no-audit --no-fund --prefix site
+
+      - name: Build the site
+        if: needs.plan.outputs.build == 'true'
+        run: npm run build --prefix site
+
+      # The built pages against their sources, and the pages' links against each other. A missing build is a failure here.
+      - name: Hold the built site to its sources
+        if: needs.plan.outputs.build == 'true'
+        env:
+          THE_SITE_MUST_BE_BUILT: '1'
+        run: pnpm exec vitest run packages/code/tests/the-site-is-made-of-its-sources.test.ts packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: needs.plan.outputs.deploy == 'true'
+        with:
+          path: site/dist
+
+  deploy:
+    name: publish the site
+    needs: [plan, build]
+    if: needs.plan.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # Nothing else: no contents, no secret, no checkout.
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

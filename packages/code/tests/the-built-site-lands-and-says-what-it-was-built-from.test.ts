@@ -240,7 +240,7 @@ when('the built site', () => {
       expect(/data-version>([^<]*)</.exec(text)?.[1], `${page}: version`).toBe(version);
       expect(
         /data-commit href="[^"]*\/commit\/([0-9a-f]{40})"/.exec(text)?.[1],
-        `${page}: commit`,
+        `${page}: commit (is site/dist older than this checkout? build the site again)`,
       ).toBe(sha);
     }
   });

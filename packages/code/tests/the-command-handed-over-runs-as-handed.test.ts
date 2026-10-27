@@ -462,8 +462,12 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the read named in the known limits of the entry on the rules a project inherits, as one that does not list the addresses the origin holds; the reference hands it over with the id',
   },
   'CHANGELOG.md: mnema site': {
-    times: 2,
-    why: 'the verb named as what writes the page, the third reader the strict Ed25519 rule holds and the one that refuses a misnamed key',
+    times: 3,
+    why: 'the verb named as what writes the page, the third reader the strict Ed25519 rule holds and the one that refuses a misnamed key, and as what writes the page the site serves at /record/; its `--help` hands the --out it needs',
+  },
+  'CONTRIBUTING.md: mnema site': {
+    times: 1,
+    why: 'the verb named as what writes the page the site serves at /record/; the page about it hands the line over, with its --out',
   },
   'CHANGELOG.md: mnema stack add': {
     times: 1,
@@ -719,7 +723,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 57, name: 107, flag: 4 },
+  'CHANGELOG.md': { line: 57, name: 109, flag: 4 },
+  'CONTRIBUTING.md': { name: 1 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
