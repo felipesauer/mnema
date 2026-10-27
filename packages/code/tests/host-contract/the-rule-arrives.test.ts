@@ -29,6 +29,7 @@ import {
 import { theRowOf } from './support/the-arrival-harness.js';
 import {
   aHostForEachCase,
+  everyBlockOf,
   type TheSession,
   whatWasAddedBesideTheResult,
 } from './support/the-host.js';
@@ -36,6 +37,10 @@ import { aScriptOfCalls, runInTheShell, writeTo } from './support/the-stand-in-a
 
 /** What the stand-in answers the request for a summary with: no rule in it, and a marker that it was this one. */
 const THE_SUMMARY = 'Summary chosen by the case: the person asked for three shell echoes.';
+
+/** The block the plugin's `SessionStart` hook hands the model, and the one the host puts the instruction files in. */
+const THE_RECORDS_BLOCK = '<system-reminder>\nSessionStart hook additional context:';
+const THE_FILES_BLOCK = '<system-reminder>\nCodebase and user instructions are shown below.';
 
 /** The host asks for its summary with this instruction at the end of the conversation. */
 const ASKS_FOR_THE_SUMMARY = 'CRITICAL: Respond with TEXT ONLY';
@@ -76,6 +81,18 @@ describe('where a rule arrives in Claude Code', () => {
       expect(JSON.stringify(after?.body.messages)).not.toContain('toolu_stand_in_0001');
       expect(JSON.stringify(before?.body.messages)).toContain('toolu_stand_in_0002');
 
+      // WHICH CHANNEL. An instruction file rides in the block the host opens its first message with,
+      // and the record rides in the output of the plugin's `SessionStart` hook, which the host runs
+      // again after a compaction: so the rule is not back because the summary kept it.
+      for (const request of [long.messages[0], after]) {
+        const carriers = request === undefined ? [] : everyBlockOf(request).filter(theSentinelIsIn);
+        for (const block of carriers) {
+          expect(
+            block.startsWith(arm === 'mnema' ? THE_RECORDS_BLOCK : THE_FILES_BLOCK),
+            block.slice(0, 80),
+          ).toBe(true);
+        }
+      }
       const arrived: Partial<Record<'start' | 'late' | 'compaction' | 'edit', boolean>> = {
         start: theSentinelIsIn(long.messages[0]?.body),
         late: theSentinelIsIn(before?.body),

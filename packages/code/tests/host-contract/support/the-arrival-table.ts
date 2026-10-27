@@ -63,7 +63,7 @@ const COPILOT_ENDS_AT_ITS_SUMMARY = notMeasured(
 );
 
 const GEMINI_NEEDS_A_SECOND_TURN = notMeasured(
-  'in one `gemini -p` run the host asked for no summary although the usage it was told was a full window: its compression splits the history at a turn of the person after the first, and a run has one; no request of a compacted conversation was seen',
+  'in one `gemini -p` run the host asked for no summary although the usage it was told was a full window: where it splits the history to compress (`findCompressSplitPoint`, read in the bundle) there is nothing before a second turn of the person or a closing text of the model, which a run does not have until it ends; no request of a compacted conversation was seen',
 );
 
 type TheTable = Record<ArrivalHost, Record<Arm, Record<Moment, Outcome>>>;
@@ -83,7 +83,6 @@ export const THE_TABLE: TheTable = {
     mnema: row(arrived, arrived, arrived, arrived),
   },
   codex: {
-    ...placeholder(),
     control: row(absent, absent, absent, NO_CHANNEL_AT_AN_EDIT),
     'agents-md': THE_ARMS_IN_A_FILE_ARE_READ_AGAIN,
     'host-file': noSuchPlace('the instructions file Codex reads is `AGENTS.md`, the place above'),
@@ -97,7 +96,6 @@ export const THE_TABLE: TheTable = {
     mnema: row(arrived, arrived, arrived, absent),
   },
   opencode: {
-    ...placeholder(),
     control: row(absent, absent, absent, NO_CHANNEL_AT_AN_EDIT),
     'agents-md': THE_ARMS_IN_A_FILE_ARE_READ_AGAIN,
     'host-file': noSuchPlace(
@@ -113,7 +111,6 @@ export const THE_TABLE: TheTable = {
     mnema: row(arrived, arrived, arrived, absent),
   },
   copilot: {
-    ...placeholder(),
     control: row(absent, absent, COPILOT_ENDS_AT_ITS_SUMMARY, NO_CHANNEL_AT_AN_EDIT),
     'agents-md': row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, NO_CHANNEL_AT_AN_EDIT),
     'host-file': row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, NO_CHANNEL_AT_AN_EDIT),
@@ -127,7 +124,6 @@ export const THE_TABLE: TheTable = {
     mnema: row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, absent),
   },
   gemini: {
-    ...placeholder(),
     control: row(absent, absent, GEMINI_NEEDS_A_SECOND_TURN, NO_CHANNEL_AT_AN_EDIT),
     'agents-md': row(absent, absent, GEMINI_NEEDS_A_SECOND_TURN, NO_CHANNEL_AT_AN_EDIT),
     'host-file': row(arrived, arrived, GEMINI_NEEDS_A_SECOND_TURN, NO_CHANNEL_AT_AN_EDIT),
@@ -140,20 +136,20 @@ export const THE_TABLE: TheTable = {
     ),
     mnema: row(arrived, arrived, GEMINI_NEEDS_A_SECOND_TURN, absent),
   },
-  qwen: placeholder(),
+  qwen: {
+    control: row(absent, absent, absent, NO_CHANNEL_AT_AN_EDIT),
+    'agents-md': row(arrived, arrived, arrived, NO_CHANNEL_AT_AN_EDIT),
+    'host-file': row(arrived, arrived, arrived, NO_CHANNEL_AT_AN_EDIT),
+    'at-reference': row(arrived, arrived, arrived, NO_CHANNEL_AT_AN_EDIT),
+    'prose-reference': row(
+      { is: 'not-arrived', mentioned: true },
+      absent,
+      absent,
+      NO_CHANNEL_AT_AN_EDIT,
+    ),
+    mnema: row(arrived, arrived, arrived, absent),
+  },
 };
-
-function placeholder(): Record<Arm, Record<Moment, Outcome>> {
-  const none = noSuchPlace('placeholder');
-  return {
-    control: none,
-    'agents-md': none,
-    'host-file': none,
-    'at-reference': none,
-    'prose-reference': none,
-    mnema: none,
-  };
-}
 
 /** The cell of a host, an arm and a moment. */
 export function theCell(host: ArrivalHost, arm: Arm, moment: Moment): Outcome {
