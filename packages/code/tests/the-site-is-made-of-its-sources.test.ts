@@ -618,17 +618,21 @@ describe('the verdict the landing shows is the one of the committed tree', () =>
   });
   const home = mkdtempSync(join(tmpdir(), 'the-verdict-home-'));
   dirs.push(home);
-  const env = {
+  const identity = {
     HOME: home,
     PATH: process.env.PATH ?? '',
-    GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
     GIT_AUTHOR_NAME: 'a',
     GIT_AUTHOR_EMAIL: 'a@example.com',
     GIT_COMMITTER_NAME: 'a',
     GIT_COMMITTER_EMAIL: 'a@example.com',
   };
   const git = (cwd: string, ...args: string[]): string =>
-    execFileSync('git', args, { cwd, stdio: 'pipe', env, encoding: 'utf8' });
+    execFileSync('git', args, {
+      cwd,
+      stdio: 'pipe',
+      env: { ...identity, GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
+      encoding: 'utf8',
+    });
 
   /** A throwaway repository holding a copy of this repository's record, and the path of one of its tails. */
   function copyOfTheRecord(): { repo: string; tail: string } {
