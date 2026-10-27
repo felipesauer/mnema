@@ -209,7 +209,7 @@ const withoutSpace = (text: string | null): string => (text ?? '').replace(/\s+/
 
 /** What an element is, for a difference: its tag and a little of what it says. */
 function whatIs(el: El): string {
-  return `a ${el.tagName ?? 'node'} saying ${show(el.textContent)}`;
+  return `a ${(el.tagName ?? 'node').toLowerCase()} saying ${show(el.textContent)}`;
 }
 
 /**
