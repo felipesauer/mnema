@@ -617,6 +617,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'names the read a person uses, in the sentence about what nothing records',
   },
+  'packages/vscode/README.md: mnema show': {
+    times: 1,
+    why: 'names the read whose answer a decision document holds, in the sentence about when it was read',
+  },
 };
 
 /**
@@ -812,8 +816,9 @@ export const HANDED_OVER: Readonly<
   'packages/sdk/README.md': { line: 2, name: 4 },
   'packages/stacks/README.md': { line: 1, name: 2 },
   'packages/vscode/CHANGELOG.md': { name: 1 },
-  'packages/vscode/README.md': { line: 13, name: 17 },
+  'packages/vscode/README.md': { line: 15, name: 19 },
   'packages/vscode/media/walkthrough/verify.md': { name: 1 },
+  'packages/vscode/src/decision.ts': { line: 1 },
   'packages/vscode/src/stacks.ts': { line: 1 },
   'plugin/README.md': { line: 38, name: 26, flag: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },

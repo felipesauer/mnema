@@ -13,11 +13,20 @@ export const STACK_LIST_ARGS: readonly string[] = ['stack', 'list', '--json'];
 /** The trees a stack is adopted into, as the command line names them. */
 export type StackScope = 'public' | 'private' | 'global';
 
-export const SCOPES: readonly { readonly label: StackScope; readonly description: string }[] = [
-  { label: 'public', description: 'into the project, to be committed with it' },
-  { label: 'private', description: 'into the project, kept out of git' },
-  { label: 'global', description: 'into your home' },
+export const SCOPES: readonly {
+  readonly scope: StackScope;
+  /** The codicon in front of the name in the pick. */
+  readonly icon: string;
+  readonly description: string;
+}[] = [
+  { scope: 'public', icon: 'repo', description: 'into the project, to be committed with it' },
+  { scope: 'private', icon: 'lock', description: 'into the project, kept out of git' },
+  { scope: 'global', icon: 'home', description: 'into your home' },
 ];
+
+/** What a scope is called in a pick: its codicon and its name. The name alone is what is sent. */
+export const scopeLabel = (entry: (typeof SCOPES)[number]): string =>
+  `$(${entry.icon}) ${entry.scope}`;
 
 /** One installed stack, as `mnema stack list --json` reports it. */
 export interface AdoptedStack {
@@ -78,6 +87,25 @@ export function stackDescription(stack: AdoptedStack): string {
   return [stack.version, stack.scope, stack.sound ? 'sound' : 'DEPARTS']
     .filter(Boolean)
     .join(' · ');
+}
+
+/** The icon of a stack by what the command line reported: a codicon, and a theme colour when it is not sound. */
+export function stackIcon(stack: AdoptedStack): { id: string; color: string | undefined } {
+  if (stack.refused !== undefined) return { id: 'error', color: 'list.errorForeground' };
+  return stack.sound
+    ? { id: 'package', color: undefined }
+    : { id: 'warning', color: 'list.warningForeground' };
+}
+
+/** What a screen reader says for a stack: the colour of its icon is not the only way to know. */
+export function stackSpoken(stack: AdoptedStack): string {
+  const state =
+    stack.refused !== undefined
+      ? 'receipt refused'
+      : stack.sound
+        ? 'sound'
+        : 'departs from what was written';
+  return `${stack.name}, ${stack.scope}, ${state}`;
 }
 
 /** What the tooltip of a stack says: the facts the command line reported, and where hooks are turned on. */

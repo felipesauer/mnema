@@ -13,13 +13,25 @@ import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { type CliResult, createRun, type Run } from './cli.js';
 import {
-  detailText,
+  awaitsJudgment,
+  DECISION_SCHEME,
+  decisionPath,
+  decisionQuery,
+  idOfQuery,
+  readDecision,
+  showArgs,
+} from './decision.js';
+import {
+  acceptStamp,
   type Judgment,
   judgeArgs,
+  judgedText,
+  judgeLabel,
   LIST_ARGS,
   noteProblem,
   type Proposed,
   type ProposedDetail,
+  proposedTooltip,
   readDetail,
   readProposed,
 } from './proposed.js';
@@ -41,9 +53,12 @@ import {
   SCOPES,
   STACK_LIST_ARGS,
   type StackScope,
+  scopeLabel,
   showsHooks,
   sourceProblem,
   stackDescription,
+  stackIcon,
+  stackSpoken,
   stackTooltip,
 } from './stacks.js';
 import {
@@ -69,6 +84,17 @@ interface TreeItemLike {
   description?: string;
   tooltip?: string;
   contextValue?: string;
+  iconPath?: unknown;
+  command?: { command: string; title: string; arguments: unknown[] };
+  accessibilityInformation?: { label: string; role?: string };
+}
+
+/** An address, as far as this extension reads one. */
+interface UriLike {
+  readonly scheme: string;
+  readonly path: string;
+  readonly query: string;
+  readonly fsPath: string;
 }
 
 /** The members of the `vscode` module this extension uses. */
@@ -83,7 +109,17 @@ export interface VscodeApi {
       onDidDelete: Event<unknown>;
       dispose(): void;
     };
+    registerTextDocumentContentProvider(
+      scheme: string,
+      provider: {
+        onDidChange: Event<UriLike>;
+        provideTextDocumentContent(uri: UriLike): PromiseLike<string>;
+      },
+    ): Disposable;
+    openTextDocument(uri: UriLike): PromiseLike<unknown>;
+    onDidCloseTextDocument: Event<{ readonly uri: UriLike }>;
   };
+  readonly Uri: { from(parts: { scheme: string; path: string; query: string }): UriLike };
   readonly RelativePattern: new (base: string, pattern: string) => unknown;
   readonly window: {
     createStatusBarItem(alignment: number): {
@@ -105,6 +141,8 @@ export interface VscodeApi {
       placeHolder: string;
       ignoreFocusOut: boolean;
       validateInput: (value: string) => string | undefined;
+      value?: string;
+      valueSelection?: [number, number];
     }): PromiseLike<string | undefined>;
     showQuickPick<T extends { label: string }>(
       items: readonly T[],
@@ -113,6 +151,8 @@ export interface VscodeApi {
     showInformationMessage(message: string, ...actions: string[]): PromiseLike<string | undefined>;
     showErrorMessage(message: string): PromiseLike<string | undefined>;
     readonly activeTextEditor: { readonly document: DocumentLike } | undefined;
+    onDidChangeActiveTextEditor: Event<unknown>;
+    showTextDocument(document: unknown, options: { preview: boolean }): PromiseLike<unknown>;
   };
   readonly commands: {
     registerCommand(id: string, callback: (...args: never[]) => unknown): Disposable;
@@ -138,6 +178,7 @@ export interface VscodeApi {
   readonly StatusBarAlignment: { readonly Left: number };
   readonly MarkdownString: new (value: string) => MarkdownLike;
   readonly ThemeColor: new (id: string) => unknown;
+  readonly ThemeIcon: new (id: string, color?: unknown) => unknown;
 }
 
 /** The markdown of a tooltip: trusted for the commands listed, and without HTML. */
@@ -148,7 +189,7 @@ interface MarkdownLike {
 }
 
 interface DocumentLike {
-  readonly uri: { readonly scheme: string; readonly fsPath: string };
+  readonly uri: UriLike;
 }
 
 /** The number on the side bar icon of the extension, and what it says when hovered. */
@@ -178,6 +219,11 @@ interface OutputChannelLike {
 /** What the extension holds between one reading of the record and the next. */
 interface Session {
   readonly details: Map<string, ProposedDetail>;
+  /** What the last read of each decision opened whole said: its ADR, its title and its state. */
+  readonly known: Map<
+    string,
+    { adr: string | undefined; title: string | undefined; state: string | undefined }
+  >;
   readonly rules: Map<string, RuleView[]>;
   proposed: Proposed[];
   stacks: AdoptedStack[];
@@ -246,6 +292,7 @@ export function activate(
   };
   const session: Session = {
     details: new Map(),
+    known: new Map(),
     rules: new Map(),
     proposed: [],
     stacks: [],
@@ -260,6 +307,9 @@ export function activate(
   const treeChanged = keep(new api.EventEmitter<void>());
   const stacksChanged = keep(new api.EventEmitter<void>());
   const lensesChanged = keep(new api.EventEmitter<void>());
+  const decisionsChanged = keep(new api.EventEmitter<UriLike>());
+  /** The decisions opened as documents, so a new reading of the record refreshes them. */
+  const openDecisions = new Map<string, UriLike>();
   const bar = keep(api.window.createStatusBarItem(api.StatusBarAlignment.Left));
   let barVisible = false;
   // The setting is the person's, on this machine: it is read each time the bar is placed.
@@ -300,7 +350,7 @@ export function activate(
       : undefined;
   }
 
-  async function refresh(): Promise<void> {
+  async function readRecord(): Promise<void> {
     // The empty views say one thing with a record in the folder and another without; the key is
     // whether the folder holds a `.mnema`, nothing the command line said.
     const record = hasRecord();
@@ -409,6 +459,12 @@ export function activate(
     treeChanged.fire();
   }
 
+  /** A reading of the record, and then the decisions open as documents are read again. */
+  async function refresh(): Promise<void> {
+    await readRecord();
+    for (const uri of openDecisions.values()) decisionsChanged.fire(uri);
+  }
+
   async function rulesOver(path: string): Promise<RuleView[]> {
     const known = session.rules.get(path);
     if (known !== undefined) return known;
@@ -446,49 +502,124 @@ export function activate(
     ),
   );
 
+  /** Whether the decision of the editor in front was `proposed` when it was last read: the title buttons ask. */
+  const syncActiveDecision = (): void => {
+    const uri = api.window.activeTextEditor?.document.uri;
+    const id = uri?.scheme === DECISION_SCHEME ? idOfQuery(uri.query) : undefined;
+    const proposed = id !== undefined && awaitsJudgment(session.known.get(id)?.state);
+    void api.commands.executeCommand('setContext', 'mnema.activeDecisionProposed', proposed);
+  };
+  keep(api.window.onDidChangeActiveTextEditor(syncActiveDecision));
+
+  // A decision opened whole is `mnema show <id> --json`, laid out as text and read again each time
+  // the editor asks (when it opens, and after each reading of the record): nothing is kept of it
+  // but what the last read said about its state, which decides whether the title buttons show.
+  keep(
+    api.workspace.registerTextDocumentContentProvider(DECISION_SCHEME, {
+      onDidChange: decisionsChanged.event,
+      async provideTextDocumentContent(uri) {
+        const id = idOfQuery(uri.query);
+        if (id === undefined) return 'This address carries no decision id.\n';
+        openDecisions.set(uri.query, uri);
+        const answer = await read(showArgs(id));
+        const decision = readDecision(id, answer, new Date());
+        session.known.set(id, { adr: decision.adr, title: decision.title, state: decision.state });
+        syncActiveDecision();
+        return decision.text;
+      },
+    }),
+  );
+
+  // A tab that was closed is no longer refreshed: it leaves the map when the editor says it closed.
+  keep(
+    api.workspace.onDidCloseTextDocument((document) => {
+      if (document.uri.scheme === DECISION_SCHEME) openDecisions.delete(document.uri.query);
+    }),
+  );
+
+  async function openDecision(id: string): Promise<void> {
+    const adr = session.details.get(id)?.adr ?? session.known.get(id)?.adr;
+    const uri = api.Uri.from({
+      scheme: DECISION_SCHEME,
+      path: decisionPath(adr, id),
+      query: decisionQuery(id),
+    });
+    await api.window.showTextDocument(await api.workspace.openTextDocument(uri), { preview: true });
+  }
+
   const provider: TreeProvider<Proposed> = {
     onDidChangeTreeData: treeChanged.event,
     getChildren: () => session.proposed,
     getTreeItem(item) {
       const node = new api.TreeItem(item.title, api.TreeItemCollapsibleState.None);
-      node.description = session.details.get(item.id)?.adr ?? item.id;
+      const adr = session.details.get(item.id)?.adr;
+      node.description = adr ?? item.id;
       node.tooltip =
-        detailText(item, session.details.get(item.id)) +
+        proposedTooltip(item, session.details.get(item.id)) +
         (session.total > session.proposed.length
           ? `\n\n(${session.proposed.length} of ${session.total} are listed)`
           : '');
       node.contextValue = 'proposed';
+      // The icon is neutral on purpose: a decision that awaits a judgment has not been checked.
+      node.iconPath = new api.ThemeIcon('circle-outline');
+      node.accessibilityInformation = {
+        label: `${adr ?? item.id}, ${item.title}, awaits a judgment`,
+      };
+      node.command = { command: 'mnema.openDecision', title: 'Open Decision', arguments: [item] };
       return node;
     },
   };
   proposedView = keep(api.window.createTreeView('mnema.proposed', { treeDataProvider: provider }));
 
-  async function judge(verdict: Judgment, element: Proposed | undefined): Promise<void> {
+  /**
+   * What `judge` is handed: an item of the list, or the address of the decision open in the editor
+   * (from the buttons of its title). Either way it is one decision, and the note is typed.
+   */
+  type Target = { readonly id: string; readonly title: string | undefined };
+  const targetOf = (element: Proposed | UriLike | undefined): Target | undefined => {
+    if (element === undefined) return undefined;
+    if ('scheme' in element) {
+      const id = idOfQuery(element.query);
+      return id === undefined ? undefined : { id, title: session.known.get(id)?.title };
+    }
+    return { id: element.id, title: element.title };
+  };
+
+  async function judge(verdict: Judgment, element: Proposed | UriLike | undefined): Promise<void> {
     if (!needsRecord()) return;
+    const given = targetOf(element);
     const item =
-      element ??
+      given ??
       (
         await api.window.showQuickPick(
           session.proposed.map((p) => ({ label: p.title, description: p.id, item: p })),
           {
-            title: `mnema: ${verdict === 'accept' ? 'Accept' : 'Reject'} Decision`,
-            placeHolder: `Pick the decision to ${verdict}`,
+            title: `${verdict === 'accept' ? 'Accept' : 'Reject'} Decision`,
+            placeHolder: 'Which decision?',
             ignoreFocusOut: true,
           },
         )
       )?.item;
     if (item === undefined) return;
+    const adr = session.details.get(item.id)?.adr ?? session.known.get(item.id)?.adr;
+    // An accept offers a true stamp, kept as typed text the person can replace by a reason; the
+    // note is still required and still the person's to send. A rejection offers nothing: the
+    // reason is typed.
+    const stamp = verdict === 'accept' ? acceptStamp(new Date()) : undefined;
     const note = await api.window.showInputBox({
-      title: `mnema: ${verdict === 'accept' ? 'Accept' : 'Reject'} Decision`,
-      prompt: `Why ${verdict} "${item.title}"? The note is recorded with the verdict.`,
-      placeHolder: 'The reason, in a sentence (required)',
+      title: judgeLabel(verdict, adr, item.id),
+      prompt: `"${item.title ?? item.id}". ${stamp === undefined ? '' : 'Enter keeps the stamp, or type a reason. '}The note is recorded with the verdict.`,
+      placeHolder: 'Why? Required.',
       ignoreFocusOut: true,
       validateInput: noteProblem,
+      ...(stamp === undefined
+        ? {}
+        : { value: stamp, valueSelection: [0, stamp.length] as [number, number] }),
     });
     if (note === undefined || noteProblem(note) !== undefined) return;
     const result = await read(judgeArgs(verdict, item.id, note));
     if (result.code === 0) {
-      void api.window.showInformationMessage(result.stdout.trim().split('\n')[0] ?? 'Recorded.');
+      void api.window.showInformationMessage(judgedText(result.stdout));
     } else {
       void api.window.showErrorMessage(
         `mnema refused: ${(result.stderr || result.stdout).trim() || 'no reason given'}`,
@@ -498,10 +629,28 @@ export function activate(
   }
 
   keep(
-    api.commands.registerCommand('mnema.accept', (element?: Proposed) => judge('accept', element)),
+    api.commands.registerCommand('mnema.accept', (element?: Proposed | UriLike) =>
+      judge('accept', element),
+    ),
   );
   keep(
-    api.commands.registerCommand('mnema.reject', (element?: Proposed) => judge('reject', element)),
+    api.commands.registerCommand('mnema.reject', (element?: Proposed | UriLike) =>
+      judge('reject', element),
+    ),
+  );
+  keep(
+    api.commands.registerCommand('mnema.openDecision', async (element?: Proposed) => {
+      if (!needsRecord()) return;
+      const item =
+        element ??
+        (
+          await api.window.showQuickPick(
+            session.proposed.map((p) => ({ label: p.title, description: p.id, item: p })),
+            { title: 'Open Decision', placeHolder: 'Which decision?', ignoreFocusOut: true },
+          )
+        )?.item;
+      if (item !== undefined) await openDecision(item.id);
+    }),
   );
   keep(
     api.commands.registerCommand('mnema.refresh', async () => {
@@ -517,14 +666,16 @@ export function activate(
       const path = given ?? (document === undefined ? undefined : relativePath(document));
       if (path === undefined) return;
       const rules = await rulesOver(path);
-      await api.window.showQuickPick(
+      const chosen = await api.window.showQuickPick(
         rules.map((rule) => ({ ...ruleLabel(rule), rule })),
         {
-          title: 'mnema: Rules over This File',
+          title: 'Rules over This File',
           placeHolder: `Rules in force over ${path}`,
           ignoreFocusOut: true,
         },
       );
+      // The rule picked opens whole, as the decision it is; one in force shows no judgment button.
+      if (chosen !== undefined) await openDecision(chosen.rule.id);
     }),
   );
 
@@ -554,6 +705,12 @@ export function activate(
       node.description = stackDescription(stack);
       node.tooltip = stackTooltip(stack);
       node.contextValue = 'stack';
+      const icon = stackIcon(stack);
+      node.iconPath = new api.ThemeIcon(
+        icon.id,
+        icon.color === undefined ? undefined : new api.ThemeColor(icon.color),
+      );
+      node.accessibilityInformation = { label: stackSpoken(stack) };
       return node;
     },
   };
@@ -561,12 +718,15 @@ export function activate(
 
   async function pickScope(title: string): Promise<StackScope | undefined> {
     return (
-      await api.window.showQuickPick(SCOPES, {
-        title,
-        placeHolder: 'Where is the stack adopted?',
-        ignoreFocusOut: true,
-      })
-    )?.label;
+      await api.window.showQuickPick(
+        SCOPES.map((entry) => ({
+          label: scopeLabel(entry),
+          description: entry.description,
+          scope: entry.scope,
+        })),
+        { title, placeHolder: 'Install where?', ignoreFocusOut: true },
+      )
+    )?.scope;
   }
 
   async function pickStack(element: AdoptedStack | undefined): Promise<AdoptedStack | undefined> {
@@ -574,7 +734,7 @@ export function activate(
     return (
       await api.window.showQuickPick(
         session.stacks.map((s) => ({ label: s.name, description: s.scope, stack: s })),
-        { title: 'mnema: Pick Stack', placeHolder: 'Which stack?', ignoreFocusOut: true },
+        { title: 'Pick Stack', placeHolder: 'Stack', ignoreFocusOut: true },
       )
     )?.stack;
   }
@@ -601,7 +761,7 @@ export function activate(
       return;
     }
     const choice = await api.window.showInformationMessage(
-      `mnema: write the files of this plan into the ${scope} tree? Digest ${digest}; the plan is in the "mnema stacks" output.`,
+      `Write these files into the ${scope} tree? Digest ${digest}; the plan is in the "mnema stacks" output.`,
       WRITE,
     );
     if (choice !== WRITE) return;
@@ -618,15 +778,14 @@ export function activate(
     api.commands.registerCommand('mnema.stacks.add', async () => {
       if (!needsRecord()) return;
       const typed = await api.window.showInputBox({
-        title: 'mnema: Add Stack (1 of 2)',
-        prompt:
-          'A folder, a tar archive, or an https:// git address of a stack. The plan is shown before anything is written.',
-        placeHolder: 'e.g. ./my-stack or https://github.com/owner/my-stack.git',
+        title: 'Add Stack',
+        prompt: 'The plan is shown before anything is written.',
+        placeHolder: 'Folder, .tar or https:// git address',
         ignoreFocusOut: true,
         validateInput: sourceProblem,
       });
       if (typed === undefined || sourceProblem(typed) !== undefined) return;
-      const scope = await pickScope('mnema: Add Stack (2 of 2)');
+      const scope = await pickScope('Add Stack');
       if (scope === undefined) return;
       await adopt(typed.trim(), scope);
     }),
@@ -652,8 +811,8 @@ export function activate(
             entry: e,
           })),
           {
-            title: 'mnema: Add from Index (1 of 2)',
-            placeHolder: 'Which stack of the index?',
+            title: 'Add from Index',
+            placeHolder: 'Stack',
             ignoreFocusOut: true,
           },
         )
@@ -665,7 +824,7 @@ export function activate(
         );
         return;
       }
-      const scope = await pickScope('mnema: Add from Index (2 of 2)');
+      const scope = await pickScope('Add from Index');
       if (scope === undefined) return;
       await adopt(entry.source, scope, entry.digest);
     }),
@@ -700,7 +859,7 @@ export function activate(
       }
       shownAs(removeArgs(stack.name, stack.scope, true), plan.stdout);
       const choice = await api.window.showInformationMessage(
-        `mnema: remove ${stack.name} from the ${stack.scope} tree? What this would do is in the "mnema stacks" output.`,
+        `Remove ${stack.name} from the ${stack.scope} tree? What it would do is in the "mnema stacks" output.`,
         REMOVE,
       );
       if (choice !== REMOVE) return;
@@ -721,9 +880,9 @@ export function activate(
       const stack = await pickStack(element);
       if (stack === undefined) return;
       const folder = await api.window.showInputBox({
-        title: 'mnema: Export Stack',
-        prompt: `A folder that does not exist yet, or is empty, to export ${stack.name} into`,
-        placeHolder: `e.g. ./${stack.name}`,
+        title: 'Export Stack',
+        prompt: `A folder that does not exist yet, or is empty, to export ${stack.name} into.`,
+        placeHolder: `./${stack.name}`,
         ignoreFocusOut: true,
         validateInput: folderProblem,
       });

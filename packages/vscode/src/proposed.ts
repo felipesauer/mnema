@@ -85,12 +85,16 @@ export function readDetail(stdout: string): ProposedDetail {
   };
 }
 
-/** What a person reads before judging: the title, why it was proposed, what was turned down. */
-export function detailText(item: Proposed, detail: ProposedDetail | undefined): string {
-  const lines = [`${detail?.adr ?? item.id}: ${item.title}`, `scope: ${item.scope}`];
-  if (detail?.rationale !== undefined) lines.push('', 'Why:', detail.rationale);
-  if (detail?.alternatives !== undefined) lines.push('', 'Alternatives:', detail.alternatives);
-  return lines.join('\n');
+/** How much of the justification a tooltip carries: the rest is in the document of the decision. */
+const TOOLTIP_CHARS = 160;
+
+/** What the tooltip of an item says: the title, the ADR and the start of why. The whole text opens on a click. */
+export function proposedTooltip(item: Proposed, detail: ProposedDetail | undefined): string {
+  const head = `${detail?.adr ?? item.id}: ${item.title}`;
+  const why = detail?.rationale;
+  if (why === undefined) return head;
+  const start = why.length > TOOLTIP_CHARS ? `${why.slice(0, TOOLTIP_CHARS - 1)}\u2026` : why;
+  return `${head}\n\n${start}`;
 }
 
 /** The two verbs a person has. */
@@ -109,3 +113,30 @@ export const judgeArgs = (verdict: Judgment, id: string, note: string): string[]
 /** Why a note cannot be sent, or undefined when it can. The note is required; an empty one is not. */
 export const noteProblem = (note: string): string | undefined =>
   note.trim() === '' ? 'A note is required: say why.' : undefined;
+
+const two = (n: number): string => String(n).padStart(2, '0');
+
+/**
+ * The note an accept can carry when the person types nothing: the day, in their own calendar, and
+ * what is true of the act, that it was done in this extension and that no reason was typed. It
+ * says nothing about the decision, and it is only an offer: the box holds it as text to keep or
+ * to replace by a reason. A rejection has no such offer.
+ */
+export const acceptStamp = (day: Date): string =>
+  `${day.getFullYear()}-${two(day.getMonth() + 1)}-${two(day.getDate())}, accepted in the VS Code extension, no reason typed`;
+
+/** What a judgment box is titled: the verb and the decision, by its ADR or the start of its id. */
+export const judgeLabel = (verdict: Judgment, adr: string | undefined, id: string): string =>
+  `${verdict === 'accept' ? 'Accept' : 'Reject'} ${adr ?? id.slice(0, 8)}`;
+
+/**
+ * What is shown once the command line recorded a verdict: its line `Decision ADR-2 (<id>) -> accepted`
+ * shortened to `ADR-2 accepted.`. The verdict is the one in the line; a line of another shape is
+ * shown as it came.
+ */
+export function judgedText(stdout: string): string {
+  const line = stdout.trim().split('\n')[0] ?? '';
+  if (line === '') return 'Recorded.';
+  const match = /^Decision (\S+) \([^)]*\) \u2192 (accepted|rejected)$/.exec(line);
+  return match === null ? line : `${match[1]} ${match[2]}.`;
+}
