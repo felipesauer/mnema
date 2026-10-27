@@ -16,6 +16,8 @@
  *     and would win), the pictures are the bytes of `docs/assets/`, and the icon is the one `icon.mjs` draws.
  *   - THE FOOTER SAYS WHAT WAS BUILT: the version of `@mnema/code` and the commit, on every page, the ones
  *     of this checkout.
+ *   - NO STYLESHEET DRAWS TEXT: no `content` with a sentence in it and no `attr()`, in the site's own CSS or in the built one
+ *     (less what the packages it stands on carry), since a sentence drawn there is read by no other guard.
  *   - THE SITE DOES NOT SAY THE DOCS DESCRIBE THE NEXT VERSION: the sentence is true on GitHub and npm and
  *     false here, so no built page holds it.
  *   - /RECORD/ IS THE PAGE `mnema site --back-link` WRITES for this commit's record, byte for byte, with no
@@ -439,6 +441,20 @@ when('the built site', () => {
       /data-commit href="[^"]*\/commit\/([0-9a-f]{40})"/.exec(figure)?.[1],
       'the commit beside the verdict',
     ).toBe(head());
+    // What a reader sees of the commit is its first twelve characters, not a sentence typed in the anchor.
+    const anchor = /<a\b([^>]*\bdata-commit\b[^>]*)>([\s\S]*?)<\/a>/.exec(figure);
+    expect(anchor?.[2]?.replace(/<[^>]*>/g, ''), 'the text of the commit beside the verdict').toBe(
+      head().slice(0, 12),
+    );
+    expect(
+      `${anchor?.[1] ?? ''}${anchor?.[2] ?? ''}`,
+      'a label or a title typed in the commit anchor',
+    ).not.toMatch(/\b(aria-label|title)=/);
+    expect(
+      (/<main\b[^>]*>([\s\S]*)<\/main>/.exec(landing)?.[1] ?? '').match(/<pre\b[^>]*data-verdict/g)
+        ?.length,
+      'one verdict in the <main> of the landing',
+    ).toBe(1);
   }, 60_000);
 
   it('shows on the landing the recording of the repository, as the README words it, and on no other page', () => {
@@ -469,6 +485,53 @@ when('the built site', () => {
         /the-proof|data-verdict|a-write-refused/,
       );
     }
+  });
+
+  it('puts no sentence in a stylesheet: a `content` that is not empty, or an `attr()`, is text the guards do not read', () => {
+    // CSS can draw text no HTML holds (`content: "..."`, or the value of an attribute by `attr()`), and the guards
+    // that read the page read the page. Own stylesheets: nothing but `content: ''`, `""` or `none`. Built ones: the
+    // same, less what a package the site stands on carries in its own files.
+    const walk = (dir: string, keep: (f: string) => boolean): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? walk(join(dir, e.name), keep) : keep(e.name) ? [join(dir, e.name)] : [],
+      );
+    const drawn = (css: string): string[] => [
+      ...[...css.matchAll(/content\s*:\s*([^;}]*)/g)].flatMap((m) =>
+        [...(m[1] ?? '').matchAll(/(["'])((?:\\.|(?!\1).)*)\1/g)]
+          .map((q) => q[2] ?? '')
+          .filter((q) => q !== ''),
+      ),
+      ...[...css.matchAll(/attr\s*\([^)]*\)/g)].map((m) => m[0]),
+    ];
+    const own = walk(join(SITE, 'src'), (f) => f.endsWith('.css')).flatMap((f) =>
+      drawn(readText(f)).map((d) => `${f}: ${d}`),
+    );
+    expect(own, 'text drawn by the stylesheets of the site').toEqual([]);
+
+    const astro = join(DIST, '_astro');
+    const built = [
+      ...readdirSync(astro)
+        .filter((f) => f.endsWith('.css'))
+        .map((f) => readText(join(astro, f))),
+      ...pages.map((p) => (html(p).match(/<style\b[^>]*>[\s\S]*?<\/style>/g) ?? []).join('\n')),
+    ].flatMap(drawn);
+    const theirs = [
+      '@astrojs/starlight',
+      '@expressive-code',
+      'astro-expressive-code',
+      '@pagefind/default-ui',
+    ]
+      .map((d) => join(SITE, 'node_modules', d))
+      .filter((d) => existsSync(d))
+      .flatMap((d) => walk(d, (f) => /\.(m?js|css|astro|svelte)$/.test(f)))
+      .map((f) => readText(f))
+      .join('\n');
+    expect(
+      [...new Set(built)].filter(
+        (d) => !theirs.includes(d) && !theirs.includes(d.replace(/\\/g, '\\\\')),
+      ),
+      'text drawn by the built stylesheets that no package of the site carries',
+    ).toEqual([]);
   });
 
   it('does not say that the pages describe the next version: that is the repository, not the published version', () => {

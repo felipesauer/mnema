@@ -47,7 +47,8 @@ with its own changelog.
   and the recording of a write refused, copied from `recordings/`; the button labels come from the README's Docs. A
   fourth source of text, `site/copy.md`, holds the few words only the site needs (a caption), one line of at most twenty
   words each, and the case that holds the landing to its sources now reads every element of the `<main>` and every `alt`,
-  `title` and `aria-label`, and finds nothing left over.
+  `title` and `aria-label`, and finds nothing left over. No stylesheet of the site may draw text (a `content` with a sentence, or an `attr()`), and the verdict
+  on the landing is one, with the first twelve characters of the commit as the text of its link.
 - **A `Site` workflow.** On a pull request that touches what the site is made of it builds the site and runs those two cases
   (it is not a required check, and the path filter is inside the job). After a release it builds the commit the release tagged
   and deploys it to GitHub Pages from a job that holds `pages: write` and `id-token: write` and no secret; the site

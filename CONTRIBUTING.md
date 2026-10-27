@@ -126,7 +126,7 @@ run by the binary built at the same commit, with the command the README's Quick 
 private tree of whoever builds are not in it) and the recording `recordings/a-write-refused.gif`, copied as it is. The few words
 no other page holds (a caption) are in [`site/copy.md`](site/copy.md), the fourth source beside the README, `docs/` and the
 description of `@mnema/code`: one line each, at most twenty words, every entry used by the build; the case on the landing reads
-every element of its `<main>` and finds each in a source. The page at `/record/` is what `mnema site` writes of this repository's record, from the binary
+every element of its `<main>` and finds each in a source, and no stylesheet may draw text of its own (a `content` that is not empty, or an `attr()`: a case reads the site's CSS and the built one). The page at `/record/` is what `mnema site` writes of this repository's record, from the binary
 built at the same commit, with `--back-link` to the site's root. A stretch of a source that is true of the repository and
 not of the published version the site describes (the sentence that the pages describe the next version) is wrapped in
 `<!-- not-on-the-site -->` and `<!-- /not-on-the-site -->` lines of their own; the build takes out that stretch and nothing
