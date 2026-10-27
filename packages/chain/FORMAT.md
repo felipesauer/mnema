@@ -12,8 +12,8 @@ records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
 public keys removed, the product says broken over a signature it cannot verify, and this
-reader, unable to ask, says INCOMPLETE. And on a tail cut in the middle with no
-`tail.pruned`, the product calls the signed range a contradiction and says broken, while
+reader, unable to ask, says INCOMPLETE. And on a tail cut in the middle, the product
+calls the signed range a contradiction and says broken, while
 this reader reports a gap it cannot judge, because §3 leaves a reader of this document alone
 unable to tell an authorized cut from tampering. On a line holding bytes that are not UTF-8,
 found by JSONTestSuite, the two used to part: the product decoded them to U+FFFD and found the

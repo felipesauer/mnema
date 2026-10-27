@@ -231,7 +231,7 @@ INCOMPLETE rather than refused, and they are the two places below. This used to 
 was a refusal for every mutation, with no acceptance left. **One disagreement with the
 product is pinned.** This paragraph used to say there was none, and a case in
 `packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts` says otherwise: a tail
-cut in the middle with no `tail.pruned`, keys present and checkpoint signatures valid. The
+cut in the middle, keys present and checkpoint signatures valid. The
 product reads a signed range that outruns the entries present as the record contradicting
 itself, and says broken. This reader says INCOMPLETE, because `FORMAT.md` §3 says a reader
 of the document alone cannot tell an authorized cut from tampering and should report the gap
