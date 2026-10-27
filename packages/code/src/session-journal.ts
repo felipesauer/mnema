@@ -467,23 +467,37 @@ export function journalAfter(input: {
   const decisionFilesUncited = reading.decisionFiles.filter((path) => !cites(sources, path)).length;
   const filesEdited = Object.keys(reading.files).length;
   // Each tree is read through its own caches only, and what a run of that tree carries is made from
-  // that reading alone: the other tree's records are not consulted for the goal nor counted.
-  const of = (tree: (typeof TREES)[number]) => {
-    const held = Number.isNaN(since)
+  // that reading alone: the other tree's records are not consulted for the goal nor listed.
+  const held = (tree: (typeof TREES)[number]) =>
+    Number.isNaN(since)
       ? undefined
       : whatTheRecordHolds(
           sources.filter((source) => source.scope === tree),
           since,
           previous?.handedOver?.task,
         );
-    const questionsWithoutDecision = reading.questionTimes.filter(
-      (at) => Date.parse(at) > (held?.lastDecisionAt ?? 0),
-    ).length;
+  const publicHeld = held('public');
+  const privateHeld = held('private');
+  // WHETHER A QUESTION HAD A DECISION AFTER IT is a fact of the session, and the direction it crosses
+  // matters: the private run counts the decisions of both trees (what the public tree holds is
+  // visible to whoever reads the private one), but the PUBLIC run, which is signed and committed,
+  // counts only the public tree's. A decision that exists only in the private tree must not change a
+  // word of a run written to the public record, nor, with several questions, tell when it was made.
+  const questionsAfter = (lastDecisionAt: number) =>
+    reading.questionTimes.filter((at) => Date.parse(at) > lastDecisionAt).length;
+  const lastPublicDecisionAt = publicHeld?.lastDecisionAt ?? 0;
+  const lastDecisionAt = Math.max(lastPublicDecisionAt, privateHeld?.lastDecisionAt ?? 0);
+  const questionsWithoutDecision = questionsAfter(lastDecisionAt);
+  const of = (
+    held: ReturnType<typeof whatTheRecordHolds> | undefined,
+    tree: (typeof TREES)[number],
+  ) => {
     const base = {
       decisions: held?.decisions ?? [],
       notes: held?.notes ?? [],
       filesEdited,
-      questionsWithoutDecision,
+      questionsWithoutDecision:
+        tree === 'public' ? questionsAfter(lastPublicDecisionAt) : questionsWithoutDecision,
     };
     return {
       held,
@@ -493,8 +507,8 @@ export function journalAfter(input: {
       },
     };
   };
-  const publicOnes = of('public');
-  const privateOnes = of('private');
+  const publicOnes = of(publicHeld, 'public');
+  const privateOnes = of(privateHeld, 'private');
   const together = {
     decisions: [...(publicOnes.held?.decisions ?? []), ...(privateOnes.held?.decisions ?? [])],
     notes: [...(publicOnes.held?.notes ?? []), ...(privateOnes.held?.notes ?? [])],
@@ -504,10 +518,6 @@ export function journalAfter(input: {
     ],
     runsOpen: [...(publicOnes.held?.runsOpen ?? []), ...(privateOnes.held?.runsOpen ?? [])],
   };
-  const lastDecisionAt = Math.max(
-    publicOnes.held?.lastDecisionAt ?? 0,
-    privateOnes.held?.lastDecisionAt ?? 0,
-  );
   return {
     version: VERSION,
     session: input.session,
@@ -515,8 +525,7 @@ export function journalAfter(input: {
     openedAt: reading.openedAt ?? null,
     ...together,
     filesEdited,
-    questionsWithoutDecision: reading.questionTimes.filter((at) => Date.parse(at) > lastDecisionAt)
-      .length,
+    questionsWithoutDecision,
     decisionFilesUncited,
     trees: { public: publicOnes.account, private: privateOnes.account },
     reading,

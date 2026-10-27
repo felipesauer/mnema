@@ -347,6 +347,46 @@ describe('the journal a Stop keeps', () => {
     expect(theJournal().questionsWithoutDecision).toBe(1);
   });
 
+  it('does not call a question one with no decision after it in the private run when the decision came after it in the public tree', async () => {
+    await doing('decision', 'record', 'Use UTC', 'The ledger is UTC', '--scope', 'public');
+    const file = transcriptAt('across-public.jsonl', [
+      prompt(LONG_AGO, 'go'),
+      answered(at(3)),
+      write(at(4), 'a', join(repo, 'src', 'a.ts')),
+      result(at(5), 'a'),
+    ]);
+    tally(payload('Stop', file));
+    const journal = theJournal();
+    expect(journal.questionsWithoutDecision).toBe(0);
+    expect(journal.trees.public.outcome).toBe(
+      "1 decision recorded; 1 file edited, as of the session's last Stop.",
+    );
+    expect(journal.trees.private.outcome).toBe(
+      "0 decisions recorded; 1 file edited, as of the session's last Stop.",
+    );
+  });
+
+  it('keeps a decision recorded only in the private tree out of the public run', async () => {
+    await doing('decision', 'record', 'Use UTC', 'The ledger is UTC', '--scope', 'private');
+    const file = transcriptAt('across-private.jsonl', [
+      prompt(LONG_AGO, 'go'),
+      answered(at(3)),
+      write(at(4), 'a', join(repo, 'src', 'a.ts')),
+      result(at(5), 'a'),
+    ]);
+    tally(payload('Stop', file));
+    const journal = theJournal();
+    // The signed public run cannot learn of a private decision, not even by the question it spares.
+    expect(journal.trees.public.outcome).toBe(
+      "0 decisions recorded; 1 file edited; 1 question answered with no decision recorded after, as of the session's last Stop.",
+    );
+    expect(journal.trees.private.outcome).toBe(
+      "1 decision recorded; 1 file edited, as of the session's last Stop.",
+    );
+    // The local text, which is not signed, still counts across the trees.
+    expect(journal.questionsWithoutDecision).toBe(0);
+  });
+
   it('counts a file of decisions the record cites nowhere', () => {
     const file = transcriptAt('adr.jsonl', [
       prompt(LONG_AGO, 'go'),

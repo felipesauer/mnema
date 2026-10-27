@@ -98,7 +98,8 @@ CLI and the MCP tools behave identically, because they are the same call.
   host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
   before a write, and it asks, and records, exactly where the third would; Claude Code,
   Cursor and Qwen Code never run it. Beside them, on the same `PreToolUse` matcher, one more hook runs only
-  where `$CURSOR_VERSION` is set: the refusal for Cursor's command-line agent, which answers a
+  where `$CURSOR_VERSION` is set and `$QWEN_PROJECT_DIR` is not (a Qwen Code opened in a Cursor terminal inherits
+  Cursor's variable, and only Qwen Code's refusal runs there): the refusal for Cursor's command-line agent, which answers a
   rule that refuses a write and nothing else, since that agent ignores a pause. Another runs only
   where `$QWEN_PROJECT_DIR` is set: the same refusal for Qwen Code, which answers a rule that refuses
   a write and nothing else. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
@@ -744,7 +745,7 @@ record: the decisions recorded since it opened (their ids and state), the notes 
 tree (their ids), how many questions the person answered with no decision recorded after, how many files that hold decisions
 were written and are cited nowhere in the record, how many files were edited, the tasks in progress and the runs open, the
 goal of a run (the title of the first task it moved into progress in the tree that run is written to, a title that tree
-already holds) and an outcome that is a sentence of counts of that tree's records. **Never** a prompt, the text of a message, a tool's output, the content or diff of a file, the
+already holds) and an outcome that is a sentence of counts of that tree's records. The count of questions answered with no decision recorded after is, in the private run, over the decisions of both trees after the question, and in the public run over the public tree's decisions only: it crosses from the public tree to the private one, never the other way. `status` prints the last run of each tree that has one, the tree named, where a session left runs in more than one. **Never** a prompt, the text of a message, a tool's output, the content or diff of a file, the
 environment, a secret or the answer a person chose: a file is kept by a digest of its path, and the one path kept is the
 name of a file that holds decisions. The bytes of the transcript already read are kept by a digest of their first and of their
 last 4096, so a transcript that shrank, or whose head or tail changed, is read again from the top; a rewrite that leaves the

@@ -33,6 +33,7 @@ import {
   decide,
   ruleAt,
   theChannelFactsOf,
+  theRefusalsOf,
   theSegmentOf,
 } from './support/the-record-to-stand-on.js';
 
@@ -92,6 +93,26 @@ describe('qwen code opens with the record and refuses the write', () => {
       'channel.refused': 1,
       'channel.asked': 0,
     });
+  }, 180_000);
+
+  it("deny, with another host's variable in the environment the host inherits: one refusal, and it is Qwen Code's", async () => {
+    const session = await start({
+      project: (project) => {
+        ruleAt(project, 'Billing is frozen', 'src/frozen', 'refuses-a-write');
+      },
+      call: writing('src/frozen/invoice.ts'),
+      inherited: { CURSOR_VERSION: '2026.09.18' },
+    });
+    expect(existsSync(join(session.project, 'src/frozen/invoice.ts'))).toBe(false);
+    const refusals = theRefusalsOf(session.project, session.home);
+    // Neither the refusal nor the call: the command the plugin ships for Cursor answers to Cursor's
+    // variable alone, and Qwen Code's handler is the one that runs here.
+    expect(session.calls.filter((call) => call.startsWith('before-a-write'))).toEqual([
+      'before-a-write --host qwen --agent-key qwen',
+    ]);
+    expect(refusals).toHaveLength(1);
+    expect(JSON.stringify(refusals)).not.toMatch(/cursor/i);
+    expect(theChannelFactsOf(session.project, session.home)['channel.refused']).toBe(1);
   }, 180_000);
 
   it('deny, `edit`: the file keeps what it had', async () => {

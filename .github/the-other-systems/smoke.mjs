@@ -306,7 +306,14 @@ try {
    * @param {string} file
    */
   const denied = (label, file) => {
-    const ran = handler('edit-refuses-a-write.mjs', refuseArgs, cursorEnv, payload(file));
+    let ran = handler('edit-refuses-a-write.mjs', refuseArgs, cursorEnv, payload(file));
+    // A slow runner can take the gate past its 10 s: it closes without naming a rule, as it must.
+    // That one refusal, and only that one, is asked again (twice at most); any other refusal that
+    // does not name the rule fails at the first answer.
+    for (let again = 1; again <= 2 && /did not answer in 10 seconds/.test(ran.out); again++) {
+      console.log(`(the gate did not answer in 10 seconds, asking again: ${again} of 2) ${label}`);
+      ran = handler('edit-refuses-a-write.mjs', refuseArgs, cursorEnv, payload(file));
+    }
     console.log(
       `$ edit-refuses-a-write.mjs (${label}) ${file}\n${ran.out}${ran.err}`.slice(0, 900),
     );

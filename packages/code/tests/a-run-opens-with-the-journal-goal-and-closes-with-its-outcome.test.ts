@@ -210,4 +210,52 @@ describe('a run and the journal of its session', () => {
     );
     expect(printed.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('names the run of each tree in status, with its own outcome, when the session wrote to both', async () => {
+    const project = makeProject();
+    const trees = resolveTrees(project, env);
+    const publicOutcome = "4 decisions recorded; 2 files edited, as of the session's last Stop.";
+    const privateOutcome = "0 decisions recorded; 2 files edited, as of the session's last Stop.";
+    writeJournal(
+      journalFile(trees, SESSION) as string,
+      {
+        ...journal(null, null),
+        trees: {
+          public: { goal: null, outcome: publicOutcome },
+          private: { goal: null, outcome: privateOutcome },
+        },
+      },
+      new Date(),
+    );
+    const { client, end } = await connected(project, SESSION);
+    await client.callTool({ name: 'capture_memory', arguments: { content: 'a private fact' } });
+    await client.callTool({
+      name: 'record_decision',
+      arguments: { title: 'Use UTC', rationale: 'The ledger is UTC', scope: 'public' },
+    });
+    end();
+    await client.close();
+
+    const out: string[] = [];
+    const io: CliIo = { out: (line) => out.push(line), err: () => {}, fail: () => {} };
+    const original = process.cwd();
+    const homeBefore = process.env.HOME;
+    process.env.HOME = env.home;
+    process.chdir(project);
+    try {
+      await run(['status'], io);
+    } finally {
+      process.chdir(original);
+      if (homeBefore === undefined) delete process.env.HOME;
+      else process.env.HOME = homeBefore;
+    }
+    const runs = out.filter((line) => line.includes('last run '));
+    expect(runs).toHaveLength(2);
+    expect(runs.find((line) => line.includes('In the public tree, '))).toContain(
+      `outcome: ${publicOutcome}`,
+    );
+    expect(runs.find((line) => line.includes('In the private tree, '))).toContain(
+      `outcome: ${privateOutcome}`,
+    );
+  });
 });
