@@ -26,6 +26,7 @@ function run(root, cwd, args) {
  * Writes `<out>/index.html` from the record committed under `cwd`, with the binary built under `root`.
  * With `backLink` the page carries one link back to the site (`mnema site --back-link`).
  * Throws when `mnema verify` does not pass, or when `mnema site` refuses or says the record does not verify.
+ * @param {{ root: string, cwd?: string, out: string, backLink?: string }} options
  */
 export function writeTheRecord({ root, cwd = root, out, backLink }) {
   const verify = run(root, cwd, ['verify']);
