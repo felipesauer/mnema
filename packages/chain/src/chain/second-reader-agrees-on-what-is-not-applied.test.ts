@@ -40,6 +40,7 @@ import {
   linkRetracted,
   memoryCaptured,
   noteRetracted,
+  observationRecorded,
   runEnded,
   runStarted,
   skillTransitioned,
@@ -615,6 +616,43 @@ describe('a note or a link taken back (§6.4): both readers name the same retrac
         expect(said.product).toEqual([
           { tail: intruder.writer.tail, seq: 1, rule: 'foreign-rewrite' },
           { tail: intruder.writer.tail, seq: 2, rule: 'foreign-retraction' },
+        ]);
+        expect(said.second).toEqual(said.product);
+        expect(said.productOk).toBe(true);
+        expect(said.secondFails).toEqual([]);
+        expect(said.secondVerdict).toBe('VERIFIED');
+      },
+      CASE_TIMEOUT,
+    );
+  }
+
+  // One id names one note whatever its kind: an observation of one identity, then a memory of
+  // another under the same id, is a foreign rewrite for both readers, in either order of tails.
+  for (const creatorTail of ['first', 'last'] as const) {
+    it(
+      `a memory written under another identity's observation id is named (the creator's tail sorts ${creatorTail})`,
+      () => {
+        const record = fresh('mnema-cross-kind-record-');
+        const one = machine(record);
+        const two = machine(record);
+        const oneFirst = one.writer.tail < two.writer.tail;
+        const [creator, intruder] =
+          (creatorTail === 'first') === oneFirst ? [one, two] : [two, one];
+        creator.writer.append(
+          observationRecorded(creator.env('n-1', undefined, 10), {
+            about: 'd-1',
+            topic: 'cache',
+            text: 'relational',
+          }),
+        );
+        intruder.writer.append(
+          memoryCaptured(intruder.env('n-1', undefined, 20), { content: 'node 26' }),
+        );
+        one.writer.checkpoint();
+        two.writer.checkpoint();
+        const said = bothReaders(record);
+        expect(said.product).toEqual([
+          { tail: intruder.writer.tail, seq: 1, rule: 'foreign-rewrite' },
         ]);
         expect(said.second).toEqual(said.product);
         expect(said.productOk).toBe(true);
