@@ -16,9 +16,14 @@ workstation it is somebody's real record.
 - stands in front of the seven ways `node:child_process` starts a process, and a child that would
   resolve the machine's home (a `HOME` that is missing, empty, relative or the machine's own, or a
   `MNEMA_HOME` inside that home or equal to the value the suite was started with) is started with
-  the test's `HOME` instead, and the case fails naming the line that started it.
+  the test's `HOME` instead, and the case fails naming the line that started it;
+- lists the record places of the checkout the suite runs in (its `.mnema/`, and the `mnema/` of its
+  git directory and of the common one a linked worktree shares) when the file starts and when it
+  ends, and fails the file if they differ, naming what appeared, was written or was removed. That
+  one does look at the disk, because the checkout belongs to the run; the cost is that a person
+  recording in the same checkout while the suite runs reddens the file that was running.
 
-It asks what each process **will** resolve, never what the disk holds, so the same answer holds on
+For the home, it asks what each process **will** resolve, never what the disk holds, so the same answer holds on
 a runner that has no `~/.mnema` and on a workstation where one is being written while the suite
 runs.
 

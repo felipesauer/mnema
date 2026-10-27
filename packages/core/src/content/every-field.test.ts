@@ -10,7 +10,7 @@ import {
   openChainForWriting,
   type TransitionFields,
 } from '@mnema/chain';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { declareCheck, enrollChecker, retireChecker, runRuleChecks } from '../checks/operations.js';
 import { requestEnrollment } from '../identity/handshake.js';
 import {
@@ -55,6 +55,20 @@ import {
 } from './fields.js';
 import { FIELD_BYTE_LIMIT } from './screen.js';
 import { detectSecrets } from './secrets.js';
+
+/**
+ * THE BUDGET OF THIS FILE. Every case here drives the catalog into sandboxes of its own, and a
+ * drive is synchronous work that cannot be shortened without ceasing to prove what the file
+ * proves: it generates a key, opens a chain and signs and fsyncs each event of a kind's setup and
+ * of the write itself. The cases that drive the whole catalog in one `it` (the two per envelope
+ * field, "drove enough names", "actually appends", the minted-id sweep) take 0.7 to 2.4 s on a
+ * quiet machine against the shared 5 s. On a suite running on many workers they stopped at five
+ * seconds while passing alone: measured at 12 workers, two of them took 5.8 s and 7.9 s, and an
+ * earlier version of this file gave only the two envelope cases room, so the next one in line
+ * failed instead. The budget is therefore the file's, given room for a machine an order of
+ * magnitude slower than the one measured, not removed.
+ */
+vi.setConfig({ testTimeout: 30_000 });
 
 /**
  * The content door is total over the FIELDS, not only over the write points,
@@ -908,15 +922,6 @@ describe('a name carrying a credential refuses the write, on every field of ever
   });
 });
 
-/**
- * The cases below that loop over `which` and `run` drive every kind of the catalog into a sandbox
- * of its own, once per kind. Measured with the suite running on two workers, they take 1.2 and
- * 1.15 s to refuse and 0.94 s to carry, against the shared 5 s; under a loaded runner a refusing
- * case has stopped at five seconds while passing alone. Nothing is spare, so the limit is given
- * room for a machine an order of magnitude slower than the one measured, not removed.
- */
-const EVERY_KIND_DRIVEN = 30_000;
-
 describe('the envelope’s own text goes through the door on every kind that carries it', () => {
   // `which` and `run` are the two fields a caller supplies on the ENVELOPE, so they
   // are the same two on every kind rather than a property of any one payload, and
@@ -937,9 +942,7 @@ describe('the envelope’s own text goes through the door on every kind that car
   });
 
   for (const path of shared) {
-    it(`carries "${path}" untouched, wherever a write puts it on the chain`, {
-      timeout: EVERY_KIND_DRIVEN,
-    }, () => {
+    it(`carries "${path}" untouched, wherever a write puts it on the chain`, () => {
       let carried = 0;
       for (const kind of CATALOG) {
         const driven = drive(kind, poisoningBodies(kind));
@@ -963,9 +966,7 @@ describe('the envelope’s own text goes through the door on every kind that car
       expect(carried, `no event carried "${path}"`).toBeGreaterThan(0);
     });
 
-    it(`refuses "${path}" carrying a credential, on every kind that takes it`, {
-      timeout: EVERY_KIND_DRIVEN,
-    }, () => {
+    it(`refuses "${path}" carrying a credential, on every kind that takes it`, () => {
       // The envelope's own axis for the refusal, and the shape that caught `which`
       // unscreened in the first place: driven ACROSS the surface at once, because a
       // per-kind proof would say the same thing twenty times and still miss a kind
