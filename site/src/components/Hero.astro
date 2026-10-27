@@ -1,5 +1,7 @@
 ---
 import Default from '@astrojs/starlight/components/Hero.astro';
+import { Card, CardGrid, Code } from '@astrojs/starlight/components';
+import hero from '../generated/hero.json';
 import proof from '../generated/proof.json';
 
 // Only the landing carries the proof: any page with a `hero` in its frontmatter draws this component.
@@ -10,6 +12,16 @@ const { command, output, sha, repoUrl, caption, recording } = proof;
 <Default {...Astro.props}><slot /></Default>
 {
   isLanding && (
+    <div class="the-install">
+      <Code code={hero.install} lang="sh" />
+    </div>
+    <div class="the-three">
+      <CardGrid>
+        {hero.cards.map((card) => (
+          <Card title={card.title}>{card.body}</Card>
+        ))}
+      </CardGrid>
+    </div>
     <section class="the-proof">
       <figure class="the-verdict">
         <code>{command}</code>
@@ -31,5 +43,13 @@ const { command, output, sha, repoUrl, caption, recording } = proof;
         <figcaption set:html={recording.caption} />
       </figure>
     </section>
+    <h2 id="how-it-works">{hero.how.heading}</h2>
+    <CardGrid>
+      {hero.how.steps.map((step) => (
+        <Card title={step.title}>
+          <Fragment set:html={step.body} />
+        </Card>
+      ))}
+    </CardGrid>
   )
 }

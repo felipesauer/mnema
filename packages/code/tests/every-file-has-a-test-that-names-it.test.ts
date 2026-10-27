@@ -1312,7 +1312,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-session-the-manual-shows-is-the-one-printed.test.ts': 8,
   'packages/code/tests/the-shell-a-page-publishes-is-the-shell-that-runs.test.ts': 5,
   'packages/code/tests/the-shell-knows-the-verbs.test.ts': 17,
-  'packages/code/tests/the-site-is-made-of-its-sources.test.ts': 10,
+  'packages/code/tests/the-site-is-made-of-its-sources.test.ts': 11,
   'packages/code/tests/the-strict-gate-catches-the-forgery.test.ts': 7,
   'packages/code/tests/the-switch-is-a-fact.test.ts': 28,
   'packages/code/tests/the-switch-pages-are-generated.test.ts': 5,

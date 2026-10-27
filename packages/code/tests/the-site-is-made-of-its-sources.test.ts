@@ -45,13 +45,16 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { prepare } from '../../../site/build/the-build.mjs';
 import {
+  cardsOf,
   copyOf,
+  installLineOf,
   landingOf,
   llmsTxt,
   pageOf,
   recordBackLink,
   recordingOf,
   rewriteLinks,
+  stepsOf,
   textAccent,
   themeCss,
   themeOf,
@@ -61,6 +64,7 @@ import {
   withoutWhatIsNotOnTheSite,
 } from '../../../site/build/the-pages.mjs';
 import { theVerdictOfTheCommit, writeTheRecord } from '../../../site/build/the-record.mjs';
+import { THE_BLOCKS } from '../src/presentation/banner.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 import { head, ROOT, SITE, tracked } from './support/reading-the-site.js';
 
@@ -699,6 +703,126 @@ describe('the verdict the landing shows is the one of the committed tree', () =>
       /mnema/,
     );
   });
+});
+
+describe('what the hero reads of the README: the line that installs, the three cards, the four steps', () => {
+  const real = readFileSync(join(ROOT, 'README.md'), 'utf8');
+  const quick = (...lines: string[]): string =>
+    ['## Quick start', '', '```sh', ...lines, '```', '', '## Next', ''].join('\n');
+  const table = (heads: string[], cells: string[]): string =>
+    `<table><tr>${heads.map((h) => `<th align="center">${h}</th>`).join('')}</tr><tr>${cells.map((c) => `<td>${c}</td>`).join('')}</tr></table>`;
+  const how = (...items: string[]): string =>
+    ['## How it works', '', ...items, '', '## Next', ''].join('\n');
+
+  it('takes the first line of the Quick start up to the `#`', () => {
+    expect(installLineOf(quick('npm i -g x   # the binary', 'x init'))).toBe('npm i -g x');
+    expect(installLineOf(real)).toBe('npm i -g @mnema/code');
+    expect(() => installLineOf(quick('# only a note'))).toThrow(/does not open with a command/);
+  });
+
+  it('takes the three headings and the three cells of the cards table, and stops for any other table', () => {
+    const cards = ['Remember', 'Enforce', 'Prove'];
+    expect(cardsOf(table(cards, ['one <b>x</b>', 'two', 'three']))).toEqual([
+      { title: 'Remember', body: 'one x' },
+      { title: 'Enforce', body: 'two' },
+      { title: 'Prove', body: 'three' },
+    ]);
+    expect(() => cardsOf(table(['Remember', 'Enforce'], ['one', 'two']))).toThrow(
+      /no table with Remember, Enforce, Prove/,
+    );
+    expect(() => cardsOf(table(['A', 'B', 'C'], ['1', '2', '3']))).toThrow(/no table with/);
+    expect(() => cardsOf(table(cards, ['1', '', '3']))).toThrow(/3 titles and 3 cells/);
+    expect((cardsOf(real) as { title: string }[]).map((c) => c.title)).toEqual(cards);
+  });
+
+  it('reads the table of the cards and not the first table of the README', () => {
+    const above = table(['x', 'y', 'z'], ['a', 'b', 'c']);
+    const got = cardsOf(
+      `${above}\n${table(['Remember', 'Enforce', 'Prove'], ['one', 'two', 'three'])}`,
+    );
+    expect((got as { body: string }[]).map((c) => c.body)).toEqual(['one', 'two', 'three']);
+  });
+
+  const four = ['1. **A.** one', '2. **B.** two `c<d>`', '3. **C.** three', '4. **D.** four'];
+
+  it('takes each step as a title without its full stop and a body with the code as code', () => {
+    const got = stepsOf(how(...four), 'How it works') as {
+      heading: string;
+      steps: { title: string; body: string }[];
+    };
+    expect(got.heading).toBe('How it works');
+    expect(got.steps.map((x) => x.title)).toEqual(['A', 'B', 'C', 'D']);
+    expect(got.steps[1]?.body).toBe('two <code>c&lt;d&gt;</code>');
+    expect((stepsOf(real, 'How it works') as { steps: unknown[] }).steps).toHaveLength(4);
+  });
+
+  it('stops for a step with a link or emphasis, for five steps and for a section that is not there', () => {
+    const last = (text: string): string => how(...four.slice(0, 3), `4. **D.** ${text}`);
+    expect(() => stepsOf(last('see [it](x.md)'), 'How it works')).toThrow(/step 4/);
+    expect(() => stepsOf(last('*four*'), 'How it works')).toThrow(/step 4/);
+    expect(() => stepsOf(how(...four, '5. **E.** five'), 'How it works')).toThrow(
+      /5 numbered steps/,
+    );
+    expect(() => stepsOf(how(...four), 'Nope')).toThrow(/no section "Nope"/);
+  });
+
+  it('stops for a numbered line that is not `N. **Title.** body`, and does not drop it', () => {
+    expect(() => stepsOf(how(...four, '5. Verify it again.'), 'How it works')).toThrow(
+      /numbered line/,
+    );
+    expect(() => stepsOf(how(...four.slice(0, 3), '4. D without bold.'), 'How it works')).toThrow(
+      /numbered line.*4\. D/,
+    );
+  });
+});
+
+describe("the wordmark in the head of the site is the banner's letters, and only them", () => {
+  const draw = async () => await import('../../../.github/the-front-page/draw.mjs');
+  const accent = async () =>
+    (await import('../../../.github/the-front-page/accent.mjs')).ACCENT as Record<string, string>;
+  const pathOf = (svg: string, kind: string): string =>
+    new RegExp(`data-of="${kind}"[^>]* d="([^"]*)"`).exec(svg)?.[1] ?? '';
+
+  it('has a block where the console has one and a line where it has a line, and nothing else', async () => {
+    const svg = (await draw()).headerWordmark(THE_BLOCKS, 'dark') as string;
+    const glyphs = [...THE_BLOCKS.join('')].filter((g) => g !== ' ');
+    const full = glyphs.filter((g) => g === '█').length;
+    expect(pathOf(svg, 'blocks').match(/M/g)).toHaveLength(full);
+    expect(pathOf(svg, 'lines').match(/M/g)).toHaveLength(2 * (glyphs.length - full));
+    // Every full block, asked of the rows themselves: a cell at (column, row) starts a subpath at its corner.
+    const corners = THE_BLOCKS.flatMap((row, r) =>
+      [...row].flatMap((g, c) => (g === '█' ? [`M${c * 12} ${r * 24}h`] : [])),
+    );
+    for (const corner of corners) expect(pathOf(svg, 'blocks'), corner).toContain(corner);
+    // No chain of cubes, no page, no glow, no words: two paths in a bare <svg>.
+    expect(svg.match(/<(?!\/?svg\b|path\b)[a-z]/g) ?? []).toEqual([]);
+    expect(svg.match(/<path\b/g)).toHaveLength(2);
+    const width = Math.max(...THE_BLOCKS.map((row) => [...row].length)) * 12;
+    expect(svg).toContain(`viewBox="0 0 ${width} `);
+  });
+
+  it('is painted in the accent of its theme and in no other colour', async () => {
+    const colours = await accent();
+    for (const theme of ['dark', 'light'] as const) {
+      const svg = (await draw()).headerWordmark(THE_BLOCKS, theme) as string;
+      expect([...new Set(svg.match(/#[0-9a-fA-F]{3,8}\b/g))]).toEqual([colours[theme]]);
+    }
+  });
+
+  it('is written by the build, one per theme, byte for byte', async () => {
+    const site = mkdtempSync(join(tmpdir(), 'the-wordmark-'));
+    try {
+      for (const file of ['landing.md', 'copy.md']) cpSync(join(SITE, file), join(site, file));
+      await prepare({ root: ROOT, site });
+      for (const theme of ['dark', 'light'] as const) {
+        expect(readFileSync(join(site, `src/assets/wordmark-${theme}.svg`), 'utf8')).toBe(
+          (await draw()).headerWordmark(THE_BLOCKS, theme),
+        );
+      }
+    } finally {
+      rmSync(site, { recursive: true, force: true });
+    }
+  }, 60_000);
 });
 
 describe('what is tracked under site/', () => {
