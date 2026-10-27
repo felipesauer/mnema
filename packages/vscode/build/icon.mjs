@@ -4,9 +4,12 @@
  * The mark is the letter M of the repository's banner, and nothing else: the first letter of the
  * console's wordmark (`THE_BLOCKS`, `packages/code/src/presentation/banner.ts`), in the banner's
  * own paint. A full block is a filled cell in the accent (`.github/the-front-page/accent.mjs`),
- * a double-line glyph is its two strokes at 0.55 of the accent, with the geometry `draw.mjs`
- * draws (`doubleLine`, `CELL`, `DOUBLE`), on the banner's dark page (`PAGE.dark`, the manifest's
- * `galleryBanner`), inside a rounded square with a thin border in the accent. `package-vsix.mjs`
+ * on the banner's dark page (`PAGE.dark`, the manifest's `galleryBanner`), inside a rounded
+ * square with a thin border in the accent. Behind the letter sits the same letter in blocks, a
+ * darker lilac and opaque, shifted down and to the right: the solid shadow that gives the blocks
+ * their depth (the banner's own thin double-line strokes are not drawn here, they vanish at 16
+ * pixels). The shadow's colour is the accent mixed into the page, never a colour of its own.
+ * `package-vsix.mjs`
  * hands it the rows of the built console, so a letter changed there is a letter changed here.
  * The stores take a PNG and refuse an SVG, and the repository holds no raster tool, so the shapes
  * are filled at 4x4 samples per pixel and written as a PNG with `node:zlib` alone: the same bytes
@@ -16,15 +19,18 @@
 
 import { deflateSync } from 'node:zlib';
 import { ACCENT } from '../../../.github/the-front-page/accent.mjs';
-import { CELL, DOUBLE, doubleLine, inkFoot, PAGE } from '../../../.github/the-front-page/draw.mjs';
+import { CELL, inkFoot, PAGE } from '../../../.github/the-front-page/draw.mjs';
 
 const SIZE = 128;
 const SAMPLES = 4;
 const rgb = (hex) => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
 const GROUND = rgb(PAGE.dark);
 const PAINT = rgb(ACCENT.dark);
-/** How much of the accent a double-line stroke keeps, as the banner draws it. */
-const LINE_OPACITY = 0.55;
+/** The share of the accent kept in the shadow: the accent mixed into the page at this share. */
+const SHADOW_SHARE = 0.45;
+const SHADOW = GROUND.map((g, i) => Math.round(g * (1 - SHADOW_SHARE) + PAINT[i] * SHADOW_SHARE));
+/** How far the shadow is shifted down and to the right, in pixels of the 128 icon. */
+const SHADOW_OFFSET = 4;
 /** The letter's width on the icon, as a share of the icon's. */
 const LETTER = 0.66;
 const RADIUS = 24;
@@ -49,39 +55,21 @@ const firstLetter = (blocks) => {
 };
 
 /**
- * The letter as shapes in the wordmark's own units: filled rectangles and stroked segments.
+ * The letter as filled rectangles in the wordmark's own units (only the full blocks).
  * @param {readonly string[]} blocks
  */
 const shapesOf = (blocks) => {
   const rows = firstLetter(blocks);
   const rects = [];
-  const segments = [];
   rows.forEach((row, r) => {
     row.forEach((glyph, c) => {
-      if (glyph === ' ') return;
-      const x = c * CELL.w;
-      const y = r * CELL.h;
-      if (glyph === '█') {
-        rects.push([x, y, x + CELL.w, y + CELL.h]);
-        return;
-      }
-      const path = doubleLine(glyph, x, y);
-      if (path === undefined) throw new Error(`the icon has a glyph this cannot draw: ${glyph}`);
-      for (const stroke of path.split('M').slice(1)) {
-        const points = stroke.split('L').map((pt) => pt.split(' ').map(Number));
-        for (let i = 1; i < points.length; i++) segments.push([points[i - 1], points[i]]);
-      }
+      if (glyph !== '█') return;
+      rects.push([c * CELL.w, r * CELL.h, (c + 1) * CELL.w, (r + 1) * CELL.h]);
     });
   });
-  return { rects, segments, width: (rows[0]?.length ?? 0) * CELL.w, height: inkFoot(blocks) };
+  return { rects, width: (rows[0]?.length ?? 0) * CELL.w, height: inkFoot(blocks) };
 };
 
-const nearSegment = (x, y, [[ax, ay], [bx, by]]) => {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
-  return Math.hypot(x - (ax + t * dx), y - (ay + t * dy)) <= DOUBLE.width / 2;
-};
 const inRoundedSquare = (x, y, inset) => {
   const half = SIZE / 2 - inset;
   const radius = RADIUS - inset;
@@ -115,7 +103,7 @@ const chunk = (type, data) => {
  * @returns {Buffer}
  */
 export function drawIcon(blocks) {
-  const { rects, segments, width, height } = shapesOf(blocks);
+  const { rects, width, height } = shapesOf(blocks);
   const scale = (SIZE * LETTER) / width;
   const x0 = (SIZE - width * scale) / 2;
   const y0 = (SIZE - height * scale) / 2;
@@ -124,11 +112,14 @@ export function drawIcon(blocks) {
   const sample = (px, py) => {
     if (!inRoundedSquare(px, py, 0)) return [0, 0, 0, 0];
     if (!inRoundedSquare(px, py, BORDER)) return [...PAINT, 1];
-    const x = (px - x0) / scale;
-    const y = (py - y0) / scale;
-    if (rects.some(([l, t, r, b]) => x >= l && x < r && y >= t && y < b)) return [...PAINT, 1];
-    const alpha = segments.some((s) => nearSegment(x, y, s)) ? LINE_OPACITY : 0;
-    return [...GROUND.map((g, i) => g * (1 - alpha) + PAINT[i] * alpha), 1];
+    const covers = (qx, qy) => {
+      const x = (qx - x0) / scale;
+      const y = (qy - y0) / scale;
+      return rects.some(([l, t, r, b]) => x >= l && x < r && y >= t && y < b);
+    };
+    if (covers(px, py)) return [...PAINT, 1];
+    if (covers(px - SHADOW_OFFSET, py - SHADOW_OFFSET)) return [...SHADOW, 1];
+    return [...GROUND, 1];
   };
 
   const rows = [];

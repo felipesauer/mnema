@@ -93,6 +93,28 @@ describe('what the stores show of the extension', () => {
     expect(at(64, 5)).toEqual(page);
   });
 
+  it('puts the same M behind it in blocks, a darker opaque lilac made of the accent and the page, shifted down and to the right', () => {
+    const at = pixels(drawIcon(THE_BLOCKS));
+    // The accent mixed into the page at 45%: 13 + 0.45 * (196 - 13) = 95, 17 + 0.45 * (160 - 17) = 81, 23 + 0.45 * (245 - 23) = 123.
+    const shadow = [95, 81, 123, 255];
+    const scale = (128 * 0.66) / 132;
+    const x0 = (128 - 132 * scale) / 2;
+    const y0 = (128 - 135.5 * scale) / 2;
+    // Row 4's first block ends where row 5 has no block: the 4 pixels under it are the shadow.
+    expect([...(THE_BLOCKS[4] ?? '')][0]).toBe('█');
+    expect([...(THE_BLOCKS[5] ?? '')][0]).not.toBe('█');
+    const x = Math.round(x0 + 0.5 * 12 * scale + 4);
+    const bottom = y0 + 5 * 24 * scale;
+    expect(at(x, Math.round(bottom + 2))).toEqual(shadow);
+    // A pixel to the right of the right leg's last block (column 9; column 10 is a stroke), in the band.
+    expect([...(THE_BLOCKS[2] ?? '')][9]).toBe('█');
+    expect([...(THE_BLOCKS[2] ?? '')][10]).not.toBe('█');
+    const right = x0 + 10 * 12 * scale;
+    expect(at(Math.round(right + 2), Math.round(y0 + 2.5 * 24 * scale))).toEqual(shadow);
+    // Past the band, the page again.
+    expect(at(x, Math.round(bottom + 8))).toEqual([0x0d, 0x11, 0x17, 255]);
+  });
+
   it('is drawn from the console wordmark: the first letter changes the icon, the next ones do not', () => {
     const before = drawIcon(THE_BLOCKS);
     const first = THE_BLOCKS.map((row, i) => (i === 0 ? ` ${row.slice(1)}` : row));
