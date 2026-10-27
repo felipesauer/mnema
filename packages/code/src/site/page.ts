@@ -33,8 +33,8 @@
  */
 
 import { createHash } from 'node:crypto';
-import { mix, textAccent } from './colour.js';
 import { neutralized, oneLine } from '../one-line.js';
+import { mix, textAccent } from './colour.js';
 import {
   actWording,
   type PageDecision,
