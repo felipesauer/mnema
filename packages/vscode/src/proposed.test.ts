@@ -3,7 +3,6 @@ import {
   detailText,
   judgeArgs,
   LIST_ARGS,
-  newlyProposed,
   noteProblem,
   type Proposed,
   readDetail,
@@ -70,14 +69,6 @@ describe('the decisions waiting for a judgment', () => {
       'ADR-1: Use X\nscope: public\n\nWhy:\nbecause Y\n\nAlternatives:\nZ',
     );
     expect(detailText(item, undefined)).toBe('a: Use X\nscope: public');
-  });
-
-  it('announces what is new since the last reading, and nothing on the first', () => {
-    const a = readProposed(JSON.stringify({ hits: [hit('a')] }))?.items ?? [];
-    const ab = readProposed(JSON.stringify({ hits: [hit('a'), hit('b')] }))?.items ?? [];
-    expect(newlyProposed(undefined, ab)).toEqual([]);
-    expect(newlyProposed(new Set(['a']), ab).map((i) => i.id)).toEqual(['b']);
-    expect(newlyProposed(new Set(['a', 'b']), a)).toEqual([]);
   });
 });
 

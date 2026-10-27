@@ -84,11 +84,14 @@ exports.run = async () => {
   });
 
   if (scenario === 'no-cli') {
-    if (shown.text !== '$(warning) mnema: command not found') {
+    if (shown.text !== '$(warning) mnema not found') {
       throw new Error(`with no mnema command the bar says ${JSON.stringify(shown.text)}`);
     }
     if (!/mnema\.command/.test(shown.tooltip)) {
       throw new Error('the bar does not say what to set');
+    }
+    if (shown.command !== 'workbench.view.extension.mnema') {
+      throw new Error(`a click on the bar runs ${JSON.stringify(shown.command)}, not the container`);
     }
   } else if (scenario === 'record') {
     const container = extension.packageJSON.contributes.viewsContainers?.activitybar?.[0];
@@ -103,8 +106,14 @@ exports.run = async () => {
     if (badge.tooltip !== '1 decision awaits a judgment') {
       throw new Error(`the badge says ${JSON.stringify(badge.tooltip)}`);
     }
-    if (!/^\$\((book|info)\) mnema: [a-z-]+/.test(shown.text)) {
+    if (!/^\$\((book|info)\) [a-z-]+( · \d+ to judge)?$/.test(shown.text)) {
       throw new Error(`with a record the bar says ${JSON.stringify(shown.text)}`);
+    }
+    if (!shown.text.endsWith(' · 1 to judge')) {
+      throw new Error(`the bar does not count the proposed decision: ${JSON.stringify(shown.text)}`);
+    }
+    if (shown.command !== 'workbench.view.extension.mnema') {
+      throw new Error(`a click on the bar runs ${JSON.stringify(shown.command)}, not the container`);
     }
     if (!shown.tooltip.includes('local integrity verified')) {
       throw new Error(
