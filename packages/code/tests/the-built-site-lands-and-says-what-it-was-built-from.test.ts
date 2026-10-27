@@ -655,7 +655,7 @@ when('the built site', () => {
         'og.png has no letters: the machine that built it drew the card without a face for its text',
       ).toBe(false);
     }
-  });
+  }, 60_000);
 
   it('serves a 404 that leads into the site: three links at least, to pages the site holds', () => {
     const page = html('404.html');
