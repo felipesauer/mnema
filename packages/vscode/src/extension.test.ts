@@ -2061,6 +2061,18 @@ describe('the record is read with few processes, and the work waits for what is 
     expect(verifies(w)).toBe(1);
   });
 
+  it('does not run the verification that was waiting for the end of a burst if the bar is switched off meanwhile', async () => {
+    const w = await started();
+    w.watcher.change[0]?.();
+    await vi.advanceTimersByTimeAsync(QUIET_MS);
+    expect(verifies(w)).toBe(1);
+    w.setting.statusBarEnabled = false;
+    for (const l of w.settingListeners)
+      l({ affectsConfiguration: (s) => s === 'mnema.statusBar.enabled' });
+    await vi.advanceTimersByTimeAsync(2 * VERIFY_EVERY_MS);
+    expect(verifies(w)).toBe(1);
+  });
+
   it('keeps the level it last read, with the count that is new, between two verifications', async () => {
     const answers = withTwo();
     const w = await started(answers);
