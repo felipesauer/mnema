@@ -152,24 +152,30 @@ class Resolution(NamedTuple):
 
 
 def _run_of(event: dict[str, Any]) -> Any:
-    """Section 6.9: the run a fact belongs to - its `run`, or, for a run's own birth or mark, the
-    run it is."""
+    """Section 6.9: the run a fact belongs to - its `run`, or, for a `run.*` fact (a run's birth,
+    mark or end), the run its subject is."""
     run = event.get("run")
     if run is not None:
         return run
-    if event.get("kind") in ("run.started", "run.unannounced"):
+    kind = event.get("kind")
+    if isinstance(kind, str) and kind.startswith("run."):
         return event.get("subject")
     return None
 
 
 def unannounced_runs(events: Iterable[dict[str, Any]]) -> set[tuple[Any, Any]]:
     """Section 6.9: (signerFp, run) of every run a run.unannounced marks, for the key that signed
-    the mark and for no other."""
-    return {
-        (event.get("signerFp"), event.get("subject"))
-        for event in events
-        if event.get("kind") == "run.unannounced"
-    }
+    the mark and for no other, and only where a run.started of that same key opened that run.
+    Two marks of one run mark it once, whatever their `handshake` says."""
+    opened: set[tuple[Any, Any]] = set()
+    marks: set[tuple[Any, Any]] = set()
+    for event in events:
+        kind = event.get("kind")
+        if kind == "run.started":
+            opened.add((event.get("signerFp"), event.get("subject")))
+        elif kind == "run.unannounced":
+            marks.add((event.get("signerFp"), event.get("subject")))
+    return marks & opened
 
 
 def is_unannounced(event: dict[str, Any], marked: set[tuple[Any, Any]]) -> bool:
@@ -351,9 +357,9 @@ def resolve(
         return True
 
     merged = merged_order(entries_by_tail)
-    # Section 6.9: the runs a run.unannounced marks, each for the key that signed the mark. Read
-    # off every event before the fold: a mark follows its run's birth, which is one of the run's
-    # facts.
+    # Section 6.9: the runs a run.unannounced marks, each for the key that signed the mark and only
+    # where that key's run.started opened the run. Read off every event before the fold: the birth
+    # is one of the run's facts, and its end is another.
     marked = unannounced_runs(entry.event for _tail, entry in merged.order)
     for tail, entry in merged.order:
         event = entry.event

@@ -1243,16 +1243,23 @@ when none ran. Nothing about its bytes, its chaining or its signature differs fr
 and it is not part of the fold of §6.2: its signer is held to its `who` like any event's.
 
 **What it marks.** A `run.unannounced` marks the run its `subject` names, **for the key that signed
-it and for no other**. A fact belongs to a marked run when that same key signed it and its `run`
-is the run, or it is the run's own `run.started` or `run.unannounced` (whose `subject` is the run).
-Keyed by the signer, so a key cannot say of another key's facts that their agent was announced by
-nobody, and a mark naming a run that no `run.started` of its key opened marks nothing. A reader
+it and for no other**, and only where a `run.started` signed by that same key, with that same
+`subject`, is in the record: a mark naming a run that no `run.started` of its key opened marks
+nothing, the run another key opened under that id included, and its own facts are then declared
+like any other. A fact belongs to a marked run when that same key signed it and its `run` is the
+run, or it is a `run.*` fact whose `subject` is the run and which carries no `run`: its
+`run.started`, its `run.unannounced` and its `run.ended`. Keyed by the signer, so a key cannot say
+of another key's facts that their agent was announced by nobody. Any mark marks: two marks of one
+run by its key mark it once, and where their `handshake` disagree (one `true`, one `false`) the run
+is marked all the same, every mark counted as one of its facts; `handshake` decides nothing a
+reader counts: the record holds both statements, and no reading of this product takes either as
+the run's. A reader
 counts the facts of a marked run that a key without the agent role signed apart from the other
 declared names: this product's `verify` names them in its census as `unannounced-which`, one note
 per `which`, informational, the exit unchanged, and the second reader says the same counts under
 this section's number
 (`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`, "a run marked
-run.unannounced"). The product's other readings say it beside the name: `mnema show`, the opening
+run.unannounced" and "a mark its key opened no run for marks nothing"). The product's other readings say it beside the name: `mnema show`, the opening
 document, `audit_accountability` and the record page
 (`packages/code/tests/a-client-that-never-initializes.test.ts`).
 
@@ -1260,8 +1267,10 @@ document, `audit_accountability` and the record page
 which program connected, and a writer may leave it out. A run with no mark makes no claim either
 way, and every run written before this kind existed has none: an `unknown-agent` there may be the
 default or a name a client announced, and no reader can tell. **A binary from before this kind**
-refuses a record that holds one by naming the kind (§7.1), and reads every record that does not:
-a client that announces a usable name in its handshake writes no new bytes.
+refuses a record that holds one by naming the kind (§7.1): its `verify` fails, the whole tail
+that holds the mark unreadable to it, and every reading of it that needs that tail fails with it.
+It reads every record that holds none: a client that announces a usable name in its handshake
+writes no new bytes.
 
 ## 7. Versions, and why a proof is never recomputed over a reading
 

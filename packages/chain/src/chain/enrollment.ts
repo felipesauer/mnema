@@ -329,9 +329,9 @@ export function resolveIdentity(
   const attested = new Map<string, number>();
   const declared = new Map<string, number>();
   const unannounced = new Map<string, number>();
-  // The runs a `run.unannounced` marks, each for the key that wrote the mark (section 6.9). Read
-  // off every event before the fold: a mark follows its run's birth, and the birth is one of the
-  // run's facts.
+  // The runs a `run.unannounced` marks, each for the key that wrote the mark and only where that
+  // key's `run.started` opened the run (section 6.9). Read off every event before the fold: the
+  // birth is one of the run's facts, and its end is another.
   const marked = unannouncedRuns(order.map(({ entry }) => entry.event));
 
   for (const { tail, entry } of order) {

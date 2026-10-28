@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { memoryCaptured, runStarted, runUnannounced } from './build.js';
+import { memoryCaptured, runEnded, runStarted, runUnannounced } from './build.js';
 import { isUnannounced, unannouncedRuns, unannouncedRunsOf } from './unannounced.js';
 
 const AT = '2026-10-28T00:00:00.000Z';
@@ -12,11 +12,13 @@ const birth = (run: string, signerFp: string) =>
     { at: AT, who: WHO, signerFp, subject: run, which: 'unknown-agent' },
     { agent: 'unknown-agent' },
   );
-const mark = (run: string, signerFp: string) =>
+const mark = (run: string, signerFp: string, handshake = false) =>
   runUnannounced(
     { at: AT, who: WHO, signerFp, subject: run, which: 'unknown-agent' },
-    { handshake: false },
+    { handshake },
   );
+const end = (run: string, signerFp: string) =>
+  runEnded({ at: AT, who: WHO, signerFp, subject: run, which: 'unknown-agent' });
 const fact = (id: string, run: string | undefined, signerFp: string) =>
   memoryCaptured(
     {
@@ -45,6 +47,27 @@ describe('which facts carry a `which` nobody announced (FORMAT.md section 6.9)',
     expect(isUnannounced(fact('m-2', 'r-2', KEY_A), marked)).toBe(false);
     expect(isUnannounced(fact('m-3', undefined, KEY_A), marked)).toBe(false);
     expect(isUnannounced(fact('m-4', 'r-1', KEY_B), marked)).toBe(false);
+  });
+
+  it('holds the end of a marked run, as its birth and its mark: every run fact whose subject is the run', () => {
+    expect(isUnannounced(end('r-1', KEY_A), marked)).toBe(true);
+    expect(isUnannounced(end('r-2', KEY_A), marked)).toBe(false);
+  });
+
+  it('marks nothing with a mark whose key opened no such run, even when another key opened it', () => {
+    const orphan = unannouncedRuns([mark('r-9', KEY_A), birth('r-8', KEY_B), mark('r-8', KEY_A)]);
+    expect(orphan).toEqual(new Set());
+    expect(isUnannounced(fact('m-5', 'r-9', KEY_A), orphan)).toBe(false);
+    expect(isUnannounced(fact('m-6', 'r-8', KEY_A), orphan)).toBe(false);
+  });
+
+  it('marks a run once whatever the handshake of its marks says, two that disagree included', () => {
+    const twice = unannouncedRuns([
+      birth('r-1', KEY_A),
+      mark('r-1', KEY_A, true),
+      mark('r-1', KEY_A),
+    ]);
+    expect(twice).toEqual(marked);
   });
 
   it('reads the same marks off an index as off the events', () => {

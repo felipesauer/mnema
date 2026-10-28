@@ -57,6 +57,7 @@ import {
   linkRetracted,
   memoryCaptured,
   noteRetracted,
+  runEnded,
   runStarted,
   runUnannounced,
   stackAdopted,
@@ -1313,6 +1314,52 @@ describe('the two readers agree on records the product itself wrote: an agent', 
     expect(verdict).toBe('VERIFIED');
     const { product, second } = agentCensus();
     expect(product).toEqual(['declared unknown-agent 3', 'unannounced unknown-agent 3']);
+    expect(second).toEqual(product);
+  });
+
+  it('a mark its key opened no run for marks nothing, a marked run’s end is the run’s, two marks that disagree mark it once: the same counts on both', () => {
+    const { a, anchor } = personAndAgent();
+    const b = generateKeyPair();
+    commitPublicKey(b);
+    const envelope = (id: string, when: number, signer: KeyPair) => ({
+      at: at(when),
+      who: anchor,
+      signerFp: signer.fingerprint,
+      subject: id,
+      which: 'unknown-agent',
+    });
+    const run = (id: string, when: number, signer: KeyPair = a): CatalogEvent =>
+      runStarted(envelope(id, when, signer), { agent: 'unknown-agent' });
+    const mark = (id: string, when: number, handshake: boolean): CatalogEvent =>
+      runUnannounced(envelope(id, when, a), { handshake });
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        founding(a),
+        enrolled(anchor, a, b),
+        // A marked run with two marks that disagree, one fact and its end: five facts of it.
+        run('r-1', 3),
+        mark('r-1', 3, true),
+        mark('r-1', 3, false),
+        task(anchor, a, 't-1', 4, { which: 'unknown-agent', run: 'r-1' }),
+        runEnded(envelope('r-1', 5, a)),
+        // A mark of a run nobody opened: it and the fact pinned to it are declared.
+        mark('r-2', 6, false),
+        task(anchor, a, 't-2', 6, { which: 'unknown-agent', run: 'r-2' }),
+        // A mark of a run another key opened: the mark's key opened none, so it marks nothing.
+        mark('r-3', 8, false),
+        task(anchor, a, 't-3', 8, { which: 'unknown-agent', run: 'r-3' }),
+      ],
+      a,
+    );
+    writeTail(`${b.fingerprint}-i2`, [run('r-3', 7, b)], b);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses these marks').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    const { product, second } = agentCensus();
+    expect(product).toEqual(['declared unknown-agent 5', 'unannounced unknown-agent 5']);
     expect(second).toEqual(product);
   });
 

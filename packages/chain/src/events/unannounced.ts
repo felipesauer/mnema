@@ -2,11 +2,13 @@
  * WHICH FACTS CARRY A `which` NOBODY ANNOUNCED: the one reading of a `run.unannounced`
  * (FORMAT.md section 6.9), for every reader that says who did a thing.
  *
- * A `run.unannounced` marks the run its subject names, for the key that signed it: a fact
+ * A `run.unannounced` marks the run its subject names, for the key that signed it, when that same
+ * key's `run.started` opened the run: a mark of a run its key never opened marks nothing. A fact
  * belongs to a marked run when the SAME key signed it and it is pinned to that run (its `run`),
- * or is that run's own `run.started` or `run.unannounced` (its subject). Keyed by the signer and
- * not by the run alone, so one key's mark says nothing of what another key wrote under the same
- * run id: the writer marks its own facts, and nobody else's.
+ * or is a `run.*` fact whose subject is that run (its birth, its mark, its end). Keyed by the
+ * signer and not by the run alone, so one key's mark says nothing of what another key wrote under
+ * the same run id: the writer marks its own facts, and nobody else's. Two marks of one run mark it
+ * once, whatever their `handshake` says: the mark is read, its `handshake` is not.
  *
  * Nothing here judges a fact. The mark is the writer's own statement, as `which` is: it moves no
  * verdict, and a fact of an unmarked run makes no claim either way (every run written before the
@@ -23,26 +25,32 @@ function keyOf(signerFp: string, run: string): string {
   return `${signerFp}\u0000${run}`;
 }
 
-/** The run a fact belongs to: its `run`, or, for a run's own birth, the run it is. */
+/** The run a fact belongs to: its `run`, or, for a `run.*` fact, the run its subject is. */
 function runOf(event: Marked): string | undefined {
   if (event.run !== undefined) return event.run;
-  return event.kind === 'run.started' || event.kind === 'run.unannounced'
-    ? event.subject
-    : undefined;
+  return event.kind.startsWith('run.') ? event.subject : undefined;
 }
 
-/** The runs the `run.unannounced` facts among `events` mark, each for the key that signed it. */
+/**
+ * The runs the `run.unannounced` facts among `events` mark, each for the key that signed it, and
+ * only where a `run.started` of that same key opened that run.
+ */
 export function unannouncedRuns(events: Iterable<Marked>): ReadonlySet<string> {
-  const marked = new Set<string>();
+  const opened = new Set<string>();
+  const marks = new Set<string>();
   for (const event of events) {
-    if (event.kind === 'run.unannounced') marked.add(keyOf(event.signerFp, event.subject));
+    if (event.kind === 'run.started') opened.add(keyOf(event.signerFp, event.subject));
+    else if (event.kind === 'run.unannounced') marks.add(keyOf(event.signerFp, event.subject));
   }
+  const marked = new Set<string>();
+  for (const mark of marks) if (opened.has(mark)) marked.add(mark);
   return marked;
 }
 
 /**
  * The runs marked by the marks a reader already selected, as signer and run: what a reader that
- * keeps the events in an index rather than in memory hands over.
+ * keeps the events in an index rather than in memory hands over, each already a mark whose key's
+ * `run.started` opened the run.
  */
 export function unannouncedRunsOf(
   marks: Iterable<{ readonly signerFp: string; readonly run: string }>,
