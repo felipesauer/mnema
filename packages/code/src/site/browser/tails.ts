@@ -9,6 +9,7 @@
  * `the-raw-lines-are-drawn-from-the-files.test.ts` holds against the same reading over a disk.
  */
 
+import type { SiteTail } from '../view.js';
 import { fromBase64 } from './buffer.js';
 import type { Doc } from './filters.js';
 
@@ -28,6 +29,26 @@ export function rawLinesOf(files: Readonly<Record<string, string>>, tail: string
     .sort();
   const text = names.map((name) => decoder.decode(fromBase64(files[name] as string))).join('');
   return text.replace(/\n+$/, '');
+}
+
+/**
+ * How many stored lines each tail holds, in the order of the tails' names. `mnema site` counts with
+ * this function over the files it is about to carry, and the page counts with it again over the files it
+ * verified: one reading of "how many events", so the count a page says and the count the check expects
+ * cannot be two.
+ */
+export function tailsOfFiles(files: Readonly<Record<string, string>>): SiteTail[] {
+  const ids = new Set<string>();
+  for (const name of Object.keys(files)) {
+    const match = /^tails\/([^/]+)\/(\d+)\.jsonl$/.exec(name);
+    if (match !== null) ids.add(match[1] as string);
+  }
+  return [...ids]
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+    .map((id) => {
+      const text = rawLinesOf(files, id);
+      return { id, events: text === '' ? 0 : text.split('\n').length };
+    });
 }
 
 /** Draws each tail's lines the first time it is opened. */

@@ -21,7 +21,8 @@
  *   - THE SITE DOES NOT SAY THE DOCS DESCRIBE THE NEXT VERSION: the sentence is true on GitHub and npm and
  *     false here, so no built page holds it.
  *   - /RECORD/ IS THE PAGE `mnema site --back-link` WRITES for this commit's record, byte for byte, with no
- *     step between, and it opens with the one link back to the site's root.
+ *     step between, and it opens with the one link back to the site's root. Run in a vm, it says its
+ *     lists match the events it verified.
  *
  * It needs the site built (`cd site && npm ci --ignore-scripts && npm run build`, after `pnpm build`). In
  * the main suite and in `pnpm test:guards` there is no build, and the cases stand down by name; the site
@@ -39,6 +40,7 @@ import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { copyOf, recordBackLink, themeOf } from '../../../site/build/the-pages.mjs';
+import { runInAVm } from './support/a-page-in-a-vm.js';
 import {
   addressesOf,
   blocksOfMain,
@@ -799,7 +801,7 @@ when('the built site', () => {
     }
   });
 
-  it('serves as /record/ the page `mnema site` writes for this commit, with no step between', () => {
+  it('serves as /record/ the page `mnema site` writes for this commit, with no step between, and the page it serves says its lists match', () => {
     const out = mkdtempSync(join(tmpdir(), 'the-record-built-'));
     try {
       const home = mkdtempSync(join(tmpdir(), 'the-record-home-'));
@@ -820,6 +822,17 @@ when('the built site', () => {
         readFileSync(join(DIST, 'record/index.html')).equals(readFileSync(join(out, 'index.html'))),
       ).toBe(true);
       expect(html('record/index.html')).toContain(`<p><a href="${BASE}/">Back</a></p>`);
+      // Opened, the page checks its own lists against the events it verified, and they match.
+      const record = readText(join(DIST, 'record/index.html'));
+      const script = /<script>(.*)<\/script>/s.exec(record)?.[1] ?? '';
+      const run = runInAVm(record, script);
+      run.timers.drain();
+      const status = run.page.getElementById('lists-status');
+      const issues = run.page.getElementById('lists-issues')?.children.map((li) => li.textContent);
+      expect({ state: status?.getAttribute('data-state'), issues }).toEqual({
+        state: 'match',
+        issues: [],
+      });
     } finally {
       rmSync(out, { recursive: true, force: true });
     }

@@ -12,8 +12,10 @@
  * IT CARRIES THE RECORD'S FILES SO THE PAGE CAN VERIFY THEM. The verdict is the chain's own,
  * computed in the reader's browser over those files (`site/browser/entry.ts`). What the page
  * lists (decisions, their notes and addresses, the timeline) is written here from the same
- * files, by `pageModel`; the raw events are not written again, the browser draws them from the
- * files the page carries.
+ * files, by `pageModel`, and the page's script derives them again from the files it verified and
+ * names each difference (`site/browser/check.ts`); the raw events are not written again, the
+ * browser draws them from the files the page carries. How many stored lines each tail holds is
+ * counted by the function the page counts with (`tailsOfFiles`), over the files it carries.
  *
  * IT RECORDS NOTHING. It reads the public tree and writes one file, `index.html`, under the
  * directory the caller named, or under `<record>/site/` when none is named. That directory sits
@@ -29,8 +31,9 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { catalogUpcasters, ensureTree, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, realOfMaybeMissing, resolveTrees } from '@mnema/core';
+import { tailsOfFiles } from '../site/browser/tails.js';
 import { pageModel } from '../site/model.js';
-import { renderPage, type SiteTail } from '../site/page.js';
+import { renderPage } from '../site/page.js';
 import { theSiteVerifier } from '../site/verifier-bundle.js';
 
 /** What the site command needs: injected so it is testable. */
@@ -118,28 +121,6 @@ function recordFiles(publicRoot: string): Record<string, string> {
   return files;
 }
 
-/**
- * How many stored lines each tail holds. The lines themselves are not written into the page a
- * second time: the files the verifier reads carry them, and the page draws a tail from those when a
- * reader opens it.
- */
-function tailsOf(publicRoot: string, files: Readonly<Record<string, string>>): SiteTail[] {
-  const tails = new Map<string, string[]>();
-  for (const file of Object.keys(files)) {
-    const match = /^tails\/([^/]+)\/(\d+)\.jsonl$/.exec(file);
-    if (match === null) continue;
-    const tail = match[1] as string;
-    const text = readFileSync(join(publicRoot, file), 'utf-8');
-    tails.set(tail, [...(tails.get(tail) ?? []), text]);
-  }
-  return [...tails.entries()]
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([id, segments]) => {
-      const text = segments.join('').replace(/\n+$/, '');
-      return { id, events: text === '' ? 0 : text.split('\n').length };
-    });
-}
-
 /** Whether `inner` is `outer` or below it, both already resolved. */
 function isWithin(inner: string, outer: string): boolean {
   const rel = relative(outer, inner);
@@ -203,7 +184,7 @@ export function runSite(
       message: `the public tree cannot be read (${error instanceof Error ? error.message : String(error)}): run \`mnema verify\``,
     };
   }
-  const tails = tailsOf(publicRoot, files);
+  const tails = tailsOfFiles(files);
   const ruled = verify(publicRoot, catalogUpcasters());
   if (existsSync(target) && !statSync(target).isDirectory()) {
     return {
