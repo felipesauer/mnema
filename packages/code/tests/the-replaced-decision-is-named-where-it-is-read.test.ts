@@ -187,12 +187,21 @@ describe('the replaced decision is named where it is read', () => {
     const next = accepted('Keep sessions in Redis');
     supersede(old.id, next.id);
 
-    const lines = opened().filter((text) => text.startsWith('- **'));
+    // Read as the BYTES a model reads: the document's lines may hold a break inside one array
+    // element, so the count is over the joined text, never over the elements.
+    const lines = opened()
+      .join('\n')
+      .split('\n')
+      .filter((text) => text.startsWith('- **'));
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain(`\`${next.id}\``);
     expect(lines[0]).toContain('supersedes');
-    const shownLines = printed(next.id).filter((text) => text.includes('supersedes'));
+    const shownLines = printed(next.id)
+      .join('\n')
+      .split('\n')
+      .filter((text) => text.includes('supersedes'));
     expect(shownLines).toHaveLength(1);
+    expect(shownLines.join('\n')).toContain('forged');
   });
 
   it('serves no name for a decision that replaced nothing', () => {
