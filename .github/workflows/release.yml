@@ -368,17 +368,26 @@ jobs:
           fi
           gh release upload "v$VERSION" "$file"
 
-  # THE EXTENSION IN THE TWO STORES. The only job of any workflow that holds a store token, and a person
+  # THE EXTENSION IN THE TWO STORES. The only job of any workflow that holds a store credential, and a person
   # approves it in the `extension-stores` environment (its required reviewer and its branch policy, `main`, are
-  # set in the repository's Settings, not here); the secrets `VSCE_PAT` and `OVSX_PAT` belong to that environment.
+  # set in the repository's Settings, not here). The Marketplace is reached with no token kept anywhere: the job
+  # asks the runner for its OIDC token (the one job of this workflow, besides the npm one, that has `id-token`),
+  # signs in to Microsoft Entra ID with `az login --federated-token`, and `vsce --azure-credential` finds that
+  # session. The application it signs in as trusts the subject
+  # `repo:felipesauer/mnema:environment:extension-stores`, so no other job, branch or workflow can ask for the
+  # same access; its client id and tenant id are variables of the environment, not secrets. The sign-in is done
+  # by hand in the step, not by an action of someone else: this job holds the power to publish, and a third
+  # party's code beside the OIDC token is what it refuses. The token is asked for after the file was checked
+  # against the hash, and after nothing that installs or resolves anything. Open VSX has no Entra ID, so its
+  # token, `OVSX_PAT`, is still a secret of the environment.
   # It builds nothing and runs no install script. It downloads the file the pack job made and checks it against
   # the SHA-256 that job exposed (not against a file that travels with it). The two store command lines are
   # installed from `.github/release-tools`, a committed lockfile with the integrity of every package, by
-  # `npm ci --ignore-scripts` in a step that holds no secret; the steps that hold a token call the installed
-  # binaries by path, so nothing is resolved from the registry and no install script runs while a token is in
-  # the environment. Each store is published to in a step of its own with only its own token, and with
-  # `--skip-duplicate`, so a run that stopped halfway runs again; the question to each store of whether it has
-  # the version is only logged (the Marketplace's answer leaves out a version still in validation).
+  # `npm ci --ignore-scripts` in a step that holds no secret; the steps that hold a credential call the installed
+  # binaries by path, so nothing is resolved from the registry and no install script runs while a credential is in
+  # the environment. Each store is published to in a step of its own, and with `--skip-duplicate`, so a run that
+  # stopped halfway runs again; the question to each store of whether it has the version is only logged (the
+  # Marketplace's answer leaves out a version still in validation).
   publish-vsix:
     name: publish the extension to the stores
     needs: [plan, vsix]
@@ -386,6 +395,7 @@ jobs:
     environment: extension-stores
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -415,10 +425,30 @@ jobs:
           have="$(sha256sum "$RUNNER_TEMP/vsix/mnema-$VERSION.vsix" | cut -d' ' -f1)"
           [ -n "$SHA256" ] && [ "$have" = "$SHA256" ] || { echo "::error::mnema-$VERSION.vsix is not the file the pack job made"; exit 1; }
 
+      - name: Sign in to Microsoft Entra ID with the job's own token
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          set -euo pipefail
+          [ -n "$AZURE_CLIENT_ID" ] && [ -n "$AZURE_TENANT_ID" ] || { echo "::error::the extension-stores environment has no AZURE_CLIENT_ID or AZURE_TENANT_ID variable"; exit 1; }
+          [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] && [ -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ] || { echo "::error::this job cannot ask for an OIDC token"; exit 1; }
+          command -v az > /dev/null || { echo "::error::the Azure command line is not on this runner"; exit 1; }
+          token="$(curl -sS --fail -G -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            --data-urlencode 'audience=api://AzureADTokenExchange' "$ACTIONS_ID_TOKEN_REQUEST_URL" \
+            | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).value)')"
+          [ -n "$token" ] || { echo "::error::the runner gave no OIDC token"; exit 1; }
+          echo "::add-mask::$token"
+          az login --service-principal --username "$AZURE_CLIENT_ID" --tenant "$AZURE_TENANT_ID" --federated-token "$token" --allow-no-subscriptions > /dev/null
+
+      - name: Check that the Entra identity may publish as mnema
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/.github/release-tools/node_modules/.bin/vsce" verify-pat --azure-credential mnema
+
       - name: Publish to the Visual Studio Marketplace
         env:
           VERSION: ${{ needs.plan.outputs.version }}
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: |
           set -euo pipefail
           served="$(curl -sS -X POST 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery' \
@@ -426,7 +456,7 @@ jobs:
             -d '{"filters":[{"criteria":[{"filterType":7,"value":"mnema.mnema"}]}],"flags":103}' \
             | node -e 'const j = JSON.parse(require("fs").readFileSync(0, "utf8")); const e = j.results[0].extensions[0]; console.log(e ? e.versions.map((v) => v.version).join(" ") : "")' || true)"
           echo "The Marketplace serves: ${served:-nothing}"
-          "$GITHUB_WORKSPACE/.github/release-tools/node_modules/.bin/vsce" publish --skip-duplicate --packagePath "$RUNNER_TEMP/vsix/mnema-$VERSION.vsix"
+          "$GITHUB_WORKSPACE/.github/release-tools/node_modules/.bin/vsce" publish --azure-credential --skip-duplicate --packagePath "$RUNNER_TEMP/vsix/mnema-$VERSION.vsix"
 
       - name: Publish to Open VSX
         env:

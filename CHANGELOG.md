@@ -207,6 +207,14 @@ with its own changelog.
   from the command line's own line (a line of another shape is shown as it came). The check in a real editor opens the
   proposed decision and reads the document.
 
+- **The release publishes the extension to the Visual Studio Marketplace by Microsoft Entra ID, not by a personal access token.**
+  The job that publishes (the one a person approves in the `extension-stores` environment) asks the runner for its OIDC token,
+  signs in with `az login --federated-token` in a step of its own, with no action of a third party beside the token, checks with
+  `vsce verify-pat --azure-credential mnema` that the identity may publish as `mnema`, and publishes with `--azure-credential`.
+  The `VSCE_PAT` secret is no longer read; Open VSX has no Entra ID and keeps `OVSX_PAT`. Nothing changes for whoever installs the
+  extension. The test that fences the publish now admits the Entra flag, the sign-in and the request for the token only in that
+  job, after the hash check, and refuses `VSCE_PAT` everywhere and `id-token` anywhere but the two publishing jobs.
+
 ### Removed
 
 - **The VS Code extension no longer shows a message when a decision is proposed.** The badge on the container's icon and the

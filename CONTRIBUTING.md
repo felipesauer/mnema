@@ -213,6 +213,12 @@ workflow for it.
 4. The tag and the release (whose notes are the CHANGELOG section) come only after the five are on npm (the job
    asks npm every 30 seconds for up to about ten minutes, since npm can take that long to serve a new version), and
    they ask for your approval in the `npm` environment once more.
+5. The extension is published by a separate job that asks for your approval in the `extension-stores` environment.
+   It checks the `.vsix` against the packing job's SHA-256, then signs in to Microsoft Entra ID with the job's own
+   OIDC token (the application trusts the subject `repo:felipesauer/mnema:environment:extension-stores`; its client id
+   and tenant id are the environment's variables `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`) and publishes to the
+   Visual Studio Marketplace with `vsce --azure-credential`. Open VSX is still reached with the environment's
+   `OVSX_PAT` secret.
 
 If a publish stops halfway, run the workflow again (Actions, Run workflow, `mode: publish`): the packages
 already at the version are skipped and the ones left are published. The tag and the release are made only

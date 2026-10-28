@@ -224,7 +224,7 @@ the light and high-contrast themes, a screen reader) has [a script for a person]
 artifact of the run (`mnema-vscode-extension`). The only thing that sends the file anywhere is one job of
 the release workflow, which a person approves in a protected environment and which publishes the very file
 it packed and checked, with the store command lines installed from a lockfile and no install script run, and a store that already has the version is skipped; a test fails if a
-publish command or a store token appears in any other job or file. The file has no token in it.
+publish command or a store credential (the Entra sign-in, the request for the OIDC token, a token) appears in any other job or file. The file has no token in it.
 
 ## How it is built
 

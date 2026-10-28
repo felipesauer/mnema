@@ -8,7 +8,7 @@
  * - the job that publishes asks for the `npm` environment (so a person approves it), holds `id-token: write`
  *   (the OIDC the trusted publisher trusts) and nothing wider than `contents: read`;
  * - nothing in it that publishes a package reads a secret: no `secrets.` outside the one job that publishes the
- *   extension to the stores (which reads two, and only those), no `NODE_AUTH_TOKEN`, no `NPM_TOKEN`;
+ *   extension to the stores (which reads one, the Open VSX token, and only it), no `NODE_AUTH_TOKEN`, no `NPM_TOKEN`;
  * - it publishes the tarball of each package with `--provenance --access public`, in the order chain, core,
  *   context, stacks, code;
  * - the tag and the release belong to a job that needs the publish, and no step before the publish creates one;
@@ -129,13 +129,10 @@ describe('the release workflow publishes without a token', () => {
     expect(condition).not.toMatch(/always\(\)|cancelled\(\)|failure\(\)|success\(\)/);
   });
 
-  it('holds no secret for the packages, and the only secrets are the two store tokens of the extension job', () => {
+  it('holds no secret for the packages, and the only secret is the Open VSX token of the extension job', () => {
     const stores = job('publish-vsix');
     expect(CODE.replace(stores, '')).not.toMatch(/\bsecrets\./);
-    expect([...stores.matchAll(/\bsecrets\.(\w+)/g)].map((m) => m[1])).toEqual([
-      'VSCE_PAT',
-      'OVSX_PAT',
-    ]);
+    expect([...stores.matchAll(/\bsecrets\.(\w+)/g)].map((m) => m[1])).toEqual(['OVSX_PAT']);
     expect(stores).toMatch(/^ {4}environment: extension-stores$/m);
     expect(CODE.replace(stores, '')).not.toMatch(/extension-stores/);
     expect(CODE).not.toMatch(/NODE_AUTH_TOKEN|NPM_TOKEN|_authToken|npm login|npm adduser/);
