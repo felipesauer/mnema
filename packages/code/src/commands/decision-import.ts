@@ -397,6 +397,14 @@ export function runDecisionImport(
     if (!recorded.ok) {
       return { stopped: { path: document.path, code: recorded.code, message: recorded.message } };
     }
+    // The same decision was already on the record (another file, or an earlier run, said the
+    // same words): nothing was written, so this file is reported as already there, with the
+    // decision that holds its text. NO `derived-from` EDGE IS DRAWN: the edge says the decision
+    // was born from this file, and it was not; it would also be an append on a run that
+    // recorded nothing. The file stays unlinked, so a later run reports it the same way.
+    if ('already' in recorded) {
+      return { already: { path: document.path, decision: recorded.id as string } };
+    }
     // The provenance, as a fact of the record rather than a sentence in the prose.
     // It is recorded right after the decision it is about, so a run that stops
     // partway never leaves a decision whose origin nobody can name.
@@ -444,7 +452,7 @@ export function runDecisionImport(
           // could refuse with every decision of the directory already on it, and the refusal
           // read "not appended". A signature per file costs milliseconds; a refusal that
           // denies what landed costs the record its word.
-          writer.checkpoint();
+          if (!('already' in imported)) writer.checkpoint();
           // This run's own writes moved the tree, and they are known: the edge it just
           // appended. The extent is taken here, still under the lock, so nothing another
           // session appends after the lock is let go can be folded into it unread.

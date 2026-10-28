@@ -250,3 +250,25 @@ describe('mnema decision import', () => {
     expect(written.every((e) => e.which === 'claude')).toBe(true);
   });
 });
+
+describe('two files that say the same words', () => {
+  it('records the decision ONCE, reports the second file as already there, and draws no edge for it', () => {
+    const same = decision('Use UTC everywhere', 'the zone drifts');
+    const { repo, env } = setup({ '0001-utc.md': same, '0002-utc-again.md': same });
+
+    const result = runDecisionImport({ cwd: repo, env }, { from: 'docs/adr', write: true });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.proposals.map((p) => p.path)).toEqual(['docs/adr/0001-utc.md']);
+    const first = result.proposals[0]?.id as string;
+    // Not "recorded 2": the second file is the first file's decision, found, not written.
+    expect(result.already).toEqual([{ path: 'docs/adr/0002-utc-again.md', decision: first }]);
+
+    const { decisions, links } = publicTree(repo, env);
+    expect([...decisions.keys()]).toEqual([first]);
+    // One provenance edge, from the file the decision was born from; the twin file has none.
+    expect(links.map((l) => [l.subject, l.target, l.rel])).toEqual([
+      [first, 'docs/adr/0001-utc.md', DERIVED_FROM_RELATION],
+    ]);
+  });
+});

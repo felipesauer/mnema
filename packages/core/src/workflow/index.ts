@@ -35,6 +35,7 @@ export {
   type DecisionTransitionOk,
   type DecisionWriteContext,
   type DecisionWriteError,
+  type RecordedAlready,
   type RecordInput,
   type RecordOk,
   recordDecision,
