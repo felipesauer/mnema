@@ -717,7 +717,7 @@ export const HANDED_OVER: Readonly<
 > = {
   'CHANGELOG.md': { line: 65, name: 130, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
-  'README.md': { line: 3, name: 9 },
+  'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
   'docs/convergence.md': { line: 4, name: 4 },
