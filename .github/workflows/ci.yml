@@ -477,7 +477,7 @@ jobs:
   # leans on `sh`, `script -qec`, `stty -F` and `unshare`, none of which a Windows runner has; the
   # cases that hold the product's rules do not change with the operating system, and the ones that
   # do (paths, line endings, the launcher, the second reader) are what this runs. What is proven
-  # on each system is stated in `docs/install.md`, and no more than this job runs.
+  # on each system is stated in `docs/platforms.md`, and no more than this job runs.
   #
   # TWO NODES. 24.15.0 is the floor and 24 is what development runs on; 26 adds a third runtime
   # that the Ubuntu matrix already runs and no operating system changes. Each system runs both.
