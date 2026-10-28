@@ -12,6 +12,13 @@ with its own changelog.
 
 ### Added
 
+- **A recording of `verify` catching a changed word.** `recordings/a-tamper-caught.sh` records a decision, accepts it, runs
+  `mnema verify` (green), changes one word of the decision in the record's own file with `sed`, and runs `verify` again: the
+  verdict is `local integrity FAILED`, the issue is `entry hash mismatch` at the event, and the exit code is 1. The README's
+  "Watch it" shows it beside the first record, the proof on the site's landing now shows it instead of the write refused, and
+  `docs/what-it-proves.md` shows it under what holds, with the caption that a cut taking the newest events together with their
+  checkpoint is not caught. The site carries every GIF of `recordings/`, so a page of `docs/` can show one. The suite runs the
+  script again against the built binary and holds its screen to the cast, and holds that this one shows the failure.
 - **A recorded decision offers its address and its replacement, and does neither.** In the comparison of 27 October the 40
   decisions an agent recorded carried no `governs` address, and one session left a draft and its refinement in force together.
   After "Recorded decision ADR-n (id)", the reply of `record_decision` now lists the paths of the project this connection was
@@ -37,7 +44,6 @@ with its own changelog.
   committed brief document with `supersedes ADR-<n>: <title> (<state>)`: one more field of the same line, so a rule is still one line.
   Only the immediate decision is named, never the chain behind it and never its rationale. Nothing about the record changes: no
   kind, field or event, and no tool description.
-
 - **The rules of the record reach the model at an edit in Codex, Qwen Code and OpenCode.** Until now only Claude Code was handed
   the rules addressed at a path beside a write that goes through; the other hosts got the opening and the refusal, and the
   arrival measurement read `not arrived` at an edit for all of them. `mnema before-a-write --host codex|qwen|opencode` now answers,
@@ -147,7 +153,7 @@ with its own changelog.
   footer reads "commit" and its sha with a space, and its link takes the accent. The landing shows the proof under its
   title: the output of `mnema verify` on this repository's record, produced by the binary at build time on the `.mnema/`
   of the commit (extracted outside the checkout, so an uncommitted change and the builder's private tree are not in it),
-  and the recording of a write refused, copied from `recordings/`; the button labels come from the README's Docs. A
+  and a recording copied from `recordings/`; the button labels come from the README's Docs. A
   fourth source of text, `site/copy.md`, holds the few words only the site needs (a caption), one line of at most twenty
   words each, and the case that holds the landing to its sources now reads every element of the `<main>` and every `alt`,
   `title` and `aria-label`, and finds nothing left over. No stylesheet of the site may draw text (a `content` with a sentence, or an `attr()`), and the verdict
