@@ -249,6 +249,28 @@ describe.each(PUSHING)('mnema before-a-write --host %s', (host) => {
   });
 });
 
+describe('the ceiling of the host at the door', () => {
+  it('cuts at the bytes Codex counts and keeps whole what a host that counts units keeps', async () => {
+    // Rules whose names are three bytes to a character: together they measure less than 10,000
+    // UTF-16 code units and more than 10,000 bytes, so only the host that counts bytes cuts.
+    const name = (n: number) => `Rule ${String(n).padStart(2, '0')} ${'€'.repeat(130)}`;
+    for (let n = 0; n < 25; n += 1) {
+      const id = idIn(await did('decision', 'record', name(n), 'because'));
+      await did('decision', 'move', 'accept', id, '--note', 'agreed');
+      await did('link', id, 'src/many', '--rel', 'governs');
+    }
+    const codex = answer('codex', aWrite('codex', 'src/many/a.ts', 's1')).reply?.additionalContext;
+    const qwen = answer('qwen', aWrite('qwen', 'src/many/a.ts', 's1')).reply?.additionalContext;
+    expect(Buffer.byteLength(codex ?? '', 'utf8')).toBeLessThanOrEqual(10_000);
+    expect(codex).toContain('Left out of this text:');
+    expect(codex).toContain('2,500 tokens of 4 bytes');
+    expect(qwen?.length).toBeLessThanOrEqual(10_000);
+    expect(Buffer.byteLength(qwen ?? '', 'utf8')).toBeGreaterThan(10_000);
+    expect(qwen).not.toContain('Left out of this text:');
+    expect(qwen?.match(/“Rule \d\d /g)).toHaveLength(25);
+  }, 120_000);
+});
+
 describe('a write that touches several paths', () => {
   it('is handed the rules of each governed path, and not of the one nothing addresses', () => {
     const patch = JSON.stringify({
