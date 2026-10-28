@@ -1397,10 +1397,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the identity a stored writing of a decision names as its signer',
   },
-  '@mnema/chain chain/verify.ts «not the decision\'s text (the writing signed by {} is): a decision is the text » oneLine(author) #1':
+  '@mnema/chain chain/verify.ts «not the text of the decision (the writing signed by {} is): a decision is the text » oneLine(author) #1':
     {
       verdict: 'collapsed',
-      why: 'the identity the stored writing that is the decision's text names as its signer',
+      why: 'the identity the stored writing that is the text of the decision names as its signer',
     },
   // --- @mnema/chain: a move the workflow does not allow (FORMAT.md §6.7) ----------
   '@mnema/chain chain/verify.ts «a {} of {}: {}: » event.kind #1': {

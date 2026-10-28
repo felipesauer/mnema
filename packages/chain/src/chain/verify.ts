@@ -1443,7 +1443,7 @@ function decisionRewrites(
         seq: link.seq,
         detail:
           `a decision.recorded of ${oneLine(event.subject)} signed by ${oneLine(event.who)}, ` +
-          `not the decision's text (the writing signed by ${oneLine(author)} is): a decision is the text ` +
+          `not the text of the decision (the writing signed by ${oneLine(author)} is): a decision is the text ` +
           'its first judgment was made on, or its first writing while none has judged it, so this writing is not applied',
       });
     }

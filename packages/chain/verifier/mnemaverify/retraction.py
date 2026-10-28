@@ -195,7 +195,7 @@ def decision_rewrites(
                     entry.seq,
                     "decision-rewrite",
                     f"a decision.recorded of {_shown(event.get('subject'))} signed by "
-                    f"{_shown(event.get('who'))}, not the decision's text (the writing signed by "
+                    f"{_shown(event.get('who'))}, not the text of the decision (the writing signed by "
                     f"{_shown(kept.event.get('who'))} is) - a decision is the text its first "
                     "judgment was made on, or its first writing while none has judged it, so this "
                     "writing is not applied",
