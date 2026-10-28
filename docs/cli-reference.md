@@ -2116,6 +2116,10 @@ beside the raw ids of `record`, and the `show` verb prints each on one line, wit
 `supersedes ADR-<n>: <title> (<state>) · <id>`. The committed brief document carries only the trees that travel, so it
 names a replaced decision only when the committed tree holds it.
 
+The same field rides where the rules addressed at a file are told: each rule `governing_rules` lists carries `supersedes`
+when it replaced one, and the rules pushed beside an edit end that rule's line with `supersedes ADR-<n>: <title> (<state>)`.
+A rule that replaced nothing is told exactly as before.
+
 The fourth list is what is **awaiting a judgement**: a task `IN_REVIEW`, a decision
 still `proposed`, a pattern `proposed` or `reviewed`: everything a person has to rule
 on before it means anything. One list holds all three kinds, and each item says which

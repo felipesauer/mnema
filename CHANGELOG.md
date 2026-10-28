@@ -89,6 +89,16 @@ with its own changelog.
   committed brief document with `supersedes ADR-<n>: <title> (<state>)`: one more field of the same line, so a rule is still one line.
   Only the immediate decision is named, never the chain behind it and never its rationale. Nothing about the record changes: no
   kind, field or event, and no tool description.
+- **`governing_rules`, the rules pushed at an edit and the record page name the decision a rule replaced.** The previous entry
+  named it in `read_record`, `show` and the opening, and left three doors that tell the same rule without it. A rule that
+  replaced another now carries `supersedes` as `{ found, id, adr, title, state }` in each rule `governing_rules` lists, and ends
+  the line the rules pushed beside an edit (and the rules file written for another host) with `supersedes ADR-<n>: <title>
+  (<state>)`, in the same words and the same reading as the opening, still one line per rule. In the record page `mnema site`
+  writes, the two links of a decision that replaced or was replaced by another now carry the other decision's title and state
+  after the label, and say `(not in the trees read)` where the page does not hold it. What it costs where bytes are counted: a
+  rule that replaced nothing adds nothing; a rule that replaced one adds about 36 bytes plus the replaced title, 89 to 252 bytes for
+  the six replacements this project's own record holds (a mean of 199). No kind, field or event changes, and no tool
+  description.
 - **The rules of the record reach the model at an edit in Codex, Qwen Code and OpenCode.** Until now only Claude Code was handed
   the rules addressed at a path beside a write that goes through; the other hosts got the opening and the refusal, and the
   arrival measurement read `not arrived` at an edit for all of them. `mnema before-a-write --host codex|qwen|opencode` now answers,
