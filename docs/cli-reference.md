@@ -1623,7 +1623,7 @@ a URL. The dry run cannot catch that. You can, by opening two of the files it wr
 
 ### What a recorded decision offers
 
-After "Recorded decision ADR-n (id)", `mnema decision record` and the `record_decision` tool may add lines that
+After "Recorded decision ADR-n (id)", `mnema decision record <title> <rationale>` and the `record_decision` tool may add lines that
 say what the decision could be tied to. They only say it: nothing is linked and nothing is moved by recording, and each
 line names the call that would do it.
 

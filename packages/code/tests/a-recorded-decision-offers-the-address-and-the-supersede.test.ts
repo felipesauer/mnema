@@ -195,6 +195,20 @@ describe('record_decision, over a real client', () => {
     expect(tellsWhatToDo(reply)).toBeUndefined();
     expect(moves()).toBe(0);
     expect(count('knowledge.linked')).toBe(0);
+
+    // THE CALL IT NAMES IS WHOLE: made as offered, with only the reason filled in, it moves the
+    // decision, and the record then holds one move.
+    const moved = await client.callTool({
+      name: 'decision_transition',
+      arguments: {
+        id: first,
+        action: 'supersede',
+        by: second,
+        reason: 'the refinement replaces it',
+      },
+    });
+    expect((moved as { isError?: boolean }).isError).not.toBe(true);
+    expect(moves()).toBe(1);
   });
 
   it('does not offer a decision a supersede cannot move, nor a private title to a public one', async () => {
@@ -316,6 +330,14 @@ describe('mnema decision record', () => {
     // And the first decision, which cites nothing, is acknowledged and nothing more.
     expect(first.out).not.toContain('supersede');
     expect(moves()).toBe(0);
+
+    // THE LINE IT PRINTS IS WHOLE: typed back as printed, with only the reason filled in, it runs.
+    const typed = second.out.match(/mnema decision supersede \S+ \S+ --reason "<why>"/)?.[0];
+    if (typed === undefined) throw new Error(`no command in ${second.out}`);
+    const [, ...argv] = typed.replace('"<why>"', 'refined').split(' ');
+    const moved = await mnema(...argv);
+    expect(moved.failed, moved.out).toBe(false);
+    expect(moves()).toBe(1);
   });
 });
 

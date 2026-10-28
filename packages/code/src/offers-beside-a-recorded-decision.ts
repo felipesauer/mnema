@@ -12,7 +12,7 @@
  *
  * ONE DETECTION, TWO DOORS. `mnema decision record` (the command line) and `record_decision`
  * (the MCP tool) both ask {@link decisionsCited}, so the two cannot disagree about which
- * decisions a new one cites; `the-offers-are-one-function.test.ts` holds that no door reads
+ * decisions a new one cites; `a-recorded-decision-offers-the-address-and-the-supersede.test.ts` holds that no door reads
  * the citations a second way. They differ in one thing only, the shape of the call they name
  * ({@link supersedeOfferLines}).
  *
@@ -61,8 +61,8 @@ export interface DecisionText {
   readonly alternatives?: string;
 }
 
-const AN_ID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
-const A_LABEL = /\bADR-(\d+)\b/gi;
+/** A citation, in the order the text writes them: a full decision id, or an `ADR-<n>` label. */
+const A_CITATION = /\b(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|ADR-\d+)\b/gi;
 
 /**
  * The trees a decision landing in `landing` may name another decision out of. Public sees public;
@@ -96,21 +96,12 @@ export function decisionsCited(
   self: string,
 ): SupersedeOffer[] {
   const written = [text.title, text.rationale, text.alternatives ?? ''].join('\n');
-  const cites: { at: number; matches: (decision: DecisionProjection) => boolean }[] = [];
-  for (const found of written.matchAll(AN_ID)) {
-    const id = found[0].toLowerCase();
-    cites.push({ at: found.index, matches: (decision) => decision.id.toLowerCase() === id });
-  }
-  for (const found of written.matchAll(A_LABEL)) {
-    const label = `ADR-${found[1]}`;
-    cites.push({ at: found.index, matches: (decision) => decision.adr === label });
-  }
-  cites.sort((a, b) => a.at - b.at);
   const offers = new Map<string, SupersedeOffer>();
-  for (const cite of cites) {
+  for (const [cited] of written.matchAll(A_CITATION)) {
+    const label = cited.toUpperCase();
     for (const decision of held) {
       if (decision.id === self || offers.has(decision.id)) continue;
-      if (!cite.matches(decision)) continue;
+      if (decision.id.toLowerCase() !== cited.toLowerCase() && decision.adr !== label) continue;
       if (!isDecisionState(decision.state)) continue;
       if (findDecisionTransition(decision.state, 'supersede') === undefined) continue;
       offers.set(decision.id, {
@@ -127,6 +118,17 @@ export function decisionsCited(
 /** The two doors name the same move in their own shape. */
 export type OfferedBy = 'mcp' | 'cli';
 
+/** The call that would replace `replaced` with `by`, in the shape of the door that names it. */
+function replaceCall(door: OfferedBy, replaced: string, by: string): string {
+  if (door === 'mcp') {
+    return `decision_transition with id "${replaced}", action "supersede", by "${by}", reason "<why>"`;
+  }
+  // Joined and not interpolated: the command-line guard reads a template's two adjacent holes as
+  // one, and this verb takes two ids. The line is held whole where it is run, by the case that
+  // types it back (`a-recorded-decision-offers-the-address-and-the-supersede.test.ts`).
+  return ['mnema decision supersede', replaced, by, '--reason', '"<why>"'].join(' ');
+}
+
 /**
  * The lines the offer to replace owes: what the new decision cites, that nothing was moved, and
  * the call that would replace each. None when it cites nothing that could be replaced.
@@ -134,7 +136,7 @@ export type OfferedBy = 'mcp' | 'cli';
 export function supersedeOfferLines(
   offers: readonly SupersedeOffer[],
   recorded: { readonly id: string; readonly adr: string },
-  by: OfferedBy,
+  door: OfferedBy,
 ): string[] {
   if (offers.length === 0) return [];
   const named = offers.slice(0, MOST_OFFERS_NAMED);
@@ -143,11 +145,7 @@ export function supersedeOfferLines(
   ];
   for (const offer of named) {
     lines.push(
-      `  ${offer.adr} "${oneLine(offer.title)}" (${offer.state}, ${offer.id}): ${
-        by === 'mcp'
-          ? `decision_transition with id "${offer.id}", action "supersede", by "${recorded.id}", reason "<why>"`
-          : `mnema decision supersede ${offer.id} ${recorded.id} --reason "<why>"`
-      }`,
+      `  ${offer.adr} "${oneLine(offer.title)}" (${offer.state}, ${offer.id}): ${replaceCall(door, offer.id, recorded.id)}`,
     );
   }
   if (offers.length > named.length) {
