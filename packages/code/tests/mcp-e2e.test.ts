@@ -4038,6 +4038,7 @@ describe('MCP: who the record says acted', () => {
     ['a space', '   ', 'unknown-agent'],
     ['a tab', '\t', 'unknown-agent'],
     ['a non-breaking space (U+00A0)', ' ', 'unknown-agent'],
+    ['the very word the default is: a NAME, announced', 'unknown-agent', 'unknown-agent'],
     ['a zero-width non-joiner: a NAME, invisible but present', '‌', '‌'],
     ['an ordinary name (the non-regression)', 'claude-code', 'claude-code'],
   ];
@@ -4074,6 +4075,14 @@ describe('MCP: who the record says acted', () => {
       //    half that used to disagree: `agent: '   '` in the payload beside a
       //    `which` that was not there at all.
       expect([...projectRuns(events).values()].map((r) => r.agent)).toEqual([recorded]);
+
+      // 3. The record says whether the name was announced (FORMAT.md section 6.9): a handshake
+      //    that named nobody leaves its run marked, and a name announced, the default's own
+      //    word included, leaves none, so the two read apart.
+      const named = recorded === announced;
+      expect(events.filter((e) => e.kind === 'run.unannounced').map((e) => e.payload)).toEqual(
+        named ? [] : [{ handshake: true }],
+      );
 
       await client.close();
     });
