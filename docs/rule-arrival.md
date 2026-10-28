@@ -53,7 +53,11 @@ host's job red.
   the model again. That reading says nothing about a compaction in a session that was never resumed
   ([the case](../packages/code/tests/host-contract/the-rule-arrives.gemini.test.ts)).
 - **At an edit**: a write that is permitted and that a rule only governs. The rule arrives if it
-  is in the result of the write, or beside it. A refusal is another thing, held by the cases that
+  is in the result of the write, or beside it: for the record, in what the host put in the
+  conversation from the item of the call on (its output, and what a hook said for it), never in the
+  request as a whole, which in that arm already carries the rule from the start. The same read,
+  with the push switched off in the same record (`mnema switch off edit-rules-push`), finds
+  nothing; that is what says the reading sees the push and not the opening. A refusal is another thing, held by the cases that
   open and refuse in each host (`*-opens-and-refuses.*.test.ts`), and a rule kept in a file has no
   channel at a write.
 
@@ -88,7 +92,7 @@ session) carries a note too.
 | the rule in the host's own instructions file | not applicable (note 2) | not applicable (note 2) | not applicable (note 2) | not applicable (note 2) |
 | the rule in a file the instructions file imports with `@` | not arrived | not arrived | not arrived | not applicable (note 1) |
 | the rule in a file the instructions file only mentions | not arrived (the mention did) | not arrived | not arrived | not applicable (note 1) |
-| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | not arrived |
+| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | arrived |
 
 1. Not applicable: a file is read when the session opens and has no channel at a write; the late column says whether it is still in front of the model
 2. Not applicable: the instructions file Codex reads is `AGENTS.md`, the place above
@@ -102,7 +106,7 @@ session) carries a note too.
 | the rule in the host's own instructions file | not applicable (note 2) | not applicable (note 2) | not applicable (note 2) | not applicable (note 2) |
 | the rule in a file the instructions file imports with `@` | not arrived | not arrived | not arrived | not applicable (note 1) |
 | the rule in a file the instructions file only mentions | not arrived (the mention did) | not arrived | not arrived | not applicable (note 1) |
-| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | not arrived |
+| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | arrived |
 
 1. Not applicable: a file is read when the session opens and has no channel at a write; the late column says whether it is still in front of the model
 2. Not applicable: the instructions file OpenCode reads is `AGENTS.md`, the place above
@@ -144,7 +148,7 @@ session) carries a note too.
 | the rule in the host's own instructions file | arrived | arrived | arrived | not applicable (note 1) |
 | the rule in a file the instructions file imports with `@` | arrived | arrived | arrived | not applicable (note 1) |
 | the rule in a file the instructions file only mentions | not arrived (the mention did) | not arrived | not arrived | not applicable (note 1) |
-| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | not arrived |
+| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | arrived |
 
 1. Not applicable: a file is read when the session opens and has no channel at a write; the late column says whether it is still in front of the model
 
@@ -155,11 +159,11 @@ session) carries a note too.
 <!-- BEGIN the prose: generated from the table above by renderTheProse in the-arrival-table.ts, and held by the-arrival-page-is-the-table.test.ts. What a person writes per host is only the mechanism, in THE_MECHANISM there, and it may not say whether a rule arrived. -->
 
 - **Claude Code.** The rule in `AGENTS.md`, in the host's own instructions file and behind an `@` import arrived at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late, after a compaction and at an edit. The files are read into the block the host opens its first message with; the record is put there by the plugin's `SessionStart` hook, which runs again after a compaction, and by a hook that runs beside the result of a write.
-- **Codex.** The rule in `AGENTS.md` arrived at the start, late and after a compaction. The rule behind an `@` import did not arrive at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late and after a compaction; did not arrive at an edit. An `@` import is not expanded by the host.
-- **OpenCode.** The rule in `AGENTS.md` arrived at the start, late and after a compaction. The rule behind an `@` import did not arrive at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late and after a compaction; did not arrive at an edit. An `@` import is not expanded by the host.
+- **Codex.** The rule in `AGENTS.md` arrived at the start, late and after a compaction. The rule behind an `@` import did not arrive at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late, after a compaction and at an edit. An `@` import is not expanded by the host. At an edit, the hook that runs before the patch answers with the rules of the path as context, and the host records it as an item of its own between the call and its output.
+- **OpenCode.** The rule in `AGENTS.md` arrived at the start, late and after a compaction. The rule behind an `@` import did not arrive at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late, after a compaction and at an edit. An `@` import is not expanded by the host. At an edit, the plugin module keeps what the gate answered for the call and appends it to the result of the write.
 - **GitHub Copilot CLI.** The rule in `AGENTS.md`, in the host's own instructions file and behind an `@` import arrived at the start and late; was not measured after a compaction. The rule in a file that is only mentioned did not arrive at the start and late (the sentence that mentions the file did, at the start); was not measured after a compaction. The rule in the mnema record arrived at the start and late; did not arrive at an edit; was not measured after a compaction.
 - **Gemini CLI.** The rule in `AGENTS.md` did not arrive at the start, late and after a compaction. The rule in the host's own instructions file and behind an `@` import arrived at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late and after a compaction; did not arrive at an edit. `AGENTS.md` is not among the files it reads with the default settings (its `context.fileName` can list it). The cells after a compaction are read in a second run that resumes the session (`--resume`), which starts the session again.
-- **Qwen Code.** The rule in `AGENTS.md`, in the host's own instructions file and behind an `@` import arrived at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late and after a compaction; did not arrive at an edit.
+- **Qwen Code.** The rule in `AGENTS.md`, in the host's own instructions file and behind an `@` import arrived at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late, after a compaction and at an edit. At an edit, the hook that runs before the write answers with the rules of the path as context, and the host puts it in the result of the write.
 
 <!-- END the prose -->
 

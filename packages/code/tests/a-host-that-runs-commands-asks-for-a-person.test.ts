@@ -202,8 +202,9 @@ describe('mnema before-a-write --host vscode', () => {
 
   it('answers nothing where no rule asks: a rule that only governs included', () => {
     const before = publicEvents().length;
-    // `src/other` is GOVERNED, and the text that informs is not this door's to carry: it would
-    // record a service fact on every edit, which the fact's own declaration refuses.
+    // `src/other` is GOVERNED, and VS Code is not a host that takes the push (its `pushes` cell says
+    // not ported): the hosts that do remember their session to record the service once
+    // (`a-rule-is-pushed-beside-a-write.test.ts`), and this door answers VS Code the gate alone.
     expect(answer(createFile('src/other/ledger.ts'))).toEqual({ reply: {}, notes: [] });
     expect(answer(createFile('README.md'))).toEqual({ reply: {}, notes: [] });
     expect(publicEvents().length).toBe(before);

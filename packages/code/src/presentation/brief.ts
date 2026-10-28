@@ -124,7 +124,12 @@ import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
 import { acceptedBy } from './accepted-by.js';
 import { toImport } from './status.js';
-import { CLAUDE_CODE_CEILING, fitWhole, type HookCeiling } from './within-a-hook.js';
+import {
+  CLAUDE_CODE_CEILING,
+  ceilingInWords,
+  fitWhole,
+  type HookCeiling,
+} from './within-a-hook.js';
 
 /**
  * The marker that says what this file is, to a reader and to a `grep`.
@@ -942,13 +947,6 @@ function rulesIn(governance: Brief): number {
   return governance.decisions.length + governance.skills.length;
 }
 
-/** A host's ceiling as the closing paragraph says it: characters, or tokens of so many bytes. */
-function hookCeilingInWords(ceiling: HookCeiling): string {
-  const count = ceiling.said.count.toLocaleString('en-US');
-  const bytes = ceiling.said.bytesPerToken;
-  return bytes === undefined ? `${count} characters` : `${count} tokens of ${bytes} bytes`;
-}
-
 /**
  * What is said at the end of a document that was cut, and nothing when it was not.
  *
@@ -970,7 +968,7 @@ function leftOut(decisions: number, patterns: number, ceiling: HookCeiling): str
   return [
     '',
     `Left out of this text: ${parts}, the last ${decisions + patterns === 1 ? 'one' : 'ones'} in the order above.`,
-    `A hook hands a session at most ${hookCeilingInWords(ceiling)}, and a file path in place of a longer`,
+    `A hook hands a session at most ${ceilingInWords(ceiling)}, and a file path in place of a longer`,
     'text, so this one stops at a whole rule instead. `search` with `kind` `decision` and',
     '`state` `accepted`, or `kind` `skill` and `state` `adopted`, serves every one of them.',
   ];

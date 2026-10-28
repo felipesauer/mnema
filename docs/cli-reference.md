@@ -109,7 +109,10 @@ CLI and the MCP tools behave identically, because they are the same call.
   Cursor's variable, and only Qwen Code's refusal runs there): the refusal for Cursor's command-line agent, which answers a
   rule that refuses a write and nothing else, since that agent ignores a pause. Another runs only
   where `$QWEN_PROJECT_DIR` is set: the same refusal for Qwen Code, which answers a rule that refuses
-  a write and nothing else. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
+  a write and, where the write goes through, hands over the rules addressed at the paths it touches
+  (`mnema before-a-write --host qwen`); Codex and OpenCode run the same verb under their own names and
+  answer those same two things, recording that the rules were handed over once for each session of the
+  host. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
   the last response, it prints one line saying how many files they wrote and how
   many decisions were recorded in the project since the session opened, counted off the
   transcript the host names and off the record: no model is called and nothing is

@@ -105,7 +105,7 @@ export const THE_TABLE: TheTable = {
       absent,
       NO_CHANNEL_AT_AN_EDIT,
     ),
-    mnema: row(arrived, arrived, arrived, absent),
+    mnema: row(arrived, arrived, arrived, arrived),
   },
   opencode: {
     control: row(absent, absent, absent, NO_CHANNEL_AT_AN_EDIT),
@@ -120,7 +120,7 @@ export const THE_TABLE: TheTable = {
       absent,
       NO_CHANNEL_AT_AN_EDIT,
     ),
-    mnema: row(arrived, arrived, arrived, absent),
+    mnema: row(arrived, arrived, arrived, arrived),
   },
   copilot: {
     control: row(absent, absent, COPILOT_ENDS_AT_ITS_SUMMARY, NO_CHANNEL_AT_AN_EDIT),
@@ -159,7 +159,7 @@ export const THE_TABLE: TheTable = {
       absent,
       NO_CHANNEL_AT_AN_EDIT,
     ),
-    mnema: row(arrived, arrived, arrived, absent),
+    mnema: row(arrived, arrived, arrived, arrived),
   },
 };
 
@@ -266,12 +266,14 @@ export function renderTheTable(): string {
 export const THE_MECHANISM: Record<ArrivalHost, string> = {
   'claude-code':
     "The files are read into the block the host opens its first message with; the record is put there by the plugin's `SessionStart` hook, which runs again after a compaction, and by a hook that runs beside the result of a write.",
-  codex: 'An `@` import is not expanded by the host.',
-  opencode: 'An `@` import is not expanded by the host.',
+  codex:
+    'An `@` import is not expanded by the host. At an edit, the hook that runs before the patch answers with the rules of the path as context, and the host records it as an item of its own between the call and its output.',
+  opencode:
+    'An `@` import is not expanded by the host. At an edit, the plugin module keeps what the gate answered for the call and appends it to the result of the write.',
   copilot: '',
   gemini:
     '`AGENTS.md` is not among the files it reads with the default settings (its `context.fileName` can list it). The cells after a compaction are read in a second run that resumes the session (`--resume`), which starts the session again.',
-  qwen: '',
+  qwen: 'At an edit, the hook that runs before the write answers with the rules of the path as context, and the host puts it in the result of the write.',
 };
 
 /** What a hand-written mechanism may not say: a word that claims a rule did or did not arrive. */
