@@ -17,6 +17,6 @@ describe('what Qwen Code hands the server it starts', () => {
     const session = await start({ project: (it) => it.measureTheServer() });
     const handed = theServerWasHanded(session.project);
 
-    expect(theProtocolOf('Qwen Code', handed)).toBeUndefined();
+    expect(theProtocolOf('Qwen Code', handed) ?? 'a handshake first').toBe('a handshake first');
   }, 180_000);
 });

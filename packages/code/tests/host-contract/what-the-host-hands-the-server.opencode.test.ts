@@ -18,7 +18,7 @@ describe('what OpenCode hands the server it starts', () => {
     const handed = theServerWasHanded(session.project);
 
     expect(handed.client).toBe('opencode');
-    expect(theProtocolOf('OpenCode', handed)).toBeUndefined();
+    expect(theProtocolOf('OpenCode', handed) ?? 'a handshake first').toBe('a handshake first');
     // The server is started directly by the host. What follows is the instrument.
     expect(handed.chain.slice(0, 1)).toEqual(['opencode']);
     expect(handed.present).toEqual([]);

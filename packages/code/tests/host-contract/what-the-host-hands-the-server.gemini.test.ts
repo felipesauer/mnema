@@ -18,7 +18,7 @@ describe('what Gemini CLI hands the server it starts', () => {
     const handed = theServerWasHanded(session.project);
 
     expect(handed.client).toBe('gemini-cli-mcp-client');
-    expect(theProtocolOf('Gemini CLI', handed)).toBeUndefined();
+    expect(theProtocolOf('Gemini CLI', handed) ?? 'a handshake first').toBe('a handshake first');
     // Gemini CLI is a Node program: the server sits under two `node`. What follows is the instrument.
     expect(handed.chain.slice(0, 2)).toEqual(['node', 'node']);
     expect(handed.present).toEqual(['GEMINI_CLI']);

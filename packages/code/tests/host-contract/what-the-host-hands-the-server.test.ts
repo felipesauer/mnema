@@ -34,7 +34,7 @@ describe('what Claude Code hands the server it starts', () => {
     expect(handed.client).toBe('claude-code');
     // The revision it negotiates: recorded in the run's summary, and red the day it is the one with
     // no handshake.
-    expect(theProtocolOf('Claude Code', handed)).toBeUndefined();
+    expect(theProtocolOf('Claude Code', handed) ?? 'a handshake first').toBe('a handshake first');
     // The launcher of the plugin, then the host. What follows is the instrument.
     expect(handed.chain.slice(0, 2)).toEqual(['node', basename(theHostUnderTest().binary)]);
     expect(handed.present).toEqual([

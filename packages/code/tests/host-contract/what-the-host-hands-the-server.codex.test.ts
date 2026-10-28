@@ -18,7 +18,7 @@ describe('what Codex hands the server it starts', () => {
     const handed = theServerWasHanded(session.project);
 
     expect(handed.client).toBe('codex-mcp-client');
-    expect(theProtocolOf('Codex', handed)).toBeUndefined();
+    expect(theProtocolOf('Codex', handed) ?? 'a handshake first').toBe('a handshake first');
     // The server is started directly by the host, as the manifest declares it. What follows is
     // the instrument.
     expect(handed.chain.slice(0, 1)).toEqual(['codex']);
