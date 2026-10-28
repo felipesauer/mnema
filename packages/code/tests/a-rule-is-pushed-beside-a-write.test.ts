@@ -12,9 +12,9 @@
  */
 
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import type { RulesAtPath } from '@mnema/context';
@@ -362,6 +362,18 @@ describe('what a session remembers of having been pushed to', () => {
     expect(takeTheFirstServing(trees, 'another', 'edit-rules-push')).toBeDefined();
     const dir = journalsDir(trees) as string;
     expect(readdirSync(dir).every((name) => name.endsWith('.served'))).toBe(true);
+  });
+
+  it('never pushes without a fact when the directory of the markers is a file', () => {
+    const trees = resolveTrees(repo, env);
+    const dir = journalsDir(trees) as string;
+    mkdirSync(dirname(dir), { recursive: true });
+    writeFileSync(dir, 'not a directory');
+    const payload = aWrite('codex', 'src/other/ledger.ts', 'blocked');
+    for (let i = 0; i < 3; i++) {
+      expect(answer('codex', payload).reply?.additionalContext).toContain('Bill in UTC');
+    }
+    expect(services()).toEqual(Array(3).fill('edit-rules-push by codex'));
   });
 
   it('leaves one fact when several processes of one session ask at once', async () => {

@@ -239,7 +239,7 @@ export interface ThePush {
  * this and nothing else for the rules at a path and for the line that says one was moved apart, and
  * both compose the text with {@link editRulesTold} or {@link editRulesToldAcross}; a door that read
  * the rules or composed the text on its own would be a second reading, which is the divergence this
- * module is here to prevent (`the-push-has-one-reading.test.ts` holds it).
+ * module is here to prevent (`a-rule-is-pushed-beside-a-write.test.ts` holds it).
  *
  * `addressed` is every source the rules are read from (the project's own and the record it inherits);
  * `own` is the project's, where the line about a rule moved apart is read. A rule is read at EVERY

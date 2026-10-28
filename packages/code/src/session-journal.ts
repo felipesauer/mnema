@@ -347,8 +347,10 @@ const SERVED_SUFFIX = '.served';
  *
  * LOSING IT COSTS AT MOST ONE FACT MORE, NEVER A PUSH LESS: a marker that was pruned or deleted makes
  * the next edit the first again. Where the marker cannot be made at all (a directory that refuses
- * it) the answer is `true`, so the fact is recorded and the push goes out; the fact then repeats for
- * as long as the directory refuses, which is the cost of never pushing without a fact.
+ * it, or one that is not a directory) the answer is a marker to give back that gives nothing back, so
+ * the fact is recorded and the push goes out; the fact then repeats for as long as the directory
+ * refuses, which is the cost of never pushing without a fact. Only the exclusive create finding the
+ * marker already there says the session was served.
  *
  * Returns the marker to give back (`release`) when the fact could not be recorded, so that the next
  * edit tries again, or `undefined` when this session was already served. Never throws.
@@ -365,6 +367,10 @@ export function takeTheFirstServing(
     const dir = dirname(file);
     mkdirSync(dir, { recursive: true, mode: DIRECTORY_MODE });
     chmodSync(dir, DIRECTORY_MODE);
+  } catch {
+    return { release: () => undefined };
+  }
+  try {
     writeFileSync(marker, '', { mode: FILE_MODE, flag: 'wx' });
     return { release: () => rmSync(marker, { force: true }) };
   } catch (error) {
