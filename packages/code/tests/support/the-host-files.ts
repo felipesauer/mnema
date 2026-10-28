@@ -940,7 +940,9 @@ function run(args, cwd, input, timeout = WAIT) {
  * @param {import('node:child_process').SpawnSyncReturns<string>} ran
  */
 function didNotRun(ran) {
-  return ran.error !== undefined && /** @type {NodeJS.ErrnoException} */ (ran.error).code !== 'EPIPE';
+  return (
+    ran.error !== undefined && /** @type {NodeJS.ErrnoException} */ (ran.error).code !== 'EPIPE'
+  );
 }
 
 /**
