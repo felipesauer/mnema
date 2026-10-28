@@ -1168,6 +1168,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/one-walk-down-a-tail.test.ts': 3,
   'packages/code/tests/one-width-per-frame.test.ts': 25,
   'packages/code/tests/outside-a-project-the-surface-says-so.test.ts': 9,
+  'packages/code/tests/promote-meets-the-twin-another-session-wrote.test.ts': 11,
   'packages/code/tests/promote-over-the-projects-it-is-named.test.ts': 12,
   'packages/code/tests/promoting-what-recurs.test.ts': 6,
   'packages/code/tests/support/a-page-held-to-a-run.ts': 3,
