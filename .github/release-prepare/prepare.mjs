@@ -11,7 +11,8 @@
 // `plugin.json` and `gemini-extension.json` that declares a top-level `version`, found the way
 // `packages/code/tests/the-version-is-one-number.test.ts` finds them, plus the three places that
 // spell it in source: `packages/code/src/version.ts`, `packages/chain/src/version.ts` and the
-// `--version` line of `packages/code/src/cli.help.golden.txt`. When the number moves it also
+// `--version` line of `packages/code/src/cli.help.golden.txt`, and the two pinned install lines of
+// `docs/install.md` (`npm i -g @mnema/code@x.y.z`, `npm i --ignore-scripts @mnema/code@x.y.z`). When the number moves it also
 // makes `recordings/console.cast` and its GIF again, because the console draws it.
 // `packages/code/tests/the-release-prepare-writes-every-number.test.ts` holds all of this.
 
@@ -25,6 +26,8 @@ const VERSION_TS = 'packages/code/src/version.ts';
 const READER_VERSION_TS = 'packages/chain/src/version.ts';
 const GOLDEN = 'packages/code/src/cli.help.golden.txt';
 const PYPROJECT = 'packages/chain/verifier/pyproject.toml';
+const INSTALL_PAGE = 'docs/install.md';
+const PINNED = /^(npm i (?:-g|--ignore-scripts) @mnema\/code@)\d+\.\d+\.\d+( *)$/gm;
 const CHANGELOG = 'CHANGELOG.md';
 const RELEASES = 'https://github.com/felipesauer/mnema/releases/tag/';
 const RETIRED = ', a pre-release withdrawn, from before this line';
@@ -140,6 +143,11 @@ export function plan(root, version, date) {
   );
   put(GOLDEN, rewrite(read(GOLDEN), /(\$ mnema --version\n\| )[^\n]*(\n)/, version, GOLDEN));
   put(PYPROJECT, rewrite(read(PYPROJECT), /^(version = ")[^"]*(")/m, version, PYPROJECT));
+  const install = read(INSTALL_PAGE);
+  if ([...install.matchAll(PINNED)].length !== 2) {
+    throw new Error(`${INSTALL_PAGE}: expected two pinned install lines`);
+  }
+  put(INSTALL_PAGE, install.replace(PINNED, `$1${version}$2`));
 
   let log = read(CHANGELOG);
   if (!new RegExp(`^## \\[${version.replace(/\./g, '\\.')}\\]`, 'm').test(log)) {

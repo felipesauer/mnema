@@ -120,6 +120,14 @@ with its own changelog.
 
 ### Changed
 
+- **The install page says how to check the install and the package, and pins a version.** `mnema --version` and `mnema doctor`
+  come first, then `npm i -g @mnema/code@x.y.z` with the number of the published version (`pnpm release:prepare` writes it, in
+  that line and in the one below), then how to check the package: in an empty folder, `npm i --ignore-scripts @mnema/code@x.y.z`
+  and `npm audit signatures`, which reads the packages installed in a project and fails with `EAUDITGLOBAL` on a global
+  install. The long paragraph on `doctor` moved to the reference, which now also says it reports an own key left unprotected
+  while an agent key exists. The VS Code extension's walkthrough, its empty views and its `mnema.command` setting said to
+  install `@mnema/code` "from its source"; they say `npm i -g @mnema/code`, and the guard that kept that phrase out of the pages
+  reads those two files too.
 - **The VS Code extension shows the mnema M in the status bar.** Wherever `mnema verify` was read, the item wears the M of the
   console's wordmark instead of a book or an info mark (the level, strong or weak, stays in the word beside it); a failed
   check keeps the editor's error icon and an unreadable answer its question mark, so a record that does not verify never wears the

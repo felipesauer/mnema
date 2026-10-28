@@ -124,7 +124,7 @@
       },
       {
         "view": "mnema.proposed",
-        "contents": "The mnema command could not be used, so nothing is listed, which is not the same as nothing pending. Install @mnema/code from its source ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with the mnema.command setting ([open it](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)); then [refresh](command:mnema.refresh).",
+        "contents": "The mnema command could not be used, so nothing is listed, which is not the same as nothing pending. Install it with npm i -g @mnema/code ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with the mnema.command setting ([open it](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)); then [refresh](command:mnema.refresh).",
         "when": "mnema.hasRecord && mnema.cliMissing"
       },
       {
@@ -144,7 +144,7 @@
       },
       {
         "view": "mnema.stacks",
-        "contents": "The mnema command could not be used, so nothing is listed, which is not the same as nothing pending. Install @mnema/code from its source ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with the mnema.command setting ([open it](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)); then [refresh](command:mnema.refresh).",
+        "contents": "The mnema command could not be used, so nothing is listed, which is not the same as nothing pending. Install it with npm i -g @mnema/code ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with the mnema.command setting ([open it](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)); then [refresh](command:mnema.refresh).",
         "when": "mnema.hasRecord && mnema.cliMissing"
       },
       {
@@ -428,7 +428,7 @@
           {
             "id": "mnema.start.command",
             "title": "Make the mnema command available",
-            "description": "The extension runs the mnema command line and nothing else. Install @mnema/code from its source, or set the executable the extension starts.\n[Open the mnema.command setting](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)",
+            "description": "The extension runs the mnema command line and nothing else. Install it with npm i -g @mnema/code, or set the executable the extension starts.\n[Open the mnema.command setting](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)",
             "media": {
               "markdown": "media/walkthrough/command.md"
             }
