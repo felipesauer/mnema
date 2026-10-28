@@ -133,7 +133,7 @@ import { type GovernedRead, readRulesInForceWhereItLands } from './governed-tree
 import { inheritedFromText } from './inherited-record.js';
 import { oneLine } from './one-line.js';
 import { acceptedBy } from './presentation/accepted-by.js';
-import { namedDecisionText } from './presentation/named-decision.js';
+import { NAMED_TITLE_LIMIT, namedDecisionText } from './presentation/named-decision.js';
 import {
   CLAUDE_CODE_CEILING,
   ceilingInWords,
@@ -453,6 +453,6 @@ export function ruleLine(rule: PushedRule): string {
   // nothing may follow a free title on the line. It is the same reading and the same words
   // (`namedDecisionText`), and it costs the rule that replaced one a part of ITS line, never a line.
   const replaced =
-    rule.supersedes === undefined ? '' : ` · supersedes ${namedDecisionText(rule.supersedes)}`;
+    rule.supersedes === undefined ? '' : ` · supersedes ${namedDecisionText(rule.supersedes, NAMED_TITLE_LIMIT)}`;
   return `“${oneLine(rule.name)}”: governs ${oneLine(rule.address)} · ${oneLine(rule.id)}${inherited}${from}${by}${replaced}`;
 }

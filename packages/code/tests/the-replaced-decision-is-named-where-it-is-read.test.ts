@@ -297,6 +297,22 @@ describe('the replaced decision is named where the rules addressed at a file are
     }
   });
 
+  it('the rule in force stays in the push when the title of the decision it replaced is enormous', () => {
+    const { next } = replacedPair(`Keep sessions ${'in memory '.repeat(1500)}`);
+    const active = session();
+    try {
+      const text = pushed(active);
+      const lines = text.split('\n').filter((one) => one.includes(next.id));
+      expect(lines).toHaveLength(1);
+      expect(text).not.toContain('Left out');
+      // The title is cut at 120 characters and says so; the line stays a few hundred bytes.
+      expect(lines[0]).toMatch(/ · supersedes ADR-\d+: Keep sessions (in memory ){10}in mem… \(superseded\)$/);
+      expect(lines[0]?.length).toBeLessThan(600);
+    } finally {
+      closeSession(active);
+    }
+  });
+
   it('the push names nothing for a rule that replaced nothing', () => {
     const only = accepted('Only call');
     const linked = runLink(
