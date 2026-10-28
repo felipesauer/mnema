@@ -520,8 +520,7 @@ when('the built site', () => {
 
   it('shows on the page of what it proves the recording of a changed word, from the GIF the site carries', () => {
     const page = html('docs/what-it-proves/index.html');
-    const src =
-      /<img\b[^>]*src="([^"]*recordings\/a-tamper-caught\.gif)"/.exec(page)?.[1] ?? '';
+    const src = /<img\b[^>]*src="([^"]*recordings\/a-tamper-caught\.gif)"/.exec(page)?.[1] ?? '';
     expect(src, 'the page shows the recording').not.toBe('');
     expect(src, "a path of the site, not GitHub's page for the file").not.toMatch(/^https?:/);
     expect(

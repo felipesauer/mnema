@@ -113,12 +113,12 @@ describe('a page of docs/ reaches the site with its title moved and its links la
 
   it('sends a recording a page shows to the GIF the site carries, and its script to the file at the commit', () => {
     // A GIF on GitHub's blob path is an HTML page: as an image it would be broken on the site.
-    expect(whereItLands('../recordings/a-tamper-caught.gif', 'docs/what-it-proves.md', FACTS, DOCS)).toBe(
-      '/r/recordings/a-tamper-caught.gif',
-    );
-    expect(whereItLands('../recordings/a-tamper-caught.sh', 'docs/what-it-proves.md', FACTS, DOCS)).toBe(
-      'https://github.com/o/r/blob/abc123/recordings/a-tamper-caught.sh',
-    );
+    expect(
+      whereItLands('../recordings/a-tamper-caught.gif', 'docs/what-it-proves.md', FACTS, DOCS),
+    ).toBe('/r/recordings/a-tamper-caught.gif');
+    expect(
+      whereItLands('../recordings/a-tamper-caught.sh', 'docs/what-it-proves.md', FACTS, DOCS),
+    ).toBe('https://github.com/o/r/blob/abc123/recordings/a-tamper-caught.sh');
   });
 
   it('leaves code and absolute links as they were', () => {
