@@ -51,8 +51,8 @@ To update, run the unpinned install again.
 
 ## Where the package came from
 
-Each release of the five packages is published from this repository's release workflow, with npm
-provenance. `npm audit signatures` reads the packages installed in a project, not a global
+Each release of the five packages since 0.1.1 is published from this repository's release workflow,
+with npm provenance (0.1.0 was published by hand and carries none). `npm audit signatures` reads the packages installed in a project, not a global
 install (it fails with `EAUDITGLOBAL`), so check the version you installed in an empty folder:
 
 ```sh
