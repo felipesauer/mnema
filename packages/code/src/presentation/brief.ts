@@ -113,13 +113,7 @@
  * argument, and it is in it now.
  */
 
-import type {
-  Acceptance,
-  AdrCollision,
-  Brief,
-  ChannelState,
-  NamedDecision,
-} from '@mnema/context';
+import type { Acceptance, AdrCollision, Brief, ChannelState, NamedDecision } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import { isStackName, isStackVersion } from '@mnema/core';
 import type { BriefDone } from '../commands/brief.js';

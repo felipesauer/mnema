@@ -298,9 +298,7 @@ export function decisionsInForce(caches: readonly ProjectionCache[]): DecisionRe
     for (const state of IN_FORCE) all.push(...cache.listDecisionsByState(state));
   }
   const ruled = acceptances(caches);
-  return all
-    .sort(bySettledDesc)
-    .map((decision) => toRef(decision, ruled.get(decision.id), caches));
+  return all.sort(bySettledDesc).map((decision) => toRef(decision, ruled.get(decision.id), caches));
 }
 
 /**
