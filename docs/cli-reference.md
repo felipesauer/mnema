@@ -1621,6 +1621,28 @@ the only check there is that your column mapping was right: a table whose `ratio
 column is really a link column converts cleanly and proposes 111 decisions whose why is
 a URL. The dry run cannot catch that. You can, by opening two of the files it wrote.
 
+### What a recorded decision offers
+
+After "Recorded decision ADR-n (id)", `mnema decision record` and the `record_decision` tool may add lines that
+say what the decision could be tied to. They only say it: nothing is linked and nothing is moved by recording, and each
+line names the call that would do it.
+
+- **Which decision it could replace.** When the title, the rationale or the alternatives cite another decision, by
+  its full id or by an `ADR-<n>` label, and that decision is `proposed` or `accepted` (the states a supersede is legal from),
+  the lines give its label, title, state and id, and the call that would replace it: `decision_transition` with
+  `action: "supersede"` through the tool, `mnema decision supersede <old> <new> --reason "..."` on the command line. A label that
+  several decisions carry (two trees number their own) lists each. At most five are named, and the rest are counted. A decision
+  recorded in the public tree is offered only decisions of the public tree: a title out of the private tree is never put in
+  reach of a reply that may be quoted into a record that travels. One recorded in the private tree is offered both.
+- **Which path it could be addressed at** (the tool only). The MCP connection remembers, in memory and nowhere else,
+  the paths of the project it was asked about: the ones given to `governing_rules`, and the ones the host hands
+  `rules_before_an_edit` before an edit, which only Claude Code does. The reply lists up to ten of them, the latest first,
+  and the `link_knowledge` call with `rel: "governs"` that would address the decision at the latest. A path outside the
+  project is not kept, and a restarted server starts with none. In a host that does not call `rules_before_an_edit` only the
+  paths asked of `governing_rules` appear, and the command line, which has no connection, offers no address.
+
+The working tree's changes are never read to find the paths: they could credit the session with what it did not do.
+
 ### The mnema instructions in the files a host reads
 
 When it founds a project, `mnema init` writes a short block into the files agent hosts read as

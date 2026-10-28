@@ -12,6 +12,17 @@ with its own changelog.
 
 ### Added
 
+- **A recorded decision offers its address and its replacement, and does neither.** In the comparison of 27 October the 40
+  decisions an agent recorded carried no `governs` address, and one session left a draft and its refinement in force together.
+  After "Recorded decision ADR-n (id)", the reply of `record_decision` now lists the paths of the project this connection was
+  asked about (`governing_rules`, and the edits `rules_before_an_edit` was handed; at most ten, the latest first, kept in memory
+  only) with the `link_knowledge` call that would address the decision at the latest, and `mnema decision record` and the tool
+  both name each decision the new one cites (a full id or an `ADR-<n>` label) that a supersede could replace, with the call that
+  would replace it: `decision_transition` in the tool, `mnema decision supersede <old> <new> --reason "..."` on the command
+  line. One function reads the citations for both doors; a decision recorded in the public tree is offered no title out of a
+  private one; at most five are named and the rest counted. Nothing is linked and nothing is moved by recording, and the command
+  line, which has no connection, offers no address. No kind, field or event changes, and no tool description.
+
 - **`read_record`, `show` and the opening name the decision a decision replaced.** They handed back `supersedes` as a bare id,
   and in the comparison of 27 October the sessions that read the record through the MCP tools did not tell the story of a
   replacement in 2 of 2, while those that opened both ids by hand told it in 2 of 2. The link is now named, by one reading shared
