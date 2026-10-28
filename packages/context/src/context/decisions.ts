@@ -180,6 +180,50 @@ export interface Acceptance {
   readonly unconfirmed: boolean;
 }
 
+/**
+ * The other end of a supersede, NAMED: what a reader needs to know which decision it was
+ * without a second read to find out.
+ *
+ * The projection serves the link as a bare id (`supersedes`, `supersededBy`), and an id is
+ * what a model cannot act on: measured on 27 October, the arm that read a decision through
+ * the MCP tools did not tell the story of a replacement in 2 of 2 sessions, and the arm that
+ * opened both ids by hand told it in 2 of 2. This is the label, the title and the state the
+ * replaced (or the replacing) decision is in NOW, and never its rationale.
+ *
+ * `found: false` is the other end being in none of the trees the caller read (a partial
+ * clone, or a tree this reader cannot see). It is said and not left out: an absent field
+ * would read as "replaced nothing", which is a different claim from "replaced something this
+ * read cannot see".
+ */
+export type NamedDecision =
+  | {
+      readonly found: true;
+      readonly id: string;
+      readonly adr: string;
+      readonly title: string;
+      readonly state: string;
+    }
+  | { readonly found: false; readonly id: string };
+
+/**
+ * Names the decision `id` from the first of `caches` that holds it, or says that none does.
+ *
+ * The ONE reading of a supersede's other end, asked by `readRecord` (so `read_record`, `show`
+ * and `show --json`) and by {@link decisionsInForce} (so the opening context and the
+ * committed brief). It reads the decision through the cache's own projection, `getDecision`,
+ * and never from raw events: the projection is where a decision's text is the one its first
+ * judgement saw, so a title cannot differ between this line and the record it points at.
+ */
+export function nameDecision(caches: readonly ProjectionCache[], id: string): NamedDecision {
+  for (const cache of caches) {
+    const held = cache.getDecision(id);
+    if (held !== null) {
+      return { found: true, id, adr: held.adr, title: held.title, state: held.state };
+    }
+  }
+  return { found: false, id };
+}
+
 export interface DecisionRef {
   /** The decision's id: the key that asks `readRecord` for the rationale. */
   readonly id: string;
@@ -208,6 +252,14 @@ export interface DecisionRef {
    * absent for a projection the cache built from a transition it holds no actor for.
    */
   readonly acceptance?: Acceptance;
+  /**
+   * The decision this one replaced, NAMED (see {@link NamedDecision}): the immediate one and
+   * not the chain behind it, and never its rationale. Absent when this decision replaced
+   * nothing. It rides the same line as the rule because a rule that came from a replacement
+   * is read differently by whoever knows what it replaced, and the id alone told a model
+   * nothing about that.
+   */
+  readonly supersedes?: NamedDecision;
 }
 
 /**
@@ -246,7 +298,9 @@ export function decisionsInForce(caches: readonly ProjectionCache[]): DecisionRe
     for (const state of IN_FORCE) all.push(...cache.listDecisionsByState(state));
   }
   const ruled = acceptances(caches);
-  return all.sort(bySettledDesc).map((decision) => toRef(decision, ruled.get(decision.id)));
+  return all
+    .sort(bySettledDesc)
+    .map((decision) => toRef(decision, ruled.get(decision.id), caches));
 }
 
 /**
@@ -366,12 +420,19 @@ export function acceptances(caches: readonly ProjectionCache[]): Map<string, Acc
   return result;
 }
 
-function toRef(decision: DecisionProjection, acceptance: Acceptance | undefined): DecisionRef {
+function toRef(
+  decision: DecisionProjection,
+  acceptance: Acceptance | undefined,
+  caches: readonly ProjectionCache[],
+): DecisionRef {
   return {
     id: decision.id,
     adr: decision.adr,
     title: decision.title,
     ...(acceptance !== undefined ? { acceptance } : {}),
+    ...(decision.supersedes !== undefined
+      ? { supersedes: nameDecision(caches, decision.supersedes) }
+      : {}),
   };
 }
 

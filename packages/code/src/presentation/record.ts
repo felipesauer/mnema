@@ -41,7 +41,7 @@
  * record inside a read of one record, paid for on every open.
  */
 
-import type { RecordBody, TaskStory } from '@mnema/context';
+import type { NamedDecision, RecordBody, TaskStory } from '@mnema/context';
 import type { DecisionActor, NoteRetraction, TransitionProof } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
 import { A_PERSON, neutralized, oneLine } from '../one-line.js';
@@ -49,6 +49,7 @@ import { DERIVED_FROM } from '../provenance.js';
 import { consultedLine } from './consultation.js';
 import { fact, statedFact, subjectLine } from './detail.js';
 import { asId, itemLine } from './items.js';
+import { namedDecisionText } from './named-decision.js';
 import type { Render } from './render.js';
 import { asState } from './state.js';
 
@@ -206,6 +207,12 @@ function storyLines(render: Render, story: TaskStory): string[] {
   return lines;
 }
 
+/** `supersedes ADR-16: <title> (superseded) · <id>`: the named end, then the id that opens it. */
+function replacementFact(verb: string, named: NamedDecision): string {
+  const text = namedDecisionText(named);
+  return named.found ? `${verb} ${text} · ${oneLine(named.id)}` : `${verb} ${text}`;
+}
+
 /** The lines one whole record prints for a person. */
 export function recordReport(render: Render, body: RecordBody, context: RecordContext): string[] {
   const lines = [render(subjectLine(`${body.kind} ${body.id}`, body.scope))];
@@ -240,10 +247,17 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
           ),
         ),
       );
-      if (body.record.supersedes !== undefined) {
+      // THE OTHER END IS NAMED, with its id after the name so the line still says which record
+      // to open. The bare id (below) is the fallback for a body that carries no name; the read
+      // always names the end it holds a link to, so it is not the line a person normally sees.
+      if (body.supersedes !== undefined) {
+        lines.push(render(fact(replacementFact('supersedes', body.supersedes))));
+      } else if (body.record.supersedes !== undefined) {
         lines.push(render(fact(`supersedes ${oneLine(body.record.supersedes)}`)));
       }
-      if (body.record.supersededBy !== undefined) {
+      if (body.supersededBy !== undefined) {
+        lines.push(render(fact(replacementFact('superseded by', body.supersededBy))));
+      } else if (body.record.supersededBy !== undefined) {
         lines.push(render(fact(`superseded by ${oneLine(body.record.supersededBy)}`)));
       }
       // WHO RECORDED IT AND WHO RULED IT, as the events say: the same two facts the document

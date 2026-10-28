@@ -113,7 +113,13 @@
  * argument, and it is in it now.
  */
 
-import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/context';
+import type {
+  Acceptance,
+  AdrCollision,
+  Brief,
+  ChannelState,
+  NamedDecision,
+} from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import { isStackName, isStackVersion } from '@mnema/core';
 import type { BriefDone } from '../commands/brief.js';
@@ -123,6 +129,7 @@ import { oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
 import { acceptedBy } from './accepted-by.js';
+import { namedDecisionText } from './named-decision.js';
 import { toImport } from './status.js';
 import {
   CLAUDE_CODE_CEILING,
@@ -1032,6 +1039,7 @@ function composed(
           decision.id,
           decision.origin,
           decision.acceptance,
+          decision.supersedes,
         ),
       ),
     ),
@@ -1133,10 +1141,14 @@ function rule(
   id: string,
   origin?: readonly string[],
   acceptance?: Acceptance,
+  supersedes?: NamedDecision,
 ): string {
   const from = (origin ?? []).map((target) => ` · ${DERIVED_FROM} \`${oneLine(target)}\``).join('');
   const by = acceptance === undefined ? '' : ` · ${acceptedBy(acceptance)}`;
-  return `- **${oneLine(name)}** · \`${oneLine(id)}\`${from}${by}`;
+  // LAST, because the replaced decision's title is text somebody typed: whatever follows a free
+  // title on the line is a field it could try to forge, and nothing follows this one.
+  const replaced = supersedes === undefined ? '' : ` · supersedes ${namedDecisionText(supersedes)}`;
+  return `- **${oneLine(name)}** · \`${oneLine(id)}\`${from}${by}${replaced}`;
 }
 
 /**

@@ -2026,6 +2026,15 @@ turned down). Only an accepted
 decision is listed: one still proposed, rejected, or superseded by a later
 decision does not govern.
 
+A decision that replaced another says which, on the same line as the rule: the line ends with
+`supersedes ADR-<n>: <title> (<state>)`, the label, the title and the state the replaced decision is in now
+(the immediate one, never the chain behind it, and never its rationale). The opening's JSON carries it as the rule's
+`supersedes` field, beside the id, as `{ found, id, adr, title, state }`; `found: false` with only the `id` says the trees read
+do not hold the replaced decision. `read_record` and `mnema show --json` carry `supersedes` and `supersededBy` the same way
+beside the raw ids of `record`, and `mnema show` prints each on one line, with the id after the name:
+`supersedes ADR-<n>: <title> (<state>) · <id>`. The committed document `mnema brief` carries only the trees that travel, so it
+names a replaced decision only when the committed tree holds it.
+
 The fourth list is what is **awaiting a judgement**: a task `IN_REVIEW`, a decision
 still `proposed`, a pattern `proposed` or `reviewed`: everything a person has to rule
 on before it means anything. One list holds all three kinds, and each item says which

@@ -547,21 +547,29 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many rules are printed under the heading: a count this document made',
   },
-  'brief.ts «- **{}** · \\`{}\\`{}{}» oneLine(name) #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}{}{}» oneLine(name) #1': {
     verdict: 'collapsed',
     why: 'the rule’s name: a title an actor wrote, or a pattern’s name',
   },
-  'brief.ts «- **{}** · \\`{}\\`{}{}» oneLine(id) #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}{}{}» oneLine(id) #1': {
     verdict: 'collapsed',
     why: 'the record id: minted, and collapsed anyway because the rule is the line’s',
   },
-  'brief.ts «- **{}** · \\`{}\\`{}{}» from #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}{}{}» from #1': {
     verdict: 'composed',
     why: 'the provenance fields, one per source: each already collapsed in the template below, which is why this bullet can take them whole',
   },
-  'brief.ts «- **{}** · \\`{}\\`{}{}» by #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}{}{}» by #1': {
     verdict: 'composed',
     why: 'the clause that says who accepted the rule: built by acceptedBy below, every part of it collapsed or this module’s own word',
+  },
+  'brief.ts «- **{}** · \\`{}\\`{}{}{}» replaced #1': {
+    verdict: 'composed',
+    why: 'the clause that names the decision this rule replaced: built by namedDecisionText below, every part of it collapsed, and placed LAST on the line so a free title has no field after it to forge',
+  },
+  'brief.ts « · supersedes {}» namedDecisionText(supersedes) #1': {
+    verdict: 'composed',
+    why: 'the replaced decision, worded by namedDecisionText: label, title and state, each collapsed there',
   },
   'brief.ts « · {}» acceptedBy(acceptance) #1': {
     verdict: 'composed',
@@ -1397,6 +1405,50 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   "record.ts «agent {}{}» attested ? ', attested by its own key' : '' #1": {
     verdict: 'minted',
     why: 'one of two clauses of this product’s own, chosen by whether the record’s agent key signed the fact',
+  },
+  "record.ts fact(replacementFact('supersedes', body.supersedes)) #1": {
+    verdict: 'composed',
+    why: 'the replaced decision on one fact line, worded by replacementFact below: the name through namedDecisionText, the id collapsed',
+  },
+  "record.ts fact(replacementFact('superseded by', body.supersededBy)) #1": {
+    verdict: 'composed',
+    why: 'the decision that replaced it, on the same terms',
+  },
+  'record.ts «{} {} · {}» verb #1': {
+    verdict: 'minted',
+    why: 'one of the two phrases this product words a replacement with, passed in by the caller',
+  },
+  'record.ts «{} {} · {}» text #1': {
+    verdict: 'composed',
+    why: 'namedDecisionText: label, title and state of the other end, each collapsed in that module',
+  },
+  'record.ts «{} {} · {}» oneLine(named.id) #1': {
+    verdict: 'collapsed',
+    why: 'the id of the other end of the link, which opens it',
+  },
+  'record.ts «{} {}» verb #1': {
+    verdict: 'minted',
+    why: 'one of the two phrases this product words a replacement with, passed in by the caller',
+  },
+  'record.ts «{} {}» text #1': {
+    verdict: 'composed',
+    why: 'namedDecisionText, whose only value is the id when the other end is not in the trees read, collapsed there',
+  },
+  'named-decision.ts «{}: {} ({})» oneLine(named.adr) #1': {
+    verdict: 'collapsed',
+    why: 'the label frozen into the record at write time, collapsed because a line is this module’s',
+  },
+  'named-decision.ts «{}: {} ({})» oneLine(named.title) #1': {
+    verdict: 'collapsed',
+    why: 'the title an actor wrote: the value the whole module exists to keep on one line',
+  },
+  'named-decision.ts «{}: {} ({})» oneLine(named.state) #1': {
+    verdict: 'collapsed',
+    why: 'the state the projection holds, a word of a closed table and collapsed anyway',
+  },
+  'named-decision.ts «{} (not in the trees read)» oneLine(named.id) #1': {
+    verdict: 'collapsed',
+    why: 'the id the link names, as recorded, when no tree read holds it',
   },
   'record.ts «supersedes {}» oneLine(body.record.supersedes) #1': {
     verdict: 'collapsed',
@@ -2539,8 +2591,10 @@ describe('every value this layer puts on a line is classified', () => {
     // values are the start of a memory and an observation's topic, both typed by somebody.
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record;
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(37);
-    expect(FOUND.composers.length).toBe(25);
+    // `named-decision.ts` is a COMPOSER: the decision another decision's link names, whose title is
+    // text somebody typed, worded once for `show` and for the document a session opens with.
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(38);
+    expect(FOUND.composers.length).toBe(26);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
@@ -2551,7 +2605,7 @@ describe('every value this layer puts on a line is classified', () => {
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
     // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does; 485 with where an inherited rule came from, and the count of the inherited record's addresses; 497 with those addresses by relation, on the rules report and in the brief; 500 with the run of each tree that `mnema status` names; 497 once the host's ceiling in words lives with the ceiling (`ceilingInWords`), and the push of the rules at an edit words it too.
-    expect(FOUND.sites.length).toBe(497);
+    expect(FOUND.sites.length).toBe(510);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2572,10 +2626,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(130);
-    expect(count('minted')).toBe(279);
-    expect(count('composed')).toBe(88);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(130);
+    expect(count('collapsed')).toBe(135);
+    expect(count('minted')).toBe(281);
+    expect(count('composed')).toBe(94);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(135);
   });
 
   it('every reason says where the value comes from', () => {
