@@ -2,11 +2,11 @@
  * The real repository and the real `mnema`: `git` and the binary of the `@mnema/code` this
  * package depends on, run as child processes in the checked-out repository.
  *
- * `git` is asked to list and show; `mnema` is asked to verify and to say which rules address a
- * path, and those read: they keep a projection cache under `.mnema/locks/`, which the record's
- * own `.gitignore` leaves out. The one command that writes is `mnema check run`, asked only when
- * the workflow hands a checker key: it appends the results to the working tree, and nothing here
- * commits or pushes them.
+ * `git` is asked to list and show; `mnema` is asked to verify, and the rules that address a path
+ * are read in this process with the same function the command calls. Both read: they keep a
+ * projection cache under `.mnema/locks/`, which the record's own `.gitignore` leaves out. The one
+ * command that writes is `mnema check run`, asked only when the workflow hands a checker key: it
+ * appends the results to the working tree, and nothing here commits or pushes them.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -14,10 +14,28 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { discoveryEnv, runRules } from '@mnema/code/library';
 import type { World } from './judge.js';
 
 /** Largest output read from one child process. */
 const MOST_OUTPUT = 256 * 1024 * 1024;
+
+/**
+ * What `mnema rules --json -- <path>` prints, read where `cwd` is, without starting the binary for
+ * each file: the command is `runRules` and a print of its answer, and a pull request that changes
+ * two hundred files asks it two hundred times of each tree. One process reads the tree for every
+ * path, and the answer is the same value the command would have printed.
+ */
+function rulesOf(cwd: string, path: string, failed: string): unknown {
+  let done: ReturnType<typeof runRules>;
+  try {
+    done = runRules({ cwd, env: discoveryEnv() }, { path });
+  } catch (error) {
+    throw new Error(`${failed}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (!done.ok) throw new Error(`${failed}: ${done.reason}`);
+  return JSON.parse(JSON.stringify(done.governed)) as unknown;
+}
 
 /** The `mnema` binary of the installed `@mnema/code`, resolved the way `node` would. */
 export function theMnemaBinary(): string {
@@ -110,13 +128,7 @@ export function worldAt(
         }
       },
       rules(path) {
-        const ran = mnema(['rules', '--json', '--', path]);
-        if (ran.error !== undefined || ran.status !== 0) {
-          throw new Error(
-            `reading the rules for ${path} failed: ${ran.error?.message ?? ran.stderr.trim()}`,
-          );
-        }
-        return JSON.parse(ran.stdout) as unknown;
+        return rulesOf(cwd, path, `reading the rules for ${path} failed`);
       },
       rulesAt(base) {
         // Only the record of the commit, taken out into a directory of its own with the same
@@ -135,17 +147,7 @@ export function worldAt(
         }
         return {
           rules(path) {
-            const ran = spawnSync(process.execPath, [binary, 'rules', '--json', '--', path], {
-              cwd: dir,
-              encoding: 'utf-8',
-              maxBuffer: MOST_OUTPUT,
-            });
-            if (ran.error !== undefined || ran.status !== 0) {
-              throw new Error(
-                `reading the rules at the base for ${path} failed: ${ran.error?.message ?? ran.stderr.trim()}`,
-              );
-            }
-            return JSON.parse(ran.stdout) as unknown;
+            return rulesOf(dir, path, `reading the rules at the base for ${path} failed`);
           },
           close() {
             rmSync(dir, { recursive: true, force: true });
