@@ -41,6 +41,7 @@ export {
   verifyCheckpoint,
 } from './chain/checkpoint.js';
 export { CodedError } from './chain/coded-error.js';
+export { decisionTexts, precedesItsText } from './chain/decision-text.js';
 export {
   type IdentityIssue,
   type IdentityResolution,
@@ -157,6 +158,7 @@ export {
   type CensusNote,
   canonicalIdentityForm,
   type DecisionRewriteNote,
+  decisionTextsOf,
   type EmptyTailNote,
   type ForeignLinkRetractionNote,
   type ForeignRetractionNote,

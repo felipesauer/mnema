@@ -8,11 +8,13 @@
  *   - a decision EXISTS once its `decision.recorded` is seen;
  *   - its STATE is the `to` of its last `decision.transitioned` (birth included);
  *   - its title, rationale, `alternatives` and `adr` label are read literally
- *     from the record, the FIRST `decision.recorded` of its id in the order: a later
- *     one, whoever signed it, is not applied (FORMAT.md section 6.8). The product mints
- *     a decision's id when it records it, so it never writes one id twice, and the
- *     order is what nobody can be made to lose: the last writing would be whichever
- *     carried the latest clock, and a clock is the signer's to write.
+ *     from the record, the FIRST `decision.recorded` of its id in the stream: a later
+ *     one, whoever signed it, is not applied (FORMAT.md section 6.8). The stream it is
+ *     handed already leaves out a writing that comes before the text the decision's
+ *     first judgment saw (`order.ts`), so the first it meets is the text. The product
+ *     mints a decision's id when it records it, so it never writes one id twice, and
+ *     the last writing would be whichever carried the latest clock, and a clock is the
+ *     signer's to write.
  *
  * `alternatives` is projected only when the record carries one. A decision that
  * recorded none has NO key for it, not an empty string, so "did this decision
@@ -143,6 +145,13 @@ export interface DecisionAccumulator {
   proof?: TransitionProof[];
   recordedBy?: DecisionActor;
   acceptedBy?: DecisionActor;
+  /**
+   * Whether a second `decision.recorded` of the id was met and not applied. A cache brought
+   * forward reads it before it advances over the decision's first judgment, which binds the text
+   * to the writing that judgment saw (FORMAT.md section 6.8): with one writing that is the one
+   * applied, and with more it may not be, so the cache reads the record again (`advance.ts`).
+   */
+  rewritten?: true;
 }
 
 /**
@@ -164,10 +173,14 @@ export const decisionFold: AccumulatorFold<DecisionAccumulator, DecisionProjecti
   step(of, event) {
     if (event.kind === 'decision.recorded') {
       const entry = of(event.subject);
-      // A decision is the text its FIRST writer recorded (FORMAT.md section 6.8): a later
-      // `decision.recorded` of the id, by any identity, is not applied. Every record has a
-      // `createdAt`, so its presence is what says this id was recorded already.
-      if (entry.createdAt !== undefined) return;
+      // A decision is the text its first judgment saw, and the stream leaves out every writing
+      // before that one (FORMAT.md section 6.8): a later `decision.recorded` of the id, by any
+      // identity, is not applied. Every record has a `createdAt`, so its presence is what says
+      // this id was recorded already.
+      if (entry.createdAt !== undefined) {
+        entry.rewritten = true;
+        return;
+      }
       entry.adr = event.payload.adr;
       entry.title = event.payload.title;
       entry.rationale = event.payload.rationale;

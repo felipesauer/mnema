@@ -23,10 +23,13 @@ its note or its link sits in. Of two writings of one note, the FIRST in the merg
 author: the order the product's read takes it in, never the order of the tail ids, which begin
 with a key's fingerprint and so are a signer's to choose.
 
-Section 6.8 - a decision recorded again - is read the same way and is stricter: a decision is the
-text its FIRST `decision.recorded` in the merged order holds, and every later writing of its id is
-not applied, whoever signed it, the first writer's own and a copy of the same payload included,
-since the product mints a decision's id when it records it and never writes one id twice.
+Section 6.8 - a decision recorded again - is read over the same order and is stricter: a decision is
+the text its first judgment was made on, the FIRST `decision.recorded` in the merged order among
+those the writer of its first applied move after the birth had read (section 6.7's sight), or its
+first writing in the merged order while no move has judged it or the move's writer read none. Every
+other writing of its id is not applied, whoever signed it, the text's writer's own and a copy of
+the same payload included, since the product mints a decision's id when it records it and never
+writes one id twice.
 """
 
 from __future__ import annotations
@@ -35,8 +38,9 @@ import json
 from typing import NamedTuple
 
 from .canonical import utf16_order
-from .enrolment import merged_order
+from .enrolment import Merged, merged_order
 from .entry import Entry
+from .workflow import sight
 
 NOTE_KINDS = ("memory.captured", "observation.recorded")
 
@@ -131,21 +135,58 @@ def _edge(event: dict) -> str:
     return _shown([event.get("subject"), payload.get("target"), payload.get("rel")])
 
 
-def decision_rewrites(entries_by_tail: dict[str, list[Entry]]) -> list[Foreign]:
-    """Section 6.8: every `decision.recorded` after the first of its id in the merged order, in
-    tail order and then `seq` order."""
+def decision_texts(merged: Merged, not_applied: set[tuple[str, int]]) -> dict[str, Entry]:
+    """Section 6.8: by decision id, the `decision.recorded` that is its text, judged over `merged`.
+
+    `not_applied` holds the (tail, seq) of every move section 6.7 does not apply: such a move judges
+    nothing, so it binds no text.
+    """
+    saw = sight(merged.held)
+    positions: dict[str, int] = {}
+    writings: dict[str, list[tuple[str, int, Entry]]] = {}
+    texts: dict[str, Entry] = {}
+    judged: set[str] = set()
+    for tail, entry in merged.order:
+        position = positions.get(tail, 0)
+        positions[tail] = position + 1
+        event = entry.event
+        subject = str(event.get("subject"))
+        kind = event.get("kind")
+        if kind == "decision.recorded":
+            if subject not in writings:
+                writings[subject] = []
+                texts[subject] = entry
+            writings[subject].append((tail, position, entry))
+            continue
+        payload = event.get("payload")
+        if kind != "decision.transitioned" or not isinstance(payload, dict):
+            continue
+        if payload.get("from", "") is None or subject in judged:
+            continue
+        if (tail, entry.seq) in not_applied:
+            continue
+        judged.add(subject)
+        for written_tail, written_position, written in writings.get(subject, []):
+            if saw((tail, position), (written_tail, written_position)):
+                texts[subject] = written
+                break
+    return texts
+
+
+def decision_rewrites(
+    entries_by_tail: dict[str, list[Entry]], not_applied: set[tuple[str, int]]
+) -> list[Foreign]:
+    """Section 6.8: every `decision.recorded` that is not its decision's text, in tail order and
+    then `seq` order."""
     tails = sorted(entries_by_tail, key=utf16_order)
-    first: dict[str, Entry] = {}
-    for _tail, entry in merged_order(entries_by_tail).order:
-        if entry.event.get("kind") == "decision.recorded":
-            first.setdefault(str(entry.event.get("subject")), entry)
+    texts = decision_texts(merged_order(entries_by_tail), not_applied)
     found: list[Foreign] = []
     for tail in tails:
         for entry in entries_by_tail[tail]:
             event = entry.event
             if event.get("kind") != "decision.recorded":
                 continue
-            kept = first.get(str(event.get("subject")))
+            kept = texts.get(str(event.get("subject")))
             if kept is None or kept is entry:
                 continue
             found.append(
@@ -154,10 +195,10 @@ def decision_rewrites(entries_by_tail: dict[str, list[Entry]]) -> list[Foreign]:
                     entry.seq,
                     "decision-rewrite",
                     f"a decision.recorded of {_shown(event.get('subject'))} signed by "
-                    f"{_shown(event.get('who'))}, after the first writing of it (signed by "
-                    f"{_shown(kept.event.get('who'))}) - a decision is the text its first writer "
-                    "recorded, so this writing is not applied and the decision is served as first "
-                    "recorded",
+                    f"{_shown(event.get('who'))}, not the decision's text (the writing signed by "
+                    f"{_shown(kept.event.get('who'))} is) - a decision is the text its first "
+                    "judgment was made on, or its first writing while none has judged it, so this "
+                    "writing is not applied",
                 )
             )
     return found
