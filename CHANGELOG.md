@@ -108,7 +108,7 @@ with its own changelog.
   footer reads "commit" and its sha with a space, and its link takes the accent. The landing shows the proof under its
   title: the output of `mnema verify` on this repository's record, produced by the binary at build time on the `.mnema/`
   of the commit (extracted outside the checkout, so an uncommitted change and the builder's private tree are not in it),
-  and the recording of a write refused, copied from `recordings/`; the button labels come from the README's Docs. A
+  and a recording copied from `recordings/`; the button labels come from the README's Docs. A
   fourth source of text, `site/copy.md`, holds the few words only the site needs (a caption), one line of at most twenty
   words each, and the case that holds the landing to its sources now reads every element of the `<main>` and every `alt`,
   `title` and `aria-label`, and finds nothing left over. No stylesheet of the site may draw text (a `content` with a sentence, or an `attr()`), and the verdict
