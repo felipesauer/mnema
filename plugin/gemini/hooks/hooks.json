@@ -36,6 +36,17 @@
             "timeout": 15000
           }
         ]
+      },
+      {
+        "matcher": "^(write_file|replace)$",
+        "hooks": [
+          {
+            "name": "mnema-beside",
+            "type": "command",
+            "command": "node \"${extensionPath}/hooks/mnema.mjs\" beside",
+            "timeout": 15000
+          }
+        ]
       }
     ]
   }

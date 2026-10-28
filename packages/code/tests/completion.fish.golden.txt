@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections after-a-write handback settled dispatched help'
+            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write beside-a-write tally corrections after-a-write handback settled dispatched help'
         case 'decision'
             echo 'record move review supersede import help'
         case 'skill'
@@ -118,6 +118,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'completion' -d 'print the tab-comple
 complete -c mnema -f -n '__mnema_at ""' -a 'mcp' -d 'run the mnema MCP server over stdio (for an agent host)'
 complete -c mnema -f -n '__mnema_at ""' -a 'run' -d 'open and close the session an agent works inside'
 complete -c mnema -f -n '__mnema_at ""' -a 'before-a-write' -d 'answer a host’s hook before a file is written: refuse or ask where a rule says'
+complete -c mnema -f -n '__mnema_at ""' -a 'beside-a-write' -d 'answer a host’s hook after a file was written: hand over the rules addressed at it'
 complete -c mnema -f -n '__mnema_at ""' -a 'tally' -d 'answer a host’s Stop hook with what the session wrote and recorded'
 complete -c mnema -f -n '__mnema_at ""' -a 'corrections' -d 'record what a person corrected in a session as proposed decisions, for a Stop hook'
 complete -c mnema -f -n '__mnema_at ""' -a 'after-a-write' -d 'copy a note of the host’s memory into the private tree, or name the door of a decision file, for a PostToolUse hook'
@@ -882,6 +883,13 @@ complete -c mnema -f -n '__mnema_at "before-a-write"' -l agent-key -r
 complete -c mnema -f -n '__mnema_at "before-a-write"' -s h -l help
 complete -c mnema -f -n '__mnema_at "before-a-write"' -s V -l version
 complete -c mnema -f -n '__mnema_at "before-a-write"' -l color -x -a 'auto always never'
+
+# mnema beside-a-write
+complete -c mnema -f -n '__mnema_at "beside-a-write"' -l host -x -a 'copilot gemini'
+complete -c mnema -f -n '__mnema_at "beside-a-write"' -l agent-key -r
+complete -c mnema -f -n '__mnema_at "beside-a-write"' -s h -l help
+complete -c mnema -f -n '__mnema_at "beside-a-write"' -s V -l version
+complete -c mnema -f -n '__mnema_at "beside-a-write"' -l color -x -a 'auto always never'
 
 # mnema tally
 complete -c mnema -f -n '__mnema_at "tally"' -s h -l help

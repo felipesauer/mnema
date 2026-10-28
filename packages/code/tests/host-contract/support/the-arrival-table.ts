@@ -133,7 +133,7 @@ export const THE_TABLE: TheTable = {
       COPILOT_ENDS_AT_ITS_SUMMARY,
       NO_CHANNEL_AT_AN_EDIT,
     ),
-    mnema: row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, absent),
+    mnema: row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, arrived),
   },
   gemini: {
     control: row(absent, absent, resumed(absent), NO_CHANNEL_AT_AN_EDIT),
@@ -146,7 +146,7 @@ export const THE_TABLE: TheTable = {
       resumed(absent),
       NO_CHANNEL_AT_AN_EDIT,
     ),
-    mnema: row(arrived, arrived, resumed(arrived), absent),
+    mnema: row(arrived, arrived, resumed(arrived), arrived),
   },
   qwen: {
     control: row(absent, absent, absent, NO_CHANNEL_AT_AN_EDIT),
@@ -270,9 +270,10 @@ export const THE_MECHANISM: Record<ArrivalHost, string> = {
     'An `@` import is not expanded by the host. At an edit, the hook that runs before the patch answers with the rules of the path as context, and the host records it as an item of its own between the call and its output.',
   opencode:
     'An `@` import is not expanded by the host. At an edit, the plugin module keeps what the gate answered for the call and appends it to the result of the write.',
-  copilot: '',
+  copilot:
+    'At an edit, the hook that runs after the write answers with the rules of the path as context, and the host appends it to the result of the write.',
   gemini:
-    '`AGENTS.md` is not among the files it reads with the default settings (its `context.fileName` can list it). The cells after a compaction are read in a second run that resumes the session (`--resume`), which starts the session again.',
+    '`AGENTS.md` is not among the files it reads with the default settings (its `context.fileName` can list it). The cells after a compaction are read in a second run that resumes the session (`--resume`), which starts the session again. At an edit, the hook that runs after the write answers with the rules of the path as context, and the host appends it to the result of the write.',
   qwen: 'At an edit, the hook that runs before the write answers with the rules of the path as context, and the host puts it in the result of the write.',
 };
 

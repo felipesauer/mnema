@@ -646,7 +646,9 @@ export const CHOICE_SETTLED_CHANNEL: SwitchableChannel = 'choice-settled';
  * THEY ARE THE ONES THAT PUSH AT EACH EDIT, AND ONLY THOSE, which is what the fact says and all
  * it says. `channel.served` is written by the tool the per-edit hook calls
  * (`rules_before_an_edit`) and, for the hosts whose hook is a process and which hand it a session
- * id (Codex, Qwen Code, OpenCode), by `mnema before-a-write`, once per session of the host; those
+ * id (Codex, Qwen Code, OpenCode), by `mnema before-a-write`, and, for the two whose hook before a
+ * write cannot carry text (Copilot CLI, Gemini CLI), by `mnema beside-a-write` after it, once per
+ * session of the host; those
  * are the places where something is pushed and something can be appended in the same act. The two texts a session OPENS with are not counted, and
  * that is a decision rather than a gap left open: they are printed by reads, and a read writes
  * nothing (see {@link NOT_COUNTED_AS_SERVED} for each one's sentence). So a run with no

@@ -12,7 +12,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections after-a-write handback settled dispatched help' ;;
+    '') echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write beside-a-write tally corrections after-a-write handback settled dispatched help' ;;
     'decision') echo 'record move review supersede import help' ;;
     'skill') echo 'create move export provenance help' ;;
     'stack') echo 'add remove list index show diff check export enable disable help' ;;
@@ -78,6 +78,7 @@ _mnema_described() {
       'mcp:run the mnema MCP server over stdio (for an agent host)' \
       'run:open and close the session an agent works inside' \
       'before-a-write:answer a host’s hook before a file is written: refuse or ask where a rule says' \
+      'beside-a-write:answer a host’s hook after a file was written: hand over the rules addressed at it' \
       'tally:answer a host’s Stop hook with what the session wrote and recorded' \
       'corrections:record what a person corrected in a session as proposed decisions, for a Stop hook' \
       'after-a-write:copy a note of the host’s memory into the private tree, or name the door of a decision file, for a PostToolUse hook' \
@@ -263,6 +264,7 @@ _mnema_flags() {
     'run start') echo '--which --goal -h --help -V --version --color' ;;
     'run end') echo '--which --outcome -h --help -V --version --color' ;;
     'before-a-write') echo '--host --agent-key -h --help -V --version --color' ;;
+    'beside-a-write') echo '--host --agent-key -h --help -V --version --color' ;;
     'tally') echo '-h --help -V --version --color' ;;
     'corrections') echo '-h --help -V --version --color' ;;
     'after-a-write') echo '-h --help -V --version --color' ;;
@@ -411,6 +413,8 @@ _mnema_values() {
     'run end:--color') echo 'auto always never' ;;
     'before-a-write:--host') echo 'vscode cursor codex copilot opencode gemini qwen' ;;
     'before-a-write:--color') echo 'auto always never' ;;
+    'beside-a-write:--host') echo 'copilot gemini' ;;
+    'beside-a-write:--color') echo 'auto always never' ;;
     'tally:--color') echo 'auto always never' ;;
     'corrections:--color') echo 'auto always never' ;;
     'after-a-write:--color') echo 'auto always never' ;;

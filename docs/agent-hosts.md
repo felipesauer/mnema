@@ -3,7 +3,7 @@
 With the Claude Code plugin, the record reaches a session twice: as it opens, and
 at each edit. The other hosts get as much of this as their hooks allow: Codex, Copilot CLI,
 Gemini CLI, Qwen Code, OpenCode, VS Code's agent and Cursor's command-line agent get the opening, and
-Codex, Qwen Code and OpenCode get the rules at each edit too (the last column of
+Codex, Copilot CLI, Gemini CLI, Qwen Code and OpenCode get the rules at each edit too (the last column of
 [the table of each host's rung](evidence.md#each-hosts-rung) says which, and
 [where a rule arrives](rule-arrival.md) shows what each host did with it). How far
 each one goes is that table.

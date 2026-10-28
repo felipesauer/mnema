@@ -11,7 +11,10 @@
  * session sent the whole conversation again, the three results and none of the summary. No
  * request of a compacted conversation was seen, so the table says it was not measured.
  *
- * AT AN EDIT, the rule arrives if it is in the result of the `create` of a file at the governed path.
+ * AT AN EDIT, the rule arrives if it is in the result of the `create` of a file at the governed path:
+ * the hook that runs after the write (`postToolUse`) answers with the rules as `additionalContext`,
+ * which the host appends to the text of the result. The reading is of the `tool_result` blocks alone,
+ * never of the whole request, which already carries the rule from the opening.
  *
  * NOT HELD: that the model reads the rule or follows it.
  */
@@ -62,6 +65,25 @@ describe('where a rule arrives in the Copilot CLI', () => {
       );
       expect(result, 'the request that carries the result of the create').toBeDefined();
       arrived.edit = theSentinelIsIn(resultOf(result?.body['messages']));
+      // THE INSTRUMENT: the same read of the same record with the push switched off finds nothing, so
+      // a sentinel found above is the push and not the opening.
+      const off = await start({
+        files,
+        project: (project) => {
+          record?.(project);
+          project.mnema('switch', 'off', 'edit-rules-push');
+        },
+        call: creating(THE_GOVERNED_FILE),
+      });
+      expect(existsSync(join(off.project, THE_GOVERNED_FILE))).toBe(true);
+      const offResult = off.requests.find((request) =>
+        JSON.stringify(request.body['messages'] ?? []).includes('"tool_result"'),
+      );
+      expect(offResult, 'the request that carries the result of the create').toBeDefined();
+      expect(
+        theSentinelIsIn(resultOf(offResult?.body['messages'])),
+        'the instrument sees a push that was switched off',
+      ).toBe(false);
     }
     return { arrived, mentioned: theMentionIsIn(long.requests[0]?.body) };
   });

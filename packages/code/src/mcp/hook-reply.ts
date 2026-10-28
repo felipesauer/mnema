@@ -98,8 +98,11 @@ import { neutralized } from '../one-line.js';
  * what a host declares. `PreToolUse` is the one `plugin/hooks/hooks.json` declares for a write;
  * `SessionStart` is the event a program built on the Claude Agent SDK registers the opening
  * document under, and it carries `additionalContext` alone: the Agent SDK hooks page says so.
+ * `PostToolUse` and `AfterTool` are the events after a tool ran (Copilot CLI's and Gemini CLI's), the
+ * ones `mnema beside-a-write` answers; each carries `additionalContext` alone, since a write that
+ * already happened has nothing to ask or refuse.
  */
-export type HookEvent = 'PreToolUse' | 'SessionStart';
+export type HookEvent = 'PreToolUse' | 'SessionStart' | 'PostToolUse' | 'AfterTool';
 
 /**
  * The permission decisions this server can express: hold the write for a person, or not let
