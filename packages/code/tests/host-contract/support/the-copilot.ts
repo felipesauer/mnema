@@ -29,9 +29,21 @@ import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
 import { GIT_WITHOUT_MAINTENANCE } from '../../support/git-without-maintenance.js';
 import { sizedTo, theDeviceWasTheSizeAskedFor } from '../../support/pty.js';
-import { aSandbox, REPO, type TheProjectToWrite, type TheSandbox } from './a-sandbox.js';
+import {
+  aSandbox,
+  REPO,
+  type TheFilesToPut,
+  type TheProjectToWrite,
+  type TheSandbox,
+} from './a-sandbox.js';
 import { destinationsOrRefuse, refuseUnlessLoopbackOnly } from './the-host.js';
-import { startTheStandIn, type TheCall, type TheRequest } from './the-stand-in-api.js';
+import {
+  startAScriptedStandIn,
+  startTheStandIn,
+  type TheCall,
+  type TheReply,
+  type TheRequest,
+} from './the-stand-in-api.js';
 
 /** The made-up key Copilot is handed. It names no account and opens nothing. */
 const KEY = 'sk-ant-api03-stand-in-0000000000000000000000000000';
@@ -49,8 +61,16 @@ export const NO = '\u001b[B\r';
 export interface TheCopilotSpec {
   /** Writes the record the session opens on. */
   readonly project?: (project: TheProjectToWrite) => void;
+  /** Files put in the project after its record is written; see {@link TheFilesToPut}. */
+  readonly files?: TheFilesToPut;
   /** The call the stand-in makes, given the project; none: a session that only opens. */
   readonly call?: (project: string) => TheCall;
+  /** What the stand-in answers each request with, in place of the one `call`: a session of several turns. */
+  readonly script?: (
+    project: string,
+  ) => (body: Readonly<Record<string, unknown>>, before: readonly TheRequest[]) => TheReply;
+  /** Extra environment for the host. */
+  readonly env?: Readonly<Record<string, string>>;
   /** The model's name: it decides which write tool is offered. `create`/`edit` unless it says otherwise. */
   readonly model?: 'claude-sonnet-4-5' | 'gpt-5.1-codex';
   /** A hooks file of the person's own, in Copilot's home, beside the plugin's. */
@@ -163,11 +183,14 @@ async function aCopilotSession(
     throw new Error('strace is needed to read where the host connects, and it is not on the PATH');
   }
   const copilot = theCopilotUnderTest();
-  const box = aSandbox('mnema-copilot-', spec.project);
+  const box = aSandbox('mnema-copilot-', spec.project, spec.files);
   keep(box);
   const copilotHome = join(box.root, 'copilot');
   mkdirSync(copilotHome, { recursive: true });
-  const standIn = await startTheStandIn(spec.call?.(box.project));
+  const standIn =
+    spec.script === undefined
+      ? await startTheStandIn(spec.call?.(box.project))
+      : await startAScriptedStandIn(spec.script(box.project));
   if (spec.ownHooks !== undefined) {
     mkdirSync(join(copilotHome, 'hooks'), { recursive: true });
     writeFileSync(
@@ -192,6 +215,7 @@ async function aCopilotSession(
     COPILOT_ALLOW_ALL: 'true',
     GIT_CONFIG_NOSYSTEM: '1',
     GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+    ...spec.env,
   };
   // The installation is a person's own commands, and they run with `node` and `mnema` on the PATH
   // whatever the session that follows is given.
