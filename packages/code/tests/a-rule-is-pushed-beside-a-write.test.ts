@@ -21,6 +21,7 @@ import type { RulesAtPath } from '@mnema/context';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
+import { runBesideAWrite } from '../src/commands/beside-a-write.js';
 import { editRulesNotice, editRulesToldAcross, pathsLeftOut } from '../src/edit-rules-push.js';
 import { HOOK_HOSTS, type HookHost, pushesWithTheGate } from '../src/host-names.js';
 import { hookCeilingOf } from '../src/presentation/within-a-hook.js';
@@ -372,6 +373,35 @@ describe('what a session remembers of having been pushed to', () => {
     expect(takeTheFirstServing(trees, 'shared', 'edit-rules-push', 'copilot')).toBeDefined();
     expect(takeTheFirstServing(trees, 'shared', 'edit-rules-push', 'gemini')).toBeUndefined();
     expect(takeTheFirstServing(trees, 'shared', 'edit-rules-push', 'copilot')).toBeUndefined();
+  });
+
+  it('records one service fact per host for one session id, through the commands, and none for a second write of a host', () => {
+    const copilotAfter = (relative: string) =>
+      JSON.stringify({
+        session_id: 'shared-id',
+        hook_event_name: 'PostToolUse',
+        tool_name: 'Write',
+        tool_input: { path: join(repo, relative), file_text: 'x' },
+        tool_result: { result_type: 'success', text_result_for_llm: 'Created file' },
+      });
+    answer('codex', aWrite('codex', 'src/other/a.ts', 'shared-id'));
+    answer('qwen', aWrite('qwen', 'src/other/a.ts', 'shared-id'));
+    runBesideAWrite(
+      { cwd: repo, env },
+      { host: 'copilot', payload: copilotAfter('src/other/a.ts') },
+    );
+    expect(services().sort()).toEqual([
+      'edit-rules-push by codex',
+      'edit-rules-push by copilot',
+      'edit-rules-push by qwen',
+    ]);
+    answer('codex', aWrite('codex', 'src/other/b.ts', 'shared-id'));
+    answer('qwen', aWrite('qwen', 'src/other/b.ts', 'shared-id'));
+    runBesideAWrite(
+      { cwd: repo, env },
+      { host: 'copilot', payload: copilotAfter('src/other/b.ts') },
+    );
+    expect(services()).toHaveLength(3);
   });
 
   it('never pushes without a fact when the directory of the markers is a file', () => {
