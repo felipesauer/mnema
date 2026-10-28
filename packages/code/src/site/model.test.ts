@@ -12,6 +12,7 @@ import {
   ASKS_FOR_A_PERSON_RELATION,
   type CatalogEvent,
   decisionBirth,
+  decisionRecorded,
   decisionTransitioned,
   GOVERNS_RELATION,
   knowledgeLinked,
@@ -148,6 +149,24 @@ describe('the model of the page', () => {
       'decision-recorded',
       'decision-moved',
       'note-recorded',
+    ]);
+  });
+
+  it('serves the text a decision was first recorded with, and no later writing of its id is an act', () => {
+    const model = pageModel([
+      ...decided(1, 'd-1', 'ADR-1', 'Use SQLite', 'accepted'),
+      decisionRecorded(at(5, 'd-1', BOB), {
+        title: 'Use MongoDB',
+        rationale: 'a rewrite by a stranger',
+        adr: 'ADR-1',
+      }),
+    ]);
+    expect(model.decisions).toHaveLength(1);
+    expect(model.decisions[0]).toMatchObject({ title: 'Use SQLite', recordedBy: { who: ALICE } });
+    expect(model.timeline.map((e) => [e.kind, e.who])).toEqual([
+      ['decision-recorded', ALICE],
+      ['decision-moved', ALICE],
+      ['decision-moved', BOB],
     ]);
   });
 

@@ -202,6 +202,7 @@ export type CensusNote =
   | ForeignRetractionNote
   | ForeignRewriteNote
   | ForeignLinkRetractionNote
+  | DecisionRewriteNote
   | IllegalMoveNote
   | RetiredCheckerNote
   | RetiredAgentNote
@@ -384,6 +385,31 @@ export interface ForeignRewriteNote {
   /** The identity that signed this writing. */
   readonly by: string;
   /** The identity that wrote the note first. */
+  readonly author: string;
+  /** Where the writing sits. */
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * A `decision.recorded` of an id the merged order of every tail had recorded already
+ * (FORMAT.md section 6.8). A decision is the text its first writer recorded, so no reader
+ * applies this writing, whoever signed it: the decision's title, rationale, alternatives,
+ * label and author stay the first writing's. The product mints a decision's id when it records
+ * it, so it never writes one id twice, and every writing after the first, the identity's own
+ * and a copy of the same payload included, is one made past it.
+ *
+ * Not a break, for the reason a {@link ForeignRewriteNote} is not: the event is intact and its
+ * key speaks for its own `who`; what it lacks is a place in a decision that was already written.
+ */
+export interface DecisionRewriteNote {
+  readonly kind: 'decision-rewrite';
+  /** The decision it records again (the event's subject). */
+  readonly decision: string;
+  /** The identity that signed this writing. */
+  readonly by: string;
+  /** The identity that signed the first writing, the one served. */
   readonly author: string;
   /** Where the writing sits. */
   readonly tail: string;
@@ -1014,6 +1040,7 @@ function verifyReading(
     ...notes,
     ...foreignNotes(tails, entriesByTail),
     ...foreignLinkRetractions(tails, entriesByTail),
+    ...decisionRewrites(tails, entriesByTail),
     ...movesNotApplied(entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
     ...retiredAgents(identity.retiredAgents),
@@ -1365,6 +1392,48 @@ function foreignNotes(
                 'so it is not applied and the note is still served',
             },
       );
+    }
+  }
+  return found;
+}
+
+/**
+ * Every `decision.recorded` after the first of its id in the merged order of every tail
+ * ({@link DecisionRewriteNote}), named in tail order. The first is found over the merged order,
+ * the one the product's read folds, so a writing is named whatever tail it or the first sits in,
+ * and whichever of the two tails sorts first by id.
+ */
+function decisionRewrites(
+  tails: readonly string[],
+  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+): DecisionRewriteNote[] {
+  const { order, entryAt } = mergedOrder(entriesByTail);
+  const first = new Map<string, Entry>();
+  for (const { event, tail, position } of order) {
+    if (event.kind === 'decision.recorded' && !first.has(event.subject)) {
+      first.set(event.subject, entryAt(tail, position));
+    }
+  }
+  const found: DecisionRewriteNote[] = [];
+  for (const tail of tails) {
+    for (const entry of entriesByTail.get(tail) ?? []) {
+      const { event, link } = entry;
+      if (event.kind !== 'decision.recorded') continue;
+      const kept = first.get(event.subject);
+      if (kept === undefined || kept === entry) continue;
+      const author = kept.event.who;
+      found.push({
+        kind: 'decision-rewrite',
+        decision: event.subject,
+        by: event.who,
+        author,
+        tail,
+        seq: link.seq,
+        detail:
+          `a decision.recorded of ${oneLine(event.subject)} signed by ${oneLine(event.who)}, ` +
+          `after the first writing of it (signed by ${oneLine(author)}): a decision is the text ` +
+          'its first writer recorded, so this writing is not applied and the decision is served as first recorded',
+      });
     }
   }
   return found;
@@ -2180,6 +2249,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => str
     `${count} writing(s) of a note by an identity that did not write it first, not applied (see census: informational, not a break)`,
   'foreign-link-retraction': (count) =>
     `${count} link retraction(s) by an identity that did not record the link, not applied (see census: informational, not a break)`,
+  'decision-rewrite': (count) =>
+    `${count} writing(s) of a decision after its first, not applied (see census: informational, not a break)`,
   'illegal-move': (count) =>
     `${count} move(s) the workflow does not allow, not applied (see census: informational, not a break)`,
   'retired-checker': (count) =>

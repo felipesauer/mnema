@@ -17,7 +17,8 @@
  *     births and runs, clocks that disagree and citations that come and go. Neither reader's
  *     answer is computed here; one is compared with the other, and the draw is held to reach every
  *     rule of the section and the legal moves too, so the agreement is not over one kind of case;
- *   - and the retractions of §6.4, by the identity that wrote the note or the link and by another.
+ *   - the retractions of §6.4, by the identity that wrote the note or the link and by another;
+ *   - and a decision recorded again (§6.8), by another identity, by its own, and in the same bytes.
  *
  * Every record here is honest in its bytes, so both readers verify it whatever it holds: a fact
  * a reader does not apply is not a break, in either.
@@ -34,6 +35,7 @@ import fc from 'fast-check';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  decisionRecorded,
   decisionTransitioned,
   identityFounded,
   knowledgeLinked,
@@ -100,7 +102,8 @@ function bothReaders(record: string) {
       if (
         note.kind === 'foreign-retraction' ||
         note.kind === 'foreign-rewrite' ||
-        note.kind === 'foreign-link-retraction'
+        note.kind === 'foreign-link-retraction' ||
+        note.kind === 'decision-rewrite'
       ) {
         return [{ tail: note.tail, seq: note.seq, rule: note.kind }];
       }
@@ -115,7 +118,8 @@ function bothReaders(record: string) {
   const second = there.findings
     .filter(
       (finding) =>
-        (finding.section === '6.7' || finding.section === '6.4') && finding.level === 'note',
+        (finding.section === '6.7' || finding.section === '6.4' || finding.section === '6.8') &&
+        finding.level === 'note',
     )
     .map((finding) => {
       const rule = /\(rule ([a-z-]+)\)$/.exec(finding.what)?.[1];
@@ -662,4 +666,86 @@ describe('a note or a link taken back (§6.4): both readers name the same retrac
       CASE_TIMEOUT,
     );
   }
+});
+
+describe('a decision recorded again (§6.8): both readers name every writing after the first', () => {
+  // A decision is the text its first writer recorded, whoever writes it again: the product
+  // mints a decision's id when it records it, so no honest writer appends a second. The first is
+  // the first in the merged order, whichever of the two tails sorts first by id.
+  const birthOf = (env: Envelope) => [
+    decisionRecorded(env, { title: 'Use SQLite', rationale: 'Fast and embedded', adr: 'ADR-1' }),
+    decisionTransitioned(env, { from: null, to: 'proposed', action: 'create' }),
+  ];
+  const forged = { title: 'Use MongoDB', rationale: 'Schemaless', adr: 'ADR-1' };
+
+  for (const creatorTail of ['first', 'last'] as const) {
+    it(
+      `by another identity, names the second writing (the creator's tail sorts ${creatorTail})`,
+      () => {
+        const record = fresh('mnema-decision-rewrite-');
+        const one = machine(record);
+        const two = machine(record);
+        const oneFirst = one.writer.tail < two.writer.tail;
+        const [creator, intruder] =
+          (creatorTail === 'first') === oneFirst ? [one, two] : [two, one];
+        for (const event of birthOf(creator.env('d-1', undefined, 10))) {
+          creator.writer.append(event);
+        }
+        intruder.writer.append(decisionRecorded(intruder.env('d-1', undefined, 20), forged));
+        one.writer.checkpoint();
+        two.writer.checkpoint();
+        const said = bothReaders(record);
+        expect(said.product).toEqual([
+          { tail: intruder.writer.tail, seq: 1, rule: 'decision-rewrite' },
+        ]);
+        expect(said.second).toEqual(said.product);
+        expect(said.productOk).toBe(true);
+        expect(said.secondFails).toEqual([]);
+        expect(said.secondVerdict).toBe('VERIFIED');
+      },
+      CASE_TIMEOUT,
+    );
+  }
+
+  it(
+    'by the identity that recorded it, and in the same bytes of payload, names each writing after the first',
+    () => {
+      const record = fresh('mnema-decision-again-');
+      const { writer, env } = machine(record);
+      for (const event of birthOf(env('d-1'))) writer.append(event);
+      writer.append(
+        decisionRecorded(env('d-1'), {
+          title: 'Use SQLite',
+          rationale: 'Fast and embedded',
+          adr: 'ADR-1',
+        }),
+      );
+      writer.append(decisionRecorded(env('d-1'), forged));
+      writer.checkpoint();
+      const said = bothReaders(record);
+      expect(said.product).toEqual([
+        { tail: writer.tail, seq: 3, rule: 'decision-rewrite' },
+        { tail: writer.tail, seq: 4, rule: 'decision-rewrite' },
+      ]);
+      expect(said.second).toEqual(said.product);
+      expect(said.productOk).toBe(true);
+      expect(said.secondVerdict).toBe('VERIFIED');
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'a decision recorded once names nothing',
+    () => {
+      const record = fresh('mnema-decision-once-');
+      const { writer, env } = machine(record);
+      for (const event of birthOf(env('d-1'))) writer.append(event);
+      writer.checkpoint();
+      const said = bothReaders(record);
+      expect(said.product).toEqual([]);
+      expect(said.second).toEqual([]);
+      expect(said.secondVerdict).toBe('VERIFIED');
+    },
+    CASE_TIMEOUT,
+  );
 });

@@ -22,6 +22,11 @@ The authors are read over every tail first, so a retraction is judged whatever t
 its note or its link sits in. Of two writings of one note, the FIRST in the merged order names its
 author: the order the product's read takes it in, never the order of the tail ids, which begin
 with a key's fingerprint and so are a signer's to choose.
+
+Section 6.8 - a decision recorded again - is read the same way and is stricter: a decision is the
+text its FIRST `decision.recorded` in the merged order holds, and every later writing of its id is
+not applied, whoever signed it, the first writer's own and a copy of the same payload included,
+since the product mints a decision's id when it records it and never writes one id twice.
 """
 
 from __future__ import annotations
@@ -124,3 +129,35 @@ def _edge(event: dict) -> str:
     payload = event.get("payload")
     payload = payload if isinstance(payload, dict) else {}
     return _shown([event.get("subject"), payload.get("target"), payload.get("rel")])
+
+
+def decision_rewrites(entries_by_tail: dict[str, list[Entry]]) -> list[Foreign]:
+    """Section 6.8: every `decision.recorded` after the first of its id in the merged order, in
+    tail order and then `seq` order."""
+    tails = sorted(entries_by_tail, key=utf16_order)
+    first: dict[str, Entry] = {}
+    for _tail, entry in merged_order(entries_by_tail).order:
+        if entry.event.get("kind") == "decision.recorded":
+            first.setdefault(str(entry.event.get("subject")), entry)
+    found: list[Foreign] = []
+    for tail in tails:
+        for entry in entries_by_tail[tail]:
+            event = entry.event
+            if event.get("kind") != "decision.recorded":
+                continue
+            kept = first.get(str(event.get("subject")))
+            if kept is None or kept is entry:
+                continue
+            found.append(
+                Foreign(
+                    tail,
+                    entry.seq,
+                    "decision-rewrite",
+                    f"a decision.recorded of {_shown(event.get('subject'))} signed by "
+                    f"{_shown(event.get('who'))}, after the first writing of it (signed by "
+                    f"{_shown(kept.event.get('who'))}) - a decision is the text its first writer "
+                    "recorded, so this writing is not applied and the decision is served as first "
+                    "recorded",
+                )
+            )
+    return found

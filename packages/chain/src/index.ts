@@ -156,6 +156,7 @@ export {
   type BackupKeyNote,
   type CensusNote,
   canonicalIdentityForm,
+  type DecisionRewriteNote,
   type EmptyTailNote,
   type ForeignLinkRetractionNote,
   type ForeignRetractionNote,

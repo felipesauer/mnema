@@ -1007,6 +1007,8 @@ def _check_retractions(report: Report, entries_by_tail: dict[str, list[Entry]]) 
     refused, because the event is intact and its key speaks for its own `who`."""
     for found in retraction.foreign_retractions(entries_by_tail):
         report.note("6.4", f"{found.detail} (rule {found.rule})", f"{found.tail} seq {found.seq}")
+    for found in retraction.decision_rewrites(entries_by_tail):
+        report.note("6.8", f"{found.detail} (rule {found.rule})", f"{found.tail} seq {found.seq}")
 
 
 def _check_moves(
