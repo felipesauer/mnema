@@ -51,21 +51,31 @@ function frame(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-const MESSAGE = {
-  type: 'message',
-  role: 'assistant',
-  model: 'stand-in',
-  content: [],
-  stop_reason: null,
-  stop_sequence: null,
-  usage: { input_tokens: 1, output_tokens: 1 },
-};
+/**
+ * What the stand-in says the model read: a host that decides to compact by the `usage` the model
+ * reports is told, by a turn that claims more tokens than it was sent, that the window is full.
+ */
+const ONE_TOKEN = 1;
+
+function messageWith(inputTokens: number) {
+  return {
+    type: 'message',
+    role: 'assistant',
+    model: 'stand-in',
+    content: [],
+    stop_reason: null,
+    stop_sequence: null,
+    usage: { input_tokens: inputTokens, output_tokens: 1 },
+  };
+}
 
 /** The turn that calls a tool. */
-function aCallTurn(call: TheCall): string {
-  const id = 'toolu_stand_in_0001';
+function aCallTurn(call: TheCall, id = 'toolu_stand_in_0001', inputTokens = ONE_TOKEN): string {
   return [
-    frame('message_start', { type: 'message_start', message: { ...MESSAGE, id: 'msg_call' } }),
+    frame('message_start', {
+      type: 'message_start',
+      message: { ...messageWith(inputTokens), id: 'msg_call' },
+    }),
     frame('content_block_start', {
       type: 'content_block_start',
       index: 0,
@@ -80,16 +90,19 @@ function aCallTurn(call: TheCall): string {
     frame('message_delta', {
       type: 'message_delta',
       delta: { stop_reason: 'tool_use', stop_sequence: null },
-      usage: { output_tokens: 1 },
+      usage: { input_tokens: inputTokens, output_tokens: 1 },
     }),
     frame('message_stop', { type: 'message_stop' }),
   ].join('');
 }
 
 /** The closing turn: plain text, so the host stops. */
-function aClosingTurn(text: string): string {
+function aClosingTurn(text: string, inputTokens = ONE_TOKEN): string {
   return [
-    frame('message_start', { type: 'message_start', message: { ...MESSAGE, id: 'msg_end' } }),
+    frame('message_start', {
+      type: 'message_start',
+      message: { ...messageWith(inputTokens), id: 'msg_end' },
+    }),
     frame('content_block_start', {
       type: 'content_block_start',
       index: 0,
@@ -104,7 +117,7 @@ function aClosingTurn(text: string): string {
     frame('message_delta', {
       type: 'message_delta',
       delta: { stop_reason: 'end_turn', stop_sequence: null },
-      usage: { output_tokens: 1 },
+      usage: { input_tokens: inputTokens, output_tokens: 1 },
     }),
     frame('message_stop', { type: 'message_stop' }),
   ].join('');
@@ -143,6 +156,35 @@ export async function startTheStandIn(
   once = false,
 ): Promise<TheStandIn> {
   let called = false;
+  return startAScriptedStandIn((body) => {
+    const wanted =
+      call !== undefined &&
+      !(once && called) &&
+      toolsOffered(body).includes(call.tool) &&
+      !carriesAResult(body);
+    if (wanted) called = true;
+    return wanted ? { call } : { text: closing };
+  });
+}
+
+/** What the stand-in answers one request with: a call to a tool, or a text that ends the turn. */
+export type TheReply =
+  | {
+      readonly call: TheCall;
+      /** The id the call carries, so the request that returns its result can be told from another. */
+      readonly id?: string;
+      /** The `input_tokens` the turn claims, for a host that decides on the usage it is told. */
+      readonly inputTokens?: number;
+    }
+  | { readonly text: string; readonly inputTokens?: number };
+
+/**
+ * Starts a stand-in that answers each `/v1/messages` request with what `decide` says, given the
+ * request and the ones before it. {@link startTheStandIn} is the case where that is one call.
+ */
+export async function startAScriptedStandIn(
+  decide: (body: Readonly<Record<string, unknown>>, before: readonly TheRequest[]) => TheReply,
+): Promise<TheStandIn> {
   const requests: TheRequest[] = [];
   const peers: string[] = [];
   const server: Server = createServer((req, res) => {
@@ -156,19 +198,19 @@ export async function startTheStandIn(
         body = {};
       }
       const url = req.url ?? '';
+      const before = [...requests];
       requests.push({ url, body, userAgent: String(req.headers['user-agent'] ?? '') });
       if (!url.includes('/v1/messages')) {
         res.writeHead(200, { 'content-type': 'application/json' }).end('{}');
         return;
       }
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
-      const wanted =
-        call !== undefined &&
-        !(once && called) &&
-        toolsOffered(body).includes(call.tool) &&
-        !carriesAResult(body);
-      if (wanted) called = true;
-      res.end(wanted ? aCallTurn(call) : aClosingTurn(closing));
+      const reply = decide(body, before);
+      res.end(
+        'call' in reply
+          ? aCallTurn(reply.call, reply.id, reply.inputTokens)
+          : aClosingTurn(reply.text, reply.inputTokens),
+      );
     });
   });
   server.on('connection', (socket) => {
@@ -211,4 +253,58 @@ export function dispatchASubagent(prompt = 'Look into it and report.') {
     tool: 'Agent',
     input: { description: 'look into it', prompt, subagent_type: 'general-purpose' },
   });
+}
+
+/** How a session of several turns goes, for {@link aScriptOfCalls}. */
+export interface TheScript {
+  /** The calls the model makes, one to a turn, each when the result of the one before came back. */
+  readonly calls: readonly TheCall[];
+  /**
+   * The call after whose answer the stand-in claims a window full of tokens, counted from 1, so
+   * that a host that compacts by the usage it is told compacts then; none: it never claims one.
+   */
+  readonly fillsTheWindowAfter?: number;
+  /** How a request is told to be the one that asks for the summary of a compaction. */
+  readonly isTheSummaryRequest?: (body: Readonly<Record<string, unknown>>) => boolean;
+  /** What the stand-in answers that request with: a text the case chose, and chose without the rule. */
+  readonly summary?: string;
+}
+
+/** The tokens a turn claims when it says the window is full. */
+const A_FULL_WINDOW = 190_000;
+
+/**
+ * The decision of a stand-in that makes `calls` in order and then closes, and that answers the
+ * request for a summary with the text it was given.
+ *
+ * A call is made when the request carries the result of the one before it, by its id, and not by
+ * how many requests came: a conversation that was compacted no longer carries those results, and
+ * the stand-in closes instead of starting its calls over.
+ */
+export function aScriptOfCalls(
+  script: TheScript,
+): (body: Readonly<Record<string, unknown>>) => TheReply {
+  let made = 0;
+  let lastId = '';
+  return (body) => {
+    const sent = JSON.stringify(body['messages'] ?? []);
+    if (script.isTheSummaryRequest?.(body) === true) {
+      return { text: script.summary ?? 'Nothing is known about the work.' };
+    }
+    const call = script.calls[made];
+    if (
+      call !== undefined &&
+      toolsOffered(body).includes(call.tool) &&
+      (lastId === '' || sent.includes(`"tool_use_id":"${lastId}"`))
+    ) {
+      made += 1;
+      lastId = `toolu_stand_in_${String(made).padStart(4, '0')}`;
+      return {
+        call,
+        id: lastId,
+        ...(script.fillsTheWindowAfter === made ? { inputTokens: A_FULL_WINDOW } : {}),
+      };
+    }
+    return { text: 'done' };
+  };
 }

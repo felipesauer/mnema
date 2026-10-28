@@ -30,7 +30,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runTests } from '@vscode/test-electron';
 import { afterEach } from 'vitest';
-import { aSandbox, PLUGIN, type TheProjectToWrite } from './a-sandbox.js';
+import { aSandbox, PLUGIN, type TheFilesToPut, type TheProjectToWrite } from './a-sandbox.js';
 import { refuseUnlessLoopbackOnly } from './the-host.js';
 
 const STAND_IN_MODEL = fileURLToPath(new URL('./vscode/extension.cjs', import.meta.url));
@@ -109,6 +109,8 @@ export interface TheEditorSession {
 /** How to start a session. */
 export interface TheEditorSpec {
   readonly project?: (project: TheProjectToWrite) => void;
+  /** Files put in the project after its record is written; see {@link TheFilesToPut}. */
+  readonly files?: TheFilesToPut;
   /** The path, from the project, of the file the stand-in model asks the editor to create. */
   readonly target: string;
   /** Whether the plugin of this tree is listed in the editor's settings. Default: yes. */
@@ -131,7 +133,7 @@ export async function anEditorSession(spec: TheEditorSpec): Promise<TheEditorSes
   // A shell that is itself started from an Electron program carries this, and the editor then
   // runs as plain node and reads its first argument as a script. It is never what a case wants.
   delete process.env['ELECTRON_RUN_AS_NODE'];
-  const box = aSandbox('mnema-editor-', spec.project);
+  const box = aSandbox('mnema-editor-', spec.project, spec.files);
   try {
     const out = join(box.root, 'out');
     const userData = join(box.root, 'user-data');
