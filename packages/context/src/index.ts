@@ -75,6 +75,7 @@ export {
   type Acceptance,
   type DecisionRef,
   decisionDisposition,
+  type NamedDecision,
   ruleIdsInForce,
 } from './context/decisions.js';
 // The vocabulary the two accessors answer IN. A consumer that maps every disposition
