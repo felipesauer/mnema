@@ -1645,7 +1645,7 @@ The working tree's changes are never read to find the paths: they could credit t
 
 ### Recording the same decision twice
 
-`mnema decision record` and the `record_decision` tool look, before they write, for a decision of the same tree that is
+The `decision record` command and the `record_decision` tool look, before they write, for a decision of the same tree that is
 `proposed` or `accepted` and whose title, rationale and alternatives are exactly the ones given (after the replacement of
 secrets every write applies, so a text with a credential matches the second time too; alternatives present in one and
 absent in the other differ). If there is one, nothing is written and the answer is `Decision ADR-n (id) is already recorded

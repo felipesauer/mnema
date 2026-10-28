@@ -310,7 +310,7 @@ export type RecordDecisionResult =
         readonly offered: readonly string[];
         /**
          * Set when the decision was already on the record (same title, rationale and
-         * alternatives, still proposed or accepted): nothing was written, `id` and `adr` are the
+         * alternatives, in force or awaiting a judgement): nothing was written, `id` and `adr` are the
          * existing decision's, and `offered` is empty.
          */
         readonly alreadyRecorded?: true;

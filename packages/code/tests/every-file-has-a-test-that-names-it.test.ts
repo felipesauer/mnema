@@ -979,6 +979,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-client-that-names-no-workspace.test.ts': 14,
   'packages/code/tests/a-commit-hook-only-suggests.test.ts': 10,
   'packages/code/tests/a-correction-becomes-a-proposal.test.ts': 14,
+  'packages/code/tests/a-decision-recorded-twice-is-the-one-on-the-record.test.ts': 12,
   'packages/code/tests/a-flag-declared-twice.test.ts': 9,
   'packages/code/tests/a-floor-under-the-window.test.ts': 16,
   'packages/code/tests/a-gate-says-the-rule-it-stands-on-was-moved-apart.test.ts': 17,

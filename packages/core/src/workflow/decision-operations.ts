@@ -54,7 +54,8 @@ import {
 } from './as-the-record-stands.js';
 import type { Clock } from './clock.js';
 import { type DecisionGateErr, decisionGate } from './decision-gate.js';
-import { INITIAL_DECISION_STATE } from './decision-states.js';
+import { INITIAL_DECISION_STATE, isDecisionState } from './decision-states.js';
+import { findDecisionTransition } from './decision-transitions.js';
 import { authorizingAnchor } from './identity-operations.js';
 import { asTheChainIs, standing } from './read-the-record.js';
 
@@ -167,6 +168,15 @@ export interface SupersedeInput extends DecisionTransitionInput {
 }
 
 /**
+ * Whether a decision in `state` is still on the record as one to act on: the states a supersede is
+ * legal from are exactly the proposed and the accepted, so the table the gate reads says it and no
+ * list of states is kept here.
+ */
+function isInForceOrProposed(state: string): boolean {
+  return isDecisionState(state) && findDecisionTransition(state, 'supersede') !== undefined;
+}
+
+/**
  * Records a new decision: mints its id, derives the frozen `ADR-<n>` label from
  * the current decision count, then appends the birth pair (`decision.recorded`
  * then the birth `decision.transitioned`, `from: null` → proposed) atomically.
@@ -244,7 +254,7 @@ export function recordDecision(
           .decisionsTitled(text.fields.title)
           .find(
             (held) =>
-              (held.state === 'proposed' || held.state === 'accepted') &&
+              isInForceOrProposed(held.state) &&
               held.rationale === text.fields.rationale &&
               held.alternatives === text.fields.alternatives,
           ),

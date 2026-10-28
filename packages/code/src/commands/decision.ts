@@ -68,7 +68,7 @@ export interface DecisionRecorded extends Replacement, Landed {
   readonly adr: string;
   /**
    * Set when the decision was already on the record (same title, rationale and alternatives,
-   * still proposed or accepted): nothing was written, and `id` and `adr` are the existing one's.
+   * in force or awaiting a judgement): nothing was written, and `id` and `adr` are the existing one's.
    */
   readonly alreadyRecorded?: true;
 }
