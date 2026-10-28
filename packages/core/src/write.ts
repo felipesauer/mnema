@@ -230,6 +230,7 @@ export {
   type PruneInput,
   type PruneOk,
   prepareRun,
+  type RecordedAlready,
   type RecordInput,
   type RecordOk,
   type RefusedInput,

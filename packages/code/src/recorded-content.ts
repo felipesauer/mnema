@@ -228,6 +228,18 @@ export function landedNotice(scope: Scope): string {
   }
 }
 
+/**
+ * The sentence a decision recorded a second time is answered with, by both doors: the decision
+ * that is already on the record, named by its label and id, and that nothing was written. It does
+ * not begin with "Recorded decision", the line a write that landed begins with.
+ */
+export function alreadyRecordedLine(
+  recorded: { readonly adr: string; readonly id: string },
+  scope: Scope,
+): string {
+  return `Decision ${recorded.adr} (${recorded.id}) is already recorded in the ${scope} tree with this title, rationale and alternatives. Nothing was written.`;
+}
+
 /** The half of a write result that reports what the content door replaced. */
 export interface Replacement {
   readonly replaced?: readonly ReplacedClass[];

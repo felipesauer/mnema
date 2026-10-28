@@ -39,6 +39,7 @@ import { getChannelSwitch, listChannelSwitches } from './channel-store.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
 import {
   countDecisions,
+  decisionsTitled,
   getDecision,
   listDecisions,
   listDecisionsByState,
@@ -646,6 +647,11 @@ export class ProjectionCache {
   /** How many decisions are projected. */
   countDecisions(): number {
     return countDecisions(this.db);
+  }
+
+  /** The decisions projected under exactly this title, ordered by id. */
+  decisionsTitled(title: string): DecisionProjection[] {
+    return decisionsTitled(this.db, title);
   }
 
   /** Lists all projected decisions, ordered by id. */
