@@ -1584,15 +1584,16 @@ export function installLine(name: HostName): string {
     : install.words;
 }
 
-/** The install page's table: one row per host, the line that installs it and where the rest is. */
+/** The install page's table: one row per host, its rung with the caveat, and the line that installs it; the name links to the host's section. */
 export function installTable(): string {
   const rows = HOST_NAMES.map((name) => {
-    const rung = rungOf(name).split(',')[0] ?? 'none';
-    return `| ${SHOWN[name].name} | **${rung}** | ${installLine(name)} | [Details](hosts.md#${HOSTS[name].install.at}) |`;
+    const [rung = 'none', ...caveat] = rungOf(name).split(', ');
+    // The rung keeps its caveat: a host whose (a) is only documented is not the same as one measured.
+    const shown =
+      caveat.length === 0 ? `**${rung}**` : `**${rung}**<br><sub>${caveat.join(', ')}</sub>`;
+    return `| [${SHOWN[name].name}](hosts.md#${HOSTS[name].install.at}) | ${shown} | ${installLine(name)} |`;
   });
-  return ['| Host | Rung | Install | The rest |', '| :--- | :---: | :--- | :--- |', ...rows].join(
-    '\n',
-  );
+  return ['| Host | Rung | Install |', '| :--- | :---: | :--- |', ...rows].join('\n');
 }
 
 /** The line that opens the generated table on the install page. */

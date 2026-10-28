@@ -9,8 +9,10 @@
  * of a row is, letter for letter, a line of a fenced block in the section the row points to, and
  * every command a row names in backticks instead of giving a line is one that section also names.
  * The anchor of each row is a heading of `docs/hosts.md`. The two lines that install the Claude Code plugin
- * are also written as a block on the README, `docs/first-record.md` and `plugin/README.md`: each carries
- * the host table's commands, so the four places cannot part.
+ * are also written as a block on the README, `docs/first-record.md`, `docs/hosts.md` and `plugin/README.md`,
+ * and in backticks in the prose of `docs/hosts.md` and `plugin/README.md` and in the two texts
+ * `mnema doctor` prints (`src/commands/doctor.ts`): each carries the host table's commands, so none of
+ * those places can part from it.
  *
  * What this does not hold: that the host runs the command. How each host is known is the rung
  * table of `docs/evidence.md`, and the row says the rung beside the line.
@@ -87,6 +89,31 @@ describe('the install line of a host', () => {
       expect(
         ('commands' in install ? install.commands : []).filter((line) => !written.includes(line)),
       ).toEqual([]);
+    },
+  );
+
+  // The same commands, written in a sentence: in the prose of two pages and in two texts the product
+  // prints. A line break inside a sentence is a space, and a backtick escaped in a template string is
+  // the backtick it prints.
+  // The doctor prints the second command twice: once with the first, and once alone.
+  const SENTENCES: readonly (readonly [string, number, number])[] = [
+    ['docs/hosts.md', 0, 1],
+    ['docs/hosts.md', 1, 1],
+    ['plugin/README.md', 0, 1],
+    ['plugin/README.md', 1, 1],
+    ['packages/code/src/commands/doctor.ts', 0, 1],
+    ['packages/code/src/commands/doctor.ts', 1, 2],
+  ];
+  it.each(SENTENCES)(
+    '%s names command %i of the Claude Code install in backticks, %i time(s) at least',
+    (page, which, times) => {
+      const text = readFileSync(join(ROOT, page), 'utf-8')
+        .replace(/\\`/g, '`')
+        .replace(/\s+/g, ' ');
+      const install = HOSTS.claude.install;
+      const command = 'commands' in install ? install.commands[which] : undefined;
+      expect(command).toBeDefined();
+      expect(text.split(`\`${command}\``).length - 1).toBeGreaterThanOrEqual(times);
     },
   );
 

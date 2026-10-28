@@ -90,7 +90,7 @@ export interface Host {
    * How the host gets the plugin, as the one line the install page's table carries for it and the
    * section of `docs/hosts.md` it links to. `at` is the anchor of that section. A host with a
    * one-line command says it in `commands`, and each one is written, letter for letter, in a
-   * fenced block of that section (`tests/the-install-line-of-a-host-is-its-sections-block.test.ts`);
+   * fenced block of that section (`tests/the-install-line-of-a-host-is-what-its-section-says.test.ts`);
    * a host without one says in `words` what it takes instead, and a command in backticks there is
    * one the section also names. A host without an `install` does not compile.
    */
