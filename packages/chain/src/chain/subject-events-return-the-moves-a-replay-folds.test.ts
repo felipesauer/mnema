@@ -14,7 +14,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { decisionBirth, decisionTransitioned, memoryCaptured, taskBirth } from '../events/build.js';
+import {
+  decisionBirth,
+  decisionRecorded,
+  decisionTransitioned,
+  memoryCaptured,
+  taskBirth,
+} from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting } from './chain.js';
@@ -202,6 +208,30 @@ describe('a writer is judged by the positions of its own tail', () => {
       'null>proposed',
       'proposed>accepted',
     ]);
+  });
+});
+
+describe('a writing of a decision before the text its first judgment saw is not returned', () => {
+  it('leaves out a writing dated back on a tail the accept never read, and keeps a later one', () => {
+    // Tail b: a note, then (written after the accept, dated before A's writing) the id again.
+    // Tail a cites b's note at the birth, never the writing, and accepts.
+    const b = machine();
+    b.note('other', T(1));
+    const a = machine({ citeHeads: true });
+    birthOf(a, D1, T(3));
+    move(a, T(4), accept);
+    b.append(decisionRecorded(b.env(D1, T(2)), { title: 'forged', rationale: 'r', adr: 'ADR-1' }));
+    b.append(decisionRecorded(b.env(D1, T(5)), { title: 'late', rationale: 'r', adr: 'ADR-1' }));
+
+    const events = subjectEvents({ root }, upcasters, [D1]).get(D1) ?? [];
+    expect(kinds(events)).toEqual([
+      'decision.recorded',
+      'null>proposed',
+      'proposed>accepted',
+      'decision.recorded',
+    ]);
+    const [text] = events;
+    expect(text?.kind === 'decision.recorded' ? text.payload.title : undefined).toBe('t');
   });
 });
 
