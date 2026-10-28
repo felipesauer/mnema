@@ -17,7 +17,7 @@ import {
   isGoverned,
   rulesInForce,
 } from './governed.js';
-import { eventsAdded, readEvents, whatItDoes } from './record.js';
+import { decisionLabels, eventsAdded, readEvents, whatItDoes } from './record.js';
 
 /** The most changed files `mnema rules` is asked about, one process each. */
 export const MOST_ASKED = 200;
@@ -94,7 +94,7 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
   }
 
   const head = textsOf(headTexts);
-  const record = whatItDoes(eventsAdded(textsOf(baseTexts), head), head);
+  const record = whatItDoes(eventsAdded(textsOf(baseTexts), head), decisionLabels(headTexts));
 
   const changed = (await world.github.changedFiles()).filter((path) => !path.startsWith('.mnema/'));
   const asked = changed.slice(0, MOST_ASKED);

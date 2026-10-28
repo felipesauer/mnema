@@ -8,6 +8,8 @@
  * names; it believes the bytes it is handed exactly as far as it reads them.
  */
 
+import { catalogUpcasters, decisionTextsOf, type Entry, parseEntry } from '@mnema/chain';
+
 /** One event of the record, reduced to what the report reads. */
 export interface RecordedEvent {
   /** The link hash: what makes two lines the same event. */
@@ -81,28 +83,58 @@ export interface WhatItDoes {
   readonly decisions: readonly DecisionMoved[];
 }
 
+/** What a decision is called in the report: the citable `ADR-<n>` and the title. */
+export interface DecisionLabel {
+  readonly adr: string | undefined;
+  readonly title: string | undefined;
+}
+
 /**
- * Counts the added events by kind and names the decisions they touch. `all` is the head's whole
- * record: a decision moved in this pull request was born in an earlier one, and its title and
- * `ADR-<n>` live there.
+ * The label of every decision of the record the files `texts` hold, read off the writing that is
+ * its text (FORMAT.md section 6.8): the first writing the writer of its first judgment had read,
+ * or its first writing in the merged order while nothing has judged it. It asks the function every
+ * reader of the product asks, so a second writing of a decision's id, which no honest writer
+ * appends, does not relabel it in the comment either. A line is read as the product reads it, and
+ * one it would refuse is left out; nothing here checks a signature or a link, which is `verify`'s.
+ */
+export function decisionLabels(texts: readonly string[]): Map<string, DecisionLabel> {
+  const upcasters = catalogUpcasters();
+  const byTail = new Map<string, Entry[]>();
+  for (const text of texts) {
+    for (const line of text.split('\n')) {
+      if (line.trim() === '') continue;
+      let entry: Entry;
+      try {
+        entry = parseEntry(line, upcasters);
+      } catch {
+        continue;
+      }
+      const tail = byTail.get(entry.link.tail) ?? [];
+      tail.push(entry);
+      byTail.set(entry.link.tail, tail);
+    }
+  }
+  for (const entries of byTail.values()) entries.sort((a, b) => a.link.seq - b.link.seq);
+  const labels = new Map<string, DecisionLabel>();
+  for (const [id, { event }] of decisionTextsOf(byTail)) {
+    if (event.kind !== 'decision.recorded') continue;
+    labels.set(id, { adr: event.payload.adr, title: event.payload.title });
+  }
+  return labels;
+}
+
+/**
+ * Counts the added events by kind and names the decisions they touch. `labels` is what the head's
+ * whole record calls each decision ({@link decisionLabels}): a decision moved in this pull
+ * request was born in an earlier one, and its title and `ADR-<n>` live there.
  */
 export function whatItDoes(
   added: readonly RecordedEvent[],
-  all: readonly RecordedEvent[],
+  labels: ReadonlyMap<string, DecisionLabel>,
 ): WhatItDoes {
   const counts = new Map<string, number>();
   for (const event of added) counts.set(event.kind, (counts.get(event.kind) ?? 0) + 1);
   const byKind = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-
-  const births = new Map<string, { adr: string | undefined; title: string | undefined }>();
-  for (const event of all) {
-    if (event.kind !== 'decision.recorded') continue;
-    const { adr, title } = event.payload;
-    births.set(event.subject, {
-      adr: typeof adr === 'string' ? adr : undefined,
-      title: typeof title === 'string' ? title : undefined,
-    });
-  }
 
   const moved = new Map<string, string[]>();
   for (const event of added) {
@@ -116,8 +148,8 @@ export function whatItDoes(
 
   const decisions = [...moved].map(([id, to]) => ({
     id,
-    adr: births.get(id)?.adr,
-    title: births.get(id)?.title,
+    adr: labels.get(id)?.adr,
+    title: labels.get(id)?.title,
     to,
   }));
   return { total: added.length, byKind, decisions };
