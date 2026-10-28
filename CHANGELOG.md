@@ -247,6 +247,12 @@ with its own changelog.
   accepted as `ADR-1`, the rule addressed at a path, and a check that the record is intact; the plugin is a second step, with the
   other hosts on the install page. A new test runs that block as written, through the built binary, in a sandbox.
 
+- **`docs/first-record.md` is five steps, and the third ties the rule to a path.** The page founds the record, records a decision and
+  accepts it, addresses it at `src/billing` with `link` and asks `why` about a file under it, hands the record to Claude
+  Code, and checks it with `mnema verify`; what `init` leaves in the repository follows. Under each `mnema` command is every line it
+  prints, and the test that held the old block to the binary now runs the commands of all five steps in one repository, in order. The
+  `mnema search` of the old block is gone, because `why` shows the rule as well.
+
 - **The install page says how to check the install and the package, and pins a version.** `mnema --version` and `mnema doctor`
   come first, then `npm i -g @mnema/code@x.y.z` with the number of the published version (`pnpm release:prepare` writes it, in
   that line and in the one below), then how to check the package: in an empty folder, `npm i --ignore-scripts @mnema/code@x.y.z`
