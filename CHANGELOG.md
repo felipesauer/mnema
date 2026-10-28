@@ -145,6 +145,12 @@ with its own changelog.
   workflow's build step sets it in its `env`; a test refuses a script or a step that builds the site without it, and a workflow of any other
   name that builds it.
 
+- **The README opens on the questions a record answers, and its Quick start reaches a rule in force and a green `verify` with no
+  agent.** Under the headline, three questions (who decided this and why, what was turned down, has it changed since) come
+  before the sentence about what mnema is. The Quick start's first block is the binary, the founding of the record, a decision recorded and
+  accepted as `ADR-1`, the rule addressed at a path, and a check that the record is intact; the plugin is a second step, with the
+  other hosts on the install page. A new test runs that block as written, through the built binary, in a sandbox.
+
 - **The install page says how to check the install and the package, and pins a version.** `mnema --version` and `mnema doctor`
   come first, then `npm i -g @mnema/code@x.y.z` with the number of the published version (`pnpm release:prepare` writes it, in
   that line and in the one below), then how to check the package: in an empty folder, `npm i --ignore-scripts @mnema/code@x.y.z`
