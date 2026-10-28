@@ -269,6 +269,10 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     'The sweep that reports which sandboxes under the machine temp directory outlived a run of the suite. It answers from OUTSIDE the suite, with no worker alive, which is the one place the before-and-after listing is not a race, so it can be neither a package nor reachable by a walk of one.',
   'packages/vscode/src/the-page-the-stores-show.test.ts -> ../build/icon.mjs':
     'The build script that draws the extension icon, a plain module outside the package sources the coverage universe covers. The cases importing it assert the PNG it returns (its signature, its size, the same bytes on a second drawing, the pixels of the banner M), so the specifier is the proof of the icon and not a dependency the scanner could follow.',
+  'packages/vscode/src/the-font-the-status-bar-shows.test.ts -> ../build/icon-font.mjs':
+    'The build module that draws the M as the TrueType font the status bar names in contributes.icons. A plain module outside the package sources the coverage universe covers. The cases importing it assert the bytes it returns (the ten tables, their checksums, the code point map, the outline cell by cell on the 16 pixel grid, the same bytes on a second drawing), so the specifier is the proof of the font and not a dependency the scanner could follow.',
+  'packages/vscode/src/the-vsix-check-refuses-a-font-the-editor-would-drop.test.ts -> ../build/icon-font.mjs':
+    'The build module that draws the status bar font, named here by the case that packs its bytes (and the same bytes with one table renamed) and runs the check on the file. A plain module outside the package sources the coverage universe covers, so the specifier is the proof and not a dependency the scanner could follow.',
   'packages/vscode/src/the-mark-the-side-bar-shows.test.ts -> ../build/icon.mjs':
     'The build script that draws the extension icon, named here by the case that holds the 128 pixel PNG to the bytes it had before its letter geometry moved into the module below. A plain module outside the package sources the coverage universe covers, so the specifier is the proof and not a dependency the scanner could follow.',
   'packages/vscode/src/the-mark-the-side-bar-shows.test.ts -> ../build/mark.mjs':
@@ -1508,15 +1512,17 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/vscode/src/cli.test.ts': 2,
   'packages/vscode/src/decision.test.ts': 3,
   'packages/vscode/src/extension.test.ts': 10,
-  'packages/vscode/src/manifest.test.ts': 4,
+  'packages/vscode/src/manifest.test.ts': 5,
   'packages/vscode/src/proposed.test.ts': 3,
   'packages/vscode/src/record-mark.test.ts': 3,
   'packages/vscode/src/rules.test.ts': 2,
   'packages/vscode/src/stacks.test.ts': 7,
   'packages/vscode/src/status.test.ts': 3,
   'packages/vscode/src/the-bundle-holds-no-database.test.ts': 6,
+  'packages/vscode/src/the-font-the-status-bar-shows.test.ts': 3,
   'packages/vscode/src/the-mark-the-side-bar-shows.test.ts': 5,
   'packages/vscode/src/the-page-the-stores-show.test.ts': 5,
+  'packages/vscode/src/the-vsix-check-refuses-a-font-the-editor-would-drop.test.ts': 7,
   'packages/vscode/src/the-vsix-check-refuses-a-paint-of-its-own.test.ts': 5,
   'packages/vscode/src/why.test.ts': 3,
 };
@@ -2139,8 +2145,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows; a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(20);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(20);
+    expect(unresolved.length).toBe(22);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(22);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);
