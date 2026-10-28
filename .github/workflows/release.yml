@@ -431,7 +431,7 @@ jobs:
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
         run: |
           set -euo pipefail
-          [ -n "$AZURE_CLIENT_ID" ] && [ -n "$AZURE_TENANT_ID" ] || { echo "::error::the extension-stores environment has no AZURE_CLIENT_ID or AZURE_TENANT_ID variable"; exit 1; }
+          [ -n "${AZURE_CLIENT_ID:-}" ] && [ -n "${AZURE_TENANT_ID:-}" ] || { echo "::error::the extension-stores environment has no AZURE_CLIENT_ID or AZURE_TENANT_ID variable"; exit 1; }
           [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] && [ -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ] || { echo "::error::this job cannot ask for an OIDC token"; exit 1; }
           command -v az > /dev/null || { echo "::error::the Azure command line is not on this runner"; exit 1; }
           token="$(curl -sS --fail -G -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
