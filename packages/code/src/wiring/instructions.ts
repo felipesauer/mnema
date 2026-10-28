@@ -16,7 +16,6 @@ import { fact } from '../presentation/detail.js';
 import { here } from './context.js';
 import { reportRefusal, reportUsage } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
-import { HOST_FILES_NOT_UNDERSTOOD } from './which-host-files.js';
 
 /** Registers `mnema instructions` on the program. */
 export function registerInstructions(program: Command, wiring: Wiring): Declared {
@@ -99,11 +98,12 @@ export function registerInstructions(program: Command, wiring: Wiring): Declared
       ) {
         // THE FILES ON DISK ARE THE CHOICE: with one of them there, this updates what is there and asks
         // nothing; with none, and a person at the terminal, it asks what `mnema init` asks.
-        const { askWhichHostFiles } = await import('./which-host-files.js');
+        const { askWhichHostFiles, HOST_FILES_NOT_UNDERSTOOD, saidLeft } = await import(
+          './which-host-files.js'
+        );
         const answer = await askWhichHostFiles({ ...io, ask: io.ask }, render);
         if (answer.kind === 'cancelled') {
-          io.err('');
-          io.err(render(fact('Nothing was written.')));
+          saidLeft(io, render, 'Nothing was written.');
           return;
         }
         if (answer.kind === 'unclear') {

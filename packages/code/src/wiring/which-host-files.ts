@@ -20,6 +20,7 @@ import { CHOOSABLE_INSTRUCTIONS } from '../instructions-block.js';
 import { fact } from '../presentation/detail.js';
 import type { Render } from '../presentation/render.js';
 import type { CliIo } from './io.js';
+import { onOneLine } from './on-one-line.js';
 
 /** What the person said, or that they said nothing and left. */
 export type HostFilesAnswer =
@@ -68,6 +69,15 @@ export function readHostFilesAnswer(typed: string): readonly string[] | undefine
   return OFFERED.filter((path) => picked.has(path));
 }
 
+/**
+ * Says that the person left the question, on the line after it: what the terminal leaves under a
+ * Ctrl-C or Ctrl-D is the end of the prompt and nothing else, so the sentence starts a line of its own.
+ */
+export function saidLeft(io: CliIo, render: Render, what: string): void {
+  io.err(render(fact('')));
+  io.err(render(fact(what)));
+}
+
 /** Whether a rejected read is the person leaving it (Ctrl-C, Ctrl-D) and not a failure. */
 export function isCancelled(error: unknown): boolean {
   return (error as NodeJS.ErrnoException | undefined)?.code === 'ABORT_ERR';
@@ -93,7 +103,7 @@ export async function askWhichHostFiles(
     const files = readHostFilesAnswer(typed);
     if (files !== undefined) return { kind: 'chosen', files };
     if (turn === 0) {
-      io.err(render(fact(`"${typed.trim()}" is not on the list: ${EXPECTED}.`)));
+      io.err(render(fact(onOneLine`"${typed.trim()}" is not on the list: ${EXPECTED}.`)));
     }
   }
   return { kind: 'unclear' };

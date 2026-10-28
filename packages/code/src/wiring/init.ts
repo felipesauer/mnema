@@ -25,7 +25,6 @@ import type { CliIo } from './io.js';
 import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
-import { HOST_FILES_NOT_UNDERSTOOD } from './which-host-files.js';
 
 /**
  * The name this verb is registered under, in one place.
@@ -149,11 +148,12 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
       let instructionFiles: readonly string[] | undefined;
       if (opts.allHosts !== true && io.aPersonIsHere === true && io.ask !== undefined) {
         if (wouldFound(ctx)) {
-          const { askWhichHostFiles } = await import('./which-host-files.js');
+          const { askWhichHostFiles, HOST_FILES_NOT_UNDERSTOOD, saidLeft } = await import(
+            './which-host-files.js'
+          );
           const answer = await askWhichHostFiles({ ...io, ask: io.ask }, render);
           if (answer.kind === 'cancelled') {
-            io.err('');
-            io.err(render(fact('Nothing was founded and nothing was written.')));
+            saidLeft(io, render, 'Nothing was founded and nothing was written.');
             return;
           }
           if (answer.kind === 'unclear') {

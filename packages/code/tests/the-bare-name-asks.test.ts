@@ -345,6 +345,9 @@ describe('at a terminal the bare name asks, and the doors are the directory’s'
       where: nowhere,
       steps: [
         asks(false),
+        // The founding asks which host files to write before it founds (`wiring/which-host-files.ts`),
+        // and Enter on that question is all four.
+        { types: RETURN, until: arrivedSince('Enter for all'), what: 'asked which host files' },
         { types: RETURN, until: arrivedSince(FOUNDED), what: 'founded the project' },
       ],
     });
