@@ -58,7 +58,7 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   one tree of the project retired is retired in the others it reads: what the key signed there
   after the retirement is refused, and not counted as attested.
 - **A brief and a plugin** that hand the decisions in force to an agent's session, and the rules
-  addressed at a file beside a write to it. In Claude Code the plugin also hands the brief to a
+  addressed at a file beside a write to it (in Claude Code, Codex, Qwen Code and OpenCode). In Claude Code the plugin also hands the brief to a
   subagent as it starts, and, after a question the agent asked the person is answered, names the
   tool that records the choice. After a write there, a note of Claude Code's own memory for this
   project is copied into this machine's private tree, once per content (never the index

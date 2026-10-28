@@ -1465,6 +1465,7 @@ const SHORT: { readonly [C in Capability]: string } = {
   opens: 'opening',
   refuses: 'refusal',
   asks: 'pause',
+  pushes: 'rules at an edit',
 };
 
 /**

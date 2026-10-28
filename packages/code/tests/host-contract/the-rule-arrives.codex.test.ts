@@ -13,7 +13,10 @@
  * the rule. The request that follows is proved to be the compacted conversation: it carries the
  * summary and none of the outputs.
  *
- * AT AN EDIT, the rule arrives if it is in the output of the patch to the governed path.
+ * AT AN EDIT, the rule arrives if it is in what the host put in the conversation from the item of
+ * the patch to the governed path on: its output, and the item the host records for what the
+ * `PreToolUse` hook said, which comes between the call and its output. The request as a whole is not
+ * read: the opening of the session already carries the sentinel in this arm, so that would be vacuous.
  *
  * NOT HELD: that the model reads the rule or follows it.
  */
@@ -31,7 +34,7 @@ import {
   aCodexForEachCase,
   aPatchAdding,
   aScriptOfPatches,
-  theResultOfTheCall,
+  whatCameAfterTheCall,
 } from './support/the-codex.js';
 
 const THE_SUMMARY = 'Summary chosen by the case: the person asked for three files.';
@@ -80,7 +83,22 @@ describe('where a rule arrives in Codex', () => {
         patch: aPatchAdding(`${THE_GOVERNED_DIRECTORY}/invoice.ts`),
       });
       expect(existsSync(join(edit.project, THE_GOVERNED_DIRECTORY, 'invoice.ts'))).toBe(true);
-      arrived.edit = theSentinelIsIn(theResultOfTheCall(edit));
+      arrived.edit = theSentinelIsIn(whatCameAfterTheCall(edit));
+      // THE INSTRUMENT: the same read of the same record with the push switched off finds nothing, so
+      // a sentinel found above is the push and not the opening, which already carries the rule.
+      const off = await start({
+        files,
+        project: (project) => {
+          record?.(project);
+          project.mnema('switch', 'off', 'edit-rules-push');
+        },
+        patch: aPatchAdding(`${THE_GOVERNED_DIRECTORY}/invoice.ts`),
+      });
+      expect(existsSync(join(off.project, THE_GOVERNED_DIRECTORY, 'invoice.ts'))).toBe(true);
+      expect(
+        theSentinelIsIn(whatCameAfterTheCall(off)),
+        'the instrument sees a push that was switched off',
+      ).toBe(false);
     }
     return { arrived, mentioned: theMentionIsIn(long.requests[0]?.body) };
   });

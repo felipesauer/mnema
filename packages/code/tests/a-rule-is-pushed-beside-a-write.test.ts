@@ -187,7 +187,6 @@ describe.each(PUSHING)('mnema before-a-write --host %s', (host) => {
           name: 'Bill in UTC',
           address: 'src/other',
           travels: true,
-          acceptance: undefined,
         },
       ],
     };
