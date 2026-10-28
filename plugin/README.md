@@ -74,6 +74,23 @@ document, delivered by the host instead of waited for.
   and never match, so neither runs it; VS Code runs a plugin's command hook on every tool call
   whatever its matcher says, so a filter in the shell passes it only the tools that write, and a
   read costs a shell and nothing more.
+- **The same rules, in Codex, Qwen Code and OpenCode**, through the command hook that already runs
+  before a write there (`mnema before-a-write --host codex|qwen|opencode`): where no rule refuses
+  the write, the reply carries the rules addressed at the paths it touches as context, composed by
+  the function the Claude Code hook composes them with, under the host's own ceiling (Codex's 2,500
+  tokens of 4 bytes), a whole rule at a time. In Codex and Qwen Code the host puts that context
+  beside the result of the write; in OpenCode the plugin module keeps what the gate answered for the
+  call and appends it to the call's result. The fact that the push was live (`channel.served`) is
+  recorded the first time a session is handed the rules and not again for it: the command is a
+  process per write, so it remembers the session in a small file on this machine, outside the
+  record (a lost file costs one fact more, never a push less). A payload with no session id is
+  handed no rules, and the command says so on its second stream. Where a rule refuses the write,
+  the reply is the refusal alone. `mnema switch off edit-rules-push` stops it, as it does in Claude
+  Code. Held, in each host, by the case that starts the real host against a stand-in for its model
+  (`the-rule-arrives.codex.test.ts`, `.qwen.test.ts`, `.opencode.test.ts`: the sentinel of a rule is
+  looked for in what the host put beside the call, and found nothing when the switch is off), and
+  for the command by `a-rule-is-pushed-beside-a-write.test.ts`. Copilot CLI and Gemini CLI do not
+  have it yet.
 - **A `Stop` hook**, `mnema tally`. When the session's own tool calls wrote a file in the last
   response, it prints one line saying how many files they wrote and how many
   decisions were recorded in this project since the session opened, counted off the transcript the
@@ -389,7 +406,7 @@ What each one runs of it:
 | **The MCP server** | connected, in the project the session has open | connected, in the project the window has open | connected once you approve it, in the project of the directory Cursor starts it in: Cursor announces no workspace folders, so that directory is what the server goes by |
 | **What the server says its tools are for** | reaches the session | reaches the model in the families whose prompt carries a server's instructions; in the ones whose prompt does not, the Codex models among them, the opening below is what arrives | reaches the model beside the names of the server's tools; each tool's own description arrives only when the model looks that tool up |
 | **The opening: the document and the notes** | handed to every session | handed to every session, whatever model it runs | both hooks run, and their text reaches the model |
-| **The rules at each edit** | handed over beside the result of that write, and recorded as served | not run: it is an `mcp_tool` hook, a type Claude Code runs and the other two do not, and no command hook of the plugin's carries them instead: VS Code would put a hook's text inside the result of the tool (measured), but the push records that it served once per session, and a process started for each write has no session to remember that by. VS Code gets the pause for a person, below, and not the rules | not run, for the same reason |
+| **The rules at each edit** | handed over beside the result of that write, and recorded as served | not run: it is an `mcp_tool` hook, a type Claude Code runs and the other two do not, and the command hook that runs there does not carry them yet. VS Code puts a hook's text inside the result of the tool (measured), so they could travel that way, remembering the session as Codex's command does; that is not ported. VS Code gets the pause for a person, below, and not the rules | not run, for the same reason: the command that runs there answers the refusal alone |
 | **A write paused for a person, where a rule asks** | yes, through the same `mcp_tool` hook | **yes**, through the plugin's command hook: the write waits for a person, and the asking is recorded as it is in Claude Code | **no**: the agent runs the hook before its write and **ignores** `ask` (the file was written) while it honors `deny` |
 
 **What a write costs there.** In VS Code and Cursor the gate is a process started for each write. Its handler first reads

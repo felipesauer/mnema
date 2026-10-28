@@ -63,7 +63,7 @@ turns that test red.
 - It is not the whole command line. It has no method for tasks, patterns, links, retractions,
   handoffs, switches or keys: those stay with the command line and the MCP server.
 - The `PreToolUse` hook is the gate alone. It does not hand the rules that only govern a path
-  beside the write, which the plugin's Claude Code door does, and it does not run for a write the
+  beside the write, which the plugin's Claude Code, Codex, Qwen Code and OpenCode doors do, and it does not run for a write the
   agent makes through a tool other than `Write`, `Edit` or `NotebookEdit` (a `Bash` redirection, a
   patch tool of your own). A rule that asks for a person holds a write only where the program
   answers the Agent SDK's permission flow for `ask`.

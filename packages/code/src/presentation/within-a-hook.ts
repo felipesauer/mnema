@@ -47,9 +47,6 @@
  */
 export const HOOK_TEXT_CEILING = 10_000;
 
-/** The ceiling as a sentence prints it: derived, so no text spells the number a second time. */
-export const HOOK_CEILING_IN_WORDS = HOOK_TEXT_CEILING.toLocaleString('en-US');
-
 /**
  * What the handler puts between a verb's text and what the same run said about the record on
  * its second stream (`plugin/hooks/hand-over.mjs`, `BETWEEN_THE_STREAMS`): part of the one
@@ -133,6 +130,13 @@ export function hookCeilingOf(
     lengthOf: bytesOf,
     said: { count: tokens, bytesPerToken },
   };
+}
+
+/** A host's ceiling as a paragraph that declares a cut says it: characters, or tokens of so many bytes. */
+export function ceilingInWords(ceiling: HookCeiling): string {
+  const count = ceiling.said.count.toLocaleString('en-US');
+  const bytes = ceiling.said.bytesPerToken;
+  return bytes === undefined ? `${count} characters` : `${count} tokens of ${bytes} bytes`;
 }
 
 /**

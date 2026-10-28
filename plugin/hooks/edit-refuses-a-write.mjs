@@ -29,6 +29,14 @@
  * one place every door decides them (`what-a-write-meets.ts`). The rule for running a verb is
  * `hand-over.mjs`'s.
  *
+ * TWO CHANNELS RIDE THROUGH IT NOW, which is why the declaration below names both. The refusal is
+ * the verb's `deny`. And in Codex and Qwen Code, where the write goes through, the rules of the
+ * record addressed at its path ride in the same answer as `additionalContext`, composed by the verb
+ * with the function the MCP tool composes them with (`edit-rules-push.ts`); this file used to say
+ * that this door carries the refusal alone, and what falsified that is the session id those hosts
+ * put in the payload, which lets the verb record the service once per session. A `mnema` older than
+ * that answers the gate alone, and this hands over whatever it answered.
+ *
  * A GATE THAT CANNOT SAY WHY IT STOPS NOBODY IS NO GATE, SO WHERE IT CANNOT RUN IT REFUSES, WHERE A RULE
  * ADDRESSES THE PATH. A `mnema` that is
  * there and does not answer (it exits non-zero, it does not finish in time, what it prints is not a
@@ -46,7 +54,7 @@
  * knows it by. Read from this SOURCE by the channel guard, never imported: importing this module
  * would run it.
  */
-export const MODEL_CHANNEL = 'edit-refuses-a-write';
+export const MODEL_CHANNEL = 'edit-refuses-a-write+edit-rules-push';
 
 let handed = '';
 try {

@@ -12,6 +12,22 @@ with its own changelog.
 
 ### Added
 
+- **The rules of the record reach the model at an edit in Codex, Qwen Code and OpenCode.** Until now only Claude Code was handed
+  the rules addressed at a path beside a write that goes through; the other hosts got the opening and the refusal, and the
+  arrival measurement read `not arrived` at an edit for all of them. `mnema before-a-write --host codex|qwen|opencode` now answers,
+  where no rule refuses the write, with the rules addressed at the paths it touches as the reply's `additionalContext`: the notice
+  the MCP tool composes for Claude Code, from one reading and one composition shared by both doors, cut at the host's own ceiling
+  (Codex counts bytes) a whole rule at a time, with the paths a long patch could not fit counted in one sentence. In OpenCode the
+  plugin module keeps what the gate answered for the call and appends it to the call's result. The fact that the push was live
+  (`channel.served`) is recorded the first time a session of the host is handed the rules and not again for it, remembered in a
+  small file beside the session's journal on this machine (outside the record, 0600, pruned with the journals, made with an
+  exclusive create so that parallel hooks of one session leave one fact); a payload without a session id is handed no rules, and the
+  verb says so on its second stream. `mnema switch off edit-rules-push` stops it. The host table has a new column, `pushes`, which
+  is not a rung: yes in Claude Code, Codex, Qwen Code and OpenCode, held by a test of each; not ported in the others. The cells of
+  `docs/rule-arrival.md` for the three hosts at an edit are now `arrived`, read from what the host put in the conversation from the
+  call on (never from the whole request, which already carried the rule from the opening), and the same read with the push
+  switched off finds nothing. Copilot CLI and Gemini CLI, and VS Code and Cursor, are not handed the rules at an edit yet.
+
 - **The host contract measures whether a rule reaches the model, by where it is kept and by moment.** One rule carries a
   sentinel, and each of the six hosts the contract starts without an account (Claude Code, Codex, OpenCode, the Copilot CLI,
   Gemini CLI and Qwen Code) is asked whether the sentinel is in a request it sends its model, with the rule kept in `AGENTS.md`,
@@ -120,6 +136,11 @@ with its own changelog.
 
 ### Changed
 
+- **The README opens on the questions a record answers, and its Quick start reaches a rule in force and a green `verify` with no
+  agent.** Under the headline, three questions (who decided this and why, what was turned down, has it changed since) come
+  before the sentence about what mnema is. The Quick start's first block is the binary, the founding of the record, a decision recorded and
+  accepted as `ADR-1`, the rule addressed at a path, and a check that the record is intact; the plugin is a second step, with the
+  other hosts on the install page. A new test runs that block as written, through the built binary, in a sandbox.
 - **The install page says how to check the install and the package, and pins a version.** `mnema --version` and `mnema doctor`
   come first, then `npm i -g @mnema/code@x.y.z` with the number of the published version (`pnpm release:prepare` writes it, in
   that line and in the one below), then how to check the package: in an empty folder, `npm i --ignore-scripts @mnema/code@x.y.z`

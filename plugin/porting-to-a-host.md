@@ -65,6 +65,15 @@ with `-u`) is the whole of the plugin's side. What the verb reads from its paylo
 answers is [`host-hook.ts`](../packages/code/src/host-hook.ts). Which rules a write meets is decided in one
 place, whatever the door, so a new host cannot come to stop different writes than the others.
 
+A host whose command before a write can hand text to the model beside a write that goes through, and
+whose payload carries the session's id, takes the rules of the record the same way: the row's
+`pushes` cell says yes, and the verb adds them to the reply as context, once the service is
+remembered for the session (`takeTheFirstServing`, in [`session-journal.ts`](../packages/code/src/session-journal.ts)),
+because the fact that the push was live is declared once per run and a process per write has no run.
+A host with no session id is handed nothing: the fact is what separates a push that arrived from a
+plugin that was never installed. Codex, Qwen Code and OpenCode are the three that have it; a case of
+[where a rule arrives](../docs/rule-arrival.md) is what turns the cell to yes.
+
 A host that cannot be told to ask must not be answered as if it had asked: a recorded asking for a
 write nobody paused is the record reading backwards. That is why Cursor is answered a refusal and
 nothing else.

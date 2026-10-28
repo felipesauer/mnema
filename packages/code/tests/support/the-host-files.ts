@@ -416,7 +416,7 @@ export function hooksJson(): string {
 
 /** What Codex's hooks file says it does, as the host shows it. */
 const CODEX_HOOKS_DESCRIPTION =
-  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a patch is applied, where a rule of that record refuses a write at a path the patch touches, does not let the patch happen, citing the rule, and records the refusal as a fact of the chain; a rule that only asks for a person is let through in silence, since Codex does not pause a write for one. After a question the agent asked the person was answered, hands the agent one sentence saying that a choice may have been settled there and which tool records it (it records nothing). Each can be switched off with `mnema switch`, which records that it was.";
+  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name, and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a patch is applied, where a rule of that record refuses a write at a path the patch touches, does not let the patch happen, citing the rule, and records the refusal as a fact of the chain; a rule that only asks for a person is let through in silence, since Codex does not pause a write for one. Where a patch goes through, the rules of the record addressed at a path it touches are handed to the model beside it, and the first time a session is handed them that is recorded as a fact of the chain. After a question the agent asked the person was answered, hands the agent one sentence saying that a choice may have been settled there and which tool records it (it records nothing). Each can be switched off with `mnema switch`, which records that it was.";
 
 /**
  * Codex's hooks file: the opening, and the gate before a patch, no end-of-response count and no
@@ -662,6 +662,8 @@ export const Mnema = async ({ directory }) => {
   };
   /** The opening of each session, asked of the verbs once. */
   const opened = new Map();
+  /** What the gate said to hand over beside a write, by the call it was said for. */
+  const beside = new Map();
   return {
     'experimental.chat.system.transform': async (input, output) => {
       const session = input.sessionID ?? '';
@@ -677,7 +679,11 @@ export const Mnema = async ({ directory }) => {
     },
     'tool.execute.before': async (input, output) => {
       if (!WRITES.has(input.tool)) return;
-      const payload = JSON.stringify({ tool_name: input.tool, tool_input: output.args });
+      const payload = JSON.stringify({
+        tool_name: input.tool,
+        tool_input: output.args,
+        session_id: input.sessionID,
+      });
       if (theRuntime().refusal !== null) closedWhere(theRuntime().refusal, directory, payload);
       const there = who();
       if (there === 'other') return;
@@ -698,8 +704,20 @@ export const Mnema = async ({ directory }) => {
           said.permissionDecisionReason ?? 'A rule of this project refuses this write.',
         );
       }
+      // THE RULES BESIDE A WRITE THAT GOES THROUGH: the gate's reply carries them as the context of
+      // the same answer, and they are kept for the call to hand over after it, when the result is
+      // there to put them beside. A call that was refused never reaches that hook.
+      if (typeof said?.additionalContext === 'string' && input.callID !== undefined) {
+        beside.set(input.callID, said.additionalContext);
+      }
     },
     'tool.execute.after': async (input, output) => {
+      const kept = beside.get(input.callID);
+      if (kept !== undefined) {
+        beside.delete(input.callID);
+        if (typeof output.output === 'string') output.output = [output.output, kept].join('\n\n');
+        return;
+      }
       if (input.tool !== ASKS || who() !== 'this') return;
       const ran = run(
         ['settled'],
@@ -726,7 +744,8 @@ export const Mnema = async ({ directory }) => {
     '// Generated from packages/code/src/host-names.ts: change the table, not this file.',
     '//',
     "// Hands an OpenCode session the project's committed mnema record as it opens, refuses a write",
-    '// where a rule of that record refuses it, and after a question to the person was answered says',
+    '// where a rule of that record refuses it, puts the rules addressed at a file beside the result of a',
+    '// write that goes through, and after a question to the person was answered says',
     '// which tool records a choice it settled. Copy this file into `.opencode/plugins/` of the',
     '// project, or into `~/.config/opencode/plugins/`. It runs `mnema` from the PATH, and every',
     '// outcome that is not an answer, such as no `mnema`, no project or a program of that name that',
@@ -1180,6 +1199,7 @@ const COLUMNS: readonly { readonly capability: Capability; readonly heading: str
   { capability: 'opens', heading: '(b) The opening of a session' },
   { capability: 'refuses', heading: '(c) A refusal before a write' },
   { capability: 'asks', heading: '(d) A pause for a person' },
+  { capability: 'pushes', heading: 'The rules beside a write (not a rung)' },
 ];
 
 /** One cell, in words, with the link that holds it relative to the page at `base`. */
@@ -1232,7 +1252,9 @@ const LEGEND = [
   "host's format, and the test holds what it prints, not how the host matches its globs; for the",
   "others, it is `AGENTS.md`, which the host's documentation says it reads (Gemini CLI's is",
   '`GEMINI.md`: it reads `AGENTS.md` only where its settings list it). A host reaches a rung',
-  'when every rung before it is a yes; Aider was read too, and is not here, because it has no MCP',
+  'when every rung before it is a yes; the last column is not a rung: it says whether the host is',
+  'handed the rules of the record addressed at a file beside a write that goes through, and a host',
+  'can have it with or without the pause. Aider was read too, and is not here, because it has no MCP',
   'client.',
 ].join('\n');
 
@@ -1443,6 +1465,7 @@ const SHORT: { readonly [C in Capability]: string } = {
   opens: 'opening',
   refuses: 'refusal',
   asks: 'pause',
+  pushes: 'rules at an edit',
 };
 
 /**

@@ -22,15 +22,21 @@
  * only asks, the Cursor door answers silence and appends nothing: the file would be written, and
  * a `channel.asked` would say a person was asked ({@link asksAPerson}).
  *
- * WHAT IT DOES NOT CARRY, AND WHY: the rules that only `govern` a path. The MCP tool hands those
- * over beside the result of the write, and records that the push served ONCE PER RUN: its
- * connection remembers the run. A process started per write remembers nothing, so it would record
- * one `channel.served` on every edit of a governed file, the thousands-of-writes shape the fact's
- * own declaration refuses (`channel.served`, `@mnema/chain`). So this door carries the gate alone,
- * and the service it records rides with each asking: askings are discrete, and each one is the
- * gate having spoken. A refusal records no service: each `channel.refused` is the refusal itself.
- * VS Code puts a hook's text inside the tool result (measured), so the push could travel this way
- * the day a run can be remembered across processes.
+ * WHAT IT CARRIES BESIDE THE GATE, FOR THE HOSTS THAT TAKE IT (`pushes` in the host table): the
+ * rules that `govern` the path, composed by the one function the MCP tool composes them with
+ * (`readThePush`, then `editRulesToldAcross`), as the `additionalContext` of the same reply, where
+ * no rule refuses the write. THIS PARAGRAPH SAID THE OPPOSITE: that this door "carries the gate
+ * alone", because the push is recorded as served ONCE PER RUN, and a process started per write
+ * remembers no run, so it would record one `channel.served` on every edit of a governed file, the
+ * thousands-of-writes shape the fact's own declaration refuses (`channel.served`, `@mnema/chain`).
+ * WHAT FALSIFIED IT is that a session of the host does have an id, which all three hosts that push
+ * hand the hook (`session_id`, held by their cases of arrival), and this machine already keeps a
+ * small file per session outside the record (`session-journal.ts`): the service is recorded the
+ * first time a session is pushed to and remembered there (`takeTheFirstServing`), so a session of
+ * a thousand edits leaves one fact. Held by `a-rule-is-pushed-beside-a-write.test.ts`. A payload
+ * with no session id is pushed nothing and says so on the second stream: a push without its fact
+ * is what the fact exists to prevent. A refusal records no service: each `channel.refused` is the
+ * refusal itself, and nothing is pushed beside it, because the call ends there.
  *
  * EVERY OUTCOME THAT IS NOT A REFUSAL OR AN ASKING IS THE EMPTY REPLY `{}`, which the host reads
  * as nothing to say: a tool that is not a write (VS Code runs this hook for every tool), no
@@ -46,7 +52,7 @@
 
 import { dirname } from 'node:path';
 import { catalogUpcasters, listPrivateKeyFingerprints } from '@mnema/chain';
-import { type RunHere, runsHere } from '@mnema/context';
+import { channelIsOn, type RulesAtPath, type RunHere, runsHere } from '@mnema/context';
 import {
   agentSignsIn,
   chainRootForScope,
@@ -66,13 +72,19 @@ import {
   signerFor,
 } from '@mnema/core/write';
 import { anchorsBefore, foundingsSince, treesOf } from '../a-new-identity.js';
+import { editRulesToldAcross, readThePush, type ThePush } from '../edit-rules-push.js';
 import { asksAPerson, pathsOfAWrite, replyFor } from '../host-hook.js';
-import { type HookHost, hookTextOf } from '../host-names.js';
+import { does, type HookHost, hookTextOf } from '../host-names.js';
 import { withInheritedSource } from '../inherited-record.js';
 import { recordTrees } from '../intelligence-source.js';
 import type { HookSaid } from '../mcp/hook-reply.js';
 import { type HookCeiling, hookCeilingOf } from '../presentation/within-a-hook.js';
-import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from '../record-framing.js';
+import {
+  ASKS_A_PERSON_CHANNEL,
+  EDIT_PUSH_CHANNEL,
+  REFUSES_A_WRITE_CHANNEL,
+} from '../record-framing.js';
+import { sessionIdOf, takeTheFirstServing } from '../session-journal.js';
 import { caches, withScopedCaches } from '../tree-sources.js';
 import {
   recordTheCharge,
@@ -146,6 +158,11 @@ export function runBeforeAWrite(
     asks: asksAPerson(input.host),
     ceiling: hookCeilingOf(hookTextOf(input.host)),
     reply: (said) => replyFor(input.host, said),
+    // THE HOSTS THAT TAKE THE PUSH (their `pushes` cell says yes) are handed the rules beside a
+    // write that goes through, under the id of the session the host gave the hook.
+    ...(does(input.host, 'pushes')
+      ? { push: { session: sessionIdOf((payload as Record<string, unknown>)['session_id']) } }
+      : {}),
   });
 }
 
@@ -179,6 +196,13 @@ interface APathAsked {
   /** What the host keeps of a hook's text; Claude Code's where omitted. */
   readonly ceiling?: HookCeiling;
   readonly reply: (said: HookSaid) => object;
+  /**
+   * Present where the caller takes the rules of the record beside a write that goes through
+   * (`pushes` in the host table), with the id of the session the host gave the hook, or none: the
+   * service of the push is remembered per session (`takeTheFirstServing`), so a payload with no id
+   * is pushed nothing.
+   */
+  readonly push?: { readonly session: string | undefined };
 }
 
 function whatAPathMeets(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWriteDone {
@@ -192,22 +216,38 @@ function whatAPathMeets(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWri
   // The project root is the PARENT of its `.mnema/`, the directory every address is written
   // against; a relative path is the host's, written against where it started the hook.
   const root = dirname(trees.projectPublic);
-  const { met, others } = withScopedCaches(trees, (sources) => {
+  const { met, others, pushes } = withScopedCaches(trees, (sources) => {
+    // THE SWITCH OF THE PUSH IS ASKED BEFORE ANY RULE IS DERIVED, as the MCP tool asks it: switched
+    // off, the reply is the gate's alone and the derivation behind the text never runs.
+    const pushing = input.push !== undefined && channelIsOn(sources, EDIT_PUSH_CHANNEL);
     // THE RECORD THIS PROJECT INHERITS is read beside its own: a rule of it that refuses or asks at
     // the path applies here as the project's would, and says where it comes from.
-    const found = withInheritedSource(trees, sources, (all) =>
-      whatAWriteMeets(all, { paths, root, from: ctx.cwd }),
-    );
-    // WHERE THE HOST DOES NOT ASK, AN ASKING IS NOT ONE: the write would go through, and the
-    // record would say a person was asked.
-    if (found === undefined || (found.grade === 'ask' && !input.asks)) {
-      return { met: undefined, others: [] };
-    }
+    const read = withInheritedSource(trees, sources, (all) => {
+      const found = whatAWriteMeets(all, { paths, root, from: ctx.cwd });
+      // WHERE THE HOST DOES NOT ASK, AN ASKING IS NOT ONE: the write would go through, and the
+      // record would say a person was asked.
+      const gate =
+        found === undefined || (found.grade === 'ask' && !input.asks) ? undefined : found;
+      // A REFUSAL ENDS THE CALL: there is no write for the rules to ride beside.
+      const pushed =
+        pushing && gate?.grade !== 'refuse'
+          ? paths.map((path) =>
+              readThePush(all, sources, { path, root, from: ctx.cwd }, gate === undefined),
+            )
+          : [];
+      return { gate, pushed };
+    });
+    const spoken = read.pushed.filter((one) => one.at.rules.length > 0);
     // WHO ELSE WAS CHARGED AT THE PATH is read only where the hook is going to speak, so the
     // ordinary case, a write nothing charges, pays nothing for it.
-    return { met: found, others: otherRunsAt(trees, sources, found) };
+    const place = read.gate?.at[0] ?? spoken[0]?.at;
+    return {
+      met: read.gate,
+      others: place === undefined ? [] : otherRunsAt(trees, sources, place),
+      pushes: spoken,
+    };
   });
-  if (met === undefined) return silent();
+  if (met === undefined && pushes.length === 0) return silent();
 
   // THE ORDER IS THE MCP TOOL'S: the facts are appended, and only then does the reply carry the
   // charge. What the write founded, if it was this key's first in the tree, rides in the reason:
@@ -216,15 +256,103 @@ function whatAPathMeets(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWri
   // it is answered whatever the append does, and a fact that could not be written is said in the
   // reason and on the second stream, never by letting the write through.
   const before = anchorsBefore(treesOf(trees));
-  const recorded = recordTheCharge(() => recordWhatItMet(trees, met, input.which));
-  const unrecorded = [...(recorded.ok ? [] : [unrecordedCharge(met.grade, recorded.why)])];
+  const recorded =
+    met === undefined
+      ? { ok: true as const }
+      : recordTheCharge(() => recordWhatItMet(trees, met, input.which));
+  const unrecorded =
+    met === undefined || recorded.ok ? [] : [unrecordedCharge(met.grade, recorded.why)];
+  // WHAT IS PUSHED, once it is known there is something to push and a session to remember it by.
+  const pushed =
+    met?.grade === 'refuse' || input.push === undefined
+      ? { text: undefined, notes: [] }
+      : beside(trees, input, pushes, before);
+  if (met === undefined) {
+    return {
+      ok: true,
+      reply:
+        pushed.text === undefined
+          ? {}
+          : input.reply({ context: withWhoIsHere(pushed.text, others, input.ceiling) }),
+      notes: pushed.notes,
+    };
+  }
   const reason = withWhoIsHere(
     [met.reason, ...unrecorded, ...foundingsSince(before)].join('\n\n'),
     others,
     input.ceiling,
   );
-  const said = met.grade === 'refuse' ? { refuse: reason } : { ask: reason };
-  return { ok: true, reply: input.reply(said), notes: unrecorded };
+  const said =
+    met.grade === 'refuse'
+      ? { refuse: reason }
+      : { ask: reason, ...(pushed.text === undefined ? {} : { context: pushed.text }) };
+  return { ok: true, reply: input.reply(said), notes: [...unrecorded, ...pushed.notes] };
+}
+
+/** What the second stream says where a push was owed and the payload gave no session to remember it by. */
+const NO_SESSION_NOTE =
+  'The hook input carried no session id, so the rules addressed at this path were not handed over beside the write.';
+
+/**
+ * The text a write that goes through is handed beside it, and what to say on the second stream, or
+ * nothing where no session is known to remember the push by.
+ *
+ * THE TEXT IS COMPOSED AS THE MCP TOOL COMPOSES IT: what the write founded, then the line that says a
+ * rule was moved apart, share the ceiling with the rules (`editRulesToldAcross`), so the host, which
+ * measures one string, never gets a text it replaces by a file path. The service fact is recorded
+ * BEFORE the founding is read, since recording is what can found, and never recorded for a push that
+ * is not made.
+ */
+function beside(
+  trees: ReturnType<typeof resolveTrees>,
+  input: APathAsked,
+  pushes: readonly ThePush[],
+  before: ReturnType<typeof anchorsBefore>,
+): { readonly text: string | undefined; readonly notes: readonly string[] } {
+  if (pushes.length === 0) return { text: undefined, notes: [] };
+  const session = input.push?.session;
+  if (session === undefined) return { text: undefined, notes: [NO_SESSION_NOTE] };
+  recordTheService(trees, input.which, session);
+  const apart = [...new Set(pushes.flatMap((one) => (one.apart === undefined ? [] : [one.apart])))];
+  const text = editRulesToldAcross(
+    pushes.map((one) => one.at),
+    [...foundingsSince(before), ...apart],
+    input.ceiling,
+  );
+  return { text, notes: [] };
+}
+
+/**
+ * Records that the push was live in this session, ONCE: the first time the session is pushed to, and
+ * never again for it, remembered outside the record (`takeTheFirstServing`). A fact that cannot be
+ * written is a gap in the evidence and never a push less: the marker is given back, so the next edit
+ * of the session tries again, and the reply goes out whatever happened here.
+ */
+function recordTheService(
+  trees: ReturnType<typeof resolveTrees>,
+  which: string,
+  session: string,
+): void {
+  const taken = takeTheFirstServing(trees, session, EDIT_PUSH_CHANNEL);
+  if (taken === undefined) return;
+  try {
+    const scope = resolveScope('channel.served', { which });
+    const named = agentSignsIn(trees, scope)?.name ?? which;
+    const writer = openTreeForWriting(trees, scope);
+    const ctx = {
+      writer,
+      layout: { root: chainRootForScope(trees, scope) as string },
+      upcasters: catalogUpcasters(),
+    };
+    const done = writer.exclusively(() => {
+      const appended = recordChannelServed(ctx, { channel: EDIT_PUSH_CHANNEL, which: named });
+      writer.checkpoint();
+      return appended;
+    });
+    if (!done.ok) taken.release();
+  } catch {
+    taken.release();
+  }
 }
 
 /**
@@ -276,7 +404,8 @@ function recordWhatItMet(
 }
 
 /**
- * The other runs of this machine charged at the first path the write met (`runsHere`), or none.
+ * The other runs of this machine charged at `place`, the first path the write met or the first one the
+ * push is made for (`runsHere`), or none.
  *
  * THIS PROCESS HAS NO RUN OF ITS OWN to leave out, so a run of the agent that is writing, one it
  * opened through the server, is named like any other, and the sentence names the agent so that
@@ -286,10 +415,8 @@ function recordWhatItMet(
 function otherRunsAt(
   trees: ReturnType<typeof resolveTrees>,
   sources: Parameters<typeof caches>[0],
-  met: WriteVerdict,
+  place: Pick<RulesAtPath, 'path' | 'relative'>,
 ): readonly RunHere[] {
-  const place = met.at[0];
-  if (place === undefined) return [];
   try {
     // A machine with no key of its own is answered no one BEFORE a signer is asked for: asking a
     // signer mints a key, and a read must not found somebody to look for.
