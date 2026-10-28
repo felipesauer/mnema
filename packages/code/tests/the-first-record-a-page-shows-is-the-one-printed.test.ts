@@ -3,7 +3,7 @@
  * THE FIRST RECORD THE ROOT PAGE SHOWS IS THE ONE THE BINARY PRINTS: every line of it, and a
  * cut only where the page marks one.
  *
- * WHAT WAS UNCHECKED, AND WHAT IT HID. The block under "Your first record" showed four of the
+ * WHAT WAS UNCHECKED, AND WHAT IT HID. The block the page then had showed four of the
  * ten lines `init` prints and two of the three `verify` prints, with nothing to say lines were
  * gone. The `verify` line it left out was the census note about the reader's own backup key:
  * the one line a new user would have had to ask about. Nothing read that block's output:
@@ -11,9 +11,10 @@
  * drops every `#>` line (`THE_OUTPUT_IS_A_SECOND_RULE`), and
  * `the-verifier-a-page-publishes-runs.test.ts` holds the NEXT block on the same page.
  *
- * WHAT IS CHECKED. The block's commands run in order, through the built binary, in a sandbox
- * of their own (its own `HOME`, its own repository) and each command's output is held to the
- * `#>` lines under it:
+ * WHAT IS CHECKED. The page is five numbered steps, each with one block. The commands of every
+ * step run in order, through the built binary, in ONE sandbox (its own `HOME`, its own
+ * repository), because the third step addresses the decision the second one recorded, and each
+ * command's output is held to the `#>` lines under it:
  *   - every line it printed is shown, in order, and every line shown was printed;
  *   - `…` is the page's one mark of a cut: inside a line it stands for what the page
  *     shortened, and a line that is `…` alone for one or more whole lines left out;
@@ -23,8 +24,11 @@
  *   - and nothing is printed on the other stream, which the page does not show at all.
  *
  * WHAT IT DOES NOT CHECK:
- *   - the page's prose around the block, and every other block on every other page: this is
- *     one block, the one a new user copies first;
+ *   - the fourth step: its lines are `claude plugin ...`, the reader's and not the binary's,
+ *     and what a host does with the record needs the host. The host's half of what that step
+ *     says is held by the contract tests it is built on (`HELD.claudeOpens` and
+ *     `HELD.claudeGate` in `host-names.ts`);
+ *   - the page's prose around the blocks, and every other block on every other page;
  *   - a `…` that shortens a line to nothing useful: the mark is honest by construction, and
  *     whether it cut too much is a judgement for whoever reads the page.
  */
@@ -41,9 +45,9 @@ import { read } from './support/published-examples.js';
 /** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
-/** The page, and the heading the block lives under. */
+/** The page, and the headings its steps live under (`## 1. Found the record`, and so on). */
 const PAGE = 'docs/first-record.md';
-const SECTION = '# Your first record';
+const STEP_HEADING = /^## \d+\. .+$/;
 
 /** One command of the block, and the lines the page shows under it. */
 interface Shown {
@@ -52,13 +56,22 @@ interface Shown {
   readonly shown: readonly string[];
 }
 
+/** The headings of the page's numbered steps, in the order the page has them. */
+function theSteps(): readonly string[] {
+  return read(PAGE)
+    .split('\n')
+    .filter((line) => STEP_HEADING.test(line));
+}
+
 /**
- * The block under {@link SECTION}: its commands, each with the `#>` lines under it, read by the
- * one reading every case that holds a page's block to a run shares (`blockUnder`). This block
- * sets no shell variable, so every step is a command.
+ * The commands of every step's block, in the order a reader types them, each with the `#>`
+ * lines under it, read by the one reading every case that holds a page's block to a run shares
+ * (`blockUnder`), once per step. The page sets no shell variable, so every step is a command.
  */
 function theBlock(): readonly Shown[] {
-  return blockUnder(PAGE, SECTION).flatMap((step) => (step.kind === 'command' ? [step] : []));
+  return theSteps().flatMap((heading) =>
+    blockUnder(PAGE, heading).flatMap((step) => (step.kind === 'command' ? [step] : [])),
+  );
 }
 
 /**
@@ -89,7 +102,7 @@ afterEach(() => {
 });
 
 describe('the first record the first-record page shows', () => {
-  it('is what the binary prints, line for line, cut only where the page says so', () => {
+  it('is what the binary prints, step after step in one repository, cut only where the page says so', () => {
     const block = theBlock();
     for (const { at, argv, shown } of block) {
       const ran = spawnSync(process.execPath, [CLI, ...argv.slice(1)], {
@@ -130,15 +143,25 @@ describe('the first record the first-record page shows', () => {
     expect(identity?.[1]).toHaveLength(Number(said?.[1]));
   });
 
-  it('reads the four commands the page publishes, each with what it printed', () => {
-    // NON-VACUITY. A block the reader stopped finding would make the case above hold over no
-    // command at all.
+  it('reads the commands of every step the page publishes, each with what it printed', () => {
+    // NON-VACUITY. A step the reader stopped finding would make the case above hold over no
+    // command at all, and a command with nothing shown under it would hold over no line.
+    expect(theSteps()).toHaveLength(5);
     const block = theBlock();
-    expect(block.map((one) => one.argv[1])).toEqual(['init', 'decision', 'search', 'verify']);
+    expect(block.map((one) => one.argv.slice(1, one.argv[1] === 'decision' ? 3 : 2))).toEqual([
+      ['init'],
+      ['decision', 'record'],
+      ['decision', 'move'],
+      ['link'],
+      ['why'],
+      ['verify'],
+    ]);
     expect(block.every((one) => one.shown.length > 0)).toBe(true);
-    // The continuation was read as the shell reads it: the rationale is one word.
+    // The rationale is one word, as the shell reads it.
     expect(block[1]?.argv).toHaveLength(5);
-    expect(block[1]?.argv[2]).toBe('record');
+    // The third step addresses the decision the second one recorded and accepted.
+    expect(block[2]?.argv).toContain('ADR-1');
+    expect(block[3]?.argv).toContain('ADR-1');
   });
 });
 
