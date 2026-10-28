@@ -19,7 +19,7 @@ in [the command reference](cli-reference.md#switching-off-what-mnema-hands-to-a-
 | --- | :---: | --- | --- |
 | `brief-document` | on | the document `mnema brief` prints, which a session opens with and a subagent starts with: the decisions in force and the adopted patterns of the committed record, by name | `mnema switch off brief-document` |
 | `recall-document` | on | the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first | `mnema switch off recall-document` |
-| `edit-rules-push` | on | the rules addressed at a file, handed over at each edit of it, beside the result of that write (in Claude Code, Codex, Qwen Code and OpenCode) | `mnema switch off edit-rules-push` |
+| `edit-rules-push` | on | the rules addressed at a file, handed over at each edit of it, beside the result of that write | `mnema switch off edit-rules-push` |
 | `edit-asks-a-person` | on | the pause before a file is written where the record asks that a person look first: the rules go on arriving, and nothing stops | `mnema switch off edit-asks-a-person` |
 | `edit-refuses-a-write` | on | the refusal of a write where a rule of the record refuses one: such a write goes through, the rules go on arriving, and a rule that asks for a person still asks | `mnema switch off edit-refuses-a-write` |
 | `agent-accepts` | on | an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept: a proposed decision waits, and nothing else changes | `mnema switch off agent-accepts` |

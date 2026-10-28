@@ -35,7 +35,7 @@ import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { asksAPerson, pathsOfAWrite } from '../src/host-hook.js';
-import { HOOK_HOSTS, type HookHost } from '../src/host-names.js';
+import { does, HOOK_HOSTS, type HookHost } from '../src/host-names.js';
 import { hookReply } from '../src/mcp/hook-reply.js';
 import { openSession } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
@@ -164,6 +164,7 @@ function payloadFor(host: HookHost, relative: string): string {
     return JSON.stringify({
       tool_name: 'write',
       tool_input: { filePath: join(repo, relative), content: 'export const probe = 1;\n' },
+      session_id: 'ses_0199c0de0000',
     });
   }
   if (host === 'qwen') {
@@ -366,7 +367,15 @@ describe('the verb a command host runs', () => {
       await did('switch', 'off', 'edit-refuses-a-write');
       // The refused path asks nothing of its own (only the ledger path has an asking rule), so it
       // is silent; the ledger path, refused AND asked, falls to the asking where the host asks.
-      expect(verb(host, 'src/billing/invoice.ts').reply).toEqual({});
+      // A host that takes the push is handed the rules that govern that path, as context and with no
+      // decision; the others are answered nothing.
+      const governed = verb(host, 'src/billing/invoice.ts').reply;
+      if (does(host, 'pushes')) {
+        expect(decided(governed)).toEqual({});
+        expect(JSON.stringify(governed)).toContain(governing);
+      } else {
+        expect(governed).toEqual({});
+      }
       const ledger = decided(verb(host, 'src/ledger/entry.ts').reply);
       if (asksAPerson(host)) {
         expect(ledger.value).toBe('ask');

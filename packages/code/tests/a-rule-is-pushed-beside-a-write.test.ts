@@ -27,6 +27,7 @@ import { hookCeilingOf } from '../src/presentation/within-a-hook.js';
 import { type CliIo, run } from '../src/program.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 import { journalsDir, takeTheFirstServing } from '../src/session-journal.js';
+import { decodedWhole } from './support/arriving.js';
 
 const SRC = fileURLToPath(new URL('../src/', import.meta.url));
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -377,12 +378,10 @@ describe('what a session remembers of having been pushed to', () => {
           env: childEnv,
           stdio: ['pipe', 'pipe', 'inherit'],
         });
-        let out = '';
-        child.stdout.on('data', (chunk: Buffer) => {
-          out += chunk.toString();
-        });
+        const out = decodedWhole();
+        out.from(child.stdout);
         child.on('error', reject);
-        child.on('close', () => resolve(out));
+        child.on('close', () => resolve(out.text()));
         child.stdin.end(payload);
       });
     const replies = await Promise.all([runOne(), runOne(), runOne(), runOne()]);

@@ -194,7 +194,7 @@ const HELLO_STACK = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', i
  * stack is installed and removed (`applyStackInstall`, `removeInstalledStack`); 48 since a person
  * can enrol and retire an agent key (`runAgentEnroll`, `runAgentRetire`).
  */
-const SURFACE_WRITE_PATHS = 48;
+const SURFACE_WRITE_PATHS = 49;
 
 /** What `runInit` answered when it did not refuse; a refusal ends the setup. */
 function founded(result: InitResult | InitRefused): InitResult {
@@ -747,6 +747,30 @@ describe('every write path leaves the record fully signed', () => {
             }),
           });
           if (!('hookSpecificOutput' in refused.reply)) throw new Error('the gate did not refuse');
+        },
+      },
+      {
+        // The service fact of the push, as a host whose hooks are processes and that hands the hook a
+        // session id asks for it: a rule that governs the path, a session, and a push that is on (the
+        // switch row below turns it off, so this row comes first). Without all three the verb answers
+        // `{}` and this row passes having driven nothing.
+        at: 'commands/before-a-write.ts:recordTheService',
+        drive: () => {
+          void ok(
+            'governs',
+            runLink(ctx, { subject: decision, target: 'src/served', rel: 'governs' }),
+          );
+          const done = runBeforeAWrite(ctx, {
+            host: 'codex',
+            payload: JSON.stringify({
+              session_id: 'a-sweep-session',
+              tool_name: 'apply_patch',
+              tool_input: {
+                command: '*** Begin Patch\n*** Add File: src/served/a.ts\n+x\n*** End Patch',
+              },
+            }),
+          });
+          if (!('hookSpecificOutput' in done.reply)) throw new Error('the push was not made');
         },
       },
       {
