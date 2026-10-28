@@ -88,6 +88,15 @@ export interface TheGeminiSpec {
    * or another program of that name, which prints something else and writes down its calls.
    */
   readonly mnema?: 'ours' | 'absent' | 'a stranger';
+  /**
+   * A second run that picks the session of the first one up again (`--resume latest`, in the same
+   * home and project), with a new prompt and its own script for the stand-in. It is the only way a
+   * `gemini -p` session gets a second turn of the person.
+   */
+  readonly resume?: {
+    readonly prompt: string;
+    readonly script: () => TheGeminiScript;
+  };
 }
 
 /** What one session left behind. */
@@ -100,6 +109,10 @@ export interface TheGeminiSession {
   readonly everyRequest: readonly TheRequest[];
   /** What Gemini CLI printed, both streams: its answer and its errors. */
   readonly text: string;
+  /** Every request to `:streamGenerateContent` that the resumed run made; empty without `resume`. */
+  readonly resumedRequests: readonly TheRequest[];
+  /** Every request the stand-in received during the resumed run; empty without `resume`. */
+  readonly resumedEveryRequest: readonly TheRequest[];
   /** Every command line the session ran `mnema` with, in order. */
   readonly calls: readonly string[];
   /** `mnema <args>` in the project, as the sandbox's own user. */
@@ -173,6 +186,8 @@ export function theResultOfTheCall(session: TheGeminiSession): string | undefine
 interface TheStandIn {
   readonly url: string;
   readonly requests: TheRequest[];
+  /** Answers the requests that follow with another script. */
+  answerNextWith(script: TheGeminiScript | undefined): void;
   close(): Promise<void>;
 }
 
@@ -201,8 +216,9 @@ function chunk(part: Record<string, unknown>, promptTokens = 1): string {
  */
 async function startTheStandIn(
   call: TheCall | undefined,
-  script?: TheGeminiScript,
+  firstScript?: TheGeminiScript,
 ): Promise<TheStandIn> {
+  let script = firstScript;
   const requests: TheRequest[] = [];
   const server: Server = createServer((req, res) => {
     const received = decodedWhole();
@@ -243,6 +259,9 @@ async function startTheStandIn(
   return {
     url: `http://127.0.0.1:${port}`,
     requests,
+    answerNextWith: (next) => {
+      script = next;
+    },
     close: () =>
       new Promise<void>((resolve) => {
         server.closeAllConnections();
@@ -331,61 +350,84 @@ async function aGeminiSession(
 
   const out = join(box.root, 'out');
   mkdirSync(out, { recursive: true });
-  const strace = join(out, 'connect.strace');
-  const text = await new Promise<string>((resolve) => {
-    const child = spawn(
-      'strace',
-      [
-        '-f',
-        '-qq',
-        '-e',
-        'trace=connect,sendto,sendmsg,sendmmsg',
-        '-s',
-        '120',
-        '-o',
-        strace,
-        gemini.binary,
-        '-p',
-        'Write the file.',
-        '--approval-mode',
-        'yolo',
-        '-m',
-        MODEL,
-      ],
-      { cwd: box.project, env, stdio: ['ignore', 'pipe', 'pipe'] },
-    );
-    const said = decodedWhole();
-    said.from(child.stdout);
-    const errs = decodedWhole();
-    errs.from(child.stderr);
-    let timedOut = false;
-    const killer = setTimeout(() => {
-      timedOut = true;
-      child.kill('SIGKILL');
-    }, 100_000);
-    child.on('close', () => {
-      clearTimeout(killer);
-      const printed = `${said.text()}${errs.text()}`;
-      resolve(timedOut ? `${KILLED}${printed}` : printed);
+  /** One `gemini -p` run under strace, which ends or is killed after 100 s. */
+  const run = (prompt: string, extra: readonly string[], traceFile: string): Promise<string> =>
+    new Promise<string>((resolve) => {
+      const child = spawn(
+        'strace',
+        [
+          '-f',
+          '-qq',
+          '-e',
+          'trace=connect,sendto,sendmsg,sendmmsg',
+          '-s',
+          '120',
+          '-o',
+          traceFile,
+          gemini.binary,
+          ...extra,
+          '-p',
+          prompt,
+          '--approval-mode',
+          'yolo',
+          '-m',
+          MODEL,
+        ],
+        { cwd: box.project, env, stdio: ['ignore', 'pipe', 'pipe'] },
+      );
+      const said = decodedWhole();
+      said.from(child.stdout);
+      const errs = decodedWhole();
+      errs.from(child.stderr);
+      let timedOut = false;
+      const killer = setTimeout(() => {
+        timedOut = true;
+        child.kill('SIGKILL');
+      }, 100_000);
+      child.on('close', () => {
+        clearTimeout(killer);
+        const printed = `${said.text()}${errs.text()}`;
+        resolve(timedOut ? `${KILLED}${printed}` : printed);
+      });
     });
-  });
+  const strace = join(out, 'connect.strace');
+  let text = await run('Write the file.', [], strace);
   if (text.startsWith(KILLED)) {
     throw new Error(`Gemini CLI did not end in 100 s: ${text.slice(KILLED.length).slice(-2_000)}`);
   }
+  const firstRunEnded = standIn.requests.length;
+  const resumeStrace = join(out, 'resume.strace');
+  if (spec.resume !== undefined) {
+    standIn.answerNextWith(spec.resume.script());
+    const again = await run(spec.resume.prompt, ['--resume', 'latest'], resumeStrace);
+    if (again.startsWith(KILLED)) {
+      throw new Error(
+        `Gemini CLI did not end in 100 s when resumed: ${again.slice(KILLED.length).slice(-2_000)}`,
+      );
+    }
+    text = `${text}${again}`;
+  }
   await standIn.close();
 
-  const destinations = destinationsOrRefuse(strace);
-  if (destinations.length === 0) {
-    throw new Error(
-      'strace saw the host connect nowhere, so it read nothing: the instrument is blind',
-    );
+  for (const trace of spec.resume === undefined ? [strace] : [strace, resumeStrace]) {
+    if (destinationsOrRefuse(trace).length === 0) {
+      throw new Error(
+        'strace saw the host connect nowhere, so it read nothing: the instrument is blind',
+      );
+    }
   }
   // The run measured the binary it was started for: Gemini CLI names its version in every request.
-  const generated = standIn.requests.filter((request) =>
-    request.url.includes(':streamGenerateContent'),
-  );
+  const generatedIn = (requests: readonly TheRequest[]) =>
+    requests.filter((request) => request.url.includes(':streamGenerateContent'));
+  const everyFirst = standIn.requests.slice(0, firstRunEnded);
+  const everyResumed = standIn.requests.slice(firstRunEnded);
+  const generated = generatedIn(everyFirst);
+  const resumed = generatedIn(everyResumed);
   if (generated.length === 0) throw new Error('the host never asked the model to generate');
-  for (const request of generated) {
+  if (spec.resume !== undefined && resumed.length === 0) {
+    throw new Error('the resumed run never asked the model to generate');
+  }
+  for (const request of [...generated, ...resumed]) {
     if (
       !new RegExp(`^GeminiCLI[^/]*/${gemini.version.replaceAll('.', '\\.')}/`).test(
         request.userAgent,
@@ -400,7 +442,9 @@ async function aGeminiSession(
     project: box.project,
     home: box.home,
     requests: generated,
-    everyRequest: standIn.requests,
+    everyRequest: everyFirst,
+    resumedRequests: resumed,
+    resumedEveryRequest: everyResumed,
     text,
     calls: spec.mnema === 'a stranger' ? lines(strangerLog) : box.calls(),
     mnema: box.mnema,
@@ -448,6 +492,11 @@ export interface TheGeminiTurns {
   readonly calls: readonly TheCall[];
   /** The call after whose answer the stand-in claims a full window, counted from 1; none: never. */
   readonly fillsTheWindowAfter?: number;
+  /**
+   * Count only the results that come after the first request: a resumed session restores the
+   * results of the run before, and those are not calls this script made.
+   */
+  readonly countsFromTheFirstRequest?: boolean;
   /** How a request is told to be the one that asks for the summary of a compaction. */
   readonly isTheSummaryRequest?: (body: Readonly<Record<string, unknown>>) => boolean;
   /** What that request is answered with: a text the case chose, without the rule. */
@@ -465,12 +514,15 @@ const A_FULL_WINDOW = 900_000;
  */
 export function aScriptOfCalls(turns: TheGeminiTurns): TheGeminiScript {
   let made = 0;
+  let there: number | undefined;
   return (body) => {
     if (turns.isTheSummaryRequest?.(body) === true) {
       return { text: turns.summary ?? 'Nothing is known about the work.' };
     }
     const call = turns.calls[made];
-    const results = JSON.stringify(body['contents'] ?? []).split('"functionResponse"').length - 1;
+    const held = JSON.stringify(body['contents'] ?? []).split('"functionResponse"').length - 1;
+    there ??= turns.countsFromTheFirstRequest === true ? held : 0;
+    const results = held - there;
     if (
       call !== undefined &&
       theToolsOf({ url: '', body, userAgent: '' }).includes(call.tool) &&

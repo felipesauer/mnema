@@ -24,28 +24,66 @@ import { describe, expect, it } from 'vitest';
 import { ARMS, ARRIVAL_HOSTS, MOMENTS } from './host-contract/support/the-arms-of-a-rule.js';
 import {
   isMeasured,
+  renderTheProse,
   renderTheTable,
+  THE_MECHANISM,
   THE_TABLE,
+  THE_WORDS_OF_ARRIVAL,
   theCell,
 } from './host-contract/support/the-arrival-table.js';
 import { ROOT, read } from './support/published-examples.js';
 
 const PAGE = 'docs/rule-arrival.md';
-const BEGIN = '<!-- BEGIN the table:';
-const END = '<!-- END the table -->';
+const THE_TABLE_MARKS = { begin: '<!-- BEGIN the table:', end: '<!-- END the table -->' };
+const THE_PROSE_MARKS = { begin: '<!-- BEGIN the prose:', end: '<!-- END the prose -->' };
 
-/** The page with what lies between its two marks replaced by `table`. */
-function pageWith(page: string, table: string): string {
-  const begin = page.indexOf(BEGIN);
-  const end = page.indexOf(END);
-  if (begin < 0 || end < begin) throw new Error(`${PAGE} has no marks to put the table between`);
+/** The page with what lies between a pair of marks replaced by `text`. */
+function pageWith(
+  page: string,
+  marks: { readonly begin: string; readonly end: string },
+  text: string,
+): string {
+  const begin = page.indexOf(marks.begin);
+  const end = page.indexOf(marks.end);
+  if (begin < 0 || end < begin)
+    throw new Error(`${PAGE} has no marks ${marks.begin} to put it between`);
   const afterBegin = page.indexOf('-->', begin) + '-->'.length;
-  return `${page.slice(0, afterBegin)}\n\n${table}\n\n${page.slice(end)}`;
+  return `${page.slice(0, afterBegin)}\n\n${text}\n\n${page.slice(end)}`;
+}
+
+/** What lies between a pair of marks. */
+function between(page: string, marks: { readonly begin: string; readonly end: string }): string {
+  const begin = page.indexOf(marks.begin);
+  const end = page.indexOf(marks.end);
+  return page.slice(page.indexOf('-->', begin) + '-->'.length, end).trim();
 }
 
 describe('the page that says where a rule arrives', () => {
-  it('shows the table the host cases hold, between its marks', async () => {
-    await expect(pageWith(read(PAGE), renderTheTable())).toMatchFileSnapshot(join(ROOT, PAGE));
+  it('shows the table the host cases hold between its marks, and the sentences drawn from the same cells between theirs', async () => {
+    const withTable = pageWith(read(PAGE), THE_TABLE_MARKS, renderTheTable());
+    await expect(pageWith(withTable, THE_PROSE_MARKS, renderTheProse())).toMatchFileSnapshot(
+      join(ROOT, PAGE),
+    );
+  });
+
+  it('has no sentence of arrival between the prose marks that a cell does not say', () => {
+    // The whole section is the generated one: a hand-written line there is a line no cell backs.
+    expect(between(read(PAGE), THE_PROSE_MARKS)).toBe(renderTheProse());
+    // NON-VACUITY: the generated prose says both outcomes, for every host.
+    const prose = renderTheProse();
+    expect(prose.match(/^- \*\*/gm)).toHaveLength(ARRIVAL_HOSTS.length);
+    expect(prose).toContain('arrived');
+    expect(prose).toContain('did not arrive');
+  });
+
+  it('lets the hand-written mechanism say how a host does it and never whether a rule arrived', () => {
+    for (const host of ARRIVAL_HOSTS) {
+      expect(THE_MECHANISM[host], host).not.toMatch(THE_WORDS_OF_ARRIVAL);
+    }
+    // The ruler: the pattern catches the sentences it exists for.
+    expect('The record arrived at the edit.').toMatch(THE_WORDS_OF_ARRIVAL);
+    expect('The rule reaches the model.').toMatch(THE_WORDS_OF_ARRIVAL);
+    expect('An `@` import is not expanded by the host.').not.toMatch(THE_WORDS_OF_ARRIVAL);
   });
 
   it('has a row for every place a rule is kept, for every host, and a column for every moment', () => {

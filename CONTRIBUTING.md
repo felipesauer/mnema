@@ -138,7 +138,7 @@ npm ci --ignore-scripts --prefix site
 npm run build --prefix site       # writes site/dist
 ```
 
-The build stops when the record does not verify. Two cases hold what it wrote to its sources (the pages, the links
+The build stops when the record does not verify. The script sets `ASTRO_TELEMETRY_DISABLED=1` for `astro build` (so does the workflow's step), which is the variable Astro's telemetry reads to send nothing; a case refuses a build of the site without it, and the script's prefix is for a POSIX shell. Two cases hold what it wrote to its sources (the pages, the links
 between them, the sentences, the accent and the pictures, the version and the commit in the footer):
 [`the-site-is-made-of-its-sources.test.ts`](packages/code/tests/the-site-is-made-of-its-sources.test.ts) runs in the
 suite, and [`the-built-site-lands-and-says-what-it-was-built-from.test.ts`](packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts)

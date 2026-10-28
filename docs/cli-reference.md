@@ -1376,6 +1376,26 @@ leaves until you press Submit there. `--decline` stops offering reports of that 
 `--off` switches reporting off on this machine. An agent that meets the error is told to leave the
 report to you: no tool of the MCP server sends one or accepts one.
 
+### The exit codes
+
+A script reads `mnema`'s exit code, so each one has one meaning. These are all the numbers the
+code sets; a shell, a signal or the host can end a process with another, and that is not
+`mnema` saying anything.
+
+| Code | Who ends with it | What it says |
+|---|---|---|
+| `0` | `mnema` | The command ran and nothing it was asked to rule on failed. |
+| `1` | `mnema` | A refusal: what was asked was not done (a usage error, a write that was refused, a `verify` that found a break or did not reach the level `--require` asked for). It is the person's or their environment's to act on. |
+| `2` | the `SubagentStop` hook (`plugin/hooks/subagent-stop.mjs`), never the command line | The hook sends a subagent's reply back with the reason on the second stream, which is how Claude Code reads a block; once per subagent. |
+| `70` | `mnema` | An internal error: a fault in `mnema`'s own code, not a refusal. It is named as one, a note of it is kept on this machine, and `mnema report` shows what it would send (above). |
+| `127` | the plugin's launcher of the MCP server (`plugin/server/launch.mjs`) | It could not start `mnema`. Where it started it, the launcher ends with the code the server ended with. |
+
+`mnema verify --json` prints `"ok": true` at the top whenever the command ran and found a project,
+including over a record that was tampered with: that `ok` is not the verdict. The verdict is
+`record.ok`, and `recordOk` beside the top `ok` says the same thing where a script looks first
+(`false` where nothing was covered). The exit code is `1` for the same cases as the prose reading,
+with or without `--json`.
+
 ### What goes into the record
 
 Every field of text you record passes one door on the way in.

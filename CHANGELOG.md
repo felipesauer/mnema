@@ -18,11 +18,32 @@ with its own changelog.
   in the host's own instructions file, behind an `@` import, behind a mention in prose, and in the mnema record, and with a
   control that keeps it nowhere. The moments are the start, late in a session of three calls (each host's own history is read,
   not supposed), after a compaction the stand-in provokes and answers with a summary that does not hold the rule, and at a
-  permitted edit. A cell that could not be measured says why: the Copilot CLI ends its run at the summary and Gemini CLI asks
-  for none in a one-prompt run. The cases take `files` in each host's spec to build the arms, and a script of several turns in
+  permitted edit. A cell that could not be measured says why: the Copilot CLI ends its run at the summary. Gemini CLI asks for no
+  summary in a one-prompt run, so its compaction is read in a second run that resumes the session (`--resume`). The cases take `files` in each host's spec to build the arms, and a script of several turns in
   the stand-in of each protocol. The result is `docs/rule-arrival.md`, generated from the table the cases hold and held to it by
   a test of the main suite; the control must never arrive. The cases run in each host's job, on the pinned version on every
   pull request and on the newest every week.
+
+- **The page that says where a rule arrives has its sentence per host generated from the same cells as its table.** What each host did
+  (where the rule arrived, at which moments, where it did not) is drawn by `renderTheProse` from the table the cases hold, between marks of
+  its own, and held to it by the test that holds the table; what a person writes per host is only the mechanism, which a test refuses to let
+  say whether a rule arrived. In Gemini CLI the cells after a compaction are now readings, from a second run that resumes the session
+  (`--resume latest`): the host compacts the restored conversation, and the request after the summary carries the rule where it is kept in
+  the instructions file, behind an `@` import and in the record, and not where it is in `AGENTS.md` or only mentioned, as at the start. The
+  reading is of a resumed session: the plugin's start runs again and its text is in the turn the compaction keeps.
+
+- **`FORMAT.md` section 4 lists `locks/`.** The directory a writer creates at the first append (the lock of each tail, the note of which
+  heads a tail last cited, the projection a reader keeps) was in the tree's `.gitignore` and nowhere in the layout of the document. It is
+  there now, as not part of the proof and never read by a reader, and a test founds a tree, writes to it and reads it, and requires every
+  entry at its root and in `locks/` to be named by the listing. Nothing about what a reader reads changes.
+
+- **`mnema verify --json` says `recordOk` beside the top `ok`.** The top `ok` says the command ran and found a project, and it is `true`
+  over a record that was tampered with; the verdict was `record.ok`. `recordOk` is that verdict at the top, right after `ok` (`false` where a
+  set of paths covered no record), and `ok` keeps its meaning, so nothing that reads it breaks. The exit code is the one it always was.
+
+- **`docs/cli-reference.md` has a table of the exit codes.** `0`, `1`, `2` (the `SubagentStop` hook only), `70` (an internal error) and `127`
+  (the plugin's launcher could not start `mnema`), each with who ends with it, held by a test that reads `70` from `INTERNAL_ERROR_EXIT`,
+  `1` from what `fail()` sets, and the others from the files that set them, and that refuses a literal exit in the source that the table omits.
 
 - **The VS Code extension has a "What To Do" pick, a "Why Is This File Like This?" command and a mark on the `.mnema` folder.**
   `mnema: What To Do` (the Command Palette, the `...` menu of the awaiting view, a link in the status bar's tooltip) is a quick pick
@@ -118,6 +139,10 @@ with its own changelog.
 - **The counts the format pages spell are held to the artifacts.** The 38 vectors, the four aggregate digests and the twenty-seven points the second reader's writing found, as `FORMAT.md`, the verifier's page, `@mnema/chain`'s page and `docs/verify-without-installing.md` spell them, are read off `canonical-vectors.json` and the second reader's `gaps` by a test, so a vector or a gap added reddens the sentence that counts them.
 
 ### Changed
+
+- **A build of the site sends no telemetry.** `site/package.json` sets `ASTRO_TELEMETRY_DISABLED=1` in front of `astro build` and the site
+  workflow's build step sets it in its `env`; a test refuses a script or a step that builds the site without it, and a workflow of any other
+  name that builds it.
 
 - **The VS Code extension shows the mnema M in the status bar.** Wherever `mnema verify` was read, the item wears the M of the
   console's wordmark instead of a book or an info mark (the level, strong or weak, stays in the word beside it); a failed
