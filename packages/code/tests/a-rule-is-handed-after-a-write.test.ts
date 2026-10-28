@@ -478,6 +478,50 @@ describe('the hooks that call the verb', () => {
     expect(started[1]).toContain('beside-a-write --host gemini');
   }, 60_000);
 
+  it("reads what mnema said to OpenCode's plugin after a question even when it left before reading the payload", () => {
+    const bin = join(sandbox, 'bin-opencode');
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(
+      join(bin, 'mnema'),
+      `#!/bin/sh\nif [ "$1" = "--identify" ]; then echo "@mnema/code stub"; exit 0; fi\necho '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"the settled rule"}}'\n`,
+    );
+    chmodSync(join(bin, 'mnema'), 0o755);
+    const plugin = fileURLToPath(new URL('../../../plugin/opencode/mnema.js', import.meta.url));
+    const driver = join(sandbox, 'driver-opencode.mjs');
+    // The real spawnSync, with the one thing a pipe closed under the write adds: an EPIPE beside the
+    // status and the streams the program left. The plugin's own payload is a few bytes, so a stub that
+    // answers without reading it would meet a closed pipe only on a starved machine; this is every time.
+    writeFileSync(
+      driver,
+      [
+        "import childProcess from 'node:child_process';",
+        "import { syncBuiltinESMExports } from 'node:module';",
+        'const real = childProcess.spawnSync;',
+        'childProcess.spawnSync = (command, args, options) => {',
+        '  const ran = real(command, args, options);',
+        "  if (Array.isArray(args) && args.includes('settled')) {",
+        "    ran.error = Object.assign(new Error('write EPIPE'), { code: 'EPIPE' });",
+        '  }',
+        '  return ran;',
+        '};',
+        'syncBuiltinESMExports();',
+        `const { Mnema } = await import(${JSON.stringify(plugin)});`,
+        `const hooks = await Mnema({ directory: ${JSON.stringify(repo)} });`,
+        "const output = { output: 'the answer' };",
+        "await hooks['tool.execute.after']({ tool: 'question', callID: 'c1' }, output);",
+        'console.log(JSON.stringify(output.output));',
+        '',
+      ].join('\n'),
+    );
+    const ran = spawnSync(process.execPath, [driver], {
+      cwd: repo,
+      env: { HOME: join(sandbox, 'home'), PATH: `${bin}:${process.env.PATH ?? ''}` },
+      encoding: 'utf-8',
+    });
+    expect(ran.stderr).toBe('');
+    expect(JSON.parse(ran.stdout)).toBe('the answer\n\nthe settled rule');
+  }, 60_000);
+
   it('stops waiting for a mnema that does not answer, silent, well inside the host’s own 15 seconds', () => {
     const began = Date.now();
     const ran = handlerWith('exec sleep 30');

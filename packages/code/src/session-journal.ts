@@ -354,6 +354,9 @@ const SERVED_SUFFIX = '.served';
  * refuses, which is the cost of never pushing without a fact. Only the exclusive create finding the
  * marker already there says the session was served.
  *
+ * THE MARKER IS PER HOST: two hosts can hand the same session id, and the fact is declared once per
+ * run, so the second host must not be told its session was served by the first.
+ *
  * Returns the marker to give back (`release`) when the fact could not be recorded, so that the next
  * edit tries again, or `undefined` when this session was already served. Never throws.
  */
@@ -361,10 +364,11 @@ export function takeTheFirstServing(
   trees: ResolvedTrees,
   session: string,
   channel: string,
+  host: string,
 ): { readonly release: () => void } | undefined {
   const file = journalFile(trees, session);
   if (file === undefined) return { release: () => undefined };
-  const marker = `${file}.${channel}${SERVED_SUFFIX}`;
+  const marker = `${file}.${channel}.${encodeURIComponent(host)}${SERVED_SUFFIX}`;
   try {
     const dir = dirname(file);
     mkdirSync(dir, { recursive: true, mode: DIRECTORY_MODE });
