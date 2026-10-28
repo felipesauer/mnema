@@ -117,6 +117,7 @@ import {
   checkpointSignatureHolds,
   verifyCheckpoint,
 } from './checkpoint.js';
+import { decisionTexts } from './decision-text.js';
 import { type IdentityResolution, type RetiredElsewhere, resolveIdentity } from './enrollment.js';
 import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
 import { entryHash } from './hash.js';
@@ -202,6 +203,7 @@ export type CensusNote =
   | ForeignRetractionNote
   | ForeignRewriteNote
   | ForeignLinkRetractionNote
+  | DecisionRewriteNote
   | IllegalMoveNote
   | RetiredCheckerNote
   | RetiredAgentNote
@@ -384,6 +386,31 @@ export interface ForeignRewriteNote {
   /** The identity that signed this writing. */
   readonly by: string;
   /** The identity that wrote the note first. */
+  readonly author: string;
+  /** Where the writing sits. */
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * A `decision.recorded` that is not its decision's text (FORMAT.md section 6.8): the text is the
+ * first writing the decision's first judgment saw, or its first writing in the merged order while
+ * none has judged it ({@link decisionTextsOf}). No reader applies this writing, whoever signed it:
+ * the decision's title, rationale, alternatives, label and author stay the text's. The product
+ * mints a decision's id when it records it, so it never writes one id twice, and every second
+ * writing, the identity's own and a copy of the same payload included, is one made past it.
+ *
+ * Not a break, for the reason a {@link ForeignRewriteNote} is not: the event is intact and its
+ * key speaks for its own `who`; what it lacks is a place in a decision that was already written.
+ */
+export interface DecisionRewriteNote {
+  readonly kind: 'decision-rewrite';
+  /** The decision it records again (the event's subject). */
+  readonly decision: string;
+  /** The identity that signed this writing. */
+  readonly by: string;
+  /** The identity that signed the writing that is the text, the one served. */
   readonly author: string;
   /** Where the writing sits. */
   readonly tail: string;
@@ -1014,6 +1041,7 @@ function verifyReading(
     ...notes,
     ...foreignNotes(tails, entriesByTail),
     ...foreignLinkRetractions(tails, entriesByTail),
+    ...decisionRewrites(tails, entriesByTail),
     ...movesNotApplied(entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
     ...retiredAgents(identity.retiredAgents),
@@ -1365,6 +1393,59 @@ function foreignNotes(
                 'so it is not applied and the note is still served',
             },
       );
+    }
+  }
+  return found;
+}
+
+/**
+ * By decision id, the `decision.recorded` entry that is the decision's text (FORMAT.md section
+ * 6.8, {@link decisionTexts}): judged over the merged order of every tail of one record, with the
+ * moves the workflow does not allow left out of the judgment, as the product's read judges it.
+ */
+export function decisionTextsOf(
+  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+): Map<string, Entry> {
+  const { order, entryAt, held } = mergedOrder(entriesByTail);
+  const texts = new Map<string, Entry>();
+  for (const [id, index] of decisionTexts(order, held, illegalMoves(order, held))) {
+    const { tail, position } = order[index] as (typeof order)[number];
+    texts.set(id, entryAt(tail, position));
+  }
+  return texts;
+}
+
+/**
+ * Every `decision.recorded` that is not its decision's text ({@link DecisionRewriteNote},
+ * {@link decisionTextsOf}), named in tail order. The text is judged over the merged order, the
+ * one the product's read folds, so a writing is named whatever tail it or the text sits in, and
+ * whichever of the two tails sorts first by id.
+ */
+function decisionRewrites(
+  tails: readonly string[],
+  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+): DecisionRewriteNote[] {
+  const texts = decisionTextsOf(entriesByTail);
+  const found: DecisionRewriteNote[] = [];
+  for (const tail of tails) {
+    for (const entry of entriesByTail.get(tail) ?? []) {
+      const { event, link } = entry;
+      if (event.kind !== 'decision.recorded') continue;
+      const kept = texts.get(event.subject);
+      if (kept === undefined || kept === entry) continue;
+      const author = kept.event.who;
+      found.push({
+        kind: 'decision-rewrite',
+        decision: event.subject,
+        by: event.who,
+        author,
+        tail,
+        seq: link.seq,
+        detail:
+          `a decision.recorded of ${oneLine(event.subject)} signed by ${oneLine(event.who)}, ` +
+          `not the text of the decision (the writing signed by ${oneLine(author)} is): a decision is the text ` +
+          'its first judgment was made on, or its first writing while none has judged it, so this writing is not applied',
+      });
     }
   }
   return found;
@@ -2180,6 +2261,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => str
     `${count} writing(s) of a note by an identity that did not write it first, not applied (see census: informational, not a break)`,
   'foreign-link-retraction': (count) =>
     `${count} link retraction(s) by an identity that did not record the link, not applied (see census: informational, not a break)`,
+  'decision-rewrite': (count) =>
+    `${count} writing(s) of a decision other than its text, not applied (see census: informational, not a break)`,
   'illegal-move': (count) =>
     `${count} move(s) the workflow does not allow, not applied (see census: informational, not a break)`,
   'retired-checker': (count) =>

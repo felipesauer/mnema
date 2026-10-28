@@ -34,7 +34,8 @@ moves a decision, a task, a skill and a run may make part of the format, and the
 reads the tables from the same `event-schema.json`, judges every move where the merged order
 puts it, and names a move they do not allow with the rule it broke: as this product's
 `verify` does in its census, and at the same place. A retraction of a note or a link by an
-identity that did not write it (§6.4) is named the same way. Neither is a break: the two
+identity that did not write it (§6.4) is named the same way, and so is every writing of a
+decision that is not its text (§6.8). None is a break: the two
 verdicts agree on such a record (both verify it) and both say which fact is not applied.
 A copy of either reader from before §6.7 applies every move and names none.
 
