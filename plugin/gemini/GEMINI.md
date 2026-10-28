@@ -6,7 +6,7 @@ This repository keeps a signed record of its decisions in `.mnema/`. Where the m
 - Before changing a file, call `governing_rules` with its path.
 - When a choice is settled, with the person or alone, that someone could later question (a library, an approach, a trade-off, an option turned down), call `record_decision` in that turn, with the `rationale` and, in `alternatives`, what was turned down and why. Record it even when it is also written in a plan, a ledger, this file or your own memory.
 - A decision is born `proposed`, and a person accepts it; from then on it is in force here.
-- A decision is not edited once it is recorded. When a new one replaces an earlier one, record the new one and then call `decision_transition` on the earlier one with `action` `supersede`, the new decision’s id in `by` and the `reason`.
+- A decision is not edited once it is recorded. When a new one replaces an earlier one, record the new one and then call `decision_transition` on the earlier one with `action` `supersede`, the new decision’s id in `by` and the `reason`; the new one is then read as replacing the earlier one, which it names.
 - A subagent records no decision: it hands its decisions back in its final reply, and the session that started it records them.
 - When you learn something about this project that its code does not show, call `capture_memory`, also when you keep it in your own memory.
 - Work in flight is a task (`create_task`), and handing work to another agent is a handoff on it (`record_handoff`), with its brief: the short text, and the path of a file where the brief is long.

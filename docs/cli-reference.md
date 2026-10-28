@@ -1631,7 +1631,7 @@ and a person accepts it, that a subagent hands its decisions back rather than re
 `mnema decision record` command where the tools are not connected, as an example that runs as it
 stands (with `--alternatives`), how a decision that replaces an earlier one says so
 (`decision_transition` with `action` `supersede`, or `mnema decision supersede <old-id> <new-id>
---reason "<why>"`), and what never goes in the record. It applies only where the mnema tools are connected, so a fork without mnema reads it as
+--reason "<why>"`; the new decision is then read as replacing the earlier one, which `read_record`, `show` and the opening name), and what never goes in the record. It applies only where the mnema tools are connected, so a fork without mnema reads it as
 inert, and it carries nothing of the record: the decisions in force reach a session as it opens,
 through the plugin.
 
@@ -1647,7 +1647,7 @@ through the plugin.
 The Gemini CLI extension carries the same text as its own context file. Every copy is the same
 text, so a host that reads several (Claude Code reads its `CLAUDE.md` or `AGENTS.md` and the rule
 file; Copilot CLI reads them all) reads it more than once rather than two versions of it. The text
-is 2,218 characters (the one before was 1,721).
+is 2,289 characters (the one before was 1,721).
 
 ```sh
 mnema instructions            # write the block where it is missing or an earlier version's

@@ -174,6 +174,6 @@ describe('the example the block gives', () => {
     const ran = shell(line);
     expect(ran.status, ran.out).toBe(0);
     expect(ran.out).toContain('→ superseded');
-    expect(shell('mnema show ADR-1').out).toContain(`superseded by ${ids[1]}`);
+    expect(shell('mnema show ADR-1').out).toContain(`superseded by ADR-2: Use bun (proposed) · ${ids[1]}`);
   }, 120_000);
 });
