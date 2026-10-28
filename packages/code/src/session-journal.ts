@@ -89,6 +89,8 @@ export interface HandedOver {
   readonly task: string;
   readonly handoffs: number;
   readonly closed: boolean;
+  /** Set when the task was closed by the sweep of a session that never ended, not by its end: it is blocked. */
+  readonly swept?: true;
 }
 
 /** What a run in one tree takes from the session: its goal and its outcome, both from that tree. */

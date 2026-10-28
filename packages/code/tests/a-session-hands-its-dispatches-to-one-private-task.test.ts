@@ -378,7 +378,7 @@ describe('a session that is resumed', () => {
 
 describe('a session that ended with no word', () => {
   it(
-    'has its task closed by the next session that dispatches, once its journal is a day old',
+    'has its task blocked, not completed, by the next session that dispatches once its journal is a day old, and the note says what is known',
     () => {
       mirror(dispatch({ session: 'old-session' }));
       const trees = resolveTrees(repo, env);
@@ -388,7 +388,13 @@ describe('a session that ended with no word', () => {
       mirror(dispatch({ session: 'new-session' }));
       const held = whatTheRecordHolds();
       expect(held.tasks).toHaveLength(2);
-      expect(held.tasks.map((task) => task.state).sort()).toEqual(['DONE', 'IN_PROGRESS']);
+      // An outcome nobody saw is not a success: the task is BLOCKED, never DONE.
+      expect(held.tasks.map((task) => task.state).sort()).toEqual(['BLOCKED', 'IN_PROGRESS']);
+      const swept = held.tasks.find((task) => task.state === 'BLOCKED');
+      expect(swept?.proof).toContain('The session stopped with no end');
+      expect(swept?.proof).toContain('last seen');
+      expect(swept?.proof).toContain('1 handoff was recorded');
+      expect(swept?.proof).not.toContain('recorded in this session');
       expect(readJournal(old)?.handedOver?.closed).toBe(true);
       // One that is recent is a live session's: it is left alone.
       mirror(dispatch({ session: 'third-session' }));
@@ -396,6 +402,60 @@ describe('a session that ended with no word', () => {
         whatTheRecordHolds().tasks.filter((task) => task.state === 'IN_PROGRESS'),
       ).toHaveLength(2);
       expect(journalsDir(trees)).toBeDefined();
+    },
+    WAITS_ON_WRITES,
+  );
+});
+
+describe('a swept session that comes back', () => {
+  it(
+    'unblocks its task and goes on, where an ended one is reopened',
+    () => {
+      mirror(dispatch({ session: 'old-session' }));
+      const old = journalFile(resolveTrees(repo, env), 'old-session') as string;
+      const longAgo = new Date(Date.now() - STALE_AFTER_MS - 60_000);
+      utimesSync(old, longAgo, longAgo);
+      mirror(dispatch({ session: 'new-session' }));
+      const back = mirror(dispatch({ session: 'old-session' }));
+      expect(back.notes).toEqual([]);
+      const states = whatTheRecordHolds().tasks.map((task) => task.state);
+      expect(states).toEqual(['IN_PROGRESS', 'IN_PROGRESS']);
+      expect(readJournal(old)?.handedOver).toMatchObject({ handoffs: 2, closed: false });
+    },
+    WAITS_ON_WRITES,
+  );
+});
+
+describe('a swept session that comes back and ends', () => {
+  it(
+    'has its blocked task completed with the closing note, and its journal stops saying swept',
+    () => {
+      mirror(dispatch({ session: 'old-session' }));
+      const old = journalFile(resolveTrees(repo, env), 'old-session') as string;
+      const longAgo = new Date(Date.now() - STALE_AFTER_MS - 60_000);
+      utimesSync(old, longAgo, longAgo);
+      mirror(dispatch({ session: 'new-session' }));
+      expect(
+        whatTheRecordHolds()
+          .tasks.map((task) => task.state)
+          .sort(),
+      ).toEqual(['BLOCKED', 'IN_PROGRESS']);
+      expect(readJournal(old)?.handedOver?.swept).toBe(true);
+      const done = mirror(theEnd('old-session'));
+      expect(done.notes).toEqual([]);
+      const held = whatTheRecordHolds();
+      expect(held.tasks.map((task) => task.state).sort()).toEqual(['DONE', 'IN_PROGRESS']);
+      const finished = held.tasks.find((task) => task.state === 'DONE');
+      expect(finished?.proof).toContain('note: 1 handoff recorded in this session.');
+      expect(readJournal(old)?.handedOver?.closed).toBe(true);
+      expect(readJournal(old)?.handedOver?.swept).toBeUndefined();
+      // A second end finds nothing left to do.
+      expect(mirror(theEnd('old-session')).notes).toEqual([]);
+      expect(
+        whatTheRecordHolds()
+          .tasks.map((task) => task.state)
+          .sort(),
+      ).toEqual(['DONE', 'IN_PROGRESS']);
     },
     WAITS_ON_WRITES,
   );
