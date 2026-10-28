@@ -1512,6 +1512,13 @@ mnema decision import docs/decisions
 #> 3 proposal(s), 1 refused: nothing written. Add --write to record them.
 ```
 
+A file whose decision the record already holds (an earlier run drew it from that file) is listed
+as already in the record, unchanged. So is a file that says exactly the words of a decision
+already recorded (a copy under another name, or two files in one run): nothing is written for
+it, the line names the decision that holds those words, and no `derived-from` is drawn from
+that file, since the decision was not born from it. Such a file is reported the same way on
+every later run.
+
 **Other places decisions are written** are read with `--format`, down the same road: planned
 before written, every one born `proposed`, cited to where it was read, and the reason of each opens with
 a line saying it was imported as written there and is not yet the project's own words.
@@ -1645,6 +1652,16 @@ line names the call that would do it.
   paths asked of `governing_rules` appear, and the command line, which has no connection, offers no address.
 
 The working tree's changes are never read to find the paths: they could credit the session with what it did not do.
+
+### Recording the same decision twice
+
+The `decision record` command and the `record_decision` tool look, before they write, for a decision of the same tree that is
+`proposed` or `accepted` and whose title, rationale and alternatives are exactly the ones given (after the replacement of
+secrets every write applies, so a text with a credential matches the second time too; alternatives present in one and
+absent in the other differ). If there is one, nothing is written and the answer is `Decision ADR-n (id) is already recorded
+in the <scope> tree with this title, rationale and alternatives. Nothing was written.`, with the existing label and id and none
+of the offers below. This is what makes a call repeated after a lost reply safe. A rejected or superseded decision is not
+matched: the same words recorded again are a new proposal.
 
 ### The mnema instructions in the files a host reads
 

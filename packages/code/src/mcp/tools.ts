@@ -308,6 +308,12 @@ export type RecordDecisionResult =
          * decisions it cites that it could replace. Nothing is linked and nothing is moved.
          */
         readonly offered: readonly string[];
+        /**
+         * Set when the decision was already on the record (same title, rationale and
+         * alternatives, in force or awaiting a judgement): nothing was written, `id` and `adr` are the
+         * existing decision's, and `offered` is empty.
+         */
+        readonly alreadyRecorded?: true;
       })
   | {
       readonly ok: false;
@@ -920,7 +926,7 @@ export function runRecordDecision(
       run,
     });
     // Checkpoint so the record is fully signed the moment the tool returns.
-    if (written.ok) ctx.writer.checkpoint();
+    if (written.ok && !('already' in written)) ctx.writer.checkpoint();
     return written;
   });
   // A decision birth cannot be gate-refused (birth is not a gated transition; the
@@ -929,6 +935,9 @@ export function runRecordDecision(
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
   }
+  // A repeat names the decision that is there and offers nothing: the offers are about the act of
+  // recording, and this recorded nothing.
+  const repeated = 'already' in recorded;
   return {
     ok: true,
     id: recorded.id,
@@ -936,7 +945,8 @@ export function runRecordDecision(
     scope: route.scope,
     ...routedTo(session, route),
     ...forwardReplacement(recorded),
-    offered: offersBesideADecision(session, route, input, recorded),
+    offered: repeated ? [] : offersBesideADecision(session, route, input, recorded),
+    ...(repeated ? { alreadyRecorded: true as const } : {}),
   };
 }
 

@@ -185,6 +185,25 @@ describe('a decision moved by two sessions at once', () => {
   });
 });
 
+describe('a decision recorded twice by two sessions at once', () => {
+  it('leaves ONE decision: the twin another session wrote meanwhile is found under the lock', () => {
+    const one = session();
+    const two = session();
+
+    let first: ReturnType<typeof recordDecision> | undefined;
+    whileTheNextReadIsInFlight(() => {
+      first = recordDecision(one, { title: 'Use SQLite', rationale: 'Relational load.' });
+    });
+    const second = recordDecision(two, { title: 'Use SQLite', rationale: 'Relational load.' });
+
+    expect(first).toMatchObject({ ok: true, adr: 'ADR-1' });
+    expect(second).toMatchObject({ ok: true, already: true, adr: 'ADR-1' });
+    expect(second.ok && second.id).toBe(first?.ok && first.id);
+    expect([...projectDecisions(events()).values()].map((d) => d.adr)).toEqual(['ADR-1']);
+    verifies(one, two);
+  });
+});
+
 describe('a task moved by two sessions at once', () => {
   it('appends the first move and refuses the second as STATE_MOVED', () => {
     const one = session();

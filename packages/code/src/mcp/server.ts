@@ -112,6 +112,7 @@ import {
 import { offOnThisMachine } from '../record-framing.js';
 import { linkBreakBlock, linkBreakBlockOnWrite } from '../record-integrity.js';
 import {
+  alreadyRecordedLine,
   type FellIn,
   type Landed,
   landedNotice,
@@ -1348,6 +1349,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       });
       if (!result.ok) {
         return refused(active, result);
+      }
+      if (result.alreadyRecorded) {
+        return replied(active, [alreadyRecordedLine(result, result.scope)], { wrote: false });
       }
       return recorded(active, `Recorded decision ${result.adr} (${result.id})`, result, {
         after: result.offered,
