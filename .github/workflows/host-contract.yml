@@ -23,7 +23,11 @@ name: Host contract
 # WHICH REVISION OF THE MODEL CONTEXT PROTOCOL EACH HOST SPEAKS is read off the first message it sends
 # the plugin's server (`what-the-host-hands-the-server.*`) and written under "Host measured" in the
 # summary of the run. A host that begins to speak 2026-07-28, which has no `initialize`, turns its
-# job red: that is the trigger to migrate the SDK.
+# job red: that is the trigger to migrate the SDK. Claude Code and the Copilot CLI already send
+# `server/discover` first; the server answers -32601, as a server of the earlier revision does, and
+# they fall back to `initialize`, which is why a request before an `initialize` only counts when no
+# `initialize` follows. VS Code shows the server no handshake at all, so it is not read here: its own
+# case, `what-the-host-hands-the-server.vscode.test.ts`, turns red the day it shows one.
 #
 # NO MODEL, NO ACCOUNT, NO KEY, NO MONEY. The model is `the-stand-in-api.ts`; the key the host is
 # handed is made up and names nothing. Nothing in this file asks for a secret, and the only token
