@@ -596,7 +596,7 @@ export const CANONICAL_VECTORS: {
       // fact, pinned to the run it names, says so.
       name: 'run.unannounced (a client that sent no handshake)',
       event: runUnannounced(
-        { ...agent('r-1', 'r-1'), which: 'unknown-agent' },
+        { ...agent('r-1'), which: 'unknown-agent' },
         { handshake: false },
       ),
     },

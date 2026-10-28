@@ -1235,7 +1235,7 @@ default read as a name a client had announced, and a client that announced the w
 `unknown-agent` read as one that announced nothing.
 
 `run.unannounced` (`payload.handshake`, a boolean) is the writer saying so. Its `subject` is a run,
-and so is its `run`; this product's writer appends it in the same append as that run's
+and it carries no `run`, as the run's own birth carries none; this product's writer appends it in the same append as that run's
 `run.started`, and only when the run's agent is that default: never for a name a client announced,
 whatever it is, and never where an agent key signs (§6.2), since its `which` is then the name the
 record enrolled it under. `handshake` is `true` when a handshake ran and named nobody, and `false`

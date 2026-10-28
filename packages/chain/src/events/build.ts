@@ -754,7 +754,7 @@ export function agentRetired(
   };
 }
 
-/** Builds a `run.unannounced` event (subject = the run's id, and so is its `run`). */
+/** Builds a `run.unannounced` event (subject = the run's id; no `run`, as the run's birth has none). */
 export function runUnannounced(
   envelope: EnvelopeInput,
   payload: { handshake: boolean },

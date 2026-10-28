@@ -129,7 +129,7 @@ describe('a client that sends no initialize', () => {
     const marks = events.filter((event) => event.kind === 'run.unannounced');
     expect(marks.map((mark) => mark.payload)).toEqual([{ handshake: false }]);
     expect(marks.map((mark) => [mark.subject, mark.run, mark.signerFp, mark.which])).toEqual([
-      [run?.subject, run?.subject, run?.signerFp, 'unknown-agent'],
+      [run?.subject, undefined, run?.signerFp, 'unknown-agent'],
     ]);
     expect(note?.run).toBe(run?.subject);
 

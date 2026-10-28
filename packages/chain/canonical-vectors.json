@@ -719,12 +719,11 @@
         "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
         "subject": "r-1",
         "which": "unknown-agent",
-        "run": "r-1",
         "payload": {
           "handshake": false
         }
       },
-      "sha256": "b6d4bda76ab5aa4dfaf59b49e1a19afe943edc6d178ff6df2dbce1e5a8d2dd7e"
+      "sha256": "7aa77ed8044ceb5107e9d97b3dd91ffd0562457ea27a6e3477f56d2acc400a26"
     }
   ],
   "chain": {
@@ -742,6 +741,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "90d484e625457c31c7714d2da120bf0f6c85cad0450163ba7665b9a0244dfaf0"
+    "contentRootOverAllVectors": "c87196ea4f715594eadcf089393a0d7d97c16a6253280c33e966505af0dc5cd8"
   }
 }

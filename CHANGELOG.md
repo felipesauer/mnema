@@ -16,7 +16,7 @@ with its own changelog.
   2026-07-28 revision allows, or whose handshake names nobody (no name, a blank one) is written under the server's default,
   `unknown-agent`, and until now that read exactly like a name a client announced, and like a client announcing that very
   word. The run such a connection opens now carries a new kind, `run.unannounced` (`payload.handshake`: whether a handshake ran
-  at all), appended in the same append as its `run.started`, with the run as its subject and its `run`; it marks the run for
+  at all), appended in the same append as its `run.started`, with the run as its subject; it marks the run for
   the key that signed it and no other ([`FORMAT.md`](packages/chain/FORMAT.md) §6.9). A name a client announced, the word
   `unknown-agent` included, writes no mark and no new bytes, and neither does a write an agent key signs. `mnema show`, the
   opening document, `mnema audit accountability` (and the `audit_accountability` tool, as `unannounced` beside each agent's

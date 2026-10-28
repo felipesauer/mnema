@@ -289,9 +289,8 @@ function runStartedOf(
 }
 
 /**
- * The `run.unannounced` beside a run whose agent nobody announced: the run is its subject and its
- * `run`, and its `which` is the run's, so the mark is one of the run's own facts (FORMAT.md section
- * 6.9).
+ * The `run.unannounced` beside a run whose agent nobody announced: the run is its subject, and, like
+ * the run's birth, it carries no `run`; its `which` is the run's (FORMAT.md section 6.9).
  */
 function runUnannouncedOf(
   run: { readonly id: string; readonly who: string; readonly which: string | undefined },
@@ -305,7 +304,6 @@ function runUnannouncedOf(
       who: run.who,
       signerFp: ctx.writer.signerFingerprint,
       subject: run.id,
-      run: run.id,
       ...(run.which !== undefined ? { which: run.which } : {}),
     },
     { handshake: unannounced.handshake },

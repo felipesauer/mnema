@@ -1142,7 +1142,7 @@ export interface AgentRetiredV1 extends Envelope {
  *
  * Written once per run, in the same append as the run's `run.started`, by a connection whose
  * client either never sent `initialize` or announced in it a name that is no name (absent,
- * blank, or one the chain cannot canonicalize). Its subject is the run, and so is its `run`. It
+ * blank, or one the chain cannot canonicalize). Its subject is the run, and it carries no `run`, as the run's birth carries none. It
  * marks the run for the key that signed it and for no other: a reader holds a fact of that run
  * signed by that key as carrying a `which` nobody announced (FORMAT.md section 6.9). A run with
  * no such fact makes no claim either way, which is every run written before this kind existed.
