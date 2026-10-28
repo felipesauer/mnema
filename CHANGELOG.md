@@ -26,7 +26,20 @@ with its own changelog.
   is not a rung: yes in Claude Code, Codex, Qwen Code and OpenCode, held by a test of each; not ported in the others. The cells of
   `docs/rule-arrival.md` for the three hosts at an edit are now `arrived`, read from what the host put in the conversation from the
   call on (never from the whole request, which already carried the rule from the opening), and the same read with the push
-  switched off finds nothing. Copilot CLI and Gemini CLI, and VS Code and Cursor, are not handed the rules at an edit yet.
+  switched off finds nothing. VS Code and Cursor are not handed the rules at an edit yet.
+
+- **The rules of the record reach the model at an edit in Copilot CLI and Gemini CLI too.** Their hook before a write answers a
+  decision and has no field for text, so the rules ride in the hook that runs after the write: `PostToolUse` in Copilot CLI (a
+  top-level `additionalContext`, with the command ending in `exit 0` as its gate does) and `AfterTool` in Gemini CLI
+  (`hookSpecificOutput.additionalContext`). Both run a new verb, `mnema beside-a-write --host copilot|gemini`, which composes
+  the text with the same functions as `before-a-write` and the MCP tool, under the same switch (`mnema switch off
+  edit-rules-push`) and the host's ceiling, and records `channel.served` once for each session of the host, remembered the same
+  way. It is a verb of its own because `before-a-write` run after a write would record a second `channel.refused` or
+  `channel.asked` for a write already refused or asked about: this one never refuses or asks and records no such fact. A payload
+  with no session id is handed no rules; a `mnema` too old to know the verb leaves the write and the session as they were. The
+  host table's `pushes` cell is now yes for both, held by the arrival cases, and the cells of `docs/rule-arrival.md` for the two
+  hosts at an edit are `arrived`, read from the result of the write alone, with the same read finding nothing when the push is
+  switched off. VS Code and Cursor are not handed the rules at an edit yet.
 
 - **The host contract measures whether a rule reaches the model, by where it is kept and by moment.** One rule carries a
   sentinel, and each of the six hosts the contract starts without an account (Claude Code, Codex, OpenCode, the Copilot CLI,

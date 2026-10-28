@@ -89,7 +89,21 @@ document, delivered by the host instead of waited for.
   Code. Held, in each host, by the case that starts the real host against a stand-in for its model
   (`the-rule-arrives.codex.test.ts`, `.qwen.test.ts`, `.opencode.test.ts`: the sentinel of a rule is
   looked for in what the host put beside the call, and found nothing when the switch is off), and
-  for the command by `a-rule-is-pushed-beside-a-write.test.ts`. Copilot CLI and Gemini CLI do not
+  for the command by `a-rule-is-pushed-beside-a-write.test.ts`.
+- **The same rules, in Copilot CLI and Gemini CLI, from a hook after the write.** Their hook before a
+  write answers a decision and has no field for text, and both have a hook that runs once the tool is
+  done and whose reply the host appends to the tool's result (`PostToolUse` with a top-level
+  `additionalContext` in Copilot CLI, `AfterTool` with `hookSpecificOutput.additionalContext` in
+  Gemini CLI). That hook runs `mnema beside-a-write --host copilot|gemini`, a verb of its own and
+  not `before-a-write` run again, which would record a second refusal or asking for a write already
+  refused or asked about: it reads the rules the way the other doors do, under the same switch
+  (`mnema switch off edit-rules-push`) and the same ceiling, records `channel.served` once for each
+  session of the host as they do, never refuses or asks, and answers `{}` for a payload with no
+  session id. A `mnema` too old to know the verb leaves the write and the session as they were.
+  Copilot CLI's runs under `exit 0`, as its gate does. Held, in each host, by the case that starts the
+  real host against a stand-in for its model (`the-rule-arrives.copilot.test.ts`, `.gemini.test.ts`:
+  the sentinel of a rule is looked for in the result of the write and found nothing when the switch
+  is off), and for the verb by `a-rule-is-handed-after-a-write.test.ts`. VS Code and Cursor do not
   have it yet.
 - **A `Stop` hook**, `mnema tally`. When the session's own tool calls wrote a file in the last
   response, it prints one line saying how many files they wrote and how many
@@ -504,6 +518,7 @@ plugin/
 │   ├── agent-dispatched.mjs     runs `mnema dispatched` after the agent tool and at the end of a session
 │   ├── edit-asks-a-person.mjs   the gate of the hosts that run commands and can pause a write
 │   ├── edit-refuses-a-write.mjs the gate of the hosts that run commands and only refuse
+│   ├── edit-rules-beside.mjs    runs `mnema beside-a-write` after a write, in Copilot CLI
 │   ├── choice-settled.mjs       runs `mnema settled` after a question to the person is answered
 │   ├── subagent-start.mjs       runs `mnema brief --hook` when a subagent starts
 │   └── subagent-stop.mjs        runs `mnema handback` when a subagent stops

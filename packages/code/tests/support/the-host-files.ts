@@ -494,6 +494,24 @@ export function copilotHooksJson(): string {
       ],
       PostToolUse: [
         { matcher: ASKS_THROUGH.copilot, hooks: [command('choice-settled.mjs', handed)] },
+        // THE RULES BESIDE THE WRITE, from the hook after it: `preToolUse` answers a decision and has
+        // no field for text, `postToolUse` appends `additionalContext` to what the model reads of the
+        // tool's output. Its command ends in `exit 0` for the gate's reason, and here nothing is
+        // left to close: what it cannot do, the write has already done.
+        ...(does('copilot', 'pushes') && HOSTS.copilot.pushesAt === 'after'
+          ? [
+              {
+                matcher: tools.join('|'),
+                hooks: [
+                  {
+                    type: 'command',
+                    command: `${nodeRuns('edit-rules-beside.mjs', ['--host', 'copilot', ...signsAs('copilot')])}; exit 0`,
+                    timeout: TIMEOUT,
+                  },
+                ],
+              } as Json,
+            ]
+          : []),
       ],
     },
   };
@@ -800,7 +818,7 @@ export function geminiContextFile(): string {
 }
 
 /** The line that runs the extension's script, from the folder the host installed it to. */
-const geminiRuns = (mode: 'open' | 'gate' | 'settled'): string =>
+const geminiRuns = (mode: 'open' | 'gate' | 'settled' | 'beside'): string =>
   `node "${hostVariable('extensionPath')}/hooks/mnema.mjs" ${mode}`;
 
 /**
@@ -814,7 +832,7 @@ const geminiRuns = (mode: 'open' | 'gate' | 'settled'): string =>
  */
 export function geminiHooksJson(): string {
   const tools = writeToolsOf('gemini');
-  const hook = (name: string, mode: 'open' | 'gate' | 'settled'): Json => ({
+  const hook = (name: string, mode: 'open' | 'gate' | 'settled' | 'beside'): Json => ({
     name,
     type: 'command',
     command: geminiRuns(mode),
@@ -826,6 +844,10 @@ export function geminiHooksJson(): string {
       BeforeTool: [{ matcher: `^(${tools.join('|')})$`, hooks: [hook('mnema-gate', 'gate')] }],
       AfterTool: [
         { matcher: `^${ASKS_THROUGH.gemini}$`, hooks: [hook('mnema-settled', 'settled')] },
+        // The rules beside the write, from the hook after it: `BeforeTool` has no field for text.
+        ...(does('gemini', 'pushes') && HOSTS.gemini.pushesAt === 'after'
+          ? [{ matcher: `^(${tools.join('|')})$`, hooks: [hook('mnema-beside', 'beside')] }]
+          : []),
       ],
     },
   };
@@ -945,7 +967,7 @@ function closedWhere(because, cwd, raw) {
 
 /**
  * What the hook answers for one payload, or nothing.
- * @param {string | undefined} mode \`open\`, \`gate\` or \`settled\`
+ * @param {string | undefined} mode \`open\`, \`gate\`, \`settled\` or \`beside\`
  * @param {string} raw what the host wrote to stdin
  */
 function answer(mode, raw) {
@@ -958,6 +980,7 @@ function answer(mode, raw) {
   const cwd = typeof input?.cwd === 'string' ? input.cwd : process.cwd();
   if (mode === 'gate' && !WRITES.has(input?.tool_name)) return undefined;
   if (mode === 'settled' && input?.tool_name !== ASKS) return undefined;
+  if (mode === 'beside' && !WRITES.has(input?.tool_name)) return undefined;
   if (mode === 'gate' && theRuntime().refusal !== null) {
     return closedWhere(theRuntime().refusal, cwd, raw);
   }
@@ -977,6 +1000,19 @@ function answer(mode, raw) {
     if (ran.error !== undefined || ran.status !== 0) return undefined;
     const said = JSON.parse(ran.stdout);
     return said.hookSpecificOutput === undefined ? undefined : said;
+  }
+  if (mode === 'beside') {
+    // AFTER THE WRITE: nothing to close, so every outcome that is not an answer is silence. A
+    // \`mnema\` too old to know the verb or the option refuses it by name and exits non-zero.
+    const beside = ['beside-a-write', '--host', 'gemini'];
+    const began = Date.now();
+    let heard = run([...beside, ...AGENT], cwd, raw, GATE_WAIT);
+    if (heard.status !== 0 && heard.stderr.includes('--agent-key')) {
+      heard = run(beside, cwd, raw, Math.max(1, GATE_WAIT - (Date.now() - began)));
+    }
+    if (heard.error !== undefined || heard.status !== 0) return undefined;
+    const handed = JSON.parse(heard.stdout);
+    return handed.hookSpecificOutput === undefined ? undefined : handed;
   }
   if (mode !== 'gate') return undefined;
   const gate = ['before-a-write', '--host', 'gemini'];
@@ -1008,7 +1044,8 @@ try {
     '//',
     "// What Gemini CLI runs for this extension's hooks: `open` hands a session the project's committed",
     '// mnema record as it starts, `gate` refuses a write where a rule of that record refuses it, and',
-    '// `settled`, after a question to the person was answered, says which tool records a choice.',
+    '// `settled`, after a question to the person was answered, says which tool records a choice, and',
+    '// `beside`, after a write, hands over the rules of the record addressed at the file.',
     '// It runs `mnema` from the PATH, and every outcome that is not an answer, such as no `mnema`, no',
     '// project or a program of that name that is not @mnema/code, leaves the session as it would',
     '// have been without it: nothing on stdout, exit 0. One outcome is not silence: a `mnema` that is',

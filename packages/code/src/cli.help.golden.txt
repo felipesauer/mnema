@@ -113,6 +113,8 @@ $ mnema --help
 |   run             open and close the session an agent works inside
 |   before-a-write  answer a host’s hook before a file is written: refuse or ask
 |                   where a rule says
+|   beside-a-write  answer a host’s hook after a file was written: hand over the
+|                   rules addressed at it
 |   tally           answer a host’s Stop hook with what the session wrote and
 |                   recorded
 |   corrections     record what a person corrected in a session as proposed
@@ -1370,6 +1372,35 @@ $ mnema before-a-write --help
 |   tree does that in every project of this machine. The switches read the
 |   same record, so they do not turn that off; update mnema, or restore the
 |   line.
+
+### mnema beside-a-write --help
+$ mnema beside-a-write --help
+| Usage: mnema beside-a-write [options]
+|
+| answer a host’s hook after a file was written: hand over the rules addressed at
+| it
+|
+| Options:
+|   --host <host>       the host whose hook runs this, and whose payload arrives
+|                       on stdin: copilot, gemini
+|   --agent-key <name>  sign the one fact this records with the key of that agent
+|                       in the tree whose record enrols it (made with `mnema key
+|                       request --agent <name> --anchor <id>`), and name the agent
+|                       the record gives that key; in a tree that does not, the
+|                       person's key signs, or, where that key is protected, the
+|                       fact is not recorded (the reply to the host is unchanged).
+|                       Also read from MNEMA_AGENT_KEY
+|   -h, --help          display help for command
+|
+| What it reads and what it prints:
+|   The JSON a host hands a hook after a tool ran, on stdin. On stdout, the reply the host
+|   reads: {} unless a rule of this project addresses a path the write touched, and then the
+|   rules, as `additionalContext` (at the top of the reply for copilot, under
+|   hookSpecificOutput for gemini), under the host’s ceiling. It never refuses or asks, and
+|   records no refusal or asking: that is `mnema before-a-write`, which runs before the
+|   write. It needs the `session_id` of the payload: the first reply of a session records one
+|   `channel.served` and the others none, and a payload without one is handed no rules.
+|   `mnema switch off edit-rules-push` stops it.
 
 ### mnema tally --help
 $ mnema tally --help

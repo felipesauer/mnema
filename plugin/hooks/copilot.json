@@ -39,6 +39,16 @@
             "timeout": 15
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-rules-beside.mjs\" --host copilot --agent-key copilot; exit 0",
+            "timeout": 15
+          }
+        ]
       }
     ]
   }
