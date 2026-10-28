@@ -1397,7 +1397,7 @@ $ mnema beside-a-write --help
 |   reads: {} unless a rule of this project addresses a path the write touched, and then the
 |   rules, as `additionalContext` (at the top of the reply for copilot, under
 |   hookSpecificOutput for gemini), under the host’s ceiling. It never refuses or asks, and
-|   records no refusal or asking: that is `mnema before-a-write`, which runs before the
+|   records no refusal or asking: that is the work of `before-a-write`, which runs before the
 |   write. It needs the `session_id` of the payload: the first reply of a session records one
 |   `channel.served` and the others none, and a payload without one is handed no rules.
 |   `mnema switch off edit-rules-push` stops it.
