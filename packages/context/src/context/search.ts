@@ -75,6 +75,7 @@ import {
   type TaskProjection,
 } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
+import { type NamedDecision, nameDecision } from './decisions.js';
 import { type TaskStory, taskStory } from './task-story.js';
 
 /** What to look for, plus the one filter that is about trees rather than rows. */
@@ -181,6 +182,13 @@ export type RecordBody =
       readonly project?: string;
       readonly origin?: readonly string[];
       readonly record: DecisionProjection;
+      /**
+       * The decision this one replaced and the decision that replaced it, each NAMED (see
+       * {@link NamedDecision}) from the trees this read was handed, beside the raw ids the
+       * projection carries in `record`. Each is absent when this decision has no such link.
+       */
+      readonly supersedes?: NamedDecision;
+      readonly supersededBy?: NamedDecision;
     }
   | {
       readonly kind: 'task';
@@ -499,7 +507,20 @@ export function readRecord(sources: readonly ScopedCache[], id: string): RecordB
     const observation = cache.getObservation(id);
     if (observation !== null) return { kind: 'observation', ...held, record: observation };
     const decision = cache.getDecision(id);
-    if (decision !== null) return { kind: 'decision', ...held, record: decision };
+    if (decision !== null) {
+      const caches = sources.map((source) => source.cache);
+      return {
+        kind: 'decision',
+        ...held,
+        record: decision,
+        ...(decision.supersedes !== undefined
+          ? { supersedes: nameDecision(caches, decision.supersedes) }
+          : {}),
+        ...(decision.supersededBy !== undefined
+          ? { supersededBy: nameDecision(caches, decision.supersededBy) }
+          : {}),
+      };
+    }
     const task = cache.getTask(id);
     if (task !== null) {
       // The story is read across EVERY tree in hand and not only the one that holds the task: a
