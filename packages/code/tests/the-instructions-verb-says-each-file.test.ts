@@ -70,7 +70,10 @@ describe('mnema instructions', () => {
     expect(text).toMatch(/project/i);
   });
 
-  it('is not put back by a second init once the person took it out; doctor says so, and the verb puts it back', async () => {
+  it('is not put back by a second init once the person took it out; the files left are the choice, so doctor stays quiet and --all-hosts puts it back', async () => {
+    // This case used to end with doctor saying AGENTS.md "holds no mnema instructions" and the plain
+    // verb adding them back. The files on disk are the choice now (`chosenOnDisk`): with the three
+    // files of mnema's own still there, an AGENTS.md without the block is a file nobody chose.
     writeFileSync(join(repo, 'AGENTS.md'), '# Ours\n');
     await mnema('init');
     expect(agents()).toBe(`# Ours\n\n${INSTRUCTIONS_BLOCK}`);
@@ -79,16 +82,34 @@ describe('mnema instructions', () => {
     writeFileSync(join(repo, 'AGENTS.md'), '# Ours\n');
     await mnema('init');
     expect(agents()).toBe('# Ours\n');
-    expect(doctorSays()).toEqual([
-      'AGENTS.md holds no mnema instructions: `mnema instructions` adds them after what it holds.',
-    ]);
+    expect(doctorSays()).toEqual([]);
 
     const check = await mnema('instructions', '--check');
-    expect(check.failed).toBe(true);
-    expect(check.text).toContain('AGENTS.md holds no mnema instructions');
+    expect(check.failed).toBe(false);
+    expect(check.text).not.toContain('AGENTS.md');
 
     const write = await mnema('instructions');
     expect(write.failed).toBe(false);
+    expect(agents()).toBe('# Ours\n');
+
+    const all = await mnema('instructions', '--all-hosts');
+    expect(all.failed).toBe(false);
+    expect(all.text).toContain('Added the mnema instructions to AGENTS.md, after what it holds.');
+    expect(agents()).toBe(`# Ours\n\n${INSTRUCTIONS_BLOCK}`);
+    expect((await mnema('instructions', '--check')).failed).toBe(false);
+  });
+
+  it('is said by doctor and --check, as before, when no file holds the instructions at all', async () => {
+    writeFileSync(join(repo, 'AGENTS.md'), '# Ours\n');
+    await mnema('init');
+    await mnema('instructions', '--remove');
+    expect(agents()).toBe('# Ours\n');
+    expect(doctorSays()).toHaveLength(4);
+    expect(doctorSays()[0]).toBe(
+      'AGENTS.md holds no mnema instructions: `mnema instructions` adds them after what it holds.',
+    );
+    expect((await mnema('instructions', '--check')).failed).toBe(true);
+    const write = await mnema('instructions');
     expect(write.text).toContain('Added the mnema instructions to AGENTS.md, after what it holds.');
     expect(agents()).toBe(`# Ours\n\n${INSTRUCTIONS_BLOCK}`);
     expect((await mnema('instructions', '--check')).failed).toBe(false);

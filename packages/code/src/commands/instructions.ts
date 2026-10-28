@@ -40,6 +40,7 @@ import {
 import { dirname, join, sep } from 'node:path';
 import {
   beginMarker,
+  CHOOSABLE_INSTRUCTIONS,
   INSTRUCTIONS_BLOCK,
   INSTRUCTIONS_END,
   INSTRUCTIONS_TARGETS,
@@ -226,10 +227,40 @@ function inspect(
   }
 }
 
-/** The targets this project has: every `always` one, and an `exists` one where the file or a link is there. */
-function targetsOf(project: string): readonly InstructionsTarget[] {
-  return INSTRUCTIONS_TARGETS.filter(
-    (target) => target.when === 'always' || existsAsALink(join(project, target.path)),
+/**
+ * Whether the person has CHOSEN this file: it holds the mnema instructions, or is a file of mnema's own
+ * that is there. A person's file that exists with no block (an `AGENTS.md` they wrote) was not chosen:
+ * it is theirs, and nothing of ours is in it.
+ */
+function isChosen(project: string, target: InstructionsTarget): boolean {
+  if (!existsAsALink(join(project, target.path))) return false;
+  return target.own !== undefined || inspect(project, target).found.state !== 'missing';
+}
+
+/** The offered files this project holds: what the files on disk say was chosen. */
+export function chosenOnDisk(project: string): readonly string[] {
+  return CHOOSABLE_INSTRUCTIONS.filter((target) => isChosen(project, target)).map(
+    (target) => target.path,
+  );
+}
+
+/** The paths of every file `init` offers, in the order it offers them: the choice made without a person to ask. */
+export const EVERY_HOST_FILE: readonly string[] = CHOOSABLE_INSTRUCTIONS.map(
+  (target) => target.path,
+);
+
+/**
+ * The targets this project has: the offered files that were chosen (`choice`, or else the ones the files
+ * on disk show chosen, or else every one when nothing shows it), and the person's own files
+ * (`CLAUDE.md` and its kin) where the file or a link is there.
+ */
+function targetsOf(project: string, choice?: readonly string[]): readonly InstructionsTarget[] {
+  const onDisk = chosenOnDisk(project);
+  const chosen = choice ?? (onDisk.length > 0 ? onDisk : EVERY_HOST_FILE);
+  return INSTRUCTIONS_TARGETS.filter((target) =>
+    target.when === 'always'
+      ? chosen.includes(target.path)
+      : existsAsALink(join(project, target.path)),
   );
 }
 
@@ -310,8 +341,11 @@ function writeOne(project: string, target: InstructionsTarget): InstructionsFile
  * none, replaces a block this product wrote, and refuses a block somebody edited. A file that
  * cannot be written is that file's `failed`, and the others are still written.
  */
-export function writeInstructions(project: string): readonly InstructionsFile[] {
-  return targetsOf(project).map((target) => writeOne(project, target));
+export function writeInstructions(
+  project: string,
+  choice?: readonly string[],
+): readonly InstructionsFile[] {
+  return targetsOf(project, choice).map((target) => writeOne(project, target));
 }
 
 /** Removes the directories `from` and above it, up to `project`, while each is empty. */

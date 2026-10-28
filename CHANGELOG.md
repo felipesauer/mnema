@@ -12,6 +12,22 @@ with its own changelog.
 
 ### Added
 
+- **`mnema init` asks, at a terminal, which files an agent host reads the mnema instructions are written into.** The question
+  comes before the founding and lists `AGENTS.md` and the three rule files of mnema's own (Claude Code, the `.github/instructions`
+  file for VS Code and Copilot CLI, and Cursor) with the hosts that read each, as `docs/cli-reference.md` names them: Enter
+  writes all four, numbers write those, an answer not on the list is asked once more and then refused (`HOST_FILES_NOT_UNDERSTOOD`)
+  with nothing written, and Ctrl-C or Ctrl-D founds nothing, writes nothing and exits 0 (the project and the home are byte for
+  byte as they were). With no terminal (a script, a pipe, an agent's shell), with `--all-hosts`, and in a project already
+  founded, nothing is asked: the output of a founding without a terminal is the one it always was. A `CLAUDE.md`,
+  `.claude/CLAUDE.md` or `GEMINI.md` that already exists still gets the block whichever files were chosen.
+  **The files on disk are the choice.** `mnema doctor`, `mnema instructions --check` and `--remove` look at the offered files
+  that hold the instructions, and say the others are missing only when none of the four does; `mnema instructions` updates
+  those, and where none holds them it asks the same question at a terminal and writes all four without one.
+  `mnema instructions --all-hosts` writes all four whichever are there. What this costs: a file of yours with no block does not
+  count as chosen, so taking the block out of the one file you chose is no longer reported missing by `doctor`. Measured on
+  the built binary under a pseudo-terminal: Ctrl-C and Ctrl-D at a question reject the read with `ABORT_ERR` at once, so the
+  shared `ask` needed no change; the verbs that already ask (`decision review`) still end with "Aborted with Ctrl+C" and exit 1.
+
 - **A recording of `verify` catching a changed word.** `recordings/a-tamper-caught.sh` records a decision, accepts it, runs
   `mnema verify` (green), changes one word of the decision in the record's own file with `sed`, and runs `verify` again: the
   verdict is `local integrity FAILED`, the issue is `entry hash mismatch` at the event, and the exit code is 1. The README's

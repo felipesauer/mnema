@@ -108,7 +108,10 @@ could impose on the bytes, and, where the repository has a `.prettierignore` or 
 `.mnema/` to it and says it did: a formatter that rewrote a byte of the record would
 break its signatures. It also writes the mnema instructions into the files agent hosts read at the start of a
 session (an `AGENTS.md`, created where there is none, a `CLAUDE.md` or a `GEMINI.md` where one exists, and a
-rule file of its own for Claude Code, Copilot and Cursor), after what each of yours holds, and names each file;
+rule file of its own for Claude Code, Copilot and Cursor), after what each of yours holds, and names each file. At a
+terminal it first asks which of `AGENTS.md` and the three rule files to write (Enter for all four, Ctrl-C to found
+nothing); the lines in step 1 are what it prints with no terminal, or with `mnema init --all-hosts`, which asks nothing.
+Where it wrote any,
 the block above then reads "mnema writes no other file of yours". They say when to call the mnema tools and
 what never goes in the record ([the reference](cli-reference.md#the-mnema-instructions-in-the-files-a-host-reads)),
 and `mnema instructions --remove` takes them out. Run again in a project founded before `init` did this, it adds what that project

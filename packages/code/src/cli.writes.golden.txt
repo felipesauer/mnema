@@ -25,6 +25,9 @@ $ mnema init
 $ mnema init
 | Already a mnema project at <sandbox>/project/.mnema: nothing to found.
 |   identity: <anchor>
+$ mnema init --all-hosts
+| Already a mnema project at <sandbox>/project/.mnema: nothing to found.
+|   identity: <anchor>
 
 ### run start
 $ mnema run start --which agent-alpha --goal 'set the record up'

@@ -724,7 +724,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 74, name: 134, flag: 4 },
+  'CHANGELOG.md': { line: 76, name: 137, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
@@ -732,7 +732,7 @@ export const HANDED_OVER: Readonly<
   'docs/convergence.md': { line: 4, name: 4 },
   'docs/evidence.md': { line: 1, flag: 1 },
   'docs/features.md': { line: 10, name: 16 },
-  'docs/first-record.md': { line: 6, name: 6 },
+  'docs/first-record.md': { line: 7, name: 6 },
   'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 2 },
   'docs/hosts.md': { line: 2, name: 4 },
@@ -751,7 +751,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 121, name: 143, flag: 2 },
+  'docs/cli-reference.md': { line: 122, name: 145, flag: 2 },
   'packages/code/README.md': { line: 8, name: 14 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
@@ -807,8 +807,8 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/wiring/doctor.ts': { name: 1 },
   'packages/code/src/wiring/handback.ts': { line: 1 },
   'packages/code/src/wiring/inherit.ts': { line: 1, name: 3 },
-  'packages/code/src/wiring/init.ts': { line: 3, name: 5 },
-  'packages/code/src/wiring/instructions.ts': { name: 1 },
+  'packages/code/src/wiring/init.ts': { line: 5, name: 5 },
+  'packages/code/src/wiring/instructions.ts': { line: 1, name: 1 },
   'packages/code/src/wiring/key.ts': { line: 17, name: 15 },
   'packages/code/src/wiring/mcp.ts': { line: 2 },
   'packages/code/src/wiring/options.ts': { name: 1 },

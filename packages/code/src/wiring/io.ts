@@ -106,6 +106,12 @@ export const processIo: CliIo = {
   aPersonIsHere: process.stdin.isTTY === true && process.stderr.isTTY === true,
   ask: async (question) => {
     const { createInterface } = await import('node:readline/promises');
+    // The menu the bare name draws (`choice/asked.ts`) leaves standard input unreferenced when it
+    // gives the terminal back, and a question asked after it then waited on a handle nothing held
+    // open: the process ended, with exit 0, in the middle of the question (measured on the built
+    // binary under a pseudo-terminal: `mnema`, "establish a project here", and the question of
+    // `mnema init` was the last thing printed). The question holds the input open itself.
+    process.stdin.ref();
     const lines = createInterface({ input: process.stdin, output: process.stderr, terminal: true });
     try {
       return await lines.question(question);

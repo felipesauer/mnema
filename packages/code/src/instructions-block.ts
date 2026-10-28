@@ -259,28 +259,55 @@ export interface InstructionsTarget {
   readonly when: 'always' | 'exists';
   /** For a file wholly mnema's: what goes before the block (its host's frontmatter). */
   readonly own?: string;
+  /**
+   * For a file a person CHOOSES at `mnema init` (the `always` ones): the hosts that read it, in the
+   * words `docs/cli-reference.md` gives them. The question `init` asks prints these, and
+   * `the-init-asks-which-host-files-to-write.test.ts` holds the page's table to them.
+   */
+  readonly readers?: string;
 }
 
 export const INSTRUCTIONS_TARGETS: readonly InstructionsTarget[] = [
-  { path: 'AGENTS.md', when: 'always' },
+  {
+    path: 'AGENTS.md',
+    when: 'always',
+    readers:
+      'Codex, Cursor, VS Code, Copilot CLI, OpenCode; Claude Code only where no CLAUDE.md exists',
+  },
   { path: 'CLAUDE.md', when: 'exists' },
   { path: '.claude/CLAUDE.md', when: 'exists' },
   { path: 'GEMINI.md', when: 'exists' },
   // Claude Code loads a rule with no `paths` at launch, as it loads `.claude/CLAUDE.md`.
-  { path: '.claude/rules/mnema-instructions.md', when: 'always', own: '' },
+  {
+    path: '.claude/rules/mnema-instructions.md',
+    when: 'always',
+    own: '',
+    readers: 'Claude Code, at launch',
+  },
   // VS Code and Copilot CLI: `applyTo: "**"` attaches it to work on any file.
   {
     path: '.github/instructions/mnema-instructions.instructions.md',
     when: 'always',
     own: '---\napplyTo: "**"\n---\n\n',
+    readers: 'VS Code and Copilot CLI, when the agent works on a file',
   },
   // Cursor reads only `.mdc` under `.cursor/rules`, and applies to every session what says `alwaysApply`.
   {
     path: '.cursor/rules/mnema-instructions.mdc',
     when: 'always',
     own: '---\nalwaysApply: true\n---\n\n',
+    readers: 'Cursor',
   },
 ];
+
+/**
+ * The files `mnema init` asks about: the ones written whether or not the project had them. The others
+ * (`CLAUDE.md`, `.claude/CLAUDE.md`, `GEMINI.md`) are the person's own and are written where they
+ * already exist, whichever of these was chosen.
+ */
+export const CHOOSABLE_INSTRUCTIONS: readonly InstructionsTarget[] = INSTRUCTIONS_TARGETS.filter(
+  (target) => target.when === 'always',
+);
 
 /** The paths of the files wholly mnema's, which never hold a decision of the project's. */
 export const OWN_INSTRUCTIONS_FILES: readonly string[] = INSTRUCTIONS_TARGETS.filter(

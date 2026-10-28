@@ -184,7 +184,7 @@ const COMMAND_LINE_RECORDINGS: readonly {
   {
     name: 'first-record',
     typed: [
-      'mnema init',
+      'mnema init --all-hosts',
       'mnema decision record',
       'mnema decision move',
       'mnema brief |',
@@ -195,7 +195,7 @@ const COMMAND_LINE_RECORDINGS: readonly {
   {
     name: 'a-write-refused',
     typed: [
-      'mnema init >',
+      'mnema init --all-hosts',
       'mnema decision record',
       'mnema decision move',
       'mnema link <uuid>',
@@ -207,7 +207,7 @@ const COMMAND_LINE_RECORDINGS: readonly {
   {
     name: 'a-tamper-caught',
     typed: [
-      'mnema init >',
+      'mnema init --all-hosts',
       'mnema decision record',
       'mnema decision move',
       'mnema verify',
@@ -223,7 +223,7 @@ const COMMAND_LINE_RECORDINGS: readonly {
   {
     name: 'a-decision-superseded',
     typed: [
-      'mnema init >',
+      'mnema init --all-hosts',
       'mnema decision record',
       'mnema decision move',
       'mnema brief |',

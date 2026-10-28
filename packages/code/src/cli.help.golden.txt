@@ -140,7 +140,14 @@ $ mnema init --help
 | establish a mnema project in the current directory
 |
 | Options:
-|   -h, --help  display help for command
+|   --all-hosts  write the mnema instructions into AGENTS.md and the three files
+|                of mnema’s own, without asking which
+|   -h, --help   display help for command
+|
+| At a terminal, a new project is first asked which of four files the mnema instructions go
+| into: AGENTS.md and the three of mnema’s own (Enter for all four, Ctrl-C to found nothing).
+| Without a terminal, or with --all-hosts, nothing is asked and all four are written.
+| `mnema instructions --help` lists the files.
 
 ### mnema decision --help
 $ mnema decision --help
@@ -655,9 +662,11 @@ $ mnema instructions --help
 | its kin), check them, or remove them
 |
 | Options:
-|   --check     say what each file holds of the instructions, and write nothing
-|   --remove    take the instructions out of each file
-|   -h, --help  display help for command
+|   --check      say what each file holds of the instructions, and write nothing
+|   --remove     take the instructions out of each file
+|   --all-hosts  write AGENTS.md and the three files of mnema’s own, asking
+|                nothing and whichever are there
+|   -h, --help   display help for command
 |
 | The files:
 |   AGENTS.md, created where there is none; CLAUDE.md, .claude/CLAUDE.md and GEMINI.md where
@@ -671,6 +680,11 @@ $ mnema instructions --help
 | project or leads nowhere, and a file that cannot be read or written (said with why, and
 | the command to try again). `mnema init` writes them when it founds a project, and never
 | again.
+|
+| The files on disk are the choice: where some of AGENTS.md and the three files of mnema’s own
+| hold the instructions, those are written, checked and removed, and the others are not
+| expected; where none does, a terminal is asked which of the four (Enter for all), and
+| without one all four are written. --all-hosts writes all four, whichever are there.
 
 ### mnema switch --help
 $ mnema switch --help

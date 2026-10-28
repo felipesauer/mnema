@@ -291,7 +291,9 @@ mnema init
 # `.mnema/.editorconfig`, which sets every property an outer `.editorconfig` could impose on the record (a final
 # newline, an end of line, a trim, a charset, an indent) to `unset`; it has no `root = true`, so it takes nothing
 # else away from the folders above. And it writes the mnema instructions into the files agent hosts read at
-# the start of a session, naming each (see "The mnema instructions in the files a host reads", below). It
+# the start of a session, naming each (see "The mnema instructions in the files a host reads", below), and
+# at a terminal it first asks which of four of them (Enter for all four, Ctrl-C to found nothing); with no
+# terminal, or with `--all-hosts`, it asks nothing and writes all four. It
 # touches no other file outside `.mnema/`. Run again in a project that is already founded, it adds only what that project lacks of
 # these (the README, the `.editorconfig`, the `.prettierignore` line), says what it added, and
 # touches nothing else of the record (and gives the record's own `.gitignore` a line it lacks, such as `/site/`, and says so);
@@ -1312,7 +1314,9 @@ tracks files under `.mnema/site/`, with their count and the command to stop trac
 .mnema/site`, which the doctor never runs. Outside a repository, with no `git` on the `PATH` or when git does not
 answer, it says nothing of either.
 It says, too, each file an agent host reads that lacks this version's mnema instructions (one with none, an earlier
-version's block, or a block somebody edited), with what `mnema instructions` would do about it.
+version's block, or a block somebody edited), with what `mnema instructions` would do about it. Of `AGENTS.md` and the
+three files of mnema's own it looks at the ones that hold the instructions, which is how it knows which you chose, and
+says they are missing only when none of the four does.
 
 And it says where another tool would rewrite the record, because a formatter that changed one byte of it breaks its
 signatures: a `.pre-commit-config.yaml` with a hook that rewrites files (`end-of-file-fixer`, `trailing-whitespace`,
@@ -1666,7 +1670,12 @@ matched: the same words recorded again are a new proposal.
 ### The mnema instructions in the files a host reads
 
 When it founds a project, `mnema init` writes a short block into the files agent hosts read as
-standing instructions, and names each file it wrote. The block says when to call the mnema tools
+standing instructions, and names each file it wrote. At a terminal it first asks which of the four files
+below that it offers (`AGENTS.md` and the three of mnema's own), listing the hosts that read each:
+Enter writes all four, numbers write those, and Ctrl-C or Ctrl-D founds nothing and writes nothing. With no terminal
+(a script, a pipe, an agent's shell) or with `--all-hosts` it asks nothing and writes all four. The question comes
+before the founding, so leaving it leaves the project and the home as they were, and a second `init` does not ask.
+A `CLAUDE.md`, `.claude/CLAUDE.md` or `GEMINI.md` that already exists gets the block whichever you choose. The block says when to call the mnema tools
 (`bootstrap` at the opening, `governing_rules` before changing a file, `record_decision` when a choice
 is settled, `capture_memory` for what the code does not show), that a decision is born `proposed` and,
 once accepted, is in force (an agent's acceptance is recorded as an agent's, and `mnema switch off agent-accepts`
@@ -1680,12 +1689,12 @@ through the plugin.
 
 | File | Written | Read by, as each host documents it |
 |---|---|---|
-| `AGENTS.md` | always, created where there is none | Codex, Cursor, VS Code, Copilot CLI, OpenCode; Claude Code only where no `CLAUDE.md` exists |
+| `AGENTS.md` | offered by `init`, created where there is none | Codex, Cursor, VS Code, Copilot CLI, OpenCode; Claude Code only where no `CLAUDE.md` exists |
 | `CLAUDE.md`, `.claude/CLAUDE.md` | where they exist | Claude Code, Copilot CLI |
 | `GEMINI.md` | where it exists | Gemini CLI, Copilot CLI |
-| `.claude/rules/mnema-instructions.md` | always | Claude Code, at launch |
-| `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`) | always | VS Code and Copilot CLI, when the agent works on a file |
-| `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`) | always | Cursor |
+| `.claude/rules/mnema-instructions.md` | offered by `init` | Claude Code, at launch |
+| `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`) | offered by `init` | VS Code and Copilot CLI, when the agent works on a file |
+| `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`) | offered by `init` | Cursor |
 
 The Gemini CLI extension carries the same text as its own context file. Every copy is the same
 text, so a host that reads several (Claude Code reads its `CLAUDE.md` or `AGENTS.md` and the rule
@@ -1696,7 +1705,15 @@ is 2,390 characters (the one before was 1,721).
 mnema instructions            # write the block where it is missing or an earlier version's
 mnema instructions --check    # say what each file holds; exits 1 where one lacks this version's block
 mnema instructions --remove   # take it out of each file
+mnema instructions --all-hosts   # write all four offered files, asking nothing, whichever are there
 ```
+
+The files on disk are the choice. Of the four offered files, `mnema instructions`, `--check`, `--remove` and
+`mnema doctor` look at the ones that hold the instructions; one you did not choose is not expected, and is
+reported missing only when none of the four holds them. Where none does, a terminal is asked the question
+`init` asks, and without one all four are written. A file of yours with no block (an `AGENTS.md` you wrote) does not
+count as chosen, so if you take the block out of the one file you chose, nothing says it is missing: `--all-hosts` puts
+it back, with the others.
 
 The block is written the way a Markdown formatter (prettier) leaves it: a blank line after the begin
 marker and before the end marker, the examples as indented code. In a repository that formats its

@@ -66,8 +66,10 @@ printf '{"hook_event_name":"PreToolUse","tool_name":"create_file","tool_input":{
 
 printf '\033[2J\033[H'
 say "a repository with a record, and a call the team made"
-typed "mnema init > /dev/null"
-mnema init >/dev/null
+# `init` is typed with --all-hosts: it asks which host files to write when a person is at the terminal, and
+# this recording is one, so the option is what keeps the recording from stopping at the question.
+typed "mnema init --all-hosts > /dev/null"
+mnema init --all-hosts >/dev/null
 typed 'mnema decision record "Keep money as integer cents" \' \
   '"Float sums drift; cents are exact."'
 OUT=$(mnema decision record "Keep money as integer cents" "Float sums drift; cents are exact.")

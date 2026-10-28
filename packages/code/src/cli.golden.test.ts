@@ -543,6 +543,10 @@ beforeAll(async () => {
   // stays a check: a path that stopped ending in the key's name would fail here.
   name(basename(backupKeyPath, '.key'), 'backup-key-fingerprint');
   await mnema('writes', 'init');
+  // The option that writes every host file without asking: this transcript has no terminal, so the
+  // plain `init` above never asked either, and the founding it pins is the one `--all-hosts` makes
+  // (`the-init-asks-which-host-files-to-write.test.ts` founds with both and compares).
+  await mnema('writes', 'init', '--all-hosts');
 
   // ── Every read again, now over a project that holds nothing.
   await readEverything('an empty project', { anchor, short });

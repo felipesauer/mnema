@@ -23,6 +23,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   changeLine,
   checkInstructions,
+  EVERY_HOST_FILE,
   type InstructionsFile,
   instructionsAreCurrent,
   removeInstructions,
@@ -270,7 +271,7 @@ describe('a file that cannot be read or written', () => {
   it('is that file’s refusal or failure, with its reason, and every other file is still written', () => {
     mkdirSync(at('AGENTS.md'));
     put('.claude', 'a file where the directory of a rule should be');
-    const files = writeInstructions(project);
+    const files = writeInstructions(project, EVERY_HOST_FILE);
     const byPath = Object.fromEntries(files.map((file) => [file.path, file]));
     expect(byPath['AGENTS.md']?.did).toBe('refused');
     expect(changeLine(byPath['AGENTS.md'] as InstructionsFile)).toMatch(
