@@ -719,7 +719,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 73, name: 130, flag: 4 },
+  'CHANGELOG.md': { line: 74, name: 131, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
@@ -766,7 +766,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/edit-refuses-a-write.ts': { line: 2, name: 2 },
   'packages/code/src/host-rules-file.ts': { line: 1 },
   'packages/code/src/inherited-record.ts': { name: 1 },
-  'packages/code/src/instructions-block.ts': { line: 3 },
+  'packages/code/src/instructions-block.ts': { line: 6 },
   'packages/code/src/mcp/context.ts': { name: 1, flag: 2 },
   'packages/code/src/mcp/instructions.ts': { name: 1 },
   'packages/code/src/mcp/server.ts': { line: 1 },
@@ -841,11 +841,11 @@ export const HANDED_OVER: Readonly<
   'packages/vscode/src/stacks.ts': { line: 1 },
   'packages/vscode/src/why.ts': { line: 1 },
   'plugin/README.md': { line: 42, name: 26, flag: 1 },
+  'plugin/gemini/GEMINI.md': { line: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },
   'plugin/captures/cursor-ide-script.md': { line: 4, name: 2 },
   'plugin/captures/cursor-script.md': { line: 3, name: 3 },
   'plugin/captures/vscode-extension-script.md': { name: 6 },
-  'plugin/gemini/GEMINI.md': { line: 1 },
   'plugin/gemini/hooks/mnema.mjs': { line: 1, name: 2 },
   'plugin/hooks/edit-asks-a-person.mjs': { name: 1 },
   'plugin/hooks/edit-refuses-a-write.mjs': { name: 1 },
