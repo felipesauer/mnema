@@ -836,6 +836,7 @@ export const HANDED_OVER: Readonly<
   'packages/vscode/src/stacks.ts': { line: 1 },
   'packages/vscode/src/why.ts': { line: 1 },
   'plugin/README.md': { line: 42, name: 26, flag: 1 },
+  'plugin/gemini/GEMINI.md': { line: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },
   'plugin/captures/cursor-ide-script.md': { line: 4, name: 2 },
   'plugin/captures/cursor-script.md': { line: 3, name: 3 },
