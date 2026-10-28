@@ -17,6 +17,7 @@ import {
   asksForAPersonAt,
   type GovernanceQuery,
   governingRules,
+  pathInProject,
   refusesAWriteAt,
 } from './governance.js';
 
@@ -527,5 +528,18 @@ describe('governance: the relation that refuses a write is a walk of its own', (
     const query = asking('src/ledger/posting.ts', ['src/ledger']);
     expect(refusesAWriteAt([tree(b)], query).rules.map((rule) => rule.id)).toEqual(['dec-refuse']);
     expect(asksForAPersonAt([tree(b)], query).rules.map((rule) => rule.id)).toEqual(['dec-ask']);
+  });
+});
+
+describe('pathInProject', () => {
+  it('spells a path as an address spells it, and says nothing for what is not this project', () => {
+    const root = '/work/repo';
+    expect(pathInProject('src/a.ts', root)).toBe('src/a.ts');
+    expect(pathInProject('./src/../src/a.ts', root)).toBe('src/a.ts');
+    expect(pathInProject('/work/repo/src/a.ts', root)).toBe('src/a.ts');
+    expect(pathInProject('../other/a.ts', root)).toBeUndefined();
+    expect(pathInProject('/work/other/a.ts', root)).toBeUndefined();
+    expect(pathInProject('/work/repo', root)).toBeUndefined();
+    expect(pathInProject('.', root)).toBeUndefined();
   });
 });

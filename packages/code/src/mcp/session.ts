@@ -510,7 +510,20 @@ export interface Session {
    * `reasonTold`).
    */
   readonly told: Map<string, number>;
+  /**
+   * The paths OF THE SESSION'S PROJECT this connection has been asked about (`governing_rules`, and
+   * `rules_before_an_edit` where the host hands the path of each edit), relative to the project
+   * root, the latest first, each once and at most {@link MOST_PATHS_REMEMBERED}. It is what
+   * `record_decision` offers as an address: "the files this session touched", read off what the
+   * session itself was asked and never off the working tree's diff, which would credit the session
+   * with changes it may not have made. In memory only: no disk, no fact, and a restarted server
+   * starts it empty, which is stated where it is offered.
+   */
+  readonly looked: string[];
 }
+
+/** How many paths {@link Session.looked} keeps: the most recent ones. */
+export const MOST_PATHS_REMEMBERED = 50;
 
 /**
  * Opens a session for a connection: resolves the trees, settles the default scope,
@@ -639,6 +652,7 @@ export function openSession(input: OpenSessionInput): Session {
     served: new Map<string, Set<string>>(),
     held: new Set<string>(),
     told: new Map<string, number>(),
+    looked: [],
   };
   home.session = opened;
   return opened;

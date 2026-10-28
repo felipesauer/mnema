@@ -28,9 +28,22 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, resolveScope, type Scope } from '@mnema/core';
+import {
+  chainRootForScope,
+  type DiscoveryEnv,
+  resolveScope,
+  resolveTrees,
+  type Scope,
+} from '@mnema/core';
 import { openTreeForWriting, recordDecision } from '@mnema/core/write';
+import {
+  type DecisionText,
+  decisionsCited,
+  decisionsInView,
+  supersedeOfferLines,
+} from '../offers-beside-a-recorded-decision.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import { withScopedCaches } from '../tree-sources.js';
 import {
   type AgentWrites,
   originOfTheWrite,
@@ -134,4 +147,31 @@ export function runDecision(
   }
 
   return { ok: true, id: recorded.id, adr: recorded.adr, scope, ...forwardReplacement(recorded) };
+}
+
+/**
+ * What `mnema decision record` OFFERS beside "Recorded decision ...": the command that would
+ * replace each decision the new one cites, as lines (none when it cites none a supersede could
+ * replace). Nothing is moved. It is asked by the command and not by {@link runDecision}, which
+ * `promote` and the corrections hook call too: an import of a hundred proposals must not open the
+ * record a hundred more times to look for citations nobody asked about.
+ *
+ * THE SAME DETECTION THE MCP TOOL ASKS (`offers-beside-a-recorded-decision.ts`), read after the
+ * write over the trees the decision may name a decision out of. There is no address offer here: a
+ * command has no session, so no path it looked at. A read that cannot be made is no offer, since
+ * the write already stands.
+ */
+export function offeredBesideADecision(
+  ctx: Pick<DecisionContext, 'cwd' | 'env'>,
+  text: DecisionText,
+  recorded: { readonly id: string; readonly adr: string; readonly scope: Scope },
+): string[] {
+  try {
+    const held = withScopedCaches(resolveTrees(ctx.cwd, ctx.env), (sources) =>
+      decisionsInView(sources, recorded.scope, (source) => source.cache.listDecisions()),
+    );
+    return supersedeOfferLines(decisionsCited(text, held, recorded.id), recorded, 'cli');
+  } catch {
+    return [];
+  }
 }
