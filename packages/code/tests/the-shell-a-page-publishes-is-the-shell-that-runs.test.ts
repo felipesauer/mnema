@@ -222,6 +222,7 @@ export const PAGES: Readonly<Record<string, number>> = {
   'docs/convergence.md': 8,
   'docs/first-record.md': 4,
   'docs/how-it-works.md': 1,
+  'docs/install.md': 2,
   'docs/site.md': 2,
   // The recipe for an agent in CI: the job whose steps call `mnema`.
   'packages/action/README.md': 1,
