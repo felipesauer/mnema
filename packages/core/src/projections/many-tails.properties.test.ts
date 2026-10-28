@@ -863,7 +863,9 @@ describe('a decision is the text its first writer recorded, however the tails ar
     )
     .chain(([rewrites, noise]) => {
       const ops = [
-        ...rewrites.map(({ slot, at }): Op => ({ slot, at, act: { kind: 'rewrite', decision: X } })),
+        ...rewrites.map(
+          ({ slot, at }): Op => ({ slot, at, act: { kind: 'rewrite', decision: X } }),
+        ),
         ...noise,
       ];
       return fc.shuffledSubarray(ops, { minLength: ops.length, maxLength: ops.length });
