@@ -34,7 +34,7 @@ import {
   type Presence,
 } from '../../src/host-names.js';
 import { INSTRUCTIONS_BODY } from '../../src/instructions-block.js';
-import { type ArrivalHost } from '../host-contract/support/the-arms-of-a-rule.js';
+import type { ArrivalHost } from '../host-contract/support/the-arms-of-a-rule.js';
 import { theCell } from '../host-contract/support/the-arrival-table.js';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
@@ -1562,7 +1562,6 @@ const SHORT: { readonly [C in Capability]: string } = {
  * the real host and what only its documentation says, each with its own mark.
  */
 function whatItGets(name: HostName): string {
-  const cells = HOSTS[name].cells;
   const all = Object.keys(SHORT) as Capability[];
   const words = (held: readonly Capability[]) => held.map((c) => SHORT[c]).join(' · ');
   const tested = all.filter((c) => {
