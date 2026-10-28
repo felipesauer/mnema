@@ -2,7 +2,8 @@
 //
 // What Gemini CLI runs for this extension's hooks: `open` hands a session the project's committed
 // mnema record as it starts, `gate` refuses a write where a rule of that record refuses it, and
-// `settled`, after a question to the person was answered, says which tool records a choice.
+// `settled`, after a question to the person was answered, says which tool records a choice, and
+// `beside`, after a write, hands over the rules of the record addressed at the file.
 // It runs `mnema` from the PATH, and every outcome that is not an answer, such as no `mnema`, no
 // project or a program of that name that is not @mnema/code, leaves the session as it would
 // have been without it: nothing on stdout, exit 0. One outcome is not silence: a `mnema` that is
@@ -440,9 +441,11 @@ const GATING = ['refuses-a-write', 'asks-for-a-person'];
  * @param {string} cwd Where the session is.
  * @param {Readonly<Record<string, string | undefined>>} env The host's environment.
  * @param {string} raw What the host handed the hook: JSON naming the tool and its input.
+ * @param {readonly string[]} [relations] The relations whose links count: by default the two that gate
+ *   a write; the rules handed beside one add `governs`.
  * @returns {boolean}
  */
-function aRuleReaches(cwd, env, raw) {
+function aRuleReaches(cwd, env, raw, relations = GATING) {
   try {
     const starts = [
       ...new Set([
@@ -459,7 +462,7 @@ function aRuleReaches(cwd, env, raw) {
     const standing = new Map();
     /** @type {Map<string, Standing>} */
     const rules = new Map();
-    for (const root of roots) readEdges(root, 0, standing, rules);
+    for (const root of roots) readEdges(root, 0, standing, rules, relations);
     // A rule that is not in force refuses nothing and asks for nobody, as the verb counts it.
     const addresses = [...standing.values()]
       .filter((edge) => inForce(rules.get(edge.rule)))
@@ -525,8 +528,9 @@ function inForce(rule) {
  * @param {number} depth
  * @param {Map<string, { rule: string, address: string }>} standing
  * @param {Map<string, Standing>} rules
+ * @param {readonly string[]} relations
  */
-function readEdges(root, depth, standing, rules) {
+function readEdges(root, depth, standing, rules, relations) {
   if (depth > REACH_DEEPEST) throw new Doubt('deeper than a tree goes');
   let entries;
   try {
@@ -540,7 +544,7 @@ function readEdges(root, depth, standing, rules) {
     const path = join(root, name);
     if (!isDirectory(path)) continue;
     if (name !== 'tails') {
-      readEdges(path, depth + 1, standing, rules);
+      readEdges(path, depth + 1, standing, rules, relations);
       continue;
     }
     for (const tail of readdirSync(path)) {
@@ -553,7 +557,7 @@ function readEdges(root, depth, standing, rules) {
             line.includes('"kind":"knowledge.linked"') ||
             line.includes('"kind":"link.retracted"')
           ) {
-            readEdge(line, standing);
+            readEdge(line, standing, relations);
           } else if (line.includes('.transitioned"')) {
             readMove(line, rules);
           }
@@ -584,13 +588,14 @@ function readMove(line, rules) {
 /**
  * @param {string} line
  * @param {Map<string, { rule: string, address: string }>} standing
+ * @param {readonly string[]} relations
  */
-function readEdge(line, standing) {
+function readEdge(line, standing, relations) {
   const { event } = JSON.parse(line);
   const { kind, payload, subject, who } = event;
   const key = `${who}\0${subject}\0${payload?.rel}\0${payload?.target}`;
   if (kind === 'link.retracted') standing.delete(key);
-  else if (kind === 'knowledge.linked' && GATING.includes(payload.rel)) {
+  else if (kind === 'knowledge.linked' && relations.includes(payload.rel)) {
     standing.set(key, { rule: String(subject), address: String(payload.target) });
   }
 }
@@ -683,6 +688,9 @@ function spelled(path) {
 
 /** What `mnema --identify` starts its answer with: the package, then the version. */
 const THIS_PRODUCT = '@mnema/code ';
+
+/** The relations whose links a rule handed beside a write can be addressed by: the gating ones, and `governs`. */
+const ADDRESSED = [...GATING, 'governs'];
 
 /** The tools Gemini CLI writes a file through. */
 const WRITES = new Set(['write_file', 'replace']);
@@ -778,7 +786,7 @@ function closedWhere(because, cwd, raw) {
 
 /**
  * What the hook answers for one payload, or nothing.
- * @param {string | undefined} mode `open`, `gate` or `settled`
+ * @param {string | undefined} mode `open`, `gate`, `settled` or `beside`
  * @param {string} raw what the host wrote to stdin
  */
 function answer(mode, raw) {
@@ -791,6 +799,10 @@ function answer(mode, raw) {
   const cwd = typeof input?.cwd === 'string' ? input.cwd : process.cwd();
   if (mode === 'gate' && !WRITES.has(input?.tool_name)) return undefined;
   if (mode === 'settled' && input?.tool_name !== ASKS) return undefined;
+  if (mode === 'beside' && !WRITES.has(input?.tool_name)) return undefined;
+  // NO RULE CAN BE ADDRESSED AT THIS WRITE, SO NO `mnema` STARTS: neither `--identify` nor the verb, which
+  // would answer nothing. Read from the stored lines of every tree, and any doubt goes on.
+  if (mode === 'beside' && !aRuleReaches(cwd, process.env, raw, ADDRESSED)) return undefined;
   if (mode === 'gate' && theRuntime().refusal !== null) {
     return closedWhere(theRuntime().refusal, cwd, raw);
   }
@@ -810,6 +822,19 @@ function answer(mode, raw) {
     if (ran.error !== undefined || ran.status !== 0) return undefined;
     const said = JSON.parse(ran.stdout);
     return said.hookSpecificOutput === undefined ? undefined : said;
+  }
+  if (mode === 'beside') {
+    // AFTER THE WRITE: nothing to close, so every outcome that is not an answer is silence. A
+    // `mnema` too old to know the verb or the option refuses it by name and exits non-zero.
+    const beside = ['beside-a-write', '--host', 'gemini'];
+    const began = Date.now();
+    let heard = run([...beside, ...AGENT], cwd, raw, GATE_WAIT);
+    if (heard.status !== 0 && heard.stderr.includes('--agent-key')) {
+      heard = run(beside, cwd, raw, Math.max(1, GATE_WAIT - (Date.now() - began)));
+    }
+    if (heard.error !== undefined || heard.status !== 0) return undefined;
+    const handed = JSON.parse(heard.stdout);
+    return handed.hookSpecificOutput === undefined ? undefined : handed;
   }
   if (mode !== 'gate') return undefined;
   const gate = ['before-a-write', '--host', 'gemini'];

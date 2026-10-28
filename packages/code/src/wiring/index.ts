@@ -223,6 +223,7 @@ import { registerAfterAWrite } from './after-a-write.js';
 import { registerAging } from './aging.js';
 import { registerAudit } from './audit.js';
 import { registerBeforeAWrite } from './before-a-write.js';
+import { registerBesideAWrite } from './beside-a-write.js';
 import { registerBrief } from './brief.js';
 import { registerCheck } from './check.js';
 import { registerCommitHook } from './commit-hook.js';
@@ -350,6 +351,7 @@ export const GROUPS: readonly Group[] = [
       registerMcp,
       registerRun,
       registerBeforeAWrite,
+      registerBesideAWrite,
       registerTally,
       registerCorrections,
       registerAfterAWrite,

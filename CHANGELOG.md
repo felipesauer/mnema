@@ -19,6 +19,16 @@ with its own changelog.
   `docs/what-it-proves.md` shows it under what holds, with the caption that a cut taking the newest events together with their
   checkpoint is not caught. The site carries every GIF of `recordings/`, so a page of `docs/` can show one. The suite runs the
   script again against the built binary and holds its screen to the cast, and holds that this one shows the failure.
+- **`read_record`, `show` and the opening name the decision a decision replaced.** They handed back `supersedes` as a bare id,
+  and in the comparison of 27 October the sessions that read the record through the MCP tools did not tell the story of a
+  replacement in 2 of 2, while those that opened both ids by hand told it in 2 of 2. The link is now named, by one reading shared
+  by every door, with the label, the title and the state the other decision is in now: `read_record` and `show --json` add
+  `supersedes` and `supersededBy` as `{ found, id, adr, title, state }` beside the raw ids in `record` (`found: false` with the `id`
+  alone when no tree read holds it, said and not left out), `show` prints `supersedes ADR-<n>: <title> (<state>) · <id>` and
+  its twin, and a decision in force that replaced another carries `supersedes` in the opening's JSON and ends its line in the
+  committed brief document with `supersedes ADR-<n>: <title> (<state>)`: one more field of the same line, so a rule is still one line.
+  Only the immediate decision is named, never the chain behind it and never its rationale. Nothing about the record changes: no
+  kind, field or event, and no tool description.
 - **The rules of the record reach the model at an edit in Codex, Qwen Code and OpenCode.** Until now only Claude Code was handed
   the rules addressed at a path beside a write that goes through; the other hosts got the opening and the refusal, and the
   arrival measurement read `not arrived` at an edit for all of them. `mnema before-a-write --host codex|qwen|opencode` now answers,
@@ -30,10 +40,30 @@ with its own changelog.
   small file beside the session's journal on this machine (outside the record, 0600, pruned with the journals, made with an
   exclusive create so that parallel hooks of one session leave one fact); a payload without a session id is handed no rules, and the
   verb says so on its second stream. `mnema switch off edit-rules-push` stops it. The host table has a new column, `pushes`, which
-  is not a rung: yes in Claude Code, Codex, Qwen Code and OpenCode, held by a test of each; not ported in the others. The cells of
+  is not a rung: yes in Claude Code, Codex, Qwen Code and OpenCode, held by a test of each; Copilot CLI and Gemini CLI have it too, by the hook after the write (below), and VS Code and Cursor do not. The cells of
   `docs/rule-arrival.md` for the three hosts at an edit are now `arrived`, read from what the host put in the conversation from the
   call on (never from the whole request, which already carried the rule from the opening), and the same read with the push
-  switched off finds nothing. Copilot CLI and Gemini CLI, and VS Code and Cursor, are not handed the rules at an edit yet.
+  switched off finds nothing. VS Code and Cursor are not handed the rules at an edit yet.
+
+- **The rules of the record reach the model at an edit in Copilot CLI and Gemini CLI too.** Their hook before a write answers a
+  decision and has no field for text, so the rules ride in the hook that runs after the write: `PostToolUse` in Copilot CLI (a
+  top-level `additionalContext`, with the command ending in `exit 0` as its gate does) and `AfterTool` in Gemini CLI
+  (`hookSpecificOutput.additionalContext`). Both run a new verb, `mnema beside-a-write --host copilot|gemini`, which composes
+  the text with the same functions as `before-a-write` and the MCP tool, under the same switch (`mnema switch off
+  edit-rules-push`) and the host's ceiling, and records `channel.served` once for each session of the host, remembered the same
+  way. It is a verb of its own because `before-a-write` run after a write would record a second `channel.refused` or
+  `channel.asked` for a write already refused or asked about: this one never refuses or asks and records no such fact. A payload
+  with no session id is handed no rules; a `mnema` too old to know the verb leaves the write and the session as they were. Copilot
+  CLI's hook starts no `mnema` where no rule of any tree has an address (the same pre-filter the gate before a write uses), and
+  Gemini CLI's script reads the stored lines itself before either of its two processes (`--identify` and the verb), counting the
+  `governs` links as well, and starts neither where no rule in force is addressed at the path (in a project with a record and no
+  address, a write cost 76 ms more with the hook than without it, median of 6 rounds alternating the orders, where it cost 480 ms
+  before). Both give the verb 6 seconds, where the host's own kill would stall the session for 15 (a `mnema` that never answers: the write goes through,
+  no fact is left). Where a rule does have an address, the second process costs about 250 ms per write (median of 25 rounds
+  alternating the two orders, 247 ms for the gate alone and 503 ms for the gate and the hook after it, one machine). The
+  host table's `pushes` cell is now yes for both, held by the arrival cases, and the cells of `docs/rule-arrival.md` for the two
+  hosts at an edit are `arrived`, read from the result of the write alone, with the same read finding nothing when the push is
+  switched off. VS Code and Cursor are not handed the rules at an edit yet.
 
 - **The host contract measures whether a rule reaches the model, by where it is kept and by moment.** One rule carries a
   sentinel, and each of the six hosts the contract starts without an account (Claude Code, Codex, OpenCode, the Copilot CLI,
@@ -143,6 +173,18 @@ with its own changelog.
 - **The Action judges a pull request by the rules of its base.** It asked which rules address each changed file in the checkout of the pull request's head, so a pull request that superseded the `asks-for-a-person` rule on a file and edited that file passed the approval check, while the same edit alone failed it. The rules now come from the record as the base commit holds it, read from a temporary copy of its `.mnema/` (removed at the end) with the same binary, together with the rules the pull request adds, since a pull request can add protection and not take it away; a base with no record has none to read. A file the pull request renames is asked about under both of its paths, the one it left and the one it took, and the comment names it as `src/auth2.ts (renamed from src/auth.ts)`; a file it removes is asked about under the path it removed. The comment says where the rules were read. The workflow does not change: the base commit is already required in the clone.
 - **The host contract holds the Copilot CLI 1.0.104.** The weekly run against the newest Copilot CLI failed on the weight of the 27 definitions: from 1.0.103 the host marks each one `defer_loading` (21 bytes each) and drops a `cache_control` from one, so they weigh 51,540 bytes and 11,942 tokens instead of 51,010 and 11,762. The pinned version is now 1.0.104 and the figure on the evidence page is the new one.
 - **The check of the links after a merge no longer accuses a page the server did not answer for.** An address that ended on HTTP 408, 502, 503 or 504 after three attempts was counted as broken, as five badges were once when the badge host timed out; it is now listed as unreachable and opens no issue, like a rate limit (429) or no answer at all. A 404, a 410 or a 500 still count as broken.
+- **A decision is the text its acceptance was made on, in every reader.** A second `decision.recorded` of an accepted
+  decision's id, signed by any key (one of another identity its writer had founded itself included), replaced the
+  decision's title, rationale, alternatives and author in `show`, `brief`, `search`, the rules a path is governed by, the
+  record page and the Action's comment, while the decision stayed accepted on the note its first text was accepted with,
+  and `mnema verify --require=signed` and the second reader passed and named nothing. The text of a decision is now the
+  first writing in the merged order that the writer of its first accept, rejection or supersede had read, by its own tail
+  and the tails it cites, and the first writing in the merged order while nothing has judged it (FORMAT.md §6.8): a
+  writing dated back on a tail the accept never cited does not become the accepted text. Every other writing is not
+  applied, whoever signed it, and both verifiers name it in the census (`decision-rewrite`), informational, exit
+  unchanged. The product mints a decision's id when it records it, so no record it wrote holds a second writing; a binary
+  from before this serves the last one, and an accept it made may have seen that last writing: if a writing dated back that
+  it read precedes the honest one, this version serves the dated back one and names the honest one.
 - **A note is the identity that wrote it first, in every reader.** The read and the write took a note's author from its LAST
   writing in the merged order, and `mnema verify` and the second reader from its last writing in the order of the tail ids. A
   key of another identity that wrote the same id again with a later clock took the note: its content and its author were
@@ -160,6 +202,20 @@ with its own changelog.
 
 ### Changed
 
+- **The block of instructions `mnema init` writes is now version `v3`: already formatted, with an example that runs, and with the
+  supersede.** The files agent hosts read (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, the rule files) used to fail the
+  repository's own Markdown `format:check` the moment `init` wrote them: prettier wants a blank line after the begin marker and
+  before the end marker. The block now has both, and its examples are indented code (a fence of ours would be closed by, or would
+  close, an unclosed fence of yours, and a second run would write a second block). Measured with prettier 3 over a project `init` founded: the
+  five files that failed with the default configuration and with `tabWidth: 4, printWidth: 100` now pass. One file still fails
+  under a `singleQuote: true` configuration: prettier rewrites the `applyTo: "**"` of `.github/instructions/mnema-instructions.instructions.md` to single quotes. The
+  shell line where the tools are not connected is no longer a template with `<title>` placeholders but a command that runs as
+  written, with `--alternatives` (a test runs it against the built binary and reads the decision back), and the block now says
+  that a decision is not edited once recorded: a new one that replaces it is recorded and the earlier one superseded
+  (`decision_transition` with `action` `supersede`, or `mnema decision supersede <old-id> <new-id> --reason "<why>"`), and the new one is then read as replacing the earlier one, which it names. `mnema
+  instructions` replaces a `v2` block by this one in every file, and still refuses a block whose text you edited (a formatter
+  that re-wraps prose, `proseWrap: "always"`, counts as an edit). The text is 2,390 characters, 570 tokens, against 1,721 and 409:
+  every host file that carries it carries 669 characters more. The Gemini extension's context file is generated from it.
 - **The top `ok` of `mnema verify --json` is the verdict on the record.** It said that the command ran and found a project, and it was
   `true` over a record that was tampered with, so a script that read the first field took a broken record for a sound one. It is now the same
   as `record.ok`: `false` over a broken record, and `false` where a set of paths covered no record. `requirementMet` still says whether

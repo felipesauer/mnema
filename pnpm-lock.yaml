@@ -39,6 +39,9 @@ importers:
 
   packages/action:
     dependencies:
+      '@mnema/chain':
+        specifier: workspace:*
+        version: link:../chain
       '@mnema/code':
         specifier: workspace:*
         version: link:../code

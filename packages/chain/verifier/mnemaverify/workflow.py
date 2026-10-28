@@ -147,7 +147,7 @@ def judge(
     (citing tail, its position there, cited tail, the cited position) - positions counted from 0
     in each tail, as the order walks them.
     """
-    seen_by = _sight(held)
+    seen_by = sight(held)
     # A successor is a subject whose birth the record holds, in the workflow whose row asks for one.
     births: dict[str, set[str]] = {}
     for _tail, entry in order:
@@ -288,7 +288,7 @@ def _judge_successor(
     return None, "", to_text
 
 
-def _sight(
+def sight(
     held: list[tuple[str, int, str, int]],
 ) -> Callable[[tuple[str, int], tuple[str, int]], bool]:
     """Whether the writer of `later` had read `earlier`: on one tail, whether `earlier` comes

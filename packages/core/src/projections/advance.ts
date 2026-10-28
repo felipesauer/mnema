@@ -36,6 +36,12 @@
  * also what keeps the divergences this file indexes again the replay's: a move the state admits
  * leaves a subject's divergences as they were.
  *
+ * A DECISION'S TEXT IS BOUND AT ITS FIRST JUDGMENT to the writing that judgment's writer saw
+ * (FORMAT.md §6.8), and that is a question of citations too. A decision written once has one
+ * answer, so only an arrival that is the first judgment of a decision written more than once
+ * answers false here: rare, since the product never writes one id twice, and the decision's
+ * accumulator says whether the record holds a second writing (`rewritten`).
+ *
  * WHAT THE CALLER OWES, and none of it is checkable here: that `arrived` really is what
  * follows the order the cache was built from, at position `from`, the count of events the
  * cache covered. `chainArrivals` is what establishes it, and its refusals are the cases where
@@ -50,6 +56,7 @@ import {
   RUN_ENDED,
   RUN_OPEN,
   stateAfter,
+  WORKFLOWS,
 } from '@mnema/chain';
 import type { ProjectionTable } from '../db/schema.js';
 import { inTransaction, type SqliteDatabase } from '../db/sqlite.js';
@@ -192,6 +199,9 @@ function withRetractions<
 
 const TRANSITIONS = ['task.transitioned', 'decision.transitioned', 'skill.transitioned'] as const;
 
+/** The state a decision is born in: one it is in until its first judgment, and never again. */
+const DECISION_BIRTH = WORKFLOWS['decision.transitioned'].birth.to;
+
 /** Where each move kind's subject keeps its state in the cache, and how to read it there. */
 const STATE_OF = {
   decision: { fold: decisionFold.name, now: (acc: string) => decisionFold.decode(acc).state },
@@ -222,7 +232,8 @@ const ASKS_WHAT_WAS_SEEN = Symbol('asks what its writer saw');
 /**
  * Whether every move among `arrived` is admitted by the state the cache holds, stepped forward
  * over the arrivals before it: the replay's judgment wherever this one can answer (see the
- * module comment). A successor is born when the cache holds its state or an arrival is its birth,
+ * module comment). And whether no arrival is the first judgment of a decision written more than
+ * once, the one other judgment that needs the citations. A successor is born when the cache holds its state or an arrival is its birth,
  * which is exactly "the record holds its birth", the cache covering everything before.
  */
 function admitted(db: SqliteDatabase, arrived: readonly CatalogEvent[]): boolean {
@@ -242,8 +253,36 @@ function admitted(db: SqliteDatabase, arrived: readonly CatalogEvent[]): boolean
       births.add(event.subject);
     }
   }
+  // How many writings of each decision the record holds, up to two: the cache's, then the
+  // arrivals', counted in arrival order.
+  const writings = new Map<string, number>();
+  const writingsOf = (id: string): number => {
+    let count = writings.get(id);
+    if (count === undefined) {
+      const stored = select.get(decisionFold.name, id) as { acc: string } | undefined;
+      const acc = stored === undefined ? undefined : decisionFold.decode(stored.acc);
+      count = acc?.createdAt === undefined ? 0 : acc.rewritten === true ? 2 : 1;
+      writings.set(id, count);
+    }
+    return count;
+  };
   try {
     for (const event of arrived) {
+      if (event.kind === 'decision.recorded') {
+        writings.set(event.subject, Math.min(2, writingsOf(event.subject) + 1));
+        continue;
+      }
+      // A decision's first judgment binds its text to the writing its writer saw (FORMAT.md
+      // section 6.8), which this file cannot tell without the citations: with one writing it is
+      // that one, and with more the replay judges it.
+      if (
+        event.kind === 'decision.transitioned' &&
+        event.payload.from !== null &&
+        stateOf('decision', event.subject) === DECISION_BIRTH &&
+        writingsOf(event.subject) > 1
+      ) {
+        return false;
+      }
       const family = familyOf(event.kind);
       if (family === undefined) continue;
       const key = `${family}\u0000${event.subject}`;

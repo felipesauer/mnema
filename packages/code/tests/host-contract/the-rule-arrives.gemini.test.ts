@@ -21,7 +21,9 @@
  * The reading is what is in front of the model in the first request after the summary, and it says
  * nothing about a compaction in a session that was never resumed.
  *
- * AT AN EDIT, the rule arrives if it is in the result of the write to the governed path.
+ * AT AN EDIT, the rule arrives if it is in the result of the write to the governed path: the hook that
+ * runs after the write (`AfterTool`) answers with the rules as `additionalContext`, which the host
+ * appends to the result inside `<hook_context>`.
  *
  * NOT HELD: that the model reads the rule or follows it.
  */
@@ -138,6 +140,21 @@ describe('where a rule arrives in Gemini CLI', () => {
       });
       expect(existsSync(join(edit.project, THE_GOVERNED_FILE))).toBe(true);
       arrived.edit = theSentinelIsIn(theResultOfTheCall(edit));
+      // THE INSTRUMENT: the same read of the same record with the push switched off finds nothing, so
+      // a sentinel found above is the push and not the opening.
+      const off = await start({
+        files,
+        project: (project) => {
+          record?.(project);
+          project.mnema('switch', 'off', 'edit-rules-push');
+        },
+        call: writing(THE_GOVERNED_FILE),
+      });
+      expect(existsSync(join(off.project, THE_GOVERNED_FILE))).toBe(true);
+      expect(
+        theSentinelIsIn(theResultOfTheCall(off)),
+        'the instrument sees a push that was switched off',
+      ).toBe(false);
     }
     return { arrived, mentioned: theMentionIsIn(withTools[0]?.body) };
   });

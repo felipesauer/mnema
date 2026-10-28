@@ -56,7 +56,7 @@
  * every other tool, and why the plugin puts a filter in front of the process.
  */
 
-import { does, type HookHost } from './host-names.js';
+import { type BesideHost, does, type HookHost } from './host-names.js';
 import { type HookSaid, hookReply } from './mcp/hook-reply.js';
 
 /** How to read the paths out of one write tool's input, whatever shape the host handed it. */
@@ -253,4 +253,28 @@ export function replyFor(host: HookHost, said: HookSaid): object {
     },
   };
   return reply[host](said);
+}
+
+/**
+ * The reply a host reads from the hook that runs AFTER a write, for the text it hands the model
+ * beside the write's result, or `{}` for none.
+ *
+ * Copilot CLI reads `additionalContext` at the top of the reply, which the documentation says it
+ * appends to the text the model reads of the tool's output; Gemini CLI reads it under
+ * `hookSpecificOutput`, with the name of the event that fired. Total over {@link BesideHost}, so a
+ * host whose row puts its push after the write does not compile until it has a reply here. Never a
+ * decision: a write that already happened has nothing left to ask or refuse, and the hook's own
+ * channel for rewriting the result (`modifiedResult` in Copilot) is not one this product uses.
+ */
+export function replyBeside(host: BesideHost, context: string | undefined): object {
+  const reply: { readonly [H in BesideHost]: (said: HookSaid) => object } = {
+    copilot: (s) => {
+      const said = hookReply('PostToolUse', s).hookSpecificOutput;
+      return said !== undefined && 'additionalContext' in said
+        ? { additionalContext: said.additionalContext }
+        : {};
+    },
+    gemini: (s) => hookReply('AfterTool', s),
+  };
+  return reply[host](context === undefined ? {} : { context });
 }

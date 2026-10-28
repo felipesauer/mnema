@@ -2742,8 +2742,9 @@ export function governingRulesInheritedNotRead(session: Session): readonly strin
  *     tie this channel shipped owing: a push that recorded nothing left "the rules reached
  *     that session" and "the plugin was never installed" as the same nothing. It is written
  *     HERE AND BY THE COMMAND HOOK OF THE HOSTS THAT TAKE THE PUSH (`mnema before-a-write` for
- *     Codex, Qwen Code and OpenCode, once per session of the host, which is that process's stand-in
- *     for a run: `commands/before-a-write.ts`), and by nothing else; this note said "here and nowhere
+ *     Codex, Qwen Code and OpenCode, and `mnema beside-a-write`, after the write, for Copilot CLI and
+ *     Gemini CLI, once per session of the host, which is that process's stand-in for a run:
+ *     `commands/before-a-write.ts`), and by nothing else; this note said "here and nowhere
  *     else" while that command carried the gate alone, and what falsified it is the session id those
  *     hosts hand the hook. So it counts what is pushed at an edit and nothing more: the two texts a
  *     session opens with are reads and leave no fact (`CountedChannel`, in `record-framing.ts`, is

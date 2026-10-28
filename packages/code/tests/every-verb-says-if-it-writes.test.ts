@@ -277,6 +277,8 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // The one invocation that records, an asking, is exercised through the binary with a payload
   // (`a-host-that-runs-commands-asks-for-a-person.test.ts`) and in the signing sweep.
   'before-a-write': { argv: () => ['before-a-write', '--host', 'vscode'] },
+  // The same as `before-a-write`: a host feeds it, and in process nothing arrives on standard input.
+  'beside-a-write': { argv: () => ['beside-a-write', '--host', 'copilot'] },
   // It reads another repository, so the exercise needs one: a git repository holding a record,
   // which this harness's fixture is not. What it does to THIS project's record, nothing, is
   // measured through the binary, over a real origin, in `a-project-inherits-a-record.test.ts`.
@@ -374,6 +376,9 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
   'before-a-write':
     'answers a payload a host hands it on the standard input, and in process there is none: ' +
     'its asking is exercised with a payload through the binary',
+  'beside-a-write':
+    'answers a payload a host hands it on the standard input, and in process there is none: ' +
+    'its one fact is exercised with a payload through the binary',
   corrections:
     'answers a payload a host hands it on the standard input, and in process there is none: ' +
     'what it records is exercised with a transcript through the binary, and only once the channel ' +
@@ -683,6 +688,7 @@ describe('every verb says if it writes', () => {
       'mcp',
       'run',
       'before-a-write',
+      'beside-a-write',
       'corrections',
       'after-a-write',
       'dispatched',

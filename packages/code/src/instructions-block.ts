@@ -24,7 +24,7 @@
  */
 
 /** The version of the text {@link INSTRUCTIONS_BODY} is. */
-export const INSTRUCTIONS_VERSION = 'v2';
+export const INSTRUCTIONS_VERSION = 'v3';
 
 /**
  * What the block says. Every line is checked by `the-instructions-block.test.ts` against
@@ -54,8 +54,8 @@ const V1_BODY = [
   '',
 ].join('\n');
 
-/** What the block says now: the first version, and the line about tasks and handoffs. */
-export const INSTRUCTIONS_BODY = [
+/** The second version: the first, and the line about tasks and handoffs. Kept byte for byte, so a `v2` block is still the product's to replace. */
+const V2_BODY = [
   '## Recording the work (mnema)',
   '',
   'This repository keeps a signed record of its decisions in `.mnema/`. Where the mnema tools are connected:',
@@ -74,9 +74,51 @@ export const INSTRUCTIONS_BODY = [
   '',
 ].join('\n');
 
+/**
+ * What the block says now: the second version, set apart from its begin marker by a blank line
+ * (a formatter run over a project's Markdown asks for it, and the block failed the project's
+ * `format:check` without it), with the shell command as an example that runs as it stands
+ * instead of a template, and with what to do when a decision replaces an earlier one.
+ * The examples are indented code, not fenced: a person's file with a code fence that is never
+ * closed is read as hiding no marker, and a fence of ours would close it and hide the begin
+ * marker, so a second run would write a second block; and a formatter rewrites a `~~~` fence as
+ * a backtick one, so no fence of ours is both safe there and left alone. The body ends with a
+ * blank line before the end marker for the same reason a formatter puts one between a code block
+ * and a comment. `the-instructions-block-is-formatted-and-its-example-runs.test.ts` runs the
+ * examples against the binary and holds both edges to what a formatter leaves alone.
+ */
+export const INSTRUCTIONS_BODY = [
+  '',
+  '## Recording the work (mnema)',
+  '',
+  'This repository keeps a signed record of its decisions in `.mnema/`. Where the mnema tools are connected:',
+  '',
+  '- At the start of a session, call `bootstrap`: it opens with what is in force, what awaits a judgement and the work in flight.',
+  '- Before changing a file, call `governing_rules` with its path.',
+  '- When a choice is settled, with the person or alone, that someone could later question (a library, an approach, a trade-off, an option turned down), call `record_decision` in that turn, with the `rationale` and, in `alternatives`, what was turned down and why. Record it even when it is also written in a plan, a ledger, this file or your own memory.',
+  '- A decision is born `proposed`; once it is accepted it is in force here (an acceptance made by an agent is recorded as an agent’s, and `mnema switch off agent-accepts` leaves it to a person).',
+  '- A decision is not edited once it is recorded. When a new one replaces an earlier one, record the new one and then call `decision_transition` on the earlier one with `action` `supersede`, the new decision’s id in `by` and the `reason`; the new one is then read as replacing the earlier one, which it names.',
+  '- A subagent records no decision: it hands its decisions back in its final reply, and the session that started it records them.',
+  '- When you learn something about this project that its code does not show, call `capture_memory`, also when you keep it in your own memory.',
+  '- Work in flight is a task (`create_task`), and handing work to another agent is a handoff on it (`record_handoff`), with its brief: the short text, and the path of a file where the brief is long.',
+  '- Not for the record: each step taken, a credential, personal data, what the code or git already says.',
+  '- Commit `.mnema/` with the work it describes: the record changes as the work does, through these tools and the `mnema` command. Never edit or reformat its files by hand.',
+  '',
+  'Where the tools are not connected and the `mnema` command is installed, the shell does the same. This records a decision, with what was turned down:',
+  '',
+  '    mnema decision record "Use pnpm for the workspace" "The lockfile and the workspace scripts already assume it." --alternatives "npm: no workspace protocol; yarn: a second lockfile to keep"',
+  '',
+  'And this one says a new decision replaces an earlier one:',
+  '',
+  '    mnema decision supersede <old-id> <new-id> --reason "<why>"',
+  '',
+  '',
+].join('\n');
+
 /** Every text this product ever wrote between the markers, by the version its begin marker names. */
 export const KNOWN_BODIES: { readonly [version: string]: string } = {
   v1: V1_BODY,
+  v2: V2_BODY,
   [INSTRUCTIONS_VERSION]: INSTRUCTIONS_BODY,
 };
 

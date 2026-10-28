@@ -59,7 +59,9 @@
  * judged against its own moves alone, which is all the judgment reads but for two things: what
  * the writer of a move saw on other tails, which is the merge's citations (read when the subject
  * is on more than one tail, and nothing to read when it is on one), and whether the successor a
- * supersede names was born, which is one more search, for that id.
+ * supersede names was born, which is one more search, for that id. A writing of a decision that
+ * comes before the text its first judgment saw (§6.8, {@link decisionTexts}) is not returned
+ * either, for the same reason, and it is judged by the same sight.
  *
  * WHAT IT DOES NOT CHECK. It is not a verification: signatures, checkpoints and the links between
  * entries are `verify`'s. What it promises is narrower and is the one a gate needs: the events it
@@ -72,6 +74,7 @@ import { readFileSync } from 'node:fs';
 import type { CatalogEvent } from '../events/catalog.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { type CitationHeld, causalOrder } from './causal-order.js';
+import { decisionTexts, precedesItsText } from './decision-text.js';
 import { type Entry, parseEntry } from './entry.js';
 import type { ChainLayout } from './layout.js';
 import { parseStoredLine } from './lines.js';
@@ -148,9 +151,12 @@ export function subjectEvents(
   const answer = new Map<string, CatalogEvent[]>();
   for (const [id, placed] of read.subjects) {
     const illegal = illegalMoves(placed, read.held, born);
+    const texts = decisionTexts(placed, read.held, illegal);
     answer.set(
       id,
-      placed.filter((_, index) => !illegal.has(index)).map(({ event }) => event),
+      placed
+        .filter((at, index) => !illegal.has(index) && !precedesItsText(at, index, texts))
+        .map(({ event }) => event),
     );
   }
   return answer;

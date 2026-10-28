@@ -112,7 +112,10 @@ CLI and the MCP tools behave identically, because they are the same call.
   a write and, where the write goes through, hands over the rules addressed at the paths it touches
   (`mnema before-a-write --host qwen`); Codex and OpenCode run the same verb under their own names and
   answer those same two things, recording that the rules were handed over once for each session of the
-  host. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
+  host. Copilot CLI and Gemini CLI, whose hook before a write has no field for text, hand over the same
+  rules from the hook that runs after it (`mnema beside-a-write --host copilot` or `gemini`): it asks
+  the record what `before-a-write` asks and records the same one `channel.served` per session, but it
+  never refuses or asks and records no refusal or asking. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
   the last response, it prints one line saying how many files they wrote and how
   many decisions were recorded in the project since the session opened, counted off the
   transcript the host names and off the record: no model is called and nothing is
@@ -1623,10 +1626,13 @@ a URL. The dry run cannot catch that. You can, by opening two of the files it wr
 When it founds a project, `mnema init` writes a short block into the files agent hosts read as
 standing instructions, and names each file it wrote. The block says when to call the mnema tools
 (`bootstrap` at the opening, `governing_rules` before changing a file, `record_decision` when a choice
-is settled, `capture_memory` for what the code does not show), that a decision is born `proposed`
-and a person accepts it, that a subagent hands its decisions back rather than recording them, the
-`mnema decision record` command where the tools are not connected, and what never goes in the
-record. It applies only where the mnema tools are connected, so a fork without mnema reads it as
+is settled, `capture_memory` for what the code does not show), that a decision is born `proposed` and,
+once accepted, is in force (an agent's acceptance is recorded as an agent's, and `mnema switch off agent-accepts`
+leaves it to a person), that a subagent hands its decisions back rather than recording them, the
+`mnema decision record` command where the tools are not connected, as an example that runs as it
+stands (with `--alternatives`), how a decision that replaces an earlier one says so
+(`decision_transition` with `action` `supersede`, or `mnema decision supersede <old-id> <new-id>
+--reason "<why>"`; the new decision is then read as replacing the earlier one, which `read_record`, `show` and the opening name), and what never goes in the record. It applies only where the mnema tools are connected, so a fork without mnema reads it as
 inert, and it carries nothing of the record: the decisions in force reach a session as it opens,
 through the plugin.
 
@@ -1642,7 +1648,7 @@ through the plugin.
 The Gemini CLI extension carries the same text as its own context file. Every copy is the same
 text, so a host that reads several (Claude Code reads its `CLAUDE.md` or `AGENTS.md` and the rule
 file; Copilot CLI reads them all) reads it more than once rather than two versions of it. The text
-is 1,524 characters.
+is 2,390 characters (the one before was 1,721).
 
 ```sh
 mnema instructions            # write the block where it is missing or an earlier version's
@@ -1650,7 +1656,16 @@ mnema instructions --check    # say what each file holds; exits 1 where one lack
 mnema instructions --remove   # take it out of each file
 ```
 
-The block sits between `<!-- mnema:begin v2 … -->` and `<!-- mnema:end -->`, after what your file
+The block is written the way a Markdown formatter (prettier) leaves it: a blank line after the begin
+marker and before the end marker, the examples as indented code. In a repository that formats its
+Markdown, `format:check` passes over the files `init` writes, with one exception: prettier writes
+the `applyTo: "**"` of the `.github/instructions` file with the quotes your own configuration
+asks for, so with `singleQuote: true` that one file is reported until you run the formatter over it
+(it keeps the block). An earlier version's block (the begin marker names it, `v2`) is replaced by
+the current one; and a formatter that re-wraps prose (`proseWrap: "always"`) changes the text between the
+markers, which makes it your edit: it is left as it is, and said.
+
+The block sits between `<!-- mnema:begin v3 … -->` and `<!-- mnema:end -->`, after what your file
 holds, and nothing outside the markers changes; a file the block was all of is deleted by
 `--remove`, which takes out with the block the one line break that went in with it only where the
 block is the last thing in the file (a line you wrote after it is never glued to the one above), and
@@ -2025,6 +2040,15 @@ by title and `ADR-<n>` label (`read_record` for the rationale and what the decis
 turned down). Only an accepted
 decision is listed: one still proposed, rejected, or superseded by a later
 decision does not govern.
+
+A decision that replaced another says which, on the same line as the rule: the line ends with
+`supersedes ADR-<n>: <title> (<state>)`, the label, the title and the state the replaced decision is in now
+(the immediate one, never the chain behind it, and never its rationale). The opening's JSON carries it as the rule's
+`supersedes` field, beside the id, as `{ found, id, adr, title, state }`; `found: false` with only the `id` says the trees read
+do not hold the replaced decision. `read_record` and `show --json` carry `supersedes` and `supersededBy` the same way
+beside the raw ids of `record`, and the `show` verb prints each on one line, with the id after the name:
+`supersedes ADR-<n>: <title> (<state>) · <id>`. The committed brief document carries only the trees that travel, so it
+names a replaced decision only when the committed tree holds it.
 
 The fourth list is what is **awaiting a judgement**: a task `IN_REVIEW`, a decision
 still `proposed`, a pattern `proposed` or `reviewed`: everything a person has to rule

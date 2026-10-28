@@ -71,6 +71,7 @@ describe('the help is grouped by the flow of the work', () => {
       'mcp',
       'run',
       'before-a-write',
+      'beside-a-write',
       'tally',
       'corrections',
       'after-a-write',
