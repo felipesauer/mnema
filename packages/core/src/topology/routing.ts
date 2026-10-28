@@ -221,6 +221,7 @@ export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: s
   'stack.removed': 'a removal is written in the tree the adoption it ends was written in',
   'agent.enrolled': 'the roster belongs to the tree that holds the identity it rosters',
   'agent.retired': 'the roster belongs to the tree that holds the identity it rosters',
+  'run.unannounced': 'a mark is written beside the run it marks, in the same append as its birth',
 };
 
 /**

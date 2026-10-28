@@ -587,10 +587,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'this module’s own word for an identity that nobody else has ruled with, or nothing',
   },
-  'accepted-by.ts «agent {}» oneLine(acceptance.agent) #1': {
+  'accepted-by.ts «agent {}{}» oneLine(acceptance.agent) #1': {
     verdict: 'collapsed',
     why: 'the agent’s name as the accepting event carries it, text whoever opened that session wrote',
   },
+  "accepted-by.ts «agent {}{}» acceptance.unannounced === true ? `, ${NO_NAME_ANNOUNCED}` : '' #1":
+    {
+      verdict: 'minted',
+      why: 'this product’s own clause, chosen by whether the accepting event’s run was marked run.unannounced',
+    },
   'brief.ts «{} of them {} accepted by an agent. The record keeps which, and \\`mnema switch\\` says whether an agent may accept.» byAnAgent #1':
     {
       verdict: 'minted',
@@ -1392,12 +1397,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the decision’s title: text whoever recorded it wrote',
   },
-  'record.ts «recorded by {}» actorText(context.anchors, body.record.recordedBy, context.attested?.recordedBy === true) #1':
+  'record.ts «recorded by {}» actorText(context.anchors, body.record.recordedBy, context.attested?.recordedBy === true, context.unannounced?.recordedBy === true) #1':
     {
       verdict: 'composed',
       why: 'the actor of the recording event, worded by actorText below: an anchor in its short form, and an act clause whose agent name is collapsed there',
     },
-  'record.ts «accepted by {}» actorText(context.anchors, body.record.acceptedBy, context.attested?.acceptedBy === true) #1':
+  'record.ts «accepted by {}» actorText(context.anchors, body.record.acceptedBy, context.attested?.acceptedBy === true, context.unannounced?.acceptedBy === true) #1':
     {
       verdict: 'composed',
       why: 'the actor of the accepting event, worded by actorText below, for the reason the recording actor is',
@@ -1410,13 +1415,17 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'either this surface’s word for an act with no agent, or the agent clause below, whose name is collapsed',
   },
-  'record.ts «agent {}{}» oneLine(actor.which) #1': {
+  'record.ts «agent {}{}{}» oneLine(actor.which) #1': {
     verdict: 'collapsed',
     why: 'the agent’s name as the event carries it, text whoever opened that session wrote',
   },
-  "record.ts «agent {}{}» attested ? ', attested by its own key' : '' #1": {
+  "record.ts «agent {}{}{}» attested ? ', attested by its own key' : '' #1": {
     verdict: 'minted',
     why: 'one of two clauses of this product’s own, chosen by whether the record’s agent key signed the fact',
+  },
+  "record.ts «agent {}{}{}» unannounced ? `, ${NO_NAME_ANNOUNCED}` : '' #1": {
+    verdict: 'minted',
+    why: 'this product’s own clause, chosen by whether the event’s run was marked run.unannounced',
   },
   "record.ts fact(replacementFact('supersedes', body.supersedes)) #1": {
     verdict: 'composed',
@@ -2620,8 +2629,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does; 485 with where an inherited rule came from, and the count of the inherited record's addresses; 497 with those addresses by relation, on the rules report and in the brief; 500 with the run of each tree that `mnema status` names; 497 once the host's ceiling in words lives with the ceiling (`ceilingInWords`), and the push of the rules at an edit words it too; 514 with the line a promotion answers when the global tree already held the decision.
-    expect(FOUND.sites.length).toBe(514);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does; 485 with where an inherited rule came from, and the count of the inherited record's addresses; 497 with those addresses by relation, on the rules report and in the brief; 500 with the run of each tree that `mnema status` names; 497 once the host's ceiling in words lives with the ceiling (`ceilingInWords`), and the push of the rules at an edit words it too; 514 with the line a promotion answers when the global tree already held the decision; 516 with the clause beside an agent name no client announced, in the brief and in show.
+    expect(FOUND.sites.length).toBe(516);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2643,7 +2652,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(136);
-    expect(count('minted')).toBe(283);
+    expect(count('minted')).toBe(285);
     expect(count('composed')).toBe(95);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(136);
   });

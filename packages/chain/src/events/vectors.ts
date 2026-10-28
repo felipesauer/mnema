@@ -64,6 +64,7 @@ import {
   observationRecorded,
   runEnded,
   runStarted,
+  runUnannounced,
   skillConsulted,
   skillCreated,
   skillTransitioned,
@@ -587,6 +588,14 @@ export const CANONICAL_VECTORS: {
         agentFp: VECTOR_AGENT_FP,
         reason: 'The machine the agent ran on was lent out.',
       }),
+    },
+  ],
+  'run.unannounced': [
+    {
+      // A client that never sent `initialize`: the run's agent is the writer's default, and this
+      // fact, pinned to the run it names, says so.
+      name: 'run.unannounced (a client that sent no handshake)',
+      event: runUnannounced({ ...agent('r-1'), which: 'unknown-agent' }, { handshake: false }),
     },
   ],
 };

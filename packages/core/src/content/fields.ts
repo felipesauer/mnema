@@ -305,6 +305,8 @@ export const SUBJECT_TEXT = {
   // agents.
   'agent.enrolled': 'identifier',
   'agent.retired': 'identifier',
+  // The run it marks, written in the same append as that run's birth: minted, never handed in.
+  'run.unannounced': 'identifier',
 } as const satisfies { readonly [K in EventKind]: FieldNature };
 
 /**
@@ -477,6 +479,8 @@ export const PAYLOAD_TEXT = {
   'agent.enrolled': { agentFp: 'identifier', name: 'name', reverseSig: 'identifier' },
   // The key is proved against the record (an agent this identity enrolled); the reason is prose.
   'agent.retired': { agentFp: 'identifier', reason: 'body' },
+  // Nothing to classify: `handshake` is a boolean, and there is nothing textual to screen.
+  'run.unannounced': {},
 } as const satisfies {
   readonly [K in EventKind]: { readonly [P in PayloadPath<K>]: FieldNature };
 };

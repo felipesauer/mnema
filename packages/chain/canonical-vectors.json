@@ -707,6 +707,23 @@
         }
       },
       "sha256": "804d7d532b294678f93a27644a4729f988b2fab53e456d3e1a66f2d5c3e78f42"
+    },
+    {
+      "name": "run.unannounced (a client that sent no handshake)",
+      "kind": "run.unannounced",
+      "event": {
+        "v": 1,
+        "kind": "run.unannounced",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "r-1",
+        "which": "unknown-agent",
+        "payload": {
+          "handshake": false
+        }
+      },
+      "sha256": "7aa77ed8044ceb5107e9d97b3dd91ffd0562457ea27a6e3477f56d2acc400a26"
     }
   ],
   "chain": {
@@ -724,6 +741,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "f3dd4793887ee47a59de19a24ad09d10c90a372c177dd21e573e7c358e907185"
+    "contentRootOverAllVectors": "c87196ea4f715594eadcf089393a0d7d97c16a6253280c33e966505af0dc5cd8"
   }
 }

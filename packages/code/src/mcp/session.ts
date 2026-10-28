@@ -104,6 +104,13 @@ import {
 export type OpenSessionInput = ClientWorkspace & {
   /** The connecting client's name (`clientInfo.name`): the session's `which`. */
   readonly clientName: string;
+  /**
+   * Present when {@link clientName} is the server's default and not a name the client announced:
+   * `handshake: false` for a client that never sent `initialize`, `true` for one whose handshake
+   * named nobody. A run whose agent is that default is opened marked (`run.unannounced`, FORMAT.md
+   * section 6.9).
+   */
+  readonly unannounced?: { readonly handshake: boolean } | undefined;
   /** An explicit project directory the server was configured with, if any. */
   readonly configProject?: string | undefined;
   /**
@@ -332,6 +339,8 @@ export interface Session {
    * say.
    */
   readonly clientName: string;
+  /** Whether {@link clientName} was announced by nobody: see {@link OpenSessionInput.unannounced}. */
+  readonly unannounced?: { readonly handshake: boolean };
   /** The host's id for the session this server runs in: see {@link OpenSessionInput.hostSession}. */
   readonly hostSession?: string;
   /**
@@ -633,6 +642,7 @@ export function openSession(input: OpenSessionInput): Session {
     refreshes: 0,
     which: whichOf(trees, input.clientName),
     clientName: input.clientName,
+    ...(input.unannounced !== undefined ? { unannounced: input.unannounced } : {}),
     ...(input.hostSession !== undefined ? { hostSession: input.hostSession } : {}),
     ...(agentKey !== undefined ? { agentKey } : {}),
     who,
@@ -1084,9 +1094,16 @@ function ensureRun(
   // leaves them as they were, so the reply says nothing.
   session.founding.opened(root, scope);
   const goal = goalFromTheJournal(session, trees, scope);
+  // The run's agent is the client's announcement where no agent key signs in this tree, and then,
+  // when the client announced nobody, it is the default: the run says so beside its birth. Where
+  // an agent key signs, the name is the record's enrolment, and there is nothing to mark.
+  const signsAsAnAgent = agentSignsIn(trees, scope) !== undefined;
   const prepared = prepareRun(ctx, {
     agent: whichIn(trees, scope, session),
     ...(goal !== undefined ? { goal } : {}),
+    ...(session.unannounced !== undefined && !signsAsAnAgent
+      ? { unannounced: session.unannounced }
+      : {}),
   });
   if (!prepared.ok) {
     throw new Error(`could not open a session run: ${prepared.code}: ${prepared.message}`);

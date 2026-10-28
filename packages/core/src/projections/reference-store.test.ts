@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
-import type { CatalogEvent } from '@mnema/chain';
+import { type CatalogEvent, isUnannounced, unannouncedRuns, unannouncedRunsOf } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
@@ -8,6 +8,7 @@ import {
   listAuthors,
   listReferences,
   listSubjectRuns,
+  listUnannouncedRuns,
   materializeReferences,
   type ReferenceDirection,
   type ReferenceSeed,
@@ -256,6 +257,59 @@ describe('tallyAuthorship: one count per event', () => {
     expect(tallyAuthorship(db, { which: 'claude' })).toEqual([
       { who: 'mnid:author', kind: 'task.created', which: 'claude', signer: 'fp', count: 1 },
     ]);
+  });
+});
+
+describe('the runs a run.unannounced marks, read off the index as off the events (FORMAT.md section 6.9)', () => {
+  /** A `run.*` fact whose subject is the run, signed by `signer`. */
+  function runFact(kind: 'run.started' | 'run.ended', id: string, minute: number, signer = 'fp') {
+    const payload = kind === 'run.started' ? { agent: 'unknown-agent' } : {};
+    return {
+      ...envelope(id, minute, 'unknown-agent'),
+      signerFp: signer,
+      kind,
+      payload,
+    } as CatalogEvent;
+  }
+  function mark(id: string, minute: number, handshake: boolean): CatalogEvent {
+    return {
+      ...envelope(id, minute, 'unknown-agent'),
+      kind: 'run.unannounced',
+      payload: { handshake },
+    };
+  }
+  function pinned(id: string, run: string, minute: number): CatalogEvent {
+    return { ...taskCreated(id, minute, 'unknown-agent'), run };
+  }
+  const events = [
+    // A marked run with two marks that disagree, one fact and its end: five facts of it.
+    runFact('run.started', 'r-1', 1),
+    mark('r-1', 1, true),
+    mark('r-1', 1, false),
+    pinned('t-1', 'r-1', 2),
+    runFact('run.ended', 'r-1', 3),
+    // A mark of a run nobody opened, and a mark of a run another key opened: neither marks.
+    mark('r-2', 4, false),
+    pinned('t-2', 'r-2', 4),
+    runFact('run.started', 'r-3', 5, 'another-fp'),
+    mark('r-3', 5, false),
+    pinned('t-3', 'r-3', 5),
+  ];
+
+  it('marks the run its own key opened, once, and no run its key never opened', () => {
+    materializeReferences(db, events);
+    expect(unannouncedRunsOf(listUnannouncedRuns(db))).toEqual(unannouncedRuns(events));
+    expect([...unannouncedRuns(events)]).toEqual(['fp\u0000r-1']);
+  });
+
+  it('counts apart the same facts the events say belong to a marked run, the run’s end among them', () => {
+    materializeReferences(db, events);
+    const apart = tallyAuthorship(db)
+      .filter((cell) => cell.unannounced === true)
+      .reduce((sum, cell) => sum + cell.count, 0);
+    const marked = unannouncedRuns(events);
+    expect(apart).toBe(events.filter((event) => isUnannounced(event, marked)).length);
+    expect(apart).toBe(5);
   });
 });
 

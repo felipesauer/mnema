@@ -44,7 +44,7 @@
 import type { NamedDecision, RecordBody, TaskStory } from '@mnema/context';
 import type { DecisionActor, NoteRetraction, TransitionProof } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
-import { A_PERSON, neutralized, oneLine } from '../one-line.js';
+import { A_PERSON, NO_NAME_ANNOUNCED, neutralized, oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { consultedLine } from './consultation.js';
 import { fact, statedFact, subjectLine } from './detail.js';
@@ -61,6 +61,8 @@ export interface RecordContext {
   readonly consultations?: number;
   /** The actors of a decision the record's own agent key signed for (`mnema show`). */
   readonly attested?: { readonly recordedBy?: true; readonly acceptedBy?: true };
+  /** The actors of a decision whose name no MCP client announced (FORMAT.md section 6.9). */
+  readonly unannounced?: { readonly recordedBy?: true; readonly acceptedBy?: true };
 }
 
 /**
@@ -141,11 +143,16 @@ function aboveTheBody(lines: string[], facts: readonly string[]): string[] {
 }
 
 /** `mnid:ab12cd34 (a person)` or `mnid:ab12cd34 (agent claude-code)`. */
-function actorText(anchors: AnchorForms, actor: DecisionActor, attested = false): string {
+function actorText(
+  anchors: AnchorForms,
+  actor: DecisionActor,
+  attested = false,
+  unannounced = false,
+): string {
   const act =
     actor.which === undefined
       ? A_PERSON
-      : `agent ${oneLine(actor.which)}${attested ? ', attested by its own key' : ''}`;
+      : `agent ${oneLine(actor.which)}${attested ? ', attested by its own key' : ''}${unannounced ? `, ${NO_NAME_ANNOUNCED}` : ''}`;
   return `${oneLine(anchorText(anchors, actor.who))} (${act})`;
 }
 
@@ -267,7 +274,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
         lines.push(
           render(
             fact(
-              `recorded by ${actorText(context.anchors, body.record.recordedBy, context.attested?.recordedBy === true)}`,
+              `recorded by ${actorText(context.anchors, body.record.recordedBy, context.attested?.recordedBy === true, context.unannounced?.recordedBy === true)}`,
             ),
           ),
         );
@@ -276,7 +283,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
         lines.push(
           render(
             fact(
-              `accepted by ${actorText(context.anchors, body.record.acceptedBy, context.attested?.acceptedBy === true)}`,
+              `accepted by ${actorText(context.anchors, body.record.acceptedBy, context.attested?.acceptedBy === true, context.unannounced?.acceptedBy === true)}`,
             ),
           ),
         );

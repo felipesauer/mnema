@@ -294,7 +294,7 @@ guard holds the two byte for byte.
 [`verifier/`](https://github.com/felipesauer/mnema/tree/main/packages/chain/verifier) is the other half of the same idea, and it is what stops
 the paragraph above from being a claim about a document nobody ever implemented: a
 verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
-It reproduces the 38 vectors and the four aggregate digests, checks T1, T2/T4 and T3
+It reproduces the 39 vectors and the four aggregate digests, checks T1, T2/T4 and T3
 over real records, judges enrolment, retractions and the moves of a workflow as the
 product does, and refuses the mutations in `verifier/mutate.py` except five: three that
 both readers accept and two it reads as incomplete. It found

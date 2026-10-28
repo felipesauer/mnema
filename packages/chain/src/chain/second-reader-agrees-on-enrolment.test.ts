@@ -57,6 +57,9 @@ import {
   linkRetracted,
   memoryCaptured,
   noteRetracted,
+  runEnded,
+  runStarted,
+  runUnannounced,
   stackAdopted,
   stackRemoved,
   taskCreated,
@@ -1213,7 +1216,9 @@ describe('the two readers agree on records the product itself wrote: an agent', 
           ? [`attested ${note.name} ${note.events}`]
           : note.kind === 'declared-which'
             ? [`declared ${note.which} ${note.events}`]
-            : [],
+            : note.kind === 'unannounced-which'
+              ? [`unannounced ${note.which} ${note.events}`]
+              : [],
       )
       .sort();
     const second = secondNotes()
@@ -1223,7 +1228,9 @@ describe('the two readers agree on records the product itself wrote: an agent', 
         );
         if (attested !== null) return [`attested ${attested[2]} ${attested[1]}`];
         const declared = /^6\.2: (\d+) event\(s\) name the agent "(.*)": declared/.exec(said);
-        return declared === null ? [] : [`declared ${declared[2]} ${declared[1]}`];
+        if (declared !== null) return [`declared ${declared[2]} ${declared[1]}`];
+        const unannounced = /^6\.9: (\d+) event\(s\) name the agent "(.*)": no name/.exec(said);
+        return unannounced === null ? [] : [`unannounced ${unannounced[2]} ${unannounced[1]}`];
       })
       .sort();
     return { product, second };
@@ -1249,6 +1256,110 @@ describe('the two readers agree on records the product itself wrote: an agent', 
     // The same count in both, and the person's own `which` said as what it is: declared.
     const { product, second } = agentCensus();
     expect(product).toEqual(['attested claude 2', 'declared claude 1']);
+    expect(second).toEqual(product);
+  });
+
+  it('a run marked run.unannounced: green on both, and both count its facts apart from the declared ones', () => {
+    const { a, anchor } = personAndAgent();
+    const b = generateKeyPair();
+    commitPublicKey(b);
+    const run = (id: string, when: number, signer: KeyPair = a): CatalogEvent =>
+      runStarted(
+        {
+          at: at(when),
+          who: anchor,
+          signerFp: signer.fingerprint,
+          subject: id,
+          which: 'unknown-agent',
+        },
+        { agent: 'unknown-agent' },
+      );
+    const mark = (id: string, when: number, signer: KeyPair = a): CatalogEvent =>
+      runUnannounced(
+        {
+          at: at(when),
+          who: anchor,
+          signerFp: signer.fingerprint,
+          subject: id,
+          which: 'unknown-agent',
+        },
+        { handshake: false },
+      );
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        founding(a),
+        enrolled(anchor, a, b),
+        // A run whose client announced no name: its birth, its mark and its one fact.
+        run('r-1', 3),
+        mark('r-1', 3),
+        task(anchor, a, 't-1', 4, { which: 'unknown-agent', run: 'r-1' }),
+        // A run whose client announced the literal name: nothing marks it.
+        run('r-2', 5),
+        task(anchor, a, 't-2', 6, { which: 'unknown-agent', run: 'r-2' }),
+      ],
+      a,
+    );
+    // Another key of the same identity, under the run id the first key marked: the mark is the
+    // first key's, and says nothing of this one.
+    writeTail(
+      `${b.fingerprint}-i2`,
+      [task(anchor, b, 't-3', 7, { which: 'unknown-agent', run: 'r-1' })],
+      b,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses an honest mark').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    const { product, second } = agentCensus();
+    expect(product).toEqual(['declared unknown-agent 3', 'unannounced unknown-agent 3']);
+    expect(second).toEqual(product);
+  });
+
+  it('a mark its key opened no run for marks nothing, a marked run’s end is the run’s, two marks that disagree mark it once: the same counts on both', () => {
+    const { a, anchor } = personAndAgent();
+    const b = generateKeyPair();
+    commitPublicKey(b);
+    const envelope = (id: string, when: number, signer: KeyPair) => ({
+      at: at(when),
+      who: anchor,
+      signerFp: signer.fingerprint,
+      subject: id,
+      which: 'unknown-agent',
+    });
+    const run = (id: string, when: number, signer: KeyPair = a): CatalogEvent =>
+      runStarted(envelope(id, when, signer), { agent: 'unknown-agent' });
+    const mark = (id: string, when: number, handshake: boolean): CatalogEvent =>
+      runUnannounced(envelope(id, when, a), { handshake });
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        founding(a),
+        enrolled(anchor, a, b),
+        // A marked run with two marks that disagree, one fact and its end: five facts of it.
+        run('r-1', 3),
+        mark('r-1', 3, true),
+        mark('r-1', 3, false),
+        task(anchor, a, 't-1', 4, { which: 'unknown-agent', run: 'r-1' }),
+        runEnded(envelope('r-1', 5, a)),
+        // A mark of a run nobody opened: it and the fact pinned to it are declared.
+        mark('r-2', 6, false),
+        task(anchor, a, 't-2', 6, { which: 'unknown-agent', run: 'r-2' }),
+        // A mark of a run another key opened: the mark's key opened none, so it marks nothing.
+        mark('r-3', 8, false),
+        task(anchor, a, 't-3', 8, { which: 'unknown-agent', run: 'r-3' }),
+      ],
+      a,
+    );
+    writeTail(`${b.fingerprint}-i2`, [run('r-3', 7, b)], b);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses these marks').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    const { product, second } = agentCensus();
+    expect(product).toEqual(['declared unknown-agent 5', 'unannounced unknown-agent 5']);
     expect(second).toEqual(product);
   });
 

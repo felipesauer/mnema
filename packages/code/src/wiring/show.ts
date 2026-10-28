@@ -50,6 +50,7 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
           anchors: result.anchors,
           ...(result.consultations !== undefined ? { consultations: result.consultations } : {}),
           ...(result.attested !== undefined ? { attested: result.attested } : {}),
+          ...(result.unannounced !== undefined ? { unannounced: result.unannounced } : {}),
         }),
       );
     });
