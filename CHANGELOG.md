@@ -220,6 +220,16 @@ with its own changelog.
 
 ### Changed
 
+- **The install page is the install; each host is in `docs/hosts.md`, and Windows and macOS are in `docs/platforms.md`.**
+  `docs/install.md` kept the binary, the check, the pinned version and where the package came from, and gained a table with one
+  row per host: its rung and the line that installs it, with a link to the rest. The table is generated from the host table
+  (`packages/code/src/host-names.ts`, whose every host now has an `install` that does not compile away), as the README's
+  summary is, so the line cannot drift from the table, and a case holds that each command of a row is written, letter for
+  letter, in a fenced block of the section it links to. The sections of the hosts moved, with their titles, to `docs/hosts.md`
+  (`#claude-code`, `#codex` and the others now live there; a link to `install.md#codex` lands on the top of the install page,
+  whose table leads to it), and the section on what the Windows and macOS jobs run moved, whole, to `docs/platforms.md`. The
+  Qwen Code row of the README's summary now links its own section and says Plugin, not MCP server, as the page always said
+  of it.
 - **The block of instructions `mnema init` writes is now version `v3`: already formatted, with an example that runs, and with the
   supersede.** The files agent hosts read (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, the rule files) used to fail the
   repository's own Markdown `format:check` the moment `init` wrote them: prettier wants a blank line after the begin marker and
@@ -489,7 +499,7 @@ with its own changelog.
 - **CI runs the installed binary on Windows and macOS.** One job per system and per Node (24.15.0 and the latest 24)
   packs and installs the five packages, then runs `init`, `decision record`, `verify`, a clone checked out with
   `core.autocrlf=true`, the Python reader, `doctor` and the plugin's hook scripts on paths written the way each
-  system writes them. [Install](docs/install.md#what-is-run-on-windows-and-macos) says what is and is not run.
+  system writes them. [Windows and macOS](docs/platforms.md) says what is and is not run.
 - **A stack install asks `skills-ref` about the skills it wrote.** When `agentskills` (the validator the Agent Skills
   specification publishes) is on the `PATH`, each installed skill folder is validated and the command prints one line,
   accepted or refused, with what it said; without it, the command says it did not run. It is not a dependency, a refusal

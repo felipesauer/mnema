@@ -713,7 +713,12 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * names, 8 flags and 4 unwritten, are the sum of the rows. The history of each total is in the
  * version control of this file.
  *
- * THE INSTALL PAGE'S LINE ROW IS 3 NOW: its install blocks are the npm install and its
+ * THE INSTALL PAGE SPLIT IN THREE: `docs/install.md` (3 lines, 1 name), `docs/hosts.md` (2 lines, 4 names) and
+ * `docs/platforms.md` (1 line, 3 names) are the 5 lines and 8 names it was, and one line more, the table row that says
+ * `mnema doctor --fix vscode`; the same words, in the host table that generates it, are the 1 line of
+ * `host-names.ts`.
+ *
+ * THE INSTALL PAGE'S LINE ROW WAS 3: its install blocks are the npm install and its
  * home-prefix variant, and the tarball URLs it gave before are gone.
  */
 export const HANDED_OVER: Readonly<
@@ -730,8 +735,10 @@ export const HANDED_OVER: Readonly<
   'docs/first-record.md': { line: 6, name: 6 },
   'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 2 },
-  'docs/install.md': { line: 5, name: 8 },
+  'docs/hosts.md': { line: 2, name: 4 },
+  'docs/install.md': { line: 3, name: 1 },
   'docs/packages.md': { line: 2, name: 3 },
+  'docs/platforms.md': { line: 1, name: 3 },
   'docs/rule-arrival.md': { line: 1 },
   'docs/site.md': { line: 3, name: 7 },
   'docs/switches.md': { line: 20, name: 4 },
@@ -764,6 +771,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/commands/status.ts': { name: 1 },
   'packages/code/src/commands/the-record-page.ts': { name: 1 },
   'packages/code/src/edit-refuses-a-write.ts': { line: 2, name: 2 },
+  'packages/code/src/host-names.ts': { line: 1 },
   'packages/code/src/host-rules-file.ts': { line: 1 },
   'packages/code/src/inherited-record.ts': { name: 1 },
   'packages/code/src/instructions-block.ts': { line: 6 },
