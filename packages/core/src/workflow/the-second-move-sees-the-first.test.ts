@@ -33,7 +33,7 @@ import {
   verify,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { captureMemory } from '../knowledge/operations.js';
+import { captureMemory, recordHandoff, recordObservation } from '../knowledge/operations.js';
 import { projectDecisions } from '../projections/decision.js';
 import { orderedEvents } from '../projections/order.js';
 import type { Clock } from './clock.js';
@@ -201,6 +201,62 @@ describe('a decision recorded twice by two sessions at once', () => {
     expect(second.ok && second.id).toBe(first?.ok && first.id);
     expect([...projectDecisions(events()).values()].map((d) => d.adr)).toEqual(['ADR-1']);
     verifies(one, two);
+  });
+});
+
+describe('a note recorded twice by two sessions at once', () => {
+  it('leaves ONE memory: the twin another session wrote meanwhile is found under the lock', () => {
+    const one = session();
+    const two = session();
+    ok(captureMemory(one, { content: 'seed' }));
+
+    let first: ReturnType<typeof captureMemory> | undefined;
+    whileTheNextReadIsInFlight(() => {
+      first = captureMemory(one, { content: 'the cache lives in the data dir' });
+    });
+    const second = captureMemory(two, { content: 'the cache lives in the data dir' });
+
+    expect(first).toMatchObject({ ok: true });
+    expect(second).toMatchObject({ ok: true, already: true });
+    expect(second.ok && second.id).toBe(first?.ok && first.id);
+    expect(events().filter((e) => e.kind === 'memory.captured')).toHaveLength(2);
+    verifies(one, two);
+  });
+
+  it('leaves ONE observation: the same text, topic and about, found under the lock', () => {
+    const one = session();
+    const two = session();
+    const input = { about: 'task-1', topic: 'finding', text: 'it is slow' };
+    ok(recordObservation(one, { ...input, text: 'seed' }));
+
+    let first: ReturnType<typeof recordObservation> | undefined;
+    whileTheNextReadIsInFlight(() => {
+      first = recordObservation(one, input);
+    });
+    const second = recordObservation(two, input);
+
+    expect(first).toMatchObject({ ok: true });
+    expect(second).toMatchObject({ ok: true, already: true });
+    expect(second.ok && second.id).toBe(first?.ok && first.id);
+    expect(events().filter((e) => e.kind === 'observation.recorded')).toHaveLength(2);
+    verifies(one, two);
+  });
+});
+
+describe('the brief of a handoff', () => {
+  it('is written for each handoff, even when its text is one already on the record', () => {
+    const one = session();
+    const brief = 'start from the ledger';
+    const handoff = (b: string) =>
+      ok(recordHandoff(one, { task: 'task-1', fromAgent: 'a', toAgent: 'b', brief: b }));
+    const first = handoff(brief);
+    handoff('then the cache');
+    const third = handoff(brief);
+
+    expect(third.briefId).not.toBe(first.briefId);
+    const briefs = events().filter((e) => e.kind === 'observation.recorded');
+    expect(briefs).toHaveLength(3);
+    verifies(one);
   });
 });
 

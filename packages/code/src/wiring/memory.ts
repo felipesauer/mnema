@@ -7,7 +7,7 @@
  */
 
 import type { Command } from 'commander';
-import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
+import { alreadyRecordedNoteLine, RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { addBodySourceOptions } from './body-source.js';
 import { hereWriting } from './context.js';
 import { scopeOption } from './enumerated.js';
@@ -59,6 +59,10 @@ export function registerMemory(program: Command, wiring: Wiring): Declared {
         ...(opts.which !== undefined ? { which: opts.which } : {}),
         ...(run !== undefined ? { run } : {}),
       });
+      if (result.ok && result.alreadyRecorded) {
+        io.out(alreadyRecordedNoteLine(result, result.scope));
+        return;
+      }
       if (result.ok) {
         io.out(`Captured memory ${result.id}`);
         reportRecorded(result, io);

@@ -81,12 +81,25 @@ import { type AppendRefusal, appendFact } from '../workflow/append.js';
 import { type Judged, onTheRecordAsItStands } from '../workflow/as-the-record-stands.js';
 import { authorizingAnchor } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
+import { asTheChainIs } from '../workflow/read-the-record.js';
 import { BRIEF_TOPIC } from './companion-topics.js';
 
 /** A memory was captured: the fact was appended. */
 export interface CaptureOk extends ScreenedWrite {
   readonly ok: true;
   /** The new memory's id (the event subject). */
+  readonly id: string;
+}
+
+/**
+ * The same note was already on the record: nothing was written, and this names the one that is. A
+ * `capture_memory` or a `record_observation` repeated after a reply that never arrived lands here,
+ * not as a second note with another id.
+ */
+export interface NoteRecordedAlready extends ScreenedWrite {
+  readonly ok: true;
+  readonly already: true;
+  /** The id of the note already recorded. */
   readonly id: string;
 }
 
@@ -120,7 +133,10 @@ export interface CaptureInput {
  * one check that needs no context at all, and running it ahead of everything else
  * is what makes an oversize refusal cost nothing and touch nothing.
  */
-export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk | FactError {
+export function captureMemory(
+  ctx: WriteContext,
+  input: CaptureInput,
+): CaptureOk | NoteRecordedAlready | FactError {
   // The content and the pinned run: the run is on the envelope rather than the
   // payload, but it is a caller's string this package proves nothing about, so it
   // is screened here and not forwarded raw.
@@ -132,30 +148,55 @@ export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk
   if (!agent.ok) return agent;
   const which = agent.which;
 
-  // Minted here, not chosen by the caller: derived from randomness so two
-  // offline clones never mint the same one, closing false-merge of memories at
-  // the root (the same move `who` makes). Canonical by construction.
-  const id = mintId();
+  // THE SAME MEMORY TWICE. A memory whose content is the one being captured, and that is still
+  // standing, is the memory already on the record: a call repeated after a reply that never arrived.
+  // It is looked for in the SCREENED text (what a write stores, so a secret replaced the first time is
+  // replaced again and the two compare equal), in the tree this writer owns, and it is asked inside
+  // the judgement, so the second reading under the lock sees a twin another session wrote meanwhile.
+  // A retracted memory is not a twin: the same words captured again are a new note. A task is not
+  // looked for at all: two tasks with one title are two tasks.
+  return onTheRecordAsItStands(
+    ctx,
+    () => asTheChainIs(ctx, (cache) => cache.memoriesSaying(content.fields.content)[0]?.id),
+    (twin): Judged<CaptureOk | NoteRecordedAlready | FactError> =>
+      twin !== undefined
+        ? {
+            refuse: {
+              ok: true,
+              already: true,
+              id: twin,
+              ...screened([...content.replaced, ...agent.replaced]),
+            },
+          }
+        : {
+            write: () => {
+              // Minted here, not chosen by the caller: derived from randomness so two
+              // offline clones never mint the same one, closing false-merge of memories at
+              // the root (the same move `who` makes). Canonical by construction.
+              const id = mintId();
 
-  // The door asks the fact first, then founds this installation's anchor, so the fact's
-  // signer is a key valid for its anchor at verify (see `appendFact`).
-  const appended = appendFact(ctx, ({ at }) =>
-    memoryCaptured(
-      {
-        at,
-        who,
-        signerFp: ctx.writer.signerFingerprint,
-        subject: id,
-        ...(which !== undefined ? { which } : {}),
-        ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
-      },
-      // The screened text, never `input.content`: the whole point of the door is
-      // that the original does not reach the chain.
-      { content: content.fields.content },
-    ),
+              // The door asks the fact first, then founds this installation's anchor, so the fact's
+              // signer is a key valid for its anchor at verify (see `appendFact`).
+              const appended = appendFact(ctx, ({ at }) =>
+                memoryCaptured(
+                  {
+                    at,
+                    who,
+                    signerFp: ctx.writer.signerFingerprint,
+                    subject: id,
+                    ...(which !== undefined ? { which } : {}),
+                    ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
+                  },
+                  // The screened text, never `input.content`: the whole point of the door is
+                  // that the original does not reach the chain.
+                  { content: content.fields.content },
+                ),
+              );
+              if (!appended.ok) return appended;
+              return { ok: true, id, ...screened([...content.replaced, ...agent.replaced]) };
+            },
+          },
   );
-  if (!appended.ok) return appended;
-  return { ok: true, id, ...screened([...content.replaced, ...agent.replaced]) };
 }
 
 /** An observation was recorded: the fact was appended. */
@@ -177,6 +218,12 @@ export interface ObservationInput {
   readonly which?: string;
   /** The run this belongs to, if any. */
   readonly run?: string;
+  /**
+   * Writes the observation even where the same text, topic and `about` is already on the record.
+   * For the one that is a position in a history (the brief of a handoff: the newest brief is the
+   * one of the newest handoff, and an old text repeated after another must be newest again).
+   */
+  readonly keepRepeats?: true;
 }
 
 /**
@@ -193,7 +240,7 @@ export interface ObservationInput {
 export function recordObservation(
   ctx: WriteContext,
   input: ObservationInput,
-): ObservationOk | FactError {
+): ObservationOk | NoteRecordedAlready | FactError {
   // Every field in one screen, so a single refusal covers any of them and the
   // report counts what was replaced across all three.
   //
@@ -227,25 +274,56 @@ export function recordObservation(
   // it) is bounded by the size limit rather than paying for whatever arrived.
   const about = canonicalId(text.fields.about) ?? text.fields.about;
 
-  // Minted here, not chosen by the caller (see mintId): the observation's own
-  // identity, canonical by construction.
-  const id = mintId();
+  // THE SAME OBSERVATION TWICE: the same text under the same topic about the same entity, still
+  // standing, in this tree, is the observation already on the record (see {@link captureMemory}).
+  // A retracted one is not a twin.
+  return onTheRecordAsItStands(
+    ctx,
+    () =>
+      input.keepRepeats === true
+        ? undefined
+        : asTheChainIs(
+            ctx,
+            (cache) =>
+              cache
+                .listObservationsAbout(about)
+                .find((held) => held.topic === text.fields.topic && held.text === text.fields.text)
+                ?.id,
+          ),
+    (twin): Judged<ObservationOk | NoteRecordedAlready | FactError> =>
+      twin !== undefined
+        ? {
+            refuse: {
+              ok: true,
+              already: true,
+              id: twin,
+              ...screened([...text.replaced, ...agent.replaced]),
+            },
+          }
+        : {
+            write: () => {
+              // Minted here, not chosen by the caller (see mintId): the observation's own
+              // identity, canonical by construction.
+              const id = mintId();
 
-  const appended = appendFact(ctx, ({ at }) =>
-    observationRecorded(
-      {
-        at,
-        who,
-        signerFp: ctx.writer.signerFingerprint,
-        subject: id,
-        ...(which !== undefined ? { which } : {}),
-        ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
-      },
-      { about, topic: text.fields.topic, text: text.fields.text },
-    ),
+              const appended = appendFact(ctx, ({ at }) =>
+                observationRecorded(
+                  {
+                    at,
+                    who,
+                    signerFp: ctx.writer.signerFingerprint,
+                    subject: id,
+                    ...(which !== undefined ? { which } : {}),
+                    ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
+                  },
+                  { about, topic: text.fields.topic, text: text.fields.text },
+                ),
+              );
+              if (!appended.ok) return appended;
+              return { ok: true, id, ...screened([...text.replaced, ...agent.replaced]) };
+            },
+          },
   );
-  if (!appended.ok) return appended;
-  return { ok: true, id, ...screened([...text.replaced, ...agent.replaced]) };
 }
 
 /** A handoff was recorded: the fact was appended. */
@@ -343,6 +421,8 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
           about: task,
           topic: BRIEF_TOPIC,
           text: input.brief,
+          keepRepeats: true,
+
           ...(which !== undefined ? { which } : {}),
           ...(agents.fields.run !== undefined ? { run: agents.fields.run } : {}),
         });
