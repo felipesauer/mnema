@@ -69,11 +69,11 @@
  * see the same events for it.
  */
 
-import { isUnannounced } from '@mnema/chain';
 import {
   DECISION_STATES,
   type DecisionProjection,
   type DecisionState,
+  isUnannounced,
   newestFirst,
   type ProjectionCache,
   shortenAnchors,

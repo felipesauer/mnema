@@ -446,8 +446,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the entry on a rule addressed at a directory, and in the known limits of the entry on the rules a project inherits, as a reader that does not read them; its `--help` hands the --host it needs',
   },
   'CHANGELOG.md: mnema show': {
-    times: 2,
-    why: 'the read named in the known limits of the entry on the rules a project inherits, as one that does not list the addresses the origin holds, and in the entry on the VS Code extension that no longer asks it for each proposal; the reference hands it over with the id',
+    times: 3,
+    why: 'the read named in the known limits of the entry on the rules a project inherits, as one that does not list the addresses the origin holds, in the entry on the VS Code extension that no longer asks it for each proposal, and among the readings that say an agent name no client announced; the reference hands it over with the id',
   },
   'CHANGELOG.md: mnema stack add': {
     times: 1,
@@ -540,6 +540,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   'plugin/captures/vscode-extension-script.md: mnema why': {
     times: 1,
     why: 'the verb named in the case that reads the document the extension opens for a file, as what it printed; the reference hands it over with a path or a commit',
+  },
+  'packages/chain/FORMAT.md: mnema show': {
+    times: 1,
+    why: 'the read named in section 6.9 among the readings that say an agent name no client announced; the reference hands it over with the id',
   },
   'packages/code/README.md: mnema inherit set': {
     times: 1,
@@ -719,7 +723,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 74, name: 134, flag: 4 },
+  'CHANGELOG.md': { line: 74, name: 137, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
@@ -740,7 +744,7 @@ export const HANDED_OVER: Readonly<
   'docs/where-it-fits.md': { line: 1, name: 2 },
   'examples/rules/README.md': { line: 1, name: 1 },
   'packages/action/README.md': { line: 14, name: 12 },
-  'packages/chain/FORMAT.md': { line: 3, name: 1 },
+  'packages/chain/FORMAT.md': { line: 3, name: 2 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 1 },

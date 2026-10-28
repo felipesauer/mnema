@@ -32,6 +32,9 @@ export {
   GOVERNS_RELATION,
   REFUSES_A_WRITE_RELATION,
 } from '@mnema/chain';
+// Which facts carry an agent name no MCP client announced (FORMAT.md section 6.9): the reading
+// the context package's opening document asks of an acceptance, which may not name the chain.
+export { isUnannounced } from '@mnema/chain';
 export {
   type BridgeFormat,
   type HostMemoryNote,
