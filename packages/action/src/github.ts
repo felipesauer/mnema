@@ -35,9 +35,15 @@ const PAGE = 100;
 /** The pages a listing is read through before it is called too long to read. */
 const MOST_PAGES = 30;
 
+/** A file the pull request changes: where it stands now, and where it stood if it was renamed. */
+export interface ChangedFile {
+  readonly path: string;
+  readonly renamedFrom?: string;
+}
+
 export interface GitHub {
-  /** Paths of the files the pull request changes. */
-  changedFiles(): Promise<string[]>;
+  /** The files the pull request changes; a renamed one carries the path it left. */
+  changedFiles(): Promise<ChangedFile[]>;
   /** The pull request's reviews, oldest first. */
   reviews(): Promise<Review[]>;
   /**
@@ -84,8 +90,16 @@ export function connect(address: PullRequestAddress, fetchIt: Fetch): GitHub {
   return {
     async changedFiles() {
       return (await listed(`/pulls/${address.number}/files`)).flatMap((row) => {
-        const { filename } = row as { filename?: unknown };
-        return typeof filename === 'string' ? [filename] : [];
+        const { filename, previous_filename: was } = row as {
+          filename?: unknown;
+          previous_filename?: unknown;
+        };
+        if (typeof filename !== 'string') return [];
+        return [
+          typeof was === 'string' && was !== filename
+            ? { path: filename, renamedFrom: was }
+            : { path: filename },
+        ];
       });
     },
     async reviews() {

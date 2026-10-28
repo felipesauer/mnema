@@ -21,14 +21,19 @@ interface Seen {
   checked: string[];
   /** The base each `verify` was asked to hold the record to. */
   since: string[];
+  /** The bases the rules were read at, and how many of those readings were closed. */
+  readAt: string[];
+  closed: number;
 }
 
 function worldWith(
   over: {
     verify?: { passed: boolean; said: string };
-    files?: string[];
+    files?: (string | { path: string; renamedFrom?: string })[];
     reviews?: { user: string; state: string }[];
     rules?: Record<string, unknown>;
+    /** What `mnema rules` answers over the base commit; nothing addresses any file by default. */
+    baseRules?: Record<string, unknown>;
     base?: string;
     hasCommit?: boolean;
     commentFails?: boolean;
@@ -36,7 +41,15 @@ function worldWith(
     checks?: { passed: boolean; said: string };
   } = {},
 ): { world: World; seen: Seen } {
-  const seen: Seen = { comments: [], asked: [], warnings: [], checked: [], since: [] };
+  const seen: Seen = {
+    comments: [],
+    asked: [],
+    warnings: [],
+    checked: [],
+    since: [],
+    readAt: [],
+    closed: 0,
+  };
   const world: World = {
     git: {
       hasCommit: () => over.hasCommit ?? true,
@@ -51,13 +64,23 @@ function worldWith(
         seen.asked.push(path);
         return over.rules?.[path] ?? {};
       },
+      rulesAt: (base) => {
+        seen.readAt.push(base);
+        return {
+          rules: (path) => over.baseRules?.[path] ?? {},
+          close: () => {
+            seen.closed += 1;
+          },
+        };
+      },
       checkRun: (key) => {
         seen.checked.push(key);
         return over.checks ?? { passed: true, said: '1 passed · 0 failed at abc' };
       },
     },
     github: {
-      changedFiles: async () => over.files ?? [],
+      changedFiles: async () =>
+        (over.files ?? []).map((file) => (typeof file === 'string' ? { path: file } : file)),
       reviews: async () => over.reviews ?? [],
       upsertComment: async (body, onlyIfThere) => {
         if (over.commentFails) throw new Error('GitHub answered 403');
@@ -225,6 +248,123 @@ describe('judge', () => {
         rules: { 'src/a.ts': { asks: [rule('d1', 'proposed')] } },
       });
       expect((await judge(world, on)).failed).toBe(false);
+    });
+  });
+
+  describe("the rules that judge the files are the base's", () => {
+    const on = { ...pr, requireApprovalForAsks: true };
+    const asking = { 'src/a.ts': { asks: [rule('d1')] } };
+    // The pull request superseded d1 and edited src/a.ts: at its head nothing asks any more.
+    const lifted = { 'src/a.ts': { asks: [rule('d1', 'superseded')] } };
+
+    it('fails a pull request that lifts the rule off the file it edits', async () => {
+      const { world, seen } = worldWith({
+        files: ['src/a.ts'],
+        rules: lifted,
+        baseRules: asking,
+        reviews: [{ user: 'bob', state: 'APPROVED' }],
+      });
+      const verdict = await judge(world, on);
+      expect(verdict.failed).toBe(true);
+      expect(verdict.reasons).toEqual([
+        'a rule asks for a person and no one but the author has approved',
+      ]);
+      expect(seen.readAt).toEqual([pr.baseSha]);
+      expect(seen.comments[0]?.body).toContain('asks for a person: rule d1');
+      expect(seen.comments[0]?.body).toContain('Rules read at the base (`abc`)');
+    });
+
+    it('fails a rename that carries the protected file to a new path', async () => {
+      const { world, seen } = worldWith({
+        files: [{ path: 'src/b.ts', renamedFrom: 'src/a.ts' }],
+        rules: {},
+        baseRules: asking,
+        reviews: [],
+      });
+      expect((await judge(world, on)).failed).toBe(true);
+      expect(seen.asked).toEqual(['src/b.ts', 'src/a.ts']);
+      expect(seen.comments[0]?.body).toContain(
+        '`src/a.ts` (renamed to src/b.ts): asks for a person: rule d1',
+      );
+    });
+
+    it('fails the removal of a protected file, and names the file a rename moves into one', async () => {
+      const removed = worldWith({
+        files: ['src/a.ts'],
+        rules: {},
+        baseRules: asking,
+        reviews: [],
+      });
+      expect((await judge(removed.world, on)).failed).toBe(true);
+
+      const into = worldWith({
+        files: [{ path: 'src/a.ts', renamedFrom: 'src/old.ts' }],
+        rules: {},
+        baseRules: asking,
+      });
+      expect((await judge(into.world, on)).failed).toBe(true);
+      expect(into.seen.comments[0]?.body).toContain(
+        '`src/a.ts` (renamed from src/old.ts): asks for a person: rule d1',
+      );
+    });
+
+    it('fails the control that only edits the file', async () => {
+      const { world } = worldWith({
+        files: ['src/a.ts'],
+        rules: asking,
+        baseRules: asking,
+        reviews: [{ user: 'bob', state: 'APPROVED' }],
+      });
+      expect((await judge(world, on)).failed).toBe(true);
+    });
+
+    it('also counts a rule the pull request adds, once if both readings have it', async () => {
+      const added = worldWith({
+        files: ['src/a.ts'],
+        rules: asking,
+        reviews: [{ user: 'bob', state: 'APPROVED' }],
+      });
+      expect((await judge(added.world, on)).failed).toBe(true);
+
+      const both = worldWith({ files: ['src/a.ts'], rules: asking, baseRules: asking });
+      await judge(both.world, pr);
+      const lines = (both.seen.comments[0]?.body ?? '').split('\n');
+      expect(lines.filter((line) => line.includes('asks for a person: rule d1'))).toHaveLength(1);
+    });
+
+    it('lets a pull request through when someone else approved, whatever it lifted', async () => {
+      const { world } = worldWith({
+        files: ['src/a.ts'],
+        rules: lifted,
+        baseRules: asking,
+        reviews: [{ user: 'ana', state: 'APPROVED' }],
+      });
+      expect((await judge(world, on)).failed).toBe(false);
+    });
+
+    it('closes the reading of the base even when asking fails', async () => {
+      const { world, seen } = worldWith({ files: ['src/a.ts'], rules: asking });
+      world.mnema.rulesAt = () => ({
+        rules: () => {
+          throw new Error('boom');
+        },
+        close: () => {
+          seen.closed += 1;
+        },
+      });
+      await expect(judge(world, on)).rejects.toThrow('boom');
+      expect(seen.closed).toBe(1);
+    });
+
+    it('reads no base when the base holds no record, and says so', async () => {
+      const first = worldWith({ files: ['src/a.ts'], rules: asking });
+      const world = first.world;
+      const grownOnly = world.git.recordAt;
+      world.git.recordAt = (ref) => (ref === 'HEAD' ? grownOnly(ref) : []);
+      const verdict = await judge(world, on);
+      expect(verdict.failed).toBe(true);
+      expect(first.seen.readAt).toEqual([]);
+      expect(first.seen.comments[0]?.body).toContain('its base holds no record');
     });
   });
 
