@@ -55,7 +55,7 @@ import {
   signerFor,
 } from '@mnema/core/write';
 import { basesNeverImported, type UnimportedBase } from '../outside-the-record.js';
-import { type InstructionsFile, writeInstructions } from './instructions.js';
+import { EVERY_HOST_FILE, type InstructionsFile, writeInstructions } from './instructions.js';
 import {
   complete,
   type Missing,
@@ -69,6 +69,12 @@ export interface InitContext {
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`), for the global tree and the key root. */
   readonly env: DiscoveryEnv;
+  /**
+   * Which of the files init offers (`CHOOSABLE_INSTRUCTIONS`) a founding writes the instructions into:
+   * the person's answer at a terminal. Absent is every one of them, which is what a founding with
+   * nobody to ask has always done. A project already founded writes none of them either way.
+   */
+  readonly instructionFiles?: readonly string[];
 }
 
 /** A project was established (or was already here). */
@@ -111,7 +117,8 @@ export interface InitResult {
     readonly prettierIgnore?: PrettierIgnoreChange;
     /**
      * What this run did to the files an agent host reads standing instructions from (ADR-46):
-     * `AGENTS.md` and the files of mnema's own always, `CLAUDE.md` and its kin where they exist.
+     * the files the person chose among `AGENTS.md` and the files of mnema's own (every one where
+     * nobody was asked), `CLAUDE.md` and its kin where they exist.
      * Only a founding writes them: a second `init` never does, so a block the person took out
      * stays out (`mnema doctor` says it is missing, and `mnema instructions` puts it back).
      */
@@ -273,7 +280,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
 
   const gitRoot = nearestGitRoot(ctx.cwd);
   const { prettierIgnore } = complete(ctx.cwd);
-  const instructions = writeInstructions(ctx.cwd);
+  const instructions = writeInstructions(ctx.cwd, ctx.instructionFiles ?? EVERY_HOST_FILE);
   return {
     created: true,
     root,
@@ -288,6 +295,18 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
       instructions,
     },
   };
+}
+
+/**
+ * Whether {@link runInit} at `cwd` would found a project: no `.mnema/` is there and the directory can be a
+ * project's root. It is what the verb asks BEFORE it asks the person anything, so a second `init` and a
+ * refused one never put a question to anybody, and it asks the same two things `runInit` does, in the
+ * same order.
+ */
+export function wouldFound(ctx: InitContext): boolean {
+  return (
+    whyNoProjectRootAt(ctx.cwd, ctx.env) === undefined && !isDirectory(join(ctx.cwd, PROJECT_DIR))
+  );
 }
 
 function isDirectory(path: string): boolean {

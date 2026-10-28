@@ -125,9 +125,50 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
   const init = program
     .command(INIT_VERB)
     .description('establish a mnema project in the current directory')
-    .action(async () => {
-      const { runInit } = await import('../commands/init.js');
-      const result = runInit(here());
+    .option(
+      '--all-hosts',
+      'write the mnema instructions into AGENTS.md and the three files of mnema’s own, without asking which',
+    )
+    .addHelpText(
+      'after',
+      [
+        '',
+        'At a terminal, a new project is first asked which of four files the mnema instructions go',
+        'into: AGENTS.md and the three of mnema’s own (Enter for all four, Ctrl-C to found nothing).',
+        'Without a terminal, or with --all-hosts, nothing is asked and all four are written.',
+        '`mnema instructions --help` lists the files.',
+      ].join('\n'),
+    )
+    .action(async (opts: { allHosts?: boolean }) => {
+      const { runInit, wouldFound } = await import('../commands/init.js');
+      const ctx = here();
+      // THE QUESTION COMES BEFORE THE FOUNDING, and only where there is a founding to ask about and a
+      // person to ask: a second `init`, a refused one, a script and `--all-hosts` are never asked, and a
+      // person who leaves (Ctrl-C, Ctrl-D) leaves the project and the home as they were.
+      let instructionFiles: readonly string[] | undefined;
+      if (opts.allHosts !== true && io.aPersonIsHere === true && io.ask !== undefined) {
+        if (wouldFound(ctx)) {
+          const { askWhichHostFiles, HOST_FILES_NOT_UNDERSTOOD, saidLeft } = await import(
+            './which-host-files.js'
+          );
+          const answer = await askWhichHostFiles({ ...io, ask: io.ask }, render);
+          if (answer.kind === 'cancelled') {
+            saidLeft(io, render, 'Nothing was founded and nothing was written.');
+            return;
+          }
+          if (answer.kind === 'unclear') {
+            reportRefusal(wiring, {
+              reason: 'REFUSED',
+              code: HOST_FILES_NOT_UNDERSTOOD,
+              message:
+                'the answer was not one of the numbers listed. Nothing was founded and nothing was written; `mnema init --all-hosts` writes every file without asking.',
+            });
+            return;
+          }
+          instructionFiles = answer.files;
+        }
+      }
+      const result = runInit(instructionFiles === undefined ? ctx : { ...ctx, instructionFiles });
       if ('refused' in result) {
         // Worded where both surfaces word why a directory is no project's root. Loaded
         // here, with the adapter: it reads chains, and the floor must not.

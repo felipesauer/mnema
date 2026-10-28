@@ -12,6 +12,30 @@ with its own changelog.
 
 ### Added
 
+- **`mnema init` asks, at a terminal, which files an agent host reads the mnema instructions are written into.** The question
+  comes before the founding and lists `AGENTS.md` and the three rule files of mnema's own (Claude Code, the `.github/instructions`
+  file for VS Code and Copilot CLI, and Cursor) with the hosts that read each, as `docs/cli-reference.md` names them: Enter
+  writes all four, numbers write those, an answer not on the list is asked once more and then refused (`HOST_FILES_NOT_UNDERSTOOD`)
+  with nothing written, and Ctrl-C or Ctrl-D founds nothing, writes nothing and exits 0 (the project and the home are byte for
+  byte as they were). With no terminal (a script, a pipe, an agent's shell), with `--all-hosts`, and in a project already
+  founded, nothing is asked: the output of a founding without a terminal is the one it always was. A `CLAUDE.md`,
+  `.claude/CLAUDE.md` or `GEMINI.md` that already exists still gets the block whichever files were chosen.
+  **The files on disk are the choice.** `mnema doctor`, `mnema instructions --check` and `--remove` look at the offered files
+  that hold the instructions, and say the others are missing only when none of the four does; `mnema instructions` updates
+  those, and where none holds them it asks the same question at a terminal and writes all four without one.
+  `mnema instructions --all-hosts` writes all four whichever are there. What this costs: a file of yours with no block does not
+  count as chosen, so with two or more chosen, taking the block out of one of them is not reported by `doctor` (the others
+  still hold it); with only one chosen, taking it out is reported, and `doctor` names all four. **A pseudo-terminal counts as
+  a terminal.** `init` asks when standard input and standard error are one, and no host leaves a variable in the shell of its
+  agent that this project has measured (the environment read is the MCP server's, and Codex and OpenCode leave none of the
+  marks looked for), so an agent whose shell is a real pty (an editor's integrated terminal, a node-pty) would wait at the
+  question: an agent that runs `mnema init` there passes `--all-hosts`. The instructions block, versioned, says nothing
+  of it. Measured on the built binary under a pseudo-terminal: Ctrl-C and Ctrl-D at a question reject the read with
+  `ABORT_ERR` at once, and the shared `ask` gained one line, `process.stdin.ref()`: the menu the bare name draws leaves
+  standard input unreferenced, and the question asked after it (`mnema`, then "establish a project here") ended the process
+  with exit 0 in the middle of the question. The verbs that already ask (`decision review`) still end with "Aborted with
+  Ctrl+C" and exit 1.
+
 - **The record says when no client announced the agent's name.** A client that never sends `initialize`, as the MCP
   2026-07-28 revision allows, or whose handshake names nobody (no name, a blank one) is written under the server's default,
   `unknown-agent`, and until now that read exactly like a name a client announced, and like a client announcing that very

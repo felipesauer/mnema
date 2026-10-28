@@ -41,7 +41,9 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   repository has a `.prettierignore` or declares prettier, it adds the line `.mnema/` to it and
   says so. It writes the mnema instructions (when to call the mnema tools, and what never goes in the
   record) into `AGENTS.md`, into a `CLAUDE.md` or `GEMINI.md` that exists, and into a rule file of its
-  own for Claude Code, Copilot and Cursor, and names each file. Run again in a project founded before,
+  own for Claude Code, Copilot and Cursor, and names each file. At a terminal it first asks which of
+  `AGENTS.md` and the three rule files to write (Enter for all four, Ctrl-C to found nothing); with no
+  terminal, or with `--all-hosts`, it asks nothing and writes all four (an agent whose shell is a pseudo-terminal passes `--all-hosts`, or it waits at the question). Run again in a project founded before,
   it adds only what that project lacks beside the record; `mnema instructions`, with `--check` or `--remove`,
   writes, checks or removes the instructions.
   `mnema doctor` points at a missing README, `.prettierignore` line or instructions block, names a pre-commit hook,

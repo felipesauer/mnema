@@ -167,7 +167,7 @@ _mnema_described() {
 _mnema_flags() {
   case "$1" in
     '') echo '-V --version --color -h --help' ;;
-    'init') echo '-h --help -V --version --color' ;;
+    'init') echo '--all-hosts -h --help -V --version --color' ;;
     'decision') echo '--alternatives --scope --which --stdin --body-file -h --help -V --version --color' ;;
     'decision record') echo '--alternatives --scope --which --stdin --body-file -h --help -V --version --color' ;;
     'decision move') echo '--note -h --help --which -V --version --color' ;;
@@ -207,7 +207,7 @@ _mnema_flags() {
     'recall') echo '--hook --host --session --after-a-compaction -h --help -V --version --color' ;;
     'rules') echo '--json -h --help -V --version --color' ;;
     'rules-file') echo '--host -h --help -V --version --color' ;;
-    'instructions') echo '--check --remove -h --help -V --version --color' ;;
+    'instructions') echo '--check --remove --all-hosts -h --help -V --version --color' ;;
     'switch') echo '-h --help -V --version --color' ;;
     'switch off') echo '--reason --scope --which -h --help -V --version --color' ;;
     'switch on') echo '--reason --scope --which -h --help -V --version --color' ;;

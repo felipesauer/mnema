@@ -70,8 +70,10 @@ say() { printf '\033[2m# %s\033[0m\n' "$1"; pause 0.8; }
 
 printf '\033[2J\033[H'
 say "a repository with a record, and a call the team made"
-typed "mnema init > /dev/null"
-mnema init >/dev/null
+# `init` is typed with --all-hosts: it asks which host files to write when a person is at the terminal, and
+# this recording is one, so the option is what keeps the recording from stopping at the question.
+typed "mnema init --all-hosts > /dev/null"
+mnema init --all-hosts >/dev/null
 typed 'mnema decision record "Keep money as integer cents" \' \
   '"Float sums drift; cents are exact."'
 OUT=$(mnema decision record "Keep money as integer cents" "Float sums drift; cents are exact.")

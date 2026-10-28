@@ -893,6 +893,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the revision as typed, and a PATH git listed: a file name, chosen on disk',
   },
+  'which-host-files.ts «"{}" is not on the list: {}.» #1': {
+    verdict: 'collapsed',
+    why: 'the answer as the person typed it, trimmed: any text, so every value goes through the tag',
+  },
   'verify.ts «{}: {} no longer begins with the bytes it held there» #1': {
     verdict: 'collapsed',
     why: 'the revision as typed, and a path git listed',
@@ -1017,7 +1021,8 @@ describe('every line this wiring words is classified', () => {
     // 158 with the line a handoff prints when no tree holds its task.
     // 159 with the line verify prints beside a refusal a formatter explains.
     // 160 with the agent name the account says no MCP client announced.
-    expect(FOUND.sites.length).toBe(160);
+    // 161 with the line `init` prints when the answer to which host files is not on the list.
+    expect(FOUND.sites.length).toBe(161);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1037,9 +1042,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(84);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(85);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(76);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(84);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(85);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1181,6 +1186,9 @@ describe('a value from outside cannot forge a second line', () => {
  * somebody closed and nobody drove, and the reconciliation below is what says so.
  */
 const UNREACHABLE: Readonly<Record<string, string>> = {
+  'which-host-files.ts «"{}" is not on the list: {}.» #1':
+    'needs a person at a terminal who types an answer off the list; driven with a break in it in ' +
+    '`the-init-asks-which-host-files-to-write.test.ts`',
   'accountability.ts «{} {} ({} with {})» #1':
     'the name is the default the MCP server writes for a client that announced none, the only writer ' +
     'of a run.unannounced; the tag is the fence for one written by hand',
