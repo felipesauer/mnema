@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { theServerWasHanded } from './support/a-sandbox.js';
 import { anOpencodeForEachCase } from './support/the-opencode.js';
+import { theProtocolOf } from './support/the-protocol-a-host-speaks.js';
 
 describe('what OpenCode hands the server it starts', () => {
   const start = anOpencodeForEachCase();
@@ -17,6 +18,7 @@ describe('what OpenCode hands the server it starts', () => {
     const handed = theServerWasHanded(session.project);
 
     expect(handed.client).toBe('opencode');
+    expect(theProtocolOf('OpenCode', handed)).toBeUndefined();
     // The server is started directly by the host. What follows is the instrument.
     expect(handed.chain.slice(0, 1)).toEqual(['opencode']);
     expect(handed.present).toEqual([]);

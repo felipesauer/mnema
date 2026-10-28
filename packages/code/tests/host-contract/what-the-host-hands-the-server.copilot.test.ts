@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { theServerWasHanded } from './support/a-sandbox.js';
 import { aCopilotForEachCase } from './support/the-copilot.js';
+import { theProtocolOf } from './support/the-protocol-a-host-speaks.js';
 
 describe('what the Copilot CLI hands the server it starts', () => {
   const start = aCopilotForEachCase();
@@ -17,6 +18,7 @@ describe('what the Copilot CLI hands the server it starts', () => {
     const handed = theServerWasHanded(session.project);
 
     expect(handed.client).toBe('copilot-cli');
+    expect(theProtocolOf('Copilot CLI', handed)).toBeUndefined();
     // The server is started directly by the host. What follows is the instrument.
     expect(handed.chain.slice(0, 1)).toEqual(['copilot']);
     expect(handed.present).toEqual(['COPILOT_AGENT_SESSION_ID', 'COPILOT_CLI_BINARY_VERSION']);

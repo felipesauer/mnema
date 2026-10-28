@@ -2,6 +2,9 @@
 // and writes down three things the host handed it, as a JSON file, once the handshake is done:
 //
 //   client   the name the client announced in `initialize` (`clientInfo.name`);
+//   protocol the protocol version the client asked for in `initialize` (`params.protocolVersion`),
+//            or `withoutInitialize` set where the first thing it sent was a request and not
+//            `initialize` (the way the 2026-07-28 revision of the protocol begins);
 //   chain    the base names of the executables above this process, nearest first;
 //   present  which of a closed list of variables exist in its environment, by NAME;
 //   declared the value of two variables the plugin's own manifest or the person sets, and the
@@ -77,11 +80,17 @@ const server = new Server(
   { capabilities: { tools: {} } },
 );
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [] }));
-server.oninitialized = () => {
+let asked;
+let withoutInitialize = false;
+let seenFirst = false;
+
+const reportWhatWasHanded = () => {
   writeFileSync(
     report,
     JSON.stringify({
       client: server.getClientVersion()?.name,
+      protocol: asked,
+      withoutInitialize,
       chain: theChain(),
       present: THE_MARKS.filter((name) => process.env[name] !== undefined),
       declared: Object.fromEntries(
@@ -93,4 +102,20 @@ server.oninitialized = () => {
     }),
   );
 };
-await server.connect(new StdioServerTransport());
+server.oninitialized = reportWhatWasHanded;
+const transport = new StdioServerTransport();
+await server.connect(transport);
+// Read the client's first message on its way to the protocol layer: the version it asks for is in
+// `initialize`, and the SDK does not keep it where the server can read it.
+const handOn = transport.onmessage;
+transport.onmessage = (message, extra) => {
+  if (!seenFirst) {
+    seenFirst = true;
+    if (message.method === 'initialize') asked = message.params?.protocolVersion;
+    else {
+      withoutInitialize = true;
+      reportWhatWasHanded();
+    }
+  }
+  handOn?.(message, extra);
+};

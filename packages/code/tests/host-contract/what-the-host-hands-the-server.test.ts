@@ -19,6 +19,10 @@ import { basename, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { theServerWasHanded } from './support/a-sandbox.js';
 import { aHostForEachCase, theHostUnderTest } from './support/the-host.js';
+import {
+  theProtocolOf,
+  theRevisionWithoutInitialize,
+} from './support/the-protocol-a-host-speaks.js';
 
 describe('what Claude Code hands the server it starts', () => {
   const start = aHostForEachCase();
@@ -28,6 +32,9 @@ describe('what Claude Code hands the server it starts', () => {
     const handed = theServerWasHanded(session.project);
 
     expect(handed.client).toBe('claude-code');
+    // The revision it negotiates: recorded in the run's summary, and red the day it is the one with
+    // no handshake.
+    expect(theProtocolOf('Claude Code', handed)).toBeUndefined();
     // The launcher of the plugin, then the host. What follows is the instrument.
     expect(handed.chain.slice(0, 2)).toEqual(['node', basename(theHostUnderTest().binary)]);
     expect(handed.present).toEqual([
@@ -58,5 +65,18 @@ describe('what Claude Code hands the server it starts', () => {
       // the launcher's own test, because a contract cannot fill a plugin option without an account.
       expect(handed.declared['MNEMA_AGENT_KEY']).toBe('sentinel-agent-key');
     }, 120_000);
+  });
+
+  it('lights when a host begins to speak the revision with no handshake', () => {
+    const handed = { client: undefined, chain: [], present: [], declared: {} };
+    expect(
+      theRevisionWithoutInitialize({ ...handed, protocol: '2025-11-25', withoutInitialize: false }),
+    ).toBe(false);
+    expect(
+      theRevisionWithoutInitialize({ ...handed, protocol: '2026-07-28', withoutInitialize: false }),
+    ).toBe(true);
+    expect(
+      theRevisionWithoutInitialize({ ...handed, protocol: undefined, withoutInitialize: true }),
+    ).toBe(true);
   });
 });

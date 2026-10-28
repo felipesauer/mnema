@@ -181,6 +181,10 @@ export function aSandbox(
 export interface WhatTheServerWasHanded {
   /** The name the client announced in its handshake. */
   readonly client: string | undefined;
+  /** The protocol version the client asked for in `initialize`; none where it never sent one. */
+  readonly protocol: string | undefined;
+  /** True where the first thing the client sent was a request, not `initialize` (the 2026-07-28 revision). */
+  readonly withoutInitialize: boolean;
   /** The base names of the executables from the server up to the root, nearest first. */
   readonly chain: readonly string[];
   /** Which of a closed list of variables were present in its environment, by name; never a value. */
