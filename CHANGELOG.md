@@ -12,6 +12,13 @@ with its own changelog.
 
 ### Added
 
+- **A recording of `verify` catching a changed word.** `recordings/a-tamper-caught.sh` records a decision, accepts it, runs
+  `mnema verify` (green), changes one word of the decision in the record's own file with `sed`, and runs `verify` again: the
+  verdict is `local integrity FAILED`, the issue is `entry hash mismatch` at the event, and the exit code is 1. The README's
+  "Watch it" shows it beside the first record, the proof on the site's landing now shows it instead of the write refused, and
+  `docs/what-it-proves.md` shows it under what holds, with the caption that a cut taking the newest events together with their
+  checkpoint is not caught. The site carries every GIF of `recordings/`, so a page of `docs/` can show one. The suite runs the
+  script again against the built binary and holds its screen to the cast, and holds that this one shows the failure.
 - **The rules of the record reach the model at an edit in Codex, Qwen Code and OpenCode.** Until now only Claude Code was handed
   the rules addressed at a path beside a write that goes through; the other hosts got the opening and the refusal, and the
   arrival measurement read `not arrived` at an edit for all of them. `mnema before-a-write --host codex|qwen|opencode` now answers,

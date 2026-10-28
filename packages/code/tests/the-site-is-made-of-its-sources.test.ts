@@ -43,7 +43,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { prepare } from '../../../site/build/the-build.mjs';
+import { prepare, RECORDING } from '../../../site/build/the-build.mjs';
 import {
   cardsOf,
   copyOf,
@@ -108,6 +108,16 @@ describe('a page of docs/ reaches the site with its title moved and its links la
     expect(out).toContain('[first record](/r/docs/first-record/#the-record)');
     expect(out).toContain(
       '[the format](https://github.com/o/r/blob/abc123/packages/chain/FORMAT.md#1-x)',
+    );
+  });
+
+  it('sends a recording a page shows to the GIF the site carries, and its script to the file at the commit', () => {
+    // A GIF on GitHub's blob path is an HTML page: as an image it would be broken on the site.
+    expect(whereItLands('../recordings/a-tamper-caught.gif', 'docs/what-it-proves.md', FACTS, DOCS)).toBe(
+      '/r/recordings/a-tamper-caught.gif',
+    );
+    expect(whereItLands('../recordings/a-tamper-caught.sh', 'docs/what-it-proves.md', FACTS, DOCS)).toBe(
+      'https://github.com/o/r/blob/abc123/recordings/a-tamper-caught.sh',
     );
   });
 
@@ -281,12 +291,21 @@ describe('the pages the build writes for this tree', () => {
           const held =
             files.includes(path) || (path.endsWith('/') && files.some((f) => f.startsWith(path)));
           expect(held, `${page} links ${path}, which git does not hold`).toBe(true);
+          expect(path, `${page} links an image on GitHub's page, not the site's copy`).not.toMatch(
+            /^recordings\/[^/]+\.gif$/,
+          );
         } else if (target.startsWith(`${facts.base}/docs/`)) {
           seen.site++;
           expect(
             names.has(target.slice(`${facts.base}/docs/`.length).split('/')[0] as string),
             `${page}: ${target}`,
           ).toBe(true);
+        } else if (target.startsWith(`${facts.base}/recordings/`)) {
+          const gif = target.slice(`${facts.base}/recordings/`.length).split('#')[0] as string;
+          expect(existsSync(join(ROOT, 'recordings', gif)), `${page}: ${target}`).toBe(true);
+          expect(existsSync(join(site, 'public/recordings', gif)), `the site carries ${gif}`).toBe(
+            true,
+          );
         } else if (target.startsWith(`${facts.base}/assets/`)) {
           expect(
             existsSync(
@@ -358,15 +377,22 @@ describe('the pages the build writes for this tree', () => {
     expect(proof.command).toBe('mnema verify');
     expect(proof.output).toMatch(/^public: /);
     expect(proof.output).not.toMatch(/^private:/m);
-    expect(proof.recording.src).toBe(`${facts.base}/recordings/a-write-refused.gif`);
-    const gif = readFileSync(join(ROOT, 'recordings/a-write-refused.gif'));
+    expect(proof.recording.src).toBe(`${facts.base}/${RECORDING}`);
+    const gif = readFileSync(join(ROOT, RECORDING));
     expect(proof.recording).toMatchObject({
       width: gif.readUInt16LE(6),
       height: gif.readUInt16LE(8),
     });
-    expect(readFileSync(join(site, 'public/recordings/a-write-refused.gif')).equals(gif)).toBe(
-      true,
-    );
+    expect(readFileSync(join(site, 'public', RECORDING)).equals(gif)).toBe(true);
+    // Every recording of the repository is carried, because a page of docs/ may show any of them.
+    for (const file of readdirSync(join(ROOT, 'recordings')).filter((f) => f.endsWith('.gif'))) {
+      expect(
+        readFileSync(join(site, 'public/recordings', file)).equals(
+          readFileSync(join(ROOT, 'recordings', file)),
+        ),
+        `${file} is carried as it is`,
+      ).toBe(true);
+    }
   });
 
   it('write llms.txt with a link to the raw page of each Markdown file the README lists', () => {
@@ -564,17 +590,25 @@ describe('what the landing reads of the README to show the proof', () => {
     ).toThrow(/recordings\/two\.gif/);
   });
 
-  it('reads the real README: the recording of a write refused, with the words the README gives it', () => {
+  it("reads the real README: the proof's recording, a changed word caught, with the words the README gives it", () => {
     const got = recordingOf({
       readme: real,
-      path: 'recordings/a-write-refused.gif',
+      path: RECORDING,
       facts: { ...FACTS, repoUrl: 'https://github.com/felipesauer/mnema', sha: 'f'.repeat(40) },
       docs: DOCS,
     }) as { alt: string; caption: string };
-    expect(got.alt).toBe("An agent's write refused by a rule addressed at its path");
-    expect(got.caption).toContain('A write refused: the rule addressed at the path');
+    expect(RECORDING).toBe('recordings/a-tamper-caught.gif');
+    expect(got.alt).toBe(
+      "One word of a recorded decision changed by hand in the record's file, and mnema verify failing with entry hash mismatch",
+    );
+    expect(got.caption).toContain('A changed word caught: one word of an accepted decision');
+    // The caption says what the recording does not show: nothing else holds this sentence on the page.
+    expect(got.caption).toContain('a hash chain shows what changed, never what is gone');
     expect(got.caption).toContain(
-      `href="https://github.com/felipesauer/mnema/blob/${'f'.repeat(40)}/recordings/a-write-refused.sh"`,
+      `href="https://github.com/felipesauer/mnema/blob/${'f'.repeat(40)}/recordings/a-tamper-caught.sh"`,
+    );
+    expect(got.caption).toContain(
+      `href="https://github.com/felipesauer/mnema/blob/${'f'.repeat(40)}/docs/what-it-proves.md"`,
     );
   });
 

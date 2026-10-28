@@ -113,6 +113,9 @@ export function whereItLands(target, from, facts, docs) {
   if (page && docs.has(page[1])) return `${facts.base}/docs/${page[1]}/${fragment}`;
   const asset = /^docs\/assets\/([^/]+)$/.exec(resolved);
   if (asset) return `${facts.base}/assets/${asset[1]}${fragment}`;
+  // A recording a page shows is an image: on GitHub its path is an HTML page, so the site carries the GIF itself.
+  const recording = /^recordings\/([^/]+\.gif)$/.exec(resolved);
+  if (recording) return `${facts.base}/recordings/${recording[1]}${fragment}`;
   const kept = target.endsWith('/') && !resolved.endsWith('/') ? `${resolved}/` : resolved;
   return `${facts.repoUrl}/blob/${facts.sha}/${kept}${fragment}`;
 }

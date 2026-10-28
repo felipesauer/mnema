@@ -175,11 +175,14 @@ it. The detail of most of them is in [Features](docs/features.md); for the rest,
 <table>
 <tr>
 <td width="50%" valign="top"><img src="recordings/first-record.gif" alt="mnema init, a decision recorded and accepted, the decisions the next session is handed, and verify"><br><sub>The first record: the command line in an empty repository, from <code>init</code> to <code>verify</code>. Recorded from the built binary by <a href="recordings/first-record.sh"><code>recordings/first-record.sh</code></a>.</sub></td>
-<td width="50%" valign="top"><img src="recordings/console.gif" alt="mnema at a shell, the first door, and the console answering reads"><br><sub>At a terminal, <code>mnema</code> alone asks what you want to do here, and its first door opens the console: a session that reads the record and refuses to write. It needs a window at least 80 columns wide and 42 rows tall. Driven through a pseudo-terminal by <a href="recordings/console.json"><code>recordings/console.json</code></a>.</sub></td>
+<td width="50%" valign="top"><img src="recordings/a-tamper-caught.gif" alt="One word of a recorded decision changed by hand in the record's file, and mnema verify failing with entry hash mismatch"><br><sub>A changed word caught: one word of an accepted decision is changed by hand in its file, and <code>mnema verify</code> names the event whose hash no longer matches and exits 1. A cut that takes the newest events together with their checkpoint is not caught: a hash chain shows what changed, never what is gone (<a href="docs/what-it-proves.md">what it proves</a>). Recorded from the built binary by <a href="recordings/a-tamper-caught.sh"><code>recordings/a-tamper-caught.sh</code></a>.</sub></td>
 </tr>
 <tr>
 <td width="50%" valign="top"><img src="recordings/a-write-refused.gif" alt="An agent's write refused by a rule addressed at its path"><br><sub>A write refused: the rule addressed at the path stops an agent's edit there. Recorded from the built binary by <a href="recordings/a-write-refused.sh"><code>recordings/a-write-refused.sh</code></a>.</sub></td>
 <td width="50%" valign="top"><img src="recordings/a-decision-superseded.gif" alt="A decision superseded: it leaves what the next session is handed, and stays in the record"><br><sub>A decision superseded: a later call takes its place, the old one leaves what the next session is handed and stays in the record. Recorded from the built binary by <a href="recordings/a-decision-superseded.sh"><code>recordings/a-decision-superseded.sh</code></a>.</sub></td>
+</tr>
+<tr>
+<td width="50%" valign="top"><img src="recordings/console.gif" alt="mnema at a shell, the first door, and the console answering reads"><br><sub>At a terminal, <code>mnema</code> alone asks what you want to do here, and its first door opens the console: a session that reads the record and refuses to write. It needs a window at least 80 columns wide and 42 rows tall. Driven through a pseudo-terminal by <a href="recordings/console.json"><code>recordings/console.json</code></a>.</sub></td>
 </tr>
 </table>
 

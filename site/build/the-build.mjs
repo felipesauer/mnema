@@ -38,7 +38,7 @@ export const WRITTEN = Object.freeze([
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 
 /** The recording the landing shows beside the verdict: one of those the repository already holds. */
-export const RECORDING = 'recordings/a-write-refused.gif';
+export const RECORDING = 'recordings/a-tamper-caught.gif';
 
 /** The width and the height of a GIF, from its header (bytes 6 to 9, little-endian). */
 export function sizeOfGif(bytes) {
@@ -93,7 +93,10 @@ export async function prepare({ root = ROOT, site = SITE } = {}) {
   const command = verifyCommandOf(readme);
   const output = theVerdictOfTheCommit({ root, sha: facts.sha, command });
   const gif = readFileSync(join(root, RECORDING));
-  writeFileSync(into(`public/${RECORDING}`), gif);
+  // Every recording the repository holds is carried, because a page of docs/ may show any of them.
+  for (const file of readdirSync(join(root, 'recordings')).filter((f) => f.endsWith('.gif'))) {
+    cpSync(join(root, 'recordings', file), into(`public/recordings/${file}`));
+  }
   const recording = { ...recordingOf({ readme, path: RECORDING, facts, docs }), ...sizeOfGif(gif), src: `${facts.base}/${RECORDING}` };
   const caption = copy('verdict-caption');
   writeFileSync(

@@ -39,6 +39,7 @@ import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { RECORDING } from '../../../site/build/the-build.mjs';
 import { copyOf, recordBackLink, themeOf } from '../../../site/build/the-pages.mjs';
 import { runInAVm } from './support/a-page-in-a-vm.js';
 import {
@@ -481,19 +482,21 @@ when('the built site', () => {
   }, 60_000);
 
   it('shows on the landing the recording of the repository, as the README words it, and on no other page', () => {
-    const gif = join(ROOT, 'recordings/a-write-refused.gif');
+    const gif = join(ROOT, RECORDING);
     expect(
-      readFileSync(join(DIST, 'recordings/a-write-refused.gif')).equals(readFileSync(gif)),
+      readFileSync(join(DIST, RECORDING)).equals(readFileSync(gif)),
       "the recording is not the repository's",
     ).toBe(true);
     const landing = html('index.html');
     const img =
-      /<img\b[^>]*src="[^"]*recordings\/a-write-refused\.gif"[^>]*>/.exec(landing)?.[0] ?? '';
+      new RegExp(`<img\\b[^>]*src="[^"]*${RECORDING.replace(/[./]/g, '\\$&')}"[^>]*>`).exec(
+        landing,
+      )?.[0] ?? '';
     expect(img, 'the landing shows the recording').not.toBe('');
     const readme = readText(join(ROOT, 'README.md'));
     const alt = /\salt="([^"]*)"/.exec(img)?.[1] ?? '?';
     expect(readme, "the alt is the README's").toContain(
-      `<img src="recordings/a-write-refused.gif" alt="${alt.replace(/&#39;/g, "'")}"`,
+      `<img src="${RECORDING}" alt="${alt.replace(/&#39;/g, "'")}"`,
     );
     expect(img).toContain('loading="lazy"');
     const caption =
@@ -505,9 +508,23 @@ when('the built site', () => {
     );
     for (const other of ['404.html', 'docs/install/index.html']) {
       expect(html(other), `${other} carries the proof`).not.toMatch(
-        /the-proof|data-verdict|a-write-refused/,
+        /the-proof|data-verdict|a-tamper-caught/,
       );
     }
+  });
+
+  it('shows on the page of what it proves the recording of a changed word, from the GIF the site carries', () => {
+    const page = html('docs/what-it-proves/index.html');
+    const src =
+      /<img\b[^>]*src="([^"]*recordings\/a-tamper-caught\.gif)"/.exec(page)?.[1] ?? '';
+    expect(src, 'the page shows the recording').not.toBe('');
+    expect(src, "a path of the site, not GitHub's page for the file").not.toMatch(/^https?:/);
+    expect(
+      readFileSync(join(DIST, 'recordings/a-tamper-caught.gif')).equals(
+        readFileSync(join(ROOT, 'recordings/a-tamper-caught.gif')),
+      ),
+      "the site's GIF is the repository's",
+    ).toBe(true);
   });
 
   it('offers on the landing the line the README opens its Quick start with, and copies exactly it', () => {
