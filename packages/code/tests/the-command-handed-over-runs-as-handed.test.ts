@@ -569,6 +569,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 2,
     why: 'the read named in the sentence a refusal ends with when several rules refuse, beside the id each rule line carries, once as the project reads it and once with where an inherited one opens; with one rule the same sentence hands `mnema show <id>` over whole',
   },
+  'packages/code/src/offers-beside-a-recorded-decision.ts: mnema decision supersede': {
+    times: 1,
+    why: 'the command the offer hands over, joined from its parts (`mnema decision supersede`, the two ids, `--reason`, `"<why>"`) because a template reads two adjacent holes as one; the whole line is typed back and run by `a-recorded-decision-offers-the-address-and-the-supersede.test.ts`',
+  },
   'packages/code/src/wiring/decision.ts: mnema decision record': {
     times: 1,
     why: 'names the verb a move’s `--alternatives` belongs to, and says the rest of the line in words',
@@ -715,7 +719,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 72, name: 131, flag: 4 },
+  'CHANGELOG.md': { line: 74, name: 131, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
@@ -740,7 +744,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 119, name: 143, flag: 2 },
+  'docs/cli-reference.md': { line: 121, name: 143, flag: 2 },
   'packages/code/README.md': { line: 8, name: 14 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
@@ -767,6 +771,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/mcp/instructions.ts': { name: 1 },
   'packages/code/src/mcp/server.ts': { line: 1 },
   'packages/code/src/mcp/session.ts': { line: 2 },
+  'packages/code/src/offers-beside-a-recorded-decision.ts': { name: 1 },
   'packages/code/src/pinned-run.ts': { line: 1 },
   'packages/code/src/presentation/brief.ts': { line: 1, name: 10 },
   'packages/code/src/presentation/promoted.ts': { line: 4 },

@@ -127,7 +127,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       bodyFile: given.bodyFile,
     });
     if (rationale === REFUSED) return;
-    const { runDecision } = await import('../commands/decision.js');
+    const { offeredBesideADecision, runDecision } = await import('../commands/decision.js');
     const scope = parseScope(given.scope, wiring);
     if (scope === INVALID) return;
     const run = pinnedRun();
@@ -135,7 +135,8 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       io.fail();
       return;
     }
-    const result = runDecision(hereWriting(wiring), {
+    const writing = hereWriting(wiring);
+    const result = runDecision(writing, {
       title,
       rationale,
       ...(given.alternatives !== undefined ? { alternatives: given.alternatives } : {}),
@@ -146,6 +147,12 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     if (result.ok) {
       io.out(`Recorded decision ${result.adr} (${result.id})`);
       reportRecorded(result, io);
+      const text = {
+        title,
+        rationale,
+        ...(given.alternatives !== undefined ? { alternatives: given.alternatives } : {}),
+      };
+      for (const line of offeredBesideADecision(writing, text, result)) io.out(line);
       return;
     }
     reportRefusal(wiring, result);

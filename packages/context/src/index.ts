@@ -245,6 +245,7 @@ export {
   governsInForceEverywhere,
   type InheritedAddresses,
   type PushedRule,
+  pathInProject,
   type ReachQuery,
   type RulesAtPath,
   refusesAWriteAt,
