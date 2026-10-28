@@ -830,8 +830,9 @@ Nothing goes to the tree a clone gets: the task and its handoffs are in this mac
 are kept in the [session journal](#the-session-journal), the one file this machine keeps per session, so the mirror does nothing
 where `session-journal` is off. A session that is resumed (the host hands the same session id) reopens its task instead of
 opening a second, and closes it again at the next end. A session that ended with no `SessionEnd` (a terminal that was killed)
-leaves its task in progress: the next session of the project that dispatches closes the tasks whose journal has been untouched
-for a day. A failure of the mirror never holds a dispatch: the hook exits 0, and what it could not do is a line on the second
+leaves its task in progress: the next session of the project that dispatches blocks (never completes) the tasks whose journal
+has been untouched for a day, with a reason that says the session stopped with no end, when it was last seen and how many
+handoffs it recorded, since nobody saw how it ended; if that session comes back, its next dispatch unblocks the task. A failure of the mirror never holds a dispatch: the hook exits 0, and what it could not do is a line on the second
 stream. Two dispatches of one session are two processes, so each takes a lock on the journal; one that does not get it in three
 seconds records nothing (no task, no handoff), says so on the second stream and counts the skip, and the task's closing note
 says how many dispatches were not mirrored. `mnema switch` lists `agent-mirror` as doing nothing while `session-journal` is off.

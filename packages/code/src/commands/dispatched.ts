@@ -19,7 +19,9 @@
  * A RESUMED SESSION KEEPS ITS TASK: the host hands the same session id, the journal names the task,
  * and a dispatch after the end moves it out of done again (reopen) instead of starting a second.
  * A session that ended with no `SessionEnd` (a killed terminal) leaves its task in progress; the next
- * session that dispatches in the project closes the ones whose journal has been untouched for a day.
+ * session that dispatches in the project BLOCKS the ones whose journal has been untouched for a day, with
+ * a reason that says the outcome is unknown: a session nobody saw end is not a success. If it comes back,
+ * the dispatch unblocks the task.
  *
  * A HOST RUNS IT AND IT NEVER FAILS THE HOST: every outcome is the empty reply `{}`, and what could
  * not be done is a note on the second stream. Nothing is printed to the model, and a failure of the
@@ -228,6 +230,20 @@ function closingNote(handoffs: number, skipped: number): string {
   );
 }
 
+/**
+ * The reason a swept session's task is blocked with: what is known and no more. The session stopped
+ * with no `SessionEnd`, so nobody saw how it ended: this says so, when it was last seen, and the count.
+ */
+function sweptReason(handoffs: number, skipped: number, lastSeen: string): string {
+  return (
+    `The session stopped with no end, so how it ended is unknown. It was last seen at ${lastSeen}; ` +
+    `${handoffs} ${handoffs === 1 ? 'handoff was' : 'handoffs were'} recorded in it.` +
+    (skipped === 0
+      ? ''
+      : ` ${skipped} ${skipped === 1 ? 'dispatch was' : 'dispatches were'} not mirrored.`)
+  );
+}
+
 /** Opens the session's task: private, submitted and started. */
 function openTheTask(ctx: DispatchedContext, now: Date): { id?: string; notes: string[] } {
   const created = runTask(writes(ctx), { title: titleOfTheTask(now), scope: 'private' });
@@ -278,9 +294,11 @@ function dispatched(
         held = { task: opened.id, handoffs: 0, closed: false };
         notes.push(...sweepTheLeft(ctx, trees, file, now));
       } else if (held.closed) {
-        const refused = move(ctx, held.task, 'reopen', {
-          reason: 'The session went on after it ended.',
-        });
+        // A task the sweep blocked is unblocked; one the end completed is reopened.
+        const refused =
+          held.swept === true
+            ? move(ctx, held.task, 'unblock', {})
+            : move(ctx, held.task, 'reopen', { reason: 'The session went on after it ended.' });
         if (refused !== undefined) notes.push(refused);
       }
       const recorded = runHandoff(writes(ctx), {
@@ -349,7 +367,7 @@ function ended(ctx: DispatchedContext, trees: ResolvedTrees, session: string): D
 }
 
 /**
- * Closes the tasks other sessions of this project left in progress: those whose journal has been
+ * Blocks the tasks other sessions of this project left in progress: those whose journal has been
  * untouched for a day and still names a task not closed ended with no `SessionEnd`.
  */
 function sweepTheLeft(
@@ -360,12 +378,18 @@ function sweepTheLeft(
 ): string[] {
   const notes: string[] = [];
   for (const left of leftOpen(trees, own, now)) {
-    const refused = move(ctx, left.held.task, 'complete', {
-      note: closingNote(left.held.handoffs, skippedOf(left.file)),
+    // BLOCKED, never DONE: a session nobody saw end has no outcome to call a success, and `unblock`
+    // costs nothing when it turns out to be alive.
+    const refused = move(ctx, left.held.task, 'block', {
+      reason: sweptReason(left.held.handoffs, skippedOf(left.file), left.journal.updatedAt),
     });
     if (refused !== undefined) notes.push(refused);
     else
-      writeJournal(left.file, { ...left.journal, handedOver: { ...left.held, closed: true } }, now);
+      writeJournal(
+        left.file,
+        { ...left.journal, handedOver: { ...left.held, closed: true, swept: true } },
+        now,
+      );
   }
   return notes;
 }
