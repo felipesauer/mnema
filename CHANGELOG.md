@@ -12,6 +12,19 @@ with its own changelog.
 
 ### Added
 
+- **The record says when no client announced the agent's name.** A client that never sends `initialize`, as the MCP
+  2026-07-28 revision allows, or whose handshake names nobody (no name, a blank one) is written under the server's default,
+  `unknown-agent`, and until now that read exactly like a name a client announced, and like a client announcing that very
+  word. The run such a connection opens now carries a new kind, `run.unannounced` (`payload.handshake`: whether a handshake ran
+  at all), appended in the same append as its `run.started`, with the run as its subject and its `run`; it marks the run for
+  the key that signed it and no other ([`FORMAT.md`](packages/chain/FORMAT.md) §6.9). A name a client announced, the word
+  `unknown-agent` included, writes no mark and no new bytes, and neither does a write an agent key signs. `mnema show`, the
+  opening document, `mnema audit accountability` (and the `audit_accountability` tool, as `unannounced` beside each agent's
+  count) and the record page say *no name announced in an MCP handshake* beside such a name; `mnema verify` counts those facts
+  apart from the declared names, as `unannounced-which`, with a clause in its verdict line, and the second reader says the same
+  counts under §6.9. The published vectors are 39. A binary from before this kind refuses a record that holds one, by naming
+  the kind; it reads every record written by clients that announce a name.
+
 - **A recording of `verify` catching a changed word.** `recordings/a-tamper-caught.sh` records a decision, accepts it, runs
   `mnema verify` (green), changes one word of the decision in the record's own file with `sed`, and runs `verify` again: the
   verdict is `local integrity FAILED`, the issue is `entry hash mismatch` at the event, and the exit code is 1. The README's
