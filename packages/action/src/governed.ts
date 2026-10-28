@@ -20,6 +20,8 @@ export interface RuleHit {
 /** A changed file and the rules in force that address it, by what the rule does. */
 export interface GovernedFile {
   readonly path: string;
+  /** Set when the file is one end of a rename: says which end it is and where the other is. */
+  readonly rename?: string;
   readonly governs: readonly RuleHit[];
   readonly asks: readonly RuleHit[];
   readonly refuses: readonly RuleHit[];
@@ -55,6 +57,24 @@ function inForce(list: unknown): RuleHit[] {
     hits.push({ id: rule, name: typeof name === 'string' ? name : undefined });
   }
   return hits;
+}
+
+/**
+ * One file's rules from two readings of the record: every rule either reading has in force, once.
+ * A pull request can add a rule, and it can supersede one; only the first may change what judges
+ * it, so the reading at its base is never dropped for the one at its head.
+ */
+export function bothReadings(a: GovernedFile, b: GovernedFile): GovernedFile {
+  const once = (x: readonly RuleHit[], y: readonly RuleHit[]): RuleHit[] => [
+    ...x,
+    ...y.filter((hit) => !x.some((seen) => seen.id === hit.id)),
+  ];
+  return {
+    ...a,
+    governs: once(a.governs, b.governs),
+    asks: once(a.asks, b.asks),
+    refuses: once(a.refuses, b.refuses),
+  };
 }
 
 /** Whether a file is addressed by anything in force at all. */
