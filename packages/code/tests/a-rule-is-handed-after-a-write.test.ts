@@ -104,6 +104,18 @@ function afterAWrite(host: BesideHost, relative: string, session?: string): stri
   }
 }
 
+/**
+ * The same payload with a body far larger than a pipe holds, so that a `mnema` which answers without
+ * reading its stdin is answered by a broken pipe EVERY time, not on the runs where the hook is slow to
+ * write. A real `mnema` reads its whole input first; a stub that does not must say so, with `cat`.
+ */
+function heavy(payload: string): string {
+  const parsed = JSON.parse(payload) as { tool_input: Record<string, string> };
+  const key = 'file_text' in parsed.tool_input ? 'file_text' : 'content';
+  parsed.tool_input[key] = 'x'.repeat(1 << 20);
+  return JSON.stringify(parsed);
+}
+
 function publicEvents(): CatalogEvent[] {
   return orderedEvents(
     { root: resolveTrees(repo, env).projectPublic as string },
@@ -415,7 +427,7 @@ describe('the hooks that call the verb', () => {
         cwd,
         env: { HOME: join(sandbox, 'home'), PATH: `${bin}:${process.env.PATH ?? ''}` },
         encoding: 'utf-8',
-        input: afterAWrite('copilot', 'src/other/a.ts', 's1'),
+        input: heavy(afterAWrite('copilot', 'src/other/a.ts', 's1')),
       });
     // No rule has an address in the bare project: nothing starts, nothing is said.
     const none = asked(bare);
@@ -449,7 +461,7 @@ describe('the hooks that call the verb', () => {
         cwd,
         env: { HOME: join(sandbox, 'home'), PATH: `${bin}:${process.env.PATH ?? ''}` },
         encoding: 'utf-8',
-        input: afterAWrite('gemini', relative, 's1').replaceAll(repo, cwd),
+        input: heavy(afterAWrite('gemini', relative, 's1')).replaceAll(repo, cwd),
       });
     // No rule has an address in the bare project: no process of mnema, not even `--identify`.
     expect(asked(bare, 'src/other/a.ts').stdout).toBe('');
