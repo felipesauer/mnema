@@ -202,6 +202,11 @@ export interface AuthorshipTally {
   /** The key that signed these facts. */
   readonly signer: string;
   readonly count: number;
+  /**
+   * True when these facts belong to a run their own key marked `run.unannounced` (FORMAT.md
+   * section 6.9): their `which` is a default no MCP client announced. ABSENT otherwise.
+   */
+  readonly unannounced?: true;
 }
 
 /** The `refs` row shape as SQLite hands it back. */
@@ -386,18 +391,27 @@ export function tallyAuthorship(
     conditions.push('which = @which');
     params.which = filter.which;
   }
+  // Whether a fact belongs to a run its own key marked (FORMAT.md section 6.9): asked only of a
+  // tree that holds a mark, so a record with none pays for nothing it does not have.
+  const unannounced = hasUnannouncedRuns(db)
+    ? `(signer || char(0) || COALESCE(json_extract(event, '$.run'),
+          CASE WHEN kind IN ('run.started', 'run.unannounced') THEN subject END))
+        IN (SELECT signer || char(0) || entity FROM refs
+             WHERE role = 'subject' AND kind = 'run.unannounced')`
+    : '0';
   const rows = db
     .prepare(
-      `SELECT who, kind, which, signer, COUNT(*) AS count
+      `SELECT who, kind, which, signer, ${unannounced} AS unannounced, COUNT(*) AS count
          FROM refs
         WHERE ${conditions.join(' AND ')}
-        GROUP BY who, kind, which, signer`,
+        GROUP BY who, kind, which, signer, unannounced`,
     )
     .all(params) as Array<{
     who: string;
     kind: string;
     which: string | null;
     signer: string;
+    unannounced: number | null;
     count: number;
   }>;
   return rows.map((row) => ({
@@ -406,7 +420,30 @@ export function tallyAuthorship(
     which: row.which,
     signer: row.signer,
     count: row.count,
+    ...(row.unannounced === 1 ? { unannounced: true as const } : {}),
   }));
+}
+
+/** Whether this tree holds any `run.unannounced` (FORMAT.md section 6.9). */
+function hasUnannouncedRuns(db: SqliteDatabase): boolean {
+  return (
+    db
+      .prepare(`SELECT 1 FROM refs WHERE role = 'subject' AND kind = 'run.unannounced' LIMIT 1`)
+      .get() !== undefined
+  );
+}
+
+/**
+ * The runs this tree's `run.unannounced` facts mark, each as the key that signed the mark and the
+ * run it names: what {@link isUnannounced} (`@mnema/chain`) is asked against.
+ */
+export function listUnannouncedRuns(
+  db: SqliteDatabase,
+): { readonly signerFp: string; readonly run: string }[] {
+  const rows = db
+    .prepare(`SELECT signer, entity FROM refs WHERE role = 'subject' AND kind = 'run.unannounced'`)
+    .all() as Array<{ signer: string; entity: string }>;
+  return rows.map((row) => ({ signerFp: row.signer, run: row.entity }));
 }
 
 /**

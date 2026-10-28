@@ -1264,7 +1264,13 @@ describe('the two readers agree on records the product itself wrote: an agent', 
     commitPublicKey(b);
     const run = (id: string, when: number, signer: KeyPair = a): CatalogEvent =>
       runStarted(
-        { at: at(when), who: anchor, signerFp: signer.fingerprint, subject: id, which: 'unknown-agent' },
+        {
+          at: at(when),
+          who: anchor,
+          signerFp: signer.fingerprint,
+          subject: id,
+          which: 'unknown-agent',
+        },
         { agent: 'unknown-agent' },
       );
     const mark = (id: string, when: number, signer: KeyPair = a): CatalogEvent =>

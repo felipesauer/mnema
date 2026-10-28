@@ -18,6 +18,7 @@ import {
   listTails,
   projectionCachePath,
   type UpcasterRegistry,
+  unannouncedRunsOf,
 } from '@mnema/chain';
 import { dropProjections, ensureSchema } from '../db/schema.js';
 import { IN_MEMORY, inTransaction, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
@@ -73,6 +74,7 @@ import {
   listChargesAt,
   listReferences,
   listSubjectRuns,
+  listUnannouncedRuns,
   type ReferenceDirection,
   type ReferenceEdgeRow,
   type ReferenceRow,
@@ -899,6 +901,15 @@ export class ProjectionCache {
    */
   subjectRuns(kind: EventKind): SubjectRun[] {
     return listSubjectRuns(this.db, kind);
+  }
+
+  /**
+   * The runs this tree marks `run.unannounced`, each for the key that signed the mark (FORMAT.md
+   * section 6.9): what `isUnannounced` (`@mnema/chain`) asks of a fact. Empty for a tree with no
+   * mark, which is every tree a client that announced its name wrote.
+   */
+  unannouncedRuns(): ReadonlySet<string> {
+    return unannouncedRunsOf(listUnannouncedRuns(this.db));
   }
 
   /**

@@ -319,8 +319,8 @@ export type { Envelope, Which, Who } from './events/envelope.js';
 export { EventParseError, parseEvent, toCanonical, unreadableReason } from './events/parse.js';
 export { PROOF_FIELDS, proofFields, transitionProse } from './events/proof.js';
 export { catalogUpcasters } from './events/registry.js';
-export { isUnannounced, unannouncedRuns, unannouncedRunsOf } from './events/unannounced.js';
 export { mayRetract } from './events/retraction.js';
+export { isUnannounced, unannouncedRuns, unannouncedRunsOf } from './events/unannounced.js';
 export {
   contractNotHeldIn,
   type LatestVersions,

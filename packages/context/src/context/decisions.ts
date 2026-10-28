@@ -69,6 +69,7 @@
  * see the same events for it.
  */
 
+import { isUnannounced } from '@mnema/chain';
 import {
   DECISION_STATES,
   type DecisionProjection,
@@ -177,6 +178,11 @@ export interface Acceptance {
    */
   readonly by: string;
   readonly agent?: string;
+  /**
+   * True when the acceptance belongs to a run its own key marked `run.unannounced` (FORMAT.md
+   * section 6.9): `agent` is a default no MCP client announced in a handshake. ABSENT otherwise.
+   */
+  readonly unannounced?: true;
   readonly unconfirmed: boolean;
 }
 
@@ -388,7 +394,30 @@ export function decisionsAwaitingJudgement(
  */
 export function acceptances(caches: readonly ProjectionCache[]): Map<string, Acceptance> {
   const all: DecisionProjection[] = [];
-  for (const cache of caches) all.push(...cache.listDecisions());
+  // The decisions whose acceptance a marked run carried (FORMAT.md section 6.9), asked only of a
+  // tree that holds a mark: the accepting event is read off the index for those trees alone.
+  const unannounced = new Set<string>();
+  for (const cache of caches) {
+    const decisions = cache.listDecisions();
+    all.push(...decisions);
+    const marked = cache.unannouncedRuns();
+    if (marked.size === 0) continue;
+    for (const decision of decisions) {
+      if (decision.acceptedBy?.which === undefined) continue;
+      const accepting = cache
+        .references(decision.id)
+        .filter(
+          (row) =>
+            row.role === 'subject' &&
+            row.event.kind === 'decision.transitioned' &&
+            row.event.payload.to === 'accepted',
+        )
+        .at(-1);
+      if (accepting !== undefined && isUnannounced(accepting.event, marked)) {
+        unannounced.add(decision.id);
+      }
+    }
+  }
 
   const confirmed = new Set<string>();
   for (const decision of all) {
@@ -412,6 +441,7 @@ export function acceptances(caches: readonly ProjectionCache[]): Map<string, Acc
     result.set(decision.id, {
       by: labels.get(accepted.who) ?? accepted.who,
       ...(accepted.which !== undefined ? { agent: accepted.which } : {}),
+      ...(unannounced.has(decision.id) ? { unannounced: true as const } : {}),
       unconfirmed: somebodyToAsk && !confirmed.has(accepted.who),
     });
   }

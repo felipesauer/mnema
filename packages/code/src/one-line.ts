@@ -41,3 +41,10 @@ export { neutralized, oneLine } from '@mnema/chain/one-line';
  * thing, and then a reader would have to learn which of them means what.
  */
 export const A_PERSON = 'a person';
+
+/**
+ * What a reading says beside an agent name that no MCP client announced: the run that carried
+ * the act was marked `run.unannounced` (FORMAT.md section 6.9), so the name is the server's
+ * default, and not a name the client gave. Written once, for every reading that names an agent.
+ */
+export const NO_NAME_ANNOUNCED = 'no name announced in an MCP handshake';

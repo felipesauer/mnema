@@ -57,6 +57,7 @@
  * open the trees that are left, and the other three still stop.
  */
 
+import { isUnannounced } from '@mnema/chain';
 import { consultationsByRun, type RecordBody, readRecord, type ScopedCache } from '@mnema/context';
 import { type DiscoveryEnv, type DivergentMove, resolveTrees, type Scope } from '@mnema/core';
 import { type AnchorForms, anchorForms, NO_ANCHORS } from '../anchors.js';
@@ -93,6 +94,12 @@ export interface ShowDone {
    * key wrote (declared). Present only for a decision that has one.
    */
   readonly attested?: { readonly recordedBy?: true; readonly acceptedBy?: true };
+  /**
+   * Which of a decision's two actors carried a name no MCP client announced: the run of the event
+   * was marked `run.unannounced` by the key that signed it (FORMAT.md section 6.9). Present only
+   * for a decision that has one.
+   */
+  readonly unannounced?: { readonly recordedBy?: true; readonly acceptedBy?: true };
   /**
    * The tails among those read that do not chain: empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
@@ -162,6 +169,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
     if (found.kind !== 'memory' && found.kind !== 'skill') {
       const anchors = found.kind === 'decision' ? anchorForms(opened) : NO_ANCHORS;
       const attested = holder === undefined ? {} : attestedActors(holder, found);
+      const unannounced = holder === undefined ? {} : unannouncedActors(holder, found);
       // OVER THE TREES THIS READ ACTUALLY OPENED, which here is fewer than all of them:
       // this verb stops at the first tree holding the id. That is the right answer and
       // not a shortfall: the notice is about the record the answer came off, and a tail
@@ -173,6 +181,9 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         linkBreaks: linkBreaksOf(opened, THE_READING_THAT_OPENED_THESE),
         divergent,
         ...(attested.recordedBy === true || attested.acceptedBy === true ? { attested } : {}),
+        ...(unannounced.recordedBy === true || unannounced.acceptedBy === true
+          ? { unannounced }
+          : {}),
       };
     }
     // The two kinds whose answer is about the whole record and not about one tree.
@@ -188,6 +199,33 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         : {}),
     };
   });
+}
+
+/**
+ * The actors of a decision whose run the key that signed it marked `run.unannounced` (FORMAT.md
+ * section 6.9): the event that recorded it, and the event that ruled it accepted (the latest).
+ * It reads the envelopes of the events this tree already indexes, and only in a tree with a mark.
+ */
+function unannouncedActors(
+  holder: ScopedCache,
+  body: RecordBody,
+): { recordedBy?: true; acceptedBy?: true } {
+  if (body.kind !== 'decision') return {};
+  const marked = holder.cache.unannouncedRuns();
+  if (marked.size === 0) return {};
+  const rows = holder.cache.references(body.id).filter((row) => row.role === 'subject');
+  const recorded = rows.find((row) => row.kind === 'decision.recorded');
+  const accepted = rows
+    .filter(
+      (row) => row.event.kind === 'decision.transitioned' && row.event.payload.to === 'accepted',
+    )
+    .at(-1);
+  const of = (row: (typeof rows)[number] | undefined): boolean =>
+    row !== undefined && isUnannounced(row.event, marked);
+  return {
+    ...(of(recorded) ? { recordedBy: true as const } : {}),
+    ...(of(accepted) ? { acceptedBy: true as const } : {}),
+  };
 }
 
 /**

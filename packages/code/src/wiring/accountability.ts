@@ -11,6 +11,7 @@
  */
 
 import type { Command } from 'commander';
+import { NO_NAME_ANNOUNCED } from '../one-line.js';
 import { itemLine } from '../presentation/items.js';
 import { windowGloss, windowHelp } from '../vocabulary.js';
 import { here } from './context.js';
@@ -100,6 +101,14 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
                 ...account.byWhich
                   .filter((one) => one.which !== null && one.attested !== undefined)
                   .map((one) => onOneLine`${one.which} ${one.count} (${one.attested} attested)`),
+                // And the agent names no MCP client announced (FORMAT.md section 6.9), how many of
+                // their facts: `unknown-agent 3 (3 with no name announced in an MCP handshake)`.
+                ...account.byWhich
+                  .filter((one) => one.which !== null && one.unannounced !== undefined)
+                  .map(
+                    (one) =>
+                      onOneLine`${one.which} ${one.count} (${one.unannounced} with ${NO_NAME_ANNOUNCED})`,
+                  ),
                 ...founded,
               ]),
             ),
