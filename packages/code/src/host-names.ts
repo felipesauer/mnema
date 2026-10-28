@@ -73,10 +73,28 @@ export type Place =
     }
   | { readonly held: 'not ported' };
 
+/**
+ * How a host gets mnema, in the line a table carries: a command or two (`commands`), or, for a host
+ * that has no one-line command, the few words that say what it takes (`words`). Either way, `at` is
+ * the anchor of the host's section in `docs/hosts.md`.
+ */
+export type Install =
+  | { readonly at: string; readonly commands: readonly string[] }
+  | { readonly at: string; readonly words: string };
+
 /** One host: its name on a page, how the plugin's hook before a write reaches it, and its cells. */
 export interface Host {
   /** The host's name as the pages write it. */
   readonly title: string;
+  /**
+   * How the host gets the plugin, as the one line the install page's table carries for it and the
+   * section of `docs/hosts.md` it links to. `at` is the anchor of that section. A host with a
+   * one-line command says it in `commands`, and each one is written, letter for letter, in a
+   * fenced block of that section (`tests/the-install-line-of-a-host-is-what-its-section-says.test.ts`);
+   * a host without one says in `words` what it takes instead, and a command in backticks there is
+   * one the section also names. A host without an `install` does not compile.
+   */
+  readonly install: Install;
   /**
    * How the plugin's hook before a write reaches it: a call into the server (`mcp_tool`), a
    * process (`command`), or no hook of the plugin's at all.
@@ -238,6 +256,13 @@ const NOT_PORTED: Place = { held: 'not ported' };
 export const HOSTS = {
   claude: {
     title: 'Claude Code',
+    install: {
+      at: 'claude-code',
+      commands: [
+        'claude plugin marketplace add felipesauer/mnema',
+        'claude plugin install mnema@mnema',
+      ],
+    },
     door: 'mcp_tool',
     subagentStop: { does: true, held: 'a test', by: HELD.claudeHandback },
     afterAQuestion: { does: true, held: 'a test', by: HELD.claudeSettled },
@@ -256,6 +281,10 @@ export const HOSTS = {
   },
   vscode: {
     title: "VS Code's agent",
+    install: {
+      at: 'vs-code-and-cursor',
+      words: 'The Claude Code plugin, then `mnema doctor --fix vscode`',
+    },
     door: 'command',
     cells: {
       server: {
@@ -286,6 +315,10 @@ export const HOSTS = {
   },
   cursor: {
     title: "Cursor's command-line agent",
+    install: {
+      at: 'vs-code-and-cursor',
+      words: 'The Claude Code plugin, installed on the same machine',
+    },
     door: 'command',
     saysItIsTheHost: 'CURSOR_VERSION',
     cells: {
@@ -303,6 +336,10 @@ export const HOSTS = {
   },
   codex: {
     title: 'Codex',
+    install: {
+      at: 'codex',
+      commands: ['codex plugin marketplace add felipesauer/mnema', 'codex plugin add mnema@mnema'],
+    },
     door: 'command',
     // Codex reads the plugin through a manifest of its own (`.codex-plugin/plugin.json`) that
     // names this hooks file, so no other host runs its command and none of theirs runs in Codex,
@@ -373,6 +410,13 @@ export const HOSTS = {
   },
   copilot: {
     title: 'GitHub Copilot CLI',
+    install: {
+      at: 'github-copilot-cli',
+      commands: [
+        'copilot plugin marketplace add felipesauer/mnema',
+        'copilot plugin install mnema@mnema',
+      ],
+    },
     door: 'command',
     pushesAt: 'after',
     // Copilot CLI reads the plugin through a manifest of its own (`.github/plugin/plugin.json`,
@@ -445,6 +489,11 @@ export const HOSTS = {
   },
   opencode: {
     title: 'OpenCode',
+    install: {
+      at: 'opencode',
+      words:
+        'One file copied into `.opencode/plugins/`, and the server declared in `opencode.json`',
+    },
     door: 'command',
     // OpenCode reads no hooks file and no manifest of this plugin: its hook is code, a JavaScript
     // module it loads from `.opencode/plugins/`. The module is generated from this row
@@ -452,7 +501,7 @@ export const HOSTS = {
     hooksFile: 'opencode/mnema.js',
     note:
       'Its hook is a JavaScript module the person copies into `.opencode/plugins/` (see ' +
-      '`docs/install.md`), which runs `mnema` as a process: the refusal throws, and OpenCode hands ' +
+      '`docs/hosts.md`), which runs `mnema` as a process: the refusal throws, and OpenCode hands ' +
       'the model the reason as the call’s error; the opening is added to the system prompt ' +
       'through `experimental.chat.system.transform`, a hook the host marks experimental, so the ' +
       'contract pins the version it was held on. The tools it writes through are `write` and ' +
@@ -501,6 +550,10 @@ export const HOSTS = {
   },
   gemini: {
     title: 'Gemini CLI',
+    install: {
+      at: 'gemini-cli',
+      commands: ['gemini extensions install /path/to/mnema/plugin/gemini'],
+    },
     door: 'command',
     pushesAt: 'after',
     // Gemini CLI reads no hooks file of this plugin's: it loads an extension, a folder with a
@@ -510,7 +563,7 @@ export const HOSTS = {
     hooksFile: 'gemini/hooks/hooks.json',
     note:
       'Its hooks come from an extension, a folder the person installs from a checkout of this ' +
-      'repository (see `docs/install.md`): the extension declares the server, and its hooks run ' +
+      'repository (see `docs/hosts.md`): the extension declares the server, and its hooks run ' +
       'one script that runs `mnema` as a process. The refusal answers `BeforeTool` on its two ' +
       'tools that write, `write_file` and `replace`, with a top-level `decision` of `deny` and ' +
       'its `reason`, which Gemini CLI hands the model as the call’s error; a file a shell command ' +
@@ -576,6 +629,7 @@ export const HOSTS = {
   },
   qwen: {
     title: 'Qwen Code',
+    install: { at: 'qwen-code', commands: ['qwen extensions install /path/to/mnema/plugin'] },
     door: 'command',
     // Qwen Code converts a Claude Code plugin it is told to install into an extension of its own
     // and loads that plugin's `hooks/hooks.json`, so it reads the file every other host that
@@ -585,7 +639,7 @@ export const HOSTS = {
     saysItIsTheHost: 'QWEN_PROJECT_DIR',
     note:
       'Qwen Code installs the Claude Code plugin of this repository as an extension, converted ' +
-      '(`qwen extensions install` on a checkout, see `docs/install.md`), and runs the plugin’s ' +
+      '(`qwen extensions install` on a checkout, see `docs/hosts.md`), and runs the plugin’s ' +
       'hooks file. It has no hook that calls into a server, so the entry that does is passed ' +
       'over, and the command of its own that this plugin ships for it runs only where ' +
       '`QWEN_PROJECT_DIR` is set, which Qwen Code sets for every hook and no other host this ' +
@@ -635,6 +689,10 @@ export const HOSTS = {
   },
   cursorIde: {
     title: "Cursor's editor",
+    install: {
+      at: 'any-other-host-with-an-mcp-client',
+      words: 'The server: the command `mnema` with the argument `mcp`',
+    },
     door: 'none',
     // The editor is a graphical application that needs an account, so no job runs it: what is
     // known of it above the first rung is read by a person from `plugin/captures/cursor-ide-script.md`,
@@ -675,6 +733,10 @@ export const HOSTS = {
   },
   antigravity: {
     title: "Antigravity's command line (`agy`)",
+    install: {
+      at: 'any-other-host-with-an-mcp-client',
+      words: 'The server: the command `mnema` with the argument `mcp`',
+    },
     door: 'none',
     // The binary is closed, installed by a script that downloads it from the vendor and updates
     // itself, under terms a person accepts by installing it, so no job runs it: what is known of it
@@ -729,6 +791,10 @@ export const HOSTS = {
   },
   droid: {
     title: 'Factory Droid',
+    install: {
+      at: 'any-other-host-with-an-mcp-client',
+      words: 'The server: the command `mnema` with the argument `mcp`',
+    },
     door: 'none',
     cells: {
       server: {
@@ -761,6 +827,10 @@ export const HOSTS = {
   },
   goose: {
     title: 'Goose',
+    install: {
+      at: 'any-other-host-with-an-mcp-client',
+      words: 'The server: the command `mnema` with the argument `mcp`',
+    },
     door: 'none',
     cells: {
       server: {

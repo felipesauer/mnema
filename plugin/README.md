@@ -4,7 +4,7 @@ The plugin is written for Claude Code, and the same folder carries what each of 
 in its own form: VS Code's agent and Cursor's command-line agent read it as it is, Codex and GitHub
 Copilot CLI read manifests and hooks files of their own here, OpenCode and Gemini CLI get a
 module and an extension from it, and Qwen Code converts the plugin itself into an extension of its own. How far each host goes is [its rung](../docs/evidence.md#each-hosts-rung),
-and how to install each is [the install page](../docs/install.md). This page describes Claude Code's
+and how to install each is in [Hosts](../docs/hosts.md). This page describes Claude Code's
 and says where the others part from it.
 
 One installation, both surfaces. When a session opens, the project's **committed**

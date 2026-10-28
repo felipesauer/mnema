@@ -5,7 +5,7 @@ in the repository, it reaches the agent before it writes, and anyone can check i
 in Claude Code a session is handed the record as it opens and the rules for a file
 at each edit, and in the other hosts with a plugin (VS Code, Cursor's command-line agent,
 Codex, Copilot CLI, Gemini CLI, Qwen Code and OpenCode) it is handed the opening; how far each host goes is
-[its rung](evidence.md#each-hosts-rung), and how to install it is in [Install](install.md).
+[its rung](evidence.md#each-hosts-rung), and how to install it is in [Hosts](hosts.md).
 
 ```mermaid
 flowchart LR
