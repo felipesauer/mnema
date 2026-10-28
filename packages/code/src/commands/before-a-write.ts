@@ -74,7 +74,7 @@ import {
 import { anchorsBefore, foundingsSince, treesOf } from '../a-new-identity.js';
 import { editRulesToldAcross, readThePush, type ThePush } from '../edit-rules-push.js';
 import { asksAPerson, pathsOfAWrite, replyFor } from '../host-hook.js';
-import { does, type HookHost, hookTextOf } from '../host-names.js';
+import { type HookHost, hookTextOf, pushesWithTheGate } from '../host-names.js';
 import { withInheritedSource } from '../inherited-record.js';
 import { recordTrees } from '../intelligence-source.js';
 import type { HookSaid } from '../mcp/hook-reply.js';
@@ -160,7 +160,7 @@ export function runBeforeAWrite(
     reply: (said) => replyFor(input.host, said),
     // THE HOSTS THAT TAKE THE PUSH (their `pushes` cell says yes) are handed the rules beside a
     // write that goes through, under the id of the session the host gave the hook.
-    ...(does(input.host, 'pushes')
+    ...(pushesWithTheGate(input.host)
       ? { push: { session: sessionIdOf((payload as Record<string, unknown>)['session_id']) } }
       : {}),
   });
@@ -189,7 +189,7 @@ export function runBeforeAPath(ctx: BeforeAWriteContext, input: APathAsked): Bef
 }
 
 /** What {@link runBeforeAPath} is asked. */
-interface APathAsked {
+export interface APathAsked {
   readonly which: string;
   readonly paths: readonly string[];
   readonly asks: boolean;
@@ -200,9 +200,11 @@ interface APathAsked {
    * Present where the caller takes the rules of the record beside a write that goes through
    * (`pushes` in the host table), with the id of the session the host gave the hook, or none: the
    * service of the push is remembered per session (`takeTheFirstServing`), so a payload with no id
-   * is pushed nothing.
+   * is pushed nothing. `only` is a caller that runs AFTER the write (`beside-a-write`): the gate is
+   * not asked at all, so nothing is refused, asked or recorded as charged, and only the rules and
+   * the service of the push are read and recorded.
    */
-  readonly push?: { readonly session: string | undefined };
+  readonly push?: { readonly session: string | undefined; readonly only?: true };
 }
 
 function whatAPathMeets(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWriteDone {
@@ -223,7 +225,10 @@ function whatAPathMeets(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWri
     // THE RECORD THIS PROJECT INHERITS is read beside its own: a rule of it that refuses or asks at
     // the path applies here as the project's would, and says where it comes from.
     const read = withInheritedSource(trees, sources, (all) => {
-      const found = whatAWriteMeets(all, { paths, root, from: ctx.cwd });
+      const found =
+        input.push?.only === true
+          ? undefined
+          : whatAWriteMeets(all, { paths, root, from: ctx.cwd });
       // WHERE THE HOST DOES NOT ASK, AN ASKING IS NOT ONE: the write would go through, and the
       // record would say a person was asked.
       const gate =

@@ -431,6 +431,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The before-a-write verb's wiring, reading a host's payload through the standard-input port; a-host-that-runs-commands-asks-for-a-person.test.ts runs it through the binary with a payload and through the plugin's own command, and every-verb-says-if-it-writes.test.ts exercises it in process.",
   },
+  'packages/code/src/wiring/beside-a-write.ts': {
+    reached: 'nobody imports it',
+    why: "The beside-a-write verb's wiring, reading a host's payload through the standard-input port; a-rule-is-handed-after-a-write.test.ts runs it through the binary with a payload, in four processes at once, and refuses it for a host that does not run it after a write.",
+  },
   'packages/code/src/wiring/brief.ts': {
     reached: 'nobody imports it',
     why: 'The option-less brief registration and its switched-off sentence; the brief cases all assert the document presentation/brief.ts renders, and the switch test is about the switch.',
@@ -663,7 +667,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 49,
+  wiring: 50,
   presentation: 8,
   projections: 3,
   completion: 4,
@@ -1013,6 +1017,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-retired-agent-key-without-a-tail-is-called-retired.test.ts': 7,
   'packages/code/tests/a-routed-write-says-where-it-landed.test.ts': 11,
   'packages/code/tests/a-rule-carries-its-check.test.ts': 10,
+  'packages/code/tests/a-rule-is-handed-after-a-write.test.ts': 14,
   'packages/code/tests/a-rule-is-pushed-beside-a-write.test.ts': 17,
   'packages/code/tests/a-rule-says-who-ruled-it.test.ts': 11,
   'packages/code/tests/a-rule-that-refuses-a-write.test.ts': 17,
@@ -1628,6 +1633,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/aging.ts',
   'packages/code/src/commands/antipatterns.ts',
   'packages/code/src/commands/before-a-write.ts',
+  'packages/code/src/commands/beside-a-write.ts',
   'packages/code/src/commands/brief.ts',
   'packages/code/src/commands/check.ts',
   'packages/code/src/commands/commit-hook.ts',
@@ -1858,6 +1864,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/antipatterns.ts',
   'packages/code/src/wiring/audit.ts',
   'packages/code/src/wiring/before-a-write.ts',
+  'packages/code/src/wiring/beside-a-write.ts',
   'packages/code/src/wiring/body-source.ts',
   'packages/code/src/wiring/brief.ts',
   'packages/code/src/wiring/check.ts',
@@ -2130,8 +2137,9 @@ describe('every file has a test that names it', () => {
     // 81 once the search store's test names materializeDecisions.
     // 80 once the session journal's test names the host-transcript reader.
     // 79 once the inherited rule's test asserts on the governance page's rows.
-    expect(found.size).toBe(79);
-    expect(byReach('nobody imports it')).toBe(79);
+    // 80 with the beside-a-write verb's wiring, which a-rule-is-handed-after-a-write drives through the built binary.
+    expect(found.size).toBe(80);
+    expect(byReach('nobody imports it')).toBe(80);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2153,7 +2161,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(79);
+    expect(reasons).toHaveLength(80);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

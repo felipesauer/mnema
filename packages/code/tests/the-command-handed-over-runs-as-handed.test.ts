@@ -715,7 +715,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 69, name: 130, flag: 4 },
+  'CHANGELOG.md': { line: 71, name: 130, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
@@ -740,7 +740,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 116, name: 143, flag: 2 },
+  'docs/cli-reference.md': { line: 117, name: 143, flag: 2 },
   'packages/code/README.md': { line: 8, name: 14 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
@@ -784,6 +784,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/what-a-write-meets.ts': { line: 1 },
   'packages/code/src/wiring/after-a-write.ts': { line: 1 },
   'packages/code/src/wiring/before-a-write.ts': { line: 4 },
+  'packages/code/src/wiring/beside-a-write.ts': { line: 2 },
   'packages/code/src/wiring/brief.ts': { line: 4, name: 6 },
   'packages/code/src/wiring/completion.ts': { line: 3 },
   'packages/code/src/wiring/corrections.ts': { line: 1 },
@@ -834,7 +835,7 @@ export const HANDED_OVER: Readonly<
   'packages/vscode/src/decision.ts': { line: 1 },
   'packages/vscode/src/stacks.ts': { line: 1 },
   'packages/vscode/src/why.ts': { line: 1 },
-  'plugin/README.md': { line: 40, name: 26, flag: 1 },
+  'plugin/README.md': { line: 42, name: 26, flag: 1 },
   'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },
   'plugin/captures/cursor-ide-script.md': { line: 4, name: 2 },
   'plugin/captures/cursor-script.md': { line: 3, name: 3 },

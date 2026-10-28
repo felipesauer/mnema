@@ -74,6 +74,14 @@ A host with no session id is handed nothing: the fact is what separates a push t
 plugin that was never installed. Codex, Qwen Code and OpenCode are the three that have it; a case of
 [where a rule arrives](../docs/rule-arrival.md) is what turns the cell to yes.
 
+A host whose command before a write has no field for text, but which has a hook that runs once the
+tool is done and whose reply is appended to the tool's result, takes them from that one: the row says
+`pushesAt: 'after'`, and its hook runs the verb `beside-a-write`
+([`edit-rules-beside.mjs`](hooks/edit-rules-beside.mjs), or the host's own script), which composes the
+same text and remembers the service the same way but never refuses, asks or records a charge, because
+the write it follows was already charged. Copilot CLI and Gemini CLI are the two that have it. Its
+reply is the host's own shape, written in `replyBeside` of `host-hook.ts`.
+
 A host that cannot be told to ask must not be answered as if it had asked: a recorded asking for a
 write nobody paused is the record reading backwards. That is why Cursor is answered a refusal and
 nothing else.

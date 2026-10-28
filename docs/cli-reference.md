@@ -112,7 +112,10 @@ CLI and the MCP tools behave identically, because they are the same call.
   a write and, where the write goes through, hands over the rules addressed at the paths it touches
   (`mnema before-a-write --host qwen`); Codex and OpenCode run the same verb under their own names and
   answer those same two things, recording that the rules were handed over once for each session of the
-  host. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
+  host. Copilot CLI and Gemini CLI, whose hook before a write has no field for text, hand over the same
+  rules from the hook that runs after it (`mnema beside-a-write --host copilot` or `gemini`): it asks
+  the record what `before-a-write` asks and records the same one `channel.served` per session, but it
+  never refuses or asks and records no refusal or asking. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
   the last response, it prints one line saying how many files they wrote and how
   many decisions were recorded in the project since the session opened, counted off the
   transcript the host names and off the record: no model is called and nothing is

@@ -402,10 +402,13 @@ function textOf(verb, cwd, handed) {
  * @param {readonly string[]} argv The verb and its flags.
  * @param {string} cwd Where to run it.
  * @param {string} input What the host handed this hook.
+ * @param {number | undefined} [timeout] Milliseconds after which the verb is killed and the answer is
+ *   none, for a hook that runs after the work and is not worth stalling it past that (the host's own
+ *   kill comes later and reads the same).
  * @returns {string | null}
  */
-export function whatTheVerbAnswers(argv, cwd, input) {
-  return answerOf(ranTheVerb(argv, cwd, input));
+export function whatTheVerbAnswers(argv, cwd, input, timeout = undefined) {
+  return answerOf(ranTheVerb(argv, cwd, input, timeout));
 }
 
 /**

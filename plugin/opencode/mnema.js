@@ -441,9 +441,11 @@ const GATING = ['refuses-a-write', 'asks-for-a-person'];
  * @param {string} cwd Where the session is.
  * @param {Readonly<Record<string, string | undefined>>} env The host's environment.
  * @param {string} raw What the host handed the hook: JSON naming the tool and its input.
+ * @param {readonly string[]} [relations] The relations whose links count: by default the two that gate
+ *   a write; the rules handed beside one add `governs`.
  * @returns {boolean}
  */
-function aRuleReaches(cwd, env, raw) {
+function aRuleReaches(cwd, env, raw, relations = GATING) {
   try {
     const starts = [
       ...new Set([
@@ -460,7 +462,7 @@ function aRuleReaches(cwd, env, raw) {
     const standing = new Map();
     /** @type {Map<string, Standing>} */
     const rules = new Map();
-    for (const root of roots) readEdges(root, 0, standing, rules);
+    for (const root of roots) readEdges(root, 0, standing, rules, relations);
     // A rule that is not in force refuses nothing and asks for nobody, as the verb counts it.
     const addresses = [...standing.values()]
       .filter((edge) => inForce(rules.get(edge.rule)))
@@ -526,8 +528,9 @@ function inForce(rule) {
  * @param {number} depth
  * @param {Map<string, { rule: string, address: string }>} standing
  * @param {Map<string, Standing>} rules
+ * @param {readonly string[]} relations
  */
-function readEdges(root, depth, standing, rules) {
+function readEdges(root, depth, standing, rules, relations) {
   if (depth > REACH_DEEPEST) throw new Doubt('deeper than a tree goes');
   let entries;
   try {
@@ -541,7 +544,7 @@ function readEdges(root, depth, standing, rules) {
     const path = join(root, name);
     if (!isDirectory(path)) continue;
     if (name !== 'tails') {
-      readEdges(path, depth + 1, standing, rules);
+      readEdges(path, depth + 1, standing, rules, relations);
       continue;
     }
     for (const tail of readdirSync(path)) {
@@ -554,7 +557,7 @@ function readEdges(root, depth, standing, rules) {
             line.includes('"kind":"knowledge.linked"') ||
             line.includes('"kind":"link.retracted"')
           ) {
-            readEdge(line, standing);
+            readEdge(line, standing, relations);
           } else if (line.includes('.transitioned"')) {
             readMove(line, rules);
           }
@@ -585,13 +588,14 @@ function readMove(line, rules) {
 /**
  * @param {string} line
  * @param {Map<string, { rule: string, address: string }>} standing
+ * @param {readonly string[]} relations
  */
-function readEdge(line, standing) {
+function readEdge(line, standing, relations) {
   const { event } = JSON.parse(line);
   const { kind, payload, subject, who } = event;
   const key = `${who}\0${subject}\0${payload?.rel}\0${payload?.target}`;
   if (kind === 'link.retracted') standing.delete(key);
-  else if (kind === 'knowledge.linked' && GATING.includes(payload.rel)) {
+  else if (kind === 'knowledge.linked' && relations.includes(payload.rel)) {
     standing.set(key, { rule: String(subject), address: String(payload.target) });
   }
 }
