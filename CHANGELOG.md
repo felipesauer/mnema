@@ -230,7 +230,7 @@ with its own changelog.
 
 ### Fixed
 
-- **The Action reads the rules of a pull request's files in one process, not one process per file.** It asked `mnema rules` of the
+- **The Action reads the rules of a pull request's files in one process, not one process per file.** It asked the rules command of the
   head and of the base for each changed file, which started the binary twice per file: about 0.8 s a file, some 160 s for a
   pull request of two hundred. It now calls the function the command is made of, once per path, inside its own process; the
   answer is the value the command prints (a test sets the two side by side at the head and at the base), and the rules are
