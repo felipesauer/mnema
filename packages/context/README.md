@@ -138,7 +138,7 @@ layer makes no proof of its own; being clear about that is the point.
   authorized it, so an actor's runs are known. A task's projected state does not
   carry that identity, so the tasks an actor is working cannot yet be attributed
   to them. `focus` therefore scopes to the actor's runs, and `bootstrap`'s work
-  list is every live task of the caches it was given, not the actor's own. When
+  list is every live task of the caches it was given (bar the swept ones left out for their age, below), not the actor's own. When
   a later version ties a task to the actor, those views narrow with no change to
   their shape.
 - **An open run is not a live session, and nothing here claims otherwise.** The

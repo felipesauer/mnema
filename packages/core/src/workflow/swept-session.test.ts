@@ -27,6 +27,14 @@ describe('the task of a session nobody saw end', () => {
     );
   });
 
+  it('falls back to the block itself when the time in the reason is not a date', () => {
+    const said =
+      'reason: The session stopped with no end, so how it ended is unknown. It was last seen at garbage; 1 handoff was recorded in it.';
+    expect(lastSeenOfSweptTask('BLOCKED', [block(said, '2026-10-02T00:00:00.000Z')])).toBe(
+      '2026-10-02T00:00:00.000Z',
+    );
+  });
+
   it('is not a sweep when a person wrote the reason, or the task is not blocked now', () => {
     expect(
       lastSeenOfSweptTask('BLOCKED', [block('reason: waiting on the vendor')]),

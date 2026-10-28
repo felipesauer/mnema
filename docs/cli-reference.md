@@ -2143,7 +2143,10 @@ handed to other agents](#what-a-session-handed-to-other-agents)) and last seen m
 work list and of `workTotal`, and `workSweptLeftOut` (absent when none) counts them,
 which `mnema status` prints as one line. Nothing is written for them, they stay in the
 record, and `show`, `read_record` and `search` serve them whole. A task a person blocked
-is never cut this way, and neither is one whose block the sweep did not write.
+is never cut this way, and neither is one whose block the sweep did not write. The mark
+is the sentence of the reason, not who wrote it: a person who blocks a task by copying that
+sentence sees it leave the opening after 14 days, still counted in the line and still found
+by `search` and `show`.
 
 The `skills` tool is what makes a recorded pattern usable: `bootstrap` lists the
 patterns by name, and the tool hands over the pattern itself: the adopted ones as a

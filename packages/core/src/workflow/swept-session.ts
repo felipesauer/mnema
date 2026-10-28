@@ -37,7 +37,7 @@ export function sweptReason(handoffs: number, skipped: number, lastSeen: string)
  * When a task was last seen alive, if its CURRENT block is a sweep's: the last `block` the task went
  * through carries the sweep's reason. A task a person blocked, or blocked again after the sweep's block
  * was lifted, is not one, and neither is a task in any other state. The time falls back to the block's
- * own `at` when the reason has none that reads.
+ * own `at` when the reason has none that reads, a date that does not parse included.
  */
 export function lastSeenOfSweptTask(
   state: string,
@@ -48,5 +48,6 @@ export function lastSeenOfSweptTask(
   for (const one of proof ?? []) if (one.action === 'block') blocked = one;
   const line = blocked?.said.split('\n').find((said) => said.startsWith(REASON));
   if (blocked === undefined || line === undefined) return undefined;
-  return LAST_SEEN.exec(line)?.[1] ?? blocked.at;
+  const seen = LAST_SEEN.exec(line)?.[1];
+  return seen !== undefined && !Number.isNaN(Date.parse(seen)) ? seen : blocked.at;
 }

@@ -27,6 +27,15 @@ describe('status: the tasks a sweep blocked long ago', () => {
     );
   });
 
+  it('counts them under the live tasks too, when there are some', () => {
+    const work = [{ id: 'T-1', title: 'Live one', state: 'IN_PROGRESS' }];
+    const lines = said(opening({ work, workTotal: 1, workSweptLeftOut: 2 }));
+    expect(lines).toContain('1 live task(s):');
+    expect(lines).toContain(
+      '2 older task(s) blocked when a session stopped with no end are not listed; `mnema search` finds them.',
+    );
+  });
+
   it('says nothing about them when there are none', () => {
     expect(said(opening({})).join('\n')).not.toContain('older task');
   });
