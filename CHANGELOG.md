@@ -34,11 +34,28 @@ with its own changelog.
   in the host's own instructions file, behind an `@` import, behind a mention in prose, and in the mnema record, and with a
   control that keeps it nowhere. The moments are the start, late in a session of three calls (each host's own history is read,
   not supposed), after a compaction the stand-in provokes and answers with a summary that does not hold the rule, and at a
-  permitted edit. A cell that could not be measured says why: the Copilot CLI ends its run at the summary and Gemini CLI asks
-  for none in a one-prompt run. The cases take `files` in each host's spec to build the arms, and a script of several turns in
+  permitted edit. A cell that could not be measured says why: the Copilot CLI ends its run at the summary. Gemini CLI asks for no
+  summary in a one-prompt run, so its compaction is read in a second run that resumes the session (`--resume`). The cases take `files` in each host's spec to build the arms, and a script of several turns in
   the stand-in of each protocol. The result is `docs/rule-arrival.md`, generated from the table the cases hold and held to it by
   a test of the main suite; the control must never arrive. The cases run in each host's job, on the pinned version on every
   pull request and on the newest every week.
+
+- **The page that says where a rule arrives has its sentence per host generated from the same cells as its table.** What each host did
+  (where the rule arrived, at which moments, where it did not) is drawn by `renderTheProse` from the table the cases hold, between marks of
+  its own, and held to it by the test that holds the table; what a person writes per host is only the mechanism, which a test refuses to let
+  say whether a rule arrived. In Gemini CLI the cells after a compaction are now readings, from a second run that resumes the session
+  (`--resume latest`): the host compacts the restored conversation, and the request after the summary carries the rule where it is kept in
+  the instructions file, behind an `@` import and in the record, and not where it is in `AGENTS.md` or only mentioned, as at the start. The
+  reading is of a resumed session: the plugin's start runs again and its text is in the turn the compaction keeps.
+
+- **`FORMAT.md` section 4 lists `locks/`.** The directory a writer creates at the first append (the lock of each tail, the note of which
+  heads a tail last cited, the projection a reader keeps) was in the tree's `.gitignore` and nowhere in the layout of the document. It is
+  there now, as not part of the proof and never read by a reader, and a test founds a tree, writes to it and reads it, and requires every
+  entry at its root and in `locks/` to be named by the listing. Nothing about what a reader reads changes.
+
+- **`docs/cli-reference.md` has a table of the exit codes.** `0`, `1`, `2` (the `SubagentStop` hook only), `70` (an internal error) and `127`
+  (the plugin's launcher could not start `mnema`), each with who ends with it, held by a test that reads `70` from `INTERNAL_ERROR_EXIT`,
+  `1` from what `fail()` sets, and the others from the files that set them, and that refuses a literal exit in the source that the table omits.
 
 - **The VS Code extension has a "What To Do" pick, a "Why Is This File Like This?" command and a mark on the `.mnema` folder.**
   `mnema: What To Do` (the Command Palette, the `...` menu of the awaiting view, a link in the status bar's tooltip) is a quick pick
@@ -136,11 +153,21 @@ with its own changelog.
 
 ### Changed
 
+- **The top `ok` of `mnema verify --json` is the verdict on the record.** It said that the command ran and found a project, and it was
+  `true` over a record that was tampered with, so a script that read the first field took a broken record for a sound one. It is now the same
+  as `record.ok`: `false` over a broken record, and `false` where a set of paths covered no record. `requirementMet` still says whether
+  `--require` was reached, and the exit code is the one it always was. `docs/cli-reference.md` describes both fields in the section of `verify`.
+
+- **A build of the site sends no telemetry.** `site/package.json` sets `ASTRO_TELEMETRY_DISABLED=1` in front of `astro build` and the site
+  workflow's build step sets it in its `env`; a test refuses a script or a step that builds the site without it, and a workflow of any other
+  name that builds it.
+
 - **The README opens on the questions a record answers, and its Quick start reaches a rule in force and a green `verify` with no
   agent.** Under the headline, three questions (who decided this and why, what was turned down, has it changed since) come
   before the sentence about what mnema is. The Quick start's first block is the binary, the founding of the record, a decision recorded and
   accepted as `ADR-1`, the rule addressed at a path, and a check that the record is intact; the plugin is a second step, with the
   other hosts on the install page. A new test runs that block as written, through the built binary, in a sandbox.
+
 - **The install page says how to check the install and the package, and pins a version.** `mnema --version` and `mnema doctor`
   come first, then `npm i -g @mnema/code@x.y.z` with the number of the published version (`pnpm release:prepare` writes it, in
   that line and in the one below), then how to check the package: in an empty folder, `npm i --ignore-scripts @mnema/code@x.y.z`
@@ -149,6 +176,7 @@ with its own changelog.
   while an agent key exists. The VS Code extension's walkthrough, its empty views and its `mnema.command` setting said to
   install `@mnema/code` "from its source"; they say `npm i -g @mnema/code`, and the guard that kept that phrase out of the pages
   reads those two files too.
+
 - **The VS Code extension shows the mnema M in the status bar.** Wherever `mnema verify` was read, the item wears the M of the
   console's wordmark instead of a book or an info mark (the level, strong or weak, stays in the word beside it); a failed
   check keeps the editor's error icon and an unreadable answer its question mark, so a record that does not verify never wears the

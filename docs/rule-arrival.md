@@ -46,7 +46,12 @@ host's job red.
   a summary of the conversation, and the stand-in answers with a text of its own **that does not
   hold the rule**. What the next request carries of the rule is what the host or the product put
   back; the case proves that request is the compacted conversation by what it carries of the
-  summary and of the results.
+  summary and of the results. A `gemini -p` run has one turn of the person and its compression
+  finds nothing to compress before a second one, so for Gemini CLI the case takes a second run that
+  resumes the session (`--resume`): the host restores the conversation, compacts it, and what the
+  request after the summary carries includes what the resumed session's own start put in front of
+  the model again. That reading says nothing about a compaction in a session that was never resumed
+  ([the case](../packages/code/tests/host-contract/the-rule-arrives.gemini.test.ts)).
 - **At an edit**: a write that is permitted and that a rule only governs. The rule arrives if it
   is in the result of the write, or beside it: for the record, in what the host put in the
   conversation from the item of the call on (its output, and what a hook said for it), never in the
@@ -58,7 +63,8 @@ host's job red.
 
 The four words in a cell: **arrived**, **not arrived** (a reading was made and found nothing),
 **not applicable** and **not measured**, each of the last two with its reason in the note under the
-table.
+table. A reading that was made under a condition (Gemini CLI's after a compaction, in a resumed
+session) carries a note too.
 
 ## The table
 
@@ -123,14 +129,14 @@ table.
 
 | Where the rule is kept | start | late | after a compaction | at an edit |
 |---|---|---|---|---|
-| no rule anywhere (the control) | not arrived | not arrived | not measured (note 1) | not applicable (note 2) |
-| the rule in `AGENTS.md` | not arrived | not arrived | not measured (note 1) | not applicable (note 2) |
-| the rule in the host's own instructions file | arrived | arrived | not measured (note 1) | not applicable (note 2) |
-| the rule in a file the instructions file imports with `@` | arrived | arrived | not measured (note 1) | not applicable (note 2) |
-| the rule in a file the instructions file only mentions | not arrived (the mention did) | not arrived | not measured (note 1) | not applicable (note 2) |
-| the rule in the mnema record, addressed at a path | arrived | arrived | not measured (note 1) | not arrived |
+| no rule anywhere (the control) | not arrived | not arrived | not arrived (note 1) | not applicable (note 2) |
+| the rule in `AGENTS.md` | not arrived | not arrived | not arrived (note 1) | not applicable (note 2) |
+| the rule in the host's own instructions file | arrived | arrived | arrived (note 1) | not applicable (note 2) |
+| the rule in a file the instructions file imports with `@` | arrived | arrived | arrived (note 1) | not applicable (note 2) |
+| the rule in a file the instructions file only mentions | not arrived (the mention did) | not arrived | not arrived (note 1) | not applicable (note 2) |
+| the rule in the mnema record, addressed at a path | arrived | arrived | arrived (note 1) | not arrived |
 
-1. Not measured: in one `gemini -p` run the host asked for no summary although the usage it was told was a full window: where it splits the history to compress (`findCompressSplitPoint`, read in the bundle) there is nothing before a second turn of the person or a closing text of the model, which a run does not have until it ends; no request of a compacted conversation was seen
+1. Resumed: read in a second run that resumes the session (`--resume`), which starts the session again: it says nothing about a compaction in a session that was never resumed
 2. Not applicable: a file is read when the session opens and has no channel at a write; the late column says whether it is still in front of the model
 
 ### Qwen Code
@@ -150,29 +156,16 @@ table.
 
 ## What each host did
 
-- **Claude Code.** A rule in `AGENTS.md`, in `.claude/rules/` and behind an `@` import in
-  `CLAUDE.md` arrived at the start, late and after a compaction, in the block the host opens its
-  first message with; a rule that was only mentioned did not arrive although its mention did. The
-  record arrived in the output of the plugin's `SessionStart` hook, which runs again after a
-  compaction, and at the edit, beside the result of the write.
-- **Codex.** `AGENTS.md` arrived at the start, late and after a compaction. An `@` import was not
-  expanded: the rule behind it did not arrive. The record arrived at the start, late and after a
-  compaction, and at the edit: the hook that runs before the patch answers with the rules of the
-  path as context, and the host records it as an item of its own between the call and its output.
-  The command that answers is `mnema before-a-write --host codex`: it hands the rules over beside a
-  patch that goes through, and records that it did once per session of the host.
-- **OpenCode.** `AGENTS.md` arrived at the start, late and after a compaction, an `@` import did
-  not. The record arrived at the start, late and after a compaction, and at the edit: the plugin
-  module keeps what the gate answered for the call and appends it to the result of the write.
-- **GitHub Copilot CLI.** `AGENTS.md`, its own instructions file and an `@` import all arrived at
-  the start and late. The record arrived at the start and late, not at the edit. After a
-  compaction is not measured: see the note.
-- **Gemini CLI.** Only `GEMINI.md` and what it imports arrived; `AGENTS.md` did not, with the default settings (its
-  `context.fileName` can list it). The record arrived at the start and late, not at
-  the edit. After a compaction is not measured: see the note.
-- **Qwen Code.** `AGENTS.md`, `QWEN.md` and an `@` import arrived at every moment, as did the
-  record, at the edit too: the hook that runs before the write answers with the rules of the path
-  as context, and the host puts it in the result of the write.
+<!-- BEGIN the prose: generated from the table above by renderTheProse in the-arrival-table.ts, and held by the-arrival-page-is-the-table.test.ts. What a person writes per host is only the mechanism, in THE_MECHANISM there, and it may not say whether a rule arrived. -->
+
+- **Claude Code.** The rule in `AGENTS.md`, in the host's own instructions file and behind an `@` import arrived at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late, after a compaction and at an edit. The files are read into the block the host opens its first message with; the record is put there by the plugin's `SessionStart` hook, which runs again after a compaction, and by a hook that runs beside the result of a write.
+- **Codex.** The rule in `AGENTS.md` arrived at the start, late and after a compaction. The rule behind an `@` import did not arrive at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late, after a compaction and at an edit. An `@` import is not expanded by the host. At an edit, the hook that runs before the patch answers with the rules of the path as context, and the host records it as an item of its own between the call and its output.
+- **OpenCode.** The rule in `AGENTS.md` arrived at the start, late and after a compaction. The rule behind an `@` import did not arrive at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late, after a compaction and at an edit. An `@` import is not expanded by the host. At an edit, the plugin module keeps what the gate answered for the call and appends it to the result of the write.
+- **GitHub Copilot CLI.** The rule in `AGENTS.md`, in the host's own instructions file and behind an `@` import arrived at the start and late; was not measured after a compaction. The rule in a file that is only mentioned did not arrive at the start and late (the sentence that mentions the file did, at the start); was not measured after a compaction. The rule in the mnema record arrived at the start and late; did not arrive at an edit; was not measured after a compaction.
+- **Gemini CLI.** The rule in `AGENTS.md` did not arrive at the start, late and after a compaction. The rule in the host's own instructions file and behind an `@` import arrived at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late and after a compaction; did not arrive at an edit. `AGENTS.md` is not among the files it reads with the default settings (its `context.fileName` can list it). The cells after a compaction are read in a second run that resumes the session (`--resume`), which starts the session again.
+- **Qwen Code.** The rule in `AGENTS.md`, in the host's own instructions file and behind an `@` import arrived at the start, late and after a compaction. The rule in a file that is only mentioned did not arrive at the start, late and after a compaction (the sentence that mentions the file did, at the start). The rule in the mnema record arrived at the start, late, after a compaction and at an edit. At an edit, the hook that runs before the write answers with the rules of the path as context, and the host puts it in the result of the write.
+
+<!-- END the prose -->
 
 ## How it is held
 

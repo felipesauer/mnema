@@ -142,8 +142,11 @@ jobs:
         if: needs.plan.outputs.build == 'true'
         run: npm ci --ignore-scripts --no-audit --no-fund --prefix site
 
+      # Astro sends anonymous usage data unless told not to; a build of this repository sends none.
       - name: Build the site
         if: needs.plan.outputs.build == 'true'
+        env:
+          ASTRO_TELEMETRY_DISABLED: '1'
         run: npm run build --prefix site
 
       # The built pages against their sources, and the pages' links against each other. A missing build is a failure here.

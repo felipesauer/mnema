@@ -790,8 +790,12 @@ $ mnema verify --help
 |                          without it
 |   --json                 emit the verdict as JSON instead of prose: the whole
 |                          reading, per tree, plus what NO --require value
-|                          answers. The exit code is unchanged: this changes the
-|                          shape of the answer, never the answer
+|                          answers. The top "ok" is the verdict on the record, the
+|                          same as "record.ok": false over a broken record, and
+|                          false where no path covered a record. "requirementMet"
+|                          says whether --require was reached. The exit code is
+|                          unchanged: this changes the shape of the answer, never
+|                          the answer
 |   -h, --help             display help for command
 
 ### mnema witness --help
