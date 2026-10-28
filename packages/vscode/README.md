@@ -136,9 +136,10 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   reports them, and a hook is on only when a person, at a terminal, read its script and typed its
   name (`mnema stack enable <stack> <hook> --from <source>`). The extension has no command for it and says where it is done; the
   command line, started as the extension starts it, refuses with no terminal.
-- **The status bar.** The level `mnema verify --json` reports for the record, with a codicon that follows
-  it (a book for `fully-signed` and `externally-witnessed`, an info mark for a weaker level, an error
-  mark for a failure, a question mark for an answer it could not read; never a check mark or a seal),
+- **The status bar.** The level `mnema verify --json` reports for the record, with an icon that follows
+  it (the mnema M, drawn from the console's wordmark, wherever `verify` was read, whatever the level, which stays in the word beside it;
+  the editor's error mark for a failure, a question mark for an answer it could not read, a warning mark when the command is missing;
+  never a check mark or a seal),
   and, when decisions await a judgment, how many (`fully-signed · 2 to judge`, the same number as the
   badge). The text is short on purpose: nothing about the channels is in it. The tooltip, in markdown,
   has the level, a link to the container with the number awaiting, the lines `mnema verify` printed
@@ -206,7 +207,7 @@ code --install-extension packages/vscode/mnema-*.vsix
 ```
 
 `package` bundles the extension into one file, `extension.cjs`, with no database in it, and has `vsce`,
-the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 36 KB:
+the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 37 KB:
 the extension reads the record only through the `mnema` command line, so nothing native rides along
 and nothing is installed beside it. CI runs the same command, installs the file into a real VS Code
 four times (a folder with no `.mnema`, where it must not start on opening the folder and so must not run `mnema`;
@@ -232,6 +233,14 @@ The part worth testing has no editor in it. `rules.ts`, `proposed.ts`, `decision
 command line printed into what is shown, `record-mark.ts` says which folder wears the mark, `cli.ts` starts the command, and `extension.ts` wires them
 to the editor through a handed-in `vscode` module. The tests run `extension.ts` against a stand-in
 for that module; nothing downloads or starts an editor.
+
+The marks are not kept in the tree. `package` draws them from the first letter of the console's wordmark, so a letter
+changed there is a letter changed in all of them: the store icon (`icon.png`), the side bar's icon (`media/mnema.svg`, one
+monochrome path) and the font that gives the status bar its M (`media/mnema-icons.ttf`, one glyph at `U+E000`, which
+`contributes.icons` names `mnema-m`). The font is a TrueType file written with `node:` alone, the same bytes on every run; a
+font the editor's sanitizer refuses draws nothing and says nothing, so the check on the packed file refuses one without the
+tables the sanitizer asks for, and the check in a real editor finds the installed font and a bar whose text names it. That the editor then
+draws it is read by eye (the script for a person), not by a test.
 
 ## What it proves, and what it does not
 

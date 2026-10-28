@@ -135,16 +135,14 @@ export interface Bar {
   readonly command: typeof CONTAINER_COMMAND;
 }
 
-const STRONG = new Set(['fully-signed', 'externally-witnessed']);
-
-const iconFor = (verdict: Verdict): string =>
-  verdict.kind === 'verified'
-    ? STRONG.has(verdict.level)
-      ? 'book'
-      : 'info'
-    : verdict.kind === 'failed'
-      ? 'error'
-      : 'question';
+/**
+ * The icon of the bar for a reading. The M, the mark of mnema, only where `verify` was read: a
+ * record that failed or could not be read does not wear the mark as if it were ordinary, so those
+ * keep the editor's own error and question icons. `mnema-m` is the glyph of the font the manifest
+ * names in `contributes.icons`; the level, strong or weak, stays in the word beside it.
+ */
+export const iconFor = (verdict: Verdict): string =>
+  verdict.kind === 'verified' ? 'mnema-m' : verdict.kind === 'failed' ? 'error' : 'question';
 
 /**
  * Text that came from the command line or the record, made inert in markdown: every ASCII

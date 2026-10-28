@@ -119,6 +119,12 @@ with its own changelog.
 
 ### Changed
 
+- **The VS Code extension shows the mnema M in the status bar.** Wherever `mnema verify` was read, the item wears the M of the
+  console's wordmark instead of a book or an info mark (the level, strong or weak, stays in the word beside it); a failed
+  check keeps the editor's error icon and an unreadable answer its question mark, so a record that does not verify never wears the
+  mark as if it were ordinary. The M is a glyph of an icon font (`contributes.icons`, `mnema-m`) that `package` writes from the
+  wordmark's blocks with no new dependency, as it writes the side bar's SVG; the check on the packed file refuses a font without the
+  tables the editor's sanitizer asks for, and the check in a real editor finds the installed font and a bar whose text names it.
 - **The page `mnema site` writes checks its own lists against the events it verified.** The decisions, notes and timeline were
   written by the command and nothing in the browser looked at them, so a green verdict stood beside lists it did not cover. Now,
   once the verdict is `verified`, the page derives the lists again in the browser from the files it verified, with the same

@@ -1,7 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { RECORD_BADGE, RECORD_COLOR } from './record-mark.js';
+import { iconFor, type Verdict } from './status.js';
 
 interface Command {
   command: string;
@@ -30,6 +31,10 @@ interface Manifest {
       >;
     };
     colors?: { id: string; description: string; defaults: Record<string, string> }[];
+    icons?: Record<
+      string,
+      { description: string; default: { fontPath: string; fontCharacter: string } }
+    >;
     viewsContainers?: { activitybar?: { id: string; title: string; icon: string }[] };
     views: Record<string, { id: string; name: string }[]>;
     viewsWelcome: { view: string; contents: string; when: string }[];
@@ -56,6 +61,34 @@ const manifest = JSON.parse(
 const { commands, menus, views, viewsWelcome } = manifest.contributes;
 
 describe('the extension manifest', () => {
+  it('declares every icon of its own font that the code uses, and uses every one it declares', () => {
+    const declared = Object.keys(manifest.contributes.icons ?? {}).sort();
+    expect(declared).toEqual(['mnema-m']);
+    const verdicts: Verdict[] = [
+      { kind: 'verified', level: 'fully-signed' },
+      { kind: 'verified', level: 'externally-witnessed' },
+      { kind: 'verified', level: 'hash-chain-only' },
+      { kind: 'failed', level: 'broken' },
+      { kind: 'unreadable' },
+    ];
+    const used = new Set(verdicts.map(iconFor).filter((name) => name.startsWith('mnema-')));
+    const sources = readdirSync(new URL('.', import.meta.url)).filter(
+      (file) => file.endsWith('.ts') && !file.endsWith('.test.ts'),
+    );
+    for (const file of sources) {
+      const text = readFileSync(new URL(file, import.meta.url), 'utf8');
+      for (const [, name] of text.matchAll(/\$\((mnema-[a-z-]+)\)/g)) used.add(name ?? '');
+    }
+    expect([...used].sort()).toEqual(declared);
+    // The font is the one the packer draws, and the character is in the private use area.
+    const packer = readFileSync(new URL('../build/package-vsix.mjs', import.meta.url), 'utf8');
+    const icon = manifest.contributes.icons?.['mnema-m'];
+    expect(packer).toContain(`join(scratch, 'media', 'mnema-icons.ttf')`);
+    expect(icon?.default.fontPath).toBe('media/mnema-icons.ttf');
+    expect(icon?.default.fontCharacter).toBe('\\E000');
+    expect(icon?.description.length).toBeGreaterThan(0);
+  });
+
   it('reads the executable only from the user or machine settings, never from a repository', () => {
     expect(manifest.contributes.configuration.properties['mnema.command']?.scope).toBe('machine');
   });

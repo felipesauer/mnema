@@ -46,8 +46,10 @@ a finding, and a good capture.
    refresh: the document shows the new state.
 5. **The lens.** Open a file under an address a decision in force names: the lens above its first
    line says how many rules govern it, and clicking it opens the list; picking a rule opens that decision whole, without buttons.
-6. **The status bar on three themes.** Light, dark and high contrast. The icon and the text are
-   legible on each. The item never shows a check mark or a seal: only the level `mnema verify`
+6. **The status bar on three themes.** Light, dark and high contrast. The icon, the mnema M, and the
+   text are legible on each, at 100 and at 200 percent zoom: the M is ten pixels square at the editor's
+   16 pixel icon size, so look at it in high contrast in particular, where it must not vanish. With a
+   record that fails `mnema verify` the M gives way to the editor's error icon. The item never shows a check mark or a seal: only the level `mnema verify`
    printed, and `N to judge` when something awaits. Hover it: the tooltip is markdown, and the lines
    in its block are the ones `mnema verify` printed. Change one byte of a file in `.mnema/tails/` in a
    throwaway copy and refresh: the item takes the warning background of the theme and the tooltip

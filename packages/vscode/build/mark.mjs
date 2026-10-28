@@ -41,6 +41,37 @@ export const letterCells = (blocks) => {
   return cells;
 };
 
+/**
+ * The full blocks of each row of the first letter, the cells that touch fused into one run: the
+ * shapes both the side bar's SVG and the status bar's font fill, so the two cannot disagree about
+ * where the letter has ink. Each run is its first column, its row and how many columns it spans,
+ * in the wordmark's own cells, ordered by row and then by column.
+ * @param {readonly string[]} blocks
+ * @returns {{ column: number, row: number, columns: number }[]}
+ */
+export function letterRuns(blocks) {
+  const cells = letterCells(blocks);
+  const runs = [];
+  for (const row of [...new Set(cells.map(([, r]) => r))].sort((a, b) => a - b)) {
+    const inRow = cells
+      .filter(([, r]) => r === row)
+      .map(([c]) => c)
+      .sort((a, b) => a - b);
+    let start = inRow[0] ?? 0;
+    let previous = start;
+    for (const c of [...inRow.slice(1), Number.POSITIVE_INFINITY]) {
+      if (c === previous + 1) {
+        previous = c;
+        continue;
+      }
+      runs.push({ column: start, row, columns: previous - start + 1 });
+      start = c;
+      previous = c;
+    }
+  }
+  return runs;
+}
+
 /** One cell on the 24 by 24 grid of the side bar: the banner's cell is 12 by 24 (1:2), here 2 by 4. */
 const CELL_W = 2;
 const CELL_H = 4;
@@ -66,24 +97,9 @@ export function drawActivityIcon(blocks) {
   if (width > GRID || height > GRID) throw new Error('the letter does not fit the 24 pixel grid');
   const x0 = (GRID - width) / 2;
   const y0 = (GRID - height) / 2;
-  const runs = [];
-  for (const row of [...new Set(rows)].sort((a, b) => a - b)) {
-    const inRow = cells
-      .filter(([, r]) => r === row)
-      .map(([c]) => c)
-      .sort((a, b) => a - b);
-    let start = inRow[0] ?? 0;
-    let previous = start;
-    for (const c of [...inRow.slice(1), Number.POSITIVE_INFINITY]) {
-      if (c === previous + 1) {
-        previous = c;
-        continue;
-      }
-      const run = (previous - start + 1) * CELL_W;
-      runs.push(`M${x0 + (start - left) * CELL_W} ${y0 + (row - top) * CELL_H}h${run}v${CELL_H}h-${run}z`);
-      start = c;
-      previous = c;
-    }
-  }
+  const runs = letterRuns(blocks).map(({ column, row, columns: span }) => {
+    const run = span * CELL_W;
+    return `M${x0 + (column - left) * CELL_W} ${y0 + (row - top) * CELL_H}h${run}v${CELL_H}h-${run}z`;
+  });
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${GRID}" height="${GRID}" viewBox="0 0 ${GRID} ${GRID}"><path fill="currentColor" d="${runs.join('')}"/></svg>\n`;
 }
