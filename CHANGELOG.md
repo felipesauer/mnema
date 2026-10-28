@@ -105,8 +105,8 @@ with its own changelog.
 - **A decision is the text its first writer recorded, in every reader.** A second `decision.recorded` of an accepted
   decision's id, signed by any key (one of another identity its writer had founded itself included), replaced the
   decision's title, rationale, alternatives and author in `show`, `brief`, `search`, the rules a path is governed by and the
-  record page, while the decision stayed accepted on the note its first text was accepted with, and `mnema verify
-  --require=signed` and the second reader passed and named nothing. Every reader now applies the first writing in the
+  record page, while the decision stayed accepted on the note its first text was accepted with, and
+  `mnema verify --require=signed` and the second reader passed and named nothing. Every reader now applies the first writing in the
   merged order and none after it, whoever signed it (FORMAT.md §6.8), and both verifiers name each later writing in the census
   (`decision-rewrite`), informational, exit unchanged. The product mints a decision's id when it records it, so no record it
   wrote holds a second writing; a binary from before this serves the last one.

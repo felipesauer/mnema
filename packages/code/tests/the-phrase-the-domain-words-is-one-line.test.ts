@@ -1387,6 +1387,22 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the identity a stored retraction names as its signer',
     },
+  // --- @mnema/chain: a decision recorded again (FORMAT.md §6.8) ------------------
+  '@mnema/chain chain/verify.ts «a decision.recorded of {} signed by {}, » oneLine(event.subject) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the subject of a stored writing of a decision, the id it records again',
+    },
+  '@mnema/chain chain/verify.ts «a decision.recorded of {} signed by {}, » oneLine(event.who) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity a stored writing of a decision names as its signer',
+    },
+  '@mnema/chain chain/verify.ts «after the first writing of it (signed by {}): a decision is the text » oneLine(author) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the first stored writing of the decision names as its signer',
+    },
   // --- @mnema/chain: a move the workflow does not allow (FORMAT.md §6.7) ----------
   '@mnema/chain chain/verify.ts «a {} of {}: {}: » event.kind #1': {
     verdict: 'minted',
@@ -2212,6 +2228,8 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} writing(s) of a note by an identity that did not write it first, not applied (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} writing(s) of a decision after its first, not applied (see census: informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} retraction(s) by an identity that did not write the note, not applied (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} move(s) the workflow does not allow, not applied (see census: informational, not a break)» count':
@@ -2258,8 +2276,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(332);
-    expect(FOUND[0]?.sites.length).toBe(134);
+    expect(SITES.length).toBe(335);
+    expect(FOUND[0]?.sites.length).toBe(137);
     expect(FOUND[1]?.sites.length).toBe(198);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2310,11 +2328,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(226);
+    expect(count('collapsed')).toBe(229);
     expect(count('minted')).toBe(81);
     expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      226,
+      229,
     );
   });
 

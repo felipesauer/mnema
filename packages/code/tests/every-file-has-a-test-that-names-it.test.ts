@@ -1444,6 +1444,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/knowledge/only-the-identity-that-linked-retracts-it.test.ts': 12,
   'packages/core/src/knowledge/only-the-identity-that-wrote-a-note-retracts-it.test.ts': 12,
   'packages/core/src/knowledge/operations.test.ts': 11,
+  'packages/core/src/projections/a-decision-is-the-text-its-first-writer-recorded.test.ts': 6,
   'packages/core/src/projections/a-move-the-workflow-does-not-allow-is-not-applied.test.ts': 12,
   'packages/core/src/projections/accumulate.test.ts': 7,
   'packages/core/src/projections/advance.test.ts': 23,
