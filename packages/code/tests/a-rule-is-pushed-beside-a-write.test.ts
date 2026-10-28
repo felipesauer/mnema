@@ -145,6 +145,8 @@ beforeEach(async () => {
   await did('decision', 'move', 'accept', governing, '--note', 'agreed');
   await did('link', governing, 'src/other', '--rel', 'governs');
   await did('link', governing, 'src/more', '--rel', 'governs');
+  // The path a rule refuses is governed too: what a refusal must not carry beside it is something.
+  await did('link', governing, 'vendor', '--rel', 'governs');
   refusing = idIn(await did('decision', 'record', 'No vendoring', 'Vendored code is read-only'));
   await did('decision', 'move', 'accept', refusing, '--note', 'agreed');
   await did('link', refusing, 'vendor', '--rel', 'refuses-a-write');
