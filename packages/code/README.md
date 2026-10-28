@@ -114,6 +114,8 @@ long form of each row is in [the reference](https://github.com/felipesauer/mnema
 npm i -g @mnema/code
 ```
 
+Then `mnema doctor` says whether the `mnema` your shell runs is the one you meant. [Where the package came from](https://github.com/felipesauer/mnema/blob/main/docs/install.md#where-the-package-came-from) says how to check the published version against its npm provenance.
+
 [The install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md) has the steps for a Node installed by
 the system. Requires Node 24.15.0 or a later 24, or 26.0.0 or later; the package is
 ESM-only.

@@ -715,7 +715,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 66, name: 129, flag: 4 },
+  'CHANGELOG.md': { line: 67, name: 130, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 3, name: 9 },
   'SECURITY.md': { name: 2 },
@@ -726,7 +726,7 @@ export const HANDED_OVER: Readonly<
   'docs/first-record.md': { line: 2, name: 7 },
   'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 2 },
-  'docs/install.md': { line: 4, name: 8 },
+  'docs/install.md': { line: 5, name: 8 },
   'docs/packages.md': { line: 2, name: 3 },
   'docs/rule-arrival.md': { line: 2 },
   'docs/site.md': { line: 3, name: 7 },
@@ -741,7 +741,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
   'docs/cli-reference.md': { line: 114, name: 142, flag: 2 },
-  'packages/code/README.md': { line: 8, name: 13 },
+  'packages/code/README.md': { line: 8, name: 14 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
   'packages/code/src/commands/after-a-write.ts': { line: 2 },
