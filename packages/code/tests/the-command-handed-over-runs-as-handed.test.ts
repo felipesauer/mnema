@@ -183,10 +183,11 @@ export function handedInSource(
       for (const shape of [AT_THE_HEAD, AFTER_A_COUNT]) {
         const found = shape.exec(line);
         if (found === null || !verbs.has(found[2] as string)) continue;
-        // A column gap ends a command, and so does a comma outside a quote: a title that runs on
-        // (`mnema why -- {}, read at {}`) is a sentence about the command, not the command.
+        // A column gap ends a command, and so does a comma outside a quote that a word follows: a
+        // title that runs on (`mnema why -- {}, read at {}`) is a sentence about the command, not
+        // the command. A comma followed by an option is not that, so the option is still read.
         const command = (found[1] as string).split(
-          /\s{2,}|,\s(?=(?:[^"]*"[^"]*")*[^"]*$)/,
+          /\s{2,}|,\s(?!-)(?=(?:[^"]*"[^"]*")*[^"]*$)/,
         )[0] as string;
         handed.push({ where: lineOf(at + line.indexOf(command)), from: 'source', text: command });
       }
