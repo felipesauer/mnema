@@ -24,9 +24,38 @@ with its own changelog.
   that hold the instructions, and say the others are missing only when none of the four does; `mnema instructions` updates
   those, and where none holds them it asks the same question at a terminal and writes all four without one.
   `mnema instructions --all-hosts` writes all four whichever are there. What this costs: a file of yours with no block does not
-  count as chosen, so taking the block out of the one file you chose is no longer reported missing by `doctor`. Measured on
-  the built binary under a pseudo-terminal: Ctrl-C and Ctrl-D at a question reject the read with `ABORT_ERR` at once, so the
-  shared `ask` needed no change; the verbs that already ask (`decision review`) still end with "Aborted with Ctrl+C" and exit 1.
+  count as chosen, so with two or more chosen, taking the block out of one of them is not reported by `doctor` (the others
+  still hold it); with only one chosen, taking it out is reported, and `doctor` names all four. **A pseudo-terminal counts as
+  a terminal.** `init` asks when standard input and standard error are one, and no host leaves a variable in the shell of its
+  agent that this project has measured (the environment read is the MCP server's, and Codex and OpenCode leave none of the
+  marks looked for), so an agent whose shell is a real pty (an editor's integrated terminal, a node-pty) would wait at the
+  question: an agent that runs `mnema init` there passes `--all-hosts`. The instructions block, versioned, says nothing
+  of it. Measured on the built binary under a pseudo-terminal: Ctrl-C and Ctrl-D at a question reject the read with
+  `ABORT_ERR` at once, and the shared `ask` gained one line, `process.stdin.ref()`: the menu the bare name draws leaves
+  standard input unreferenced, and the question asked after it (`mnema`, then "establish a project here") ended the process
+  with exit 0 in the middle of the question. The verbs that already ask (`decision review`) still end with "Aborted with
+  Ctrl+C" and exit 1.
+
+- **The record says when no client announced the agent's name.** A client that never sends `initialize`, as the MCP
+  2026-07-28 revision allows, or whose handshake names nobody (no name, a blank one) is written under the server's default,
+  `unknown-agent`, and until now that read exactly like a name a client announced, and like a client announcing that very
+  word. The run such a connection opens now carries a new kind, `run.unannounced` (`payload.handshake`: whether a handshake ran
+  at all), appended in the same append as its `run.started`, with the run as its subject; it marks the run for
+  the key that signed it and no other, and only where that key's `run.started` opened the run; the run's facts are its own
+  facts, its `run.ended` included, and two marks of one run mark it once whatever their `handshake` says
+  ([`FORMAT.md`](packages/chain/FORMAT.md) §6.9). A name a client announced, the word
+  `unknown-agent` included, writes no mark and no new bytes, and neither does a write an agent key signs. `mnema show`, the
+  opening document, `mnema audit accountability` (and the `audit_accountability` tool, as `unannounced` beside each agent's
+  count) and the record page say *no name announced in an MCP handshake* beside such a name; `mnema verify` counts those facts
+  apart from the declared names, as `unannounced-which`, with a clause in its verdict line, and the second reader says the same
+  counts under §6.9. The published vectors are 39. **The cost, for a binary from before this kind:** mnema 0.1.3 refuses a
+  record that holds a mark by naming the kind, and that refusal is not a note: its `mnema verify` says `local integrity
+  FAILED` and exits 1, the whole tail that holds the mark UNREADABLE to it, in the public tree or the private one, wherever
+  the run was written; its `mnema brief` fails in a clone that holds one, and a GitHub Action pinned to 0.1.3 goes red on
+  every pull request of that repository. Upgrading the binary is the way out. The mark is born only of a client that sends no
+  handshake or announces a blank name in it, and none of the hosts whose handshake is measured (Claude Code, Codex, the
+  Copilot CLI, Gemini CLI, OpenCode) does that today: each sends `initialize` with a name, so a repository whose agents run
+  in them writes no mark, and 0.1.3 keeps reading it. VS Code's agent and Cursor are not measured.
 
 - **A recording of `verify` catching a changed word.** `recordings/a-tamper-caught.sh` records a decision, accepts it, runs
   `mnema verify` (green), changes one word of the decision in the record's own file with `sed`, and runs `verify` again: the

@@ -15,12 +15,12 @@
  *     line says so;
  *   - a fact written is recorded with `which` = `unknown-agent`, the default for a name that was
  *     never announced, and the run it opens says the same (`payload.agent`). The `which` is
- *     DECLARED by the client in any case, never proved, so it was never an identity. What it means
- *     for attribution: a reader sees `unknown-agent`, not a guessed or borrowed name, and the
- *     record holds nothing else that says the name did not come from a handshake. A client that
- *     announced the literal name `unknown-agent` would be indistinguishable from one that
- *     announced nothing. That is true today, with a handshake that names nothing usable, and is
- *     not made worse by a missing handshake.
+ *     DECLARED by the client in any case, never proved, so it was never an identity;
+ *   - and the run is MARKED: a `run.unannounced` with `handshake: false`, appended with the run's
+ *     birth (FORMAT.md section 6.9), so the record says the name came from no handshake, and a
+ *     client that announced the literal name `unknown-agent` (which leaves no mark) reads apart
+ *     from this one. The readings say it beside the name: `mnema show`, the opening document,
+ *     `audit_accountability`, the record page and `mnema verify`'s census.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -110,7 +110,7 @@ describe('a client that sends no initialize', () => {
     await wire.close();
   });
 
-  it('records the fact with `which` = unknown-agent, the default for a name never announced', async () => {
+  it('records the fact with `which` = unknown-agent, and marks its run as announced by no handshake', async () => {
     const wire = await aServerNobodyInitialized();
     await wire.request('tools/call', {
       name: 'capture_memory',
@@ -125,6 +125,13 @@ describe('a client that sends no initialize', () => {
     expect(note?.which).toBe('unknown-agent');
     expect(run?.which).toBe('unknown-agent');
     expect((run?.payload as { agent?: string } | undefined)?.agent).toBe('unknown-agent');
+    // The mark: one, for that run, signed by the key that signed it, saying no handshake ran.
+    const marks = events.filter((event) => event.kind === 'run.unannounced');
+    expect(marks.map((mark) => mark.payload)).toEqual([{ handshake: false }]);
+    expect(marks.map((mark) => [mark.subject, mark.run, mark.signerFp, mark.which])).toEqual([
+      [run?.subject, undefined, run?.signerFp, 'unknown-agent'],
+    ]);
+    expect(note?.run).toBe(run?.subject);
 
     await wire.close();
   });

@@ -27,7 +27,13 @@
  * the page draws from the files it carries.
  */
 
-import { ADDRESS_RELATIONS, type CatalogEvent, transitionProse } from '@mnema/chain';
+import {
+  ADDRESS_RELATIONS,
+  type CatalogEvent,
+  isUnannounced,
+  transitionProse,
+  unannouncedRuns,
+} from '@mnema/chain';
 import { decisionDisposition } from '@mnema/context';
 import {
   adrCollisions,
@@ -38,7 +44,15 @@ import {
   projectLinks,
   projectObservations,
 } from '@mnema/core';
-import { A_PERSON } from '../one-line.js';
+import { A_PERSON, NO_NAME_ANNOUNCED } from '../one-line.js';
+
+/** Who acted on a decision, and what carried it out, as the event that did it says. */
+export interface PageActor {
+  readonly who: string;
+  readonly which?: string;
+  /** The agent name is one no MCP client announced (FORMAT.md section 6.9). */
+  readonly unannounced?: true;
+}
 
 /** One move a decision went through, as the record says it. */
 export interface DecisionMove {
@@ -48,6 +62,8 @@ export interface DecisionMove {
   readonly to: string;
   readonly who: string;
   readonly which?: string;
+  /** The agent name is one no MCP client announced (FORMAT.md section 6.9). */
+  readonly unannounced?: true;
   /** What the move said, as the record prints a proof; absent when it carried none. */
   readonly said?: string;
 }
@@ -72,6 +88,8 @@ export interface PageNote {
   readonly at: string;
   readonly who: string;
   readonly which?: string;
+  /** The agent name is one no MCP client announced (FORMAT.md section 6.9). */
+  readonly unannounced?: true;
   readonly retracted?: NoteRetractionFacts;
 }
 
@@ -96,8 +114,8 @@ export interface PageDecision {
   readonly supersedes?: string;
   readonly supersededBy?: string;
   readonly createdAt: string;
-  readonly recordedBy?: { readonly who: string; readonly which?: string };
-  readonly acceptedBy?: { readonly who: string; readonly which?: string };
+  readonly recordedBy?: PageActor;
+  readonly acceptedBy?: PageActor;
   readonly moves: readonly DecisionMove[];
   /** The notes that belong to it, in the record's order. */
   readonly notes: readonly PageNote[];
@@ -113,6 +131,8 @@ export interface TimelineEntry {
   readonly at: string;
   readonly who: string;
   readonly which?: string;
+  /** The agent name is one no MCP client announced (FORMAT.md section 6.9). */
+  readonly unannounced?: true;
   /** The id of what it is about: the decision's, or the note's. */
   readonly subject: string;
   /** The `ADR-<n>` label of a decision act. */
@@ -142,20 +162,36 @@ export interface PageModel {
   readonly counts: PageCounts;
 }
 
-/** How an act is said: a person when no agent carried it out, otherwise the agent by name. */
-export function actWording(which?: string): string {
-  return which === undefined ? A_PERSON : `agent ${which}`;
+/**
+ * How an act is said: a person when no agent carried it out, otherwise the agent by name, and
+ * beside a name no MCP client announced, that it was not announced (FORMAT.md section 6.9).
+ */
+export function actWording(which?: string, unannounced?: boolean): string {
+  if (which === undefined) return A_PERSON;
+  return unannounced === true ? `agent ${which}, ${NO_NAME_ANNOUNCED}` : `agent ${which}`;
 }
 
-const whichOf = (event: { readonly which?: string | undefined }): { which?: string } =>
-  event.which !== undefined ? { which: event.which } : {};
+/** What an event says of who carried it out: the agent, and whether nobody announced its name. */
+type ActOf = (event: CatalogEvent) => { which?: string; unannounced?: true };
+
+/** {@link ActOf} over the runs `events` mark `run.unannounced`. */
+function actsOf(events: readonly CatalogEvent[]): ActOf {
+  const marked = unannouncedRuns(events);
+  return (event) =>
+    event.which === undefined
+      ? {}
+      : {
+          which: event.which,
+          ...(isUnannounced(event, marked) ? { unannounced: true as const } : {}),
+        };
+}
 
 /**
  * The notes the record serves, in the stream's order, each with the agent that wrote it. A
  * writing the projection did not apply (another identity writing an id that already had a
  * first writer) is not here; the one it applied is told by its author and its time.
  */
-function notesOf(events: readonly CatalogEvent[]): PageNote[] {
+function notesOf(events: readonly CatalogEvent[], whichOf: ActOf): PageNote[] {
   const memories = projectKnowledge(events);
   const observations = projectObservations(events);
   const notes: PageNote[] = [];
@@ -219,9 +255,10 @@ function joins(link: LinkEdge, one: string, other: string): boolean {
 /** The model of the page, from the events of the public tree in the record's own order. */
 export function pageModel(events: readonly CatalogEvent[]): PageModel {
   const projected = projectDecisions(events);
+  const whichOf = actsOf(events);
   const collided = new Set(adrCollisions(projected.values()).map((collision) => collision.adr));
   const links = projectLinks(events);
-  const notes = notesOf(events);
+  const notes = notesOf(events, whichOf);
   const noteIds = new Set(notes.map((note) => note.id));
 
   const moves = new Map<string, DecisionMove[]>();
@@ -274,8 +311,12 @@ export function pageModel(events: readonly CatalogEvent[]): PageModel {
       ...(d.supersedes !== undefined ? { supersedes: d.supersedes } : {}),
       ...(d.supersededBy !== undefined ? { supersededBy: d.supersededBy } : {}),
       createdAt: d.createdAt,
-      ...(d.recordedBy !== undefined ? { recordedBy: d.recordedBy } : {}),
-      ...(d.acceptedBy !== undefined ? { acceptedBy: d.acceptedBy } : {}),
+      ...(d.recordedBy !== undefined
+        ? { recordedBy: actorOf(d.recordedBy, recordingOf(events, d), whichOf) }
+        : {}),
+      ...(d.acceptedBy !== undefined
+        ? { acceptedBy: actorOf(d.acceptedBy, acceptanceOf(events, d.id), whichOf) }
+        : {}),
       moves: moves.get(d.id) ?? [],
       notes: mine,
       addresses,
@@ -283,7 +324,7 @@ export function pageModel(events: readonly CatalogEvent[]): PageModel {
     };
   });
 
-  const timeline = timelineOf(events, projected, notes);
+  const timeline = timelineOf(events, projected, notes, whichOf);
   const otherNotes = notes.filter((note) => !owned.has(note.id));
   return {
     decisions,
@@ -298,11 +339,56 @@ export function pageModel(events: readonly CatalogEvent[]): PageModel {
   };
 }
 
+/** The `decision.recorded` the projection applied: the first writing, by its author and time. */
+function recordingOf(
+  events: readonly CatalogEvent[],
+  d: {
+    readonly id: string;
+    readonly createdAt: string;
+    readonly recordedBy?: { readonly who: string };
+  },
+): CatalogEvent | undefined {
+  return events.find(
+    (event) =>
+      event.kind === 'decision.recorded' &&
+      event.subject === d.id &&
+      event.at === d.createdAt &&
+      event.who === d.recordedBy?.who,
+  );
+}
+
+/** The latest move of decision `id` to `accepted`: the act the projection names its acceptor by. */
+function acceptanceOf(events: readonly CatalogEvent[], id: string): CatalogEvent | undefined {
+  return events
+    .filter(
+      (event) =>
+        event.kind === 'decision.transitioned' &&
+        event.subject === id &&
+        event.payload.to === 'accepted',
+    )
+    .at(-1);
+}
+
+/** The projection's actor, marked when the event it came from has a name nobody announced. */
+function actorOf(
+  actor: { readonly who: string; readonly which?: string },
+  event: CatalogEvent | undefined,
+  whichOf: ActOf,
+): PageActor {
+  const said = event !== undefined && event.which === actor.which ? whichOf(event) : {};
+  return {
+    who: actor.who,
+    ...(actor.which !== undefined ? { which: actor.which } : {}),
+    ...(said.unannounced === true ? { unannounced: true as const } : {}),
+  };
+}
+
 /** One entry per record of a decision, per move, per note and per retraction, in the record's order. */
 function timelineOf(
   events: readonly CatalogEvent[],
   projected: ReturnType<typeof projectDecisions>,
   notes: readonly PageNote[],
+  whichOf: ActOf,
 ): TimelineEntry[] {
   const byId = new Map(notes.map((note) => [note.id, note]));
   const written = new Set<string>();

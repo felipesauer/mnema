@@ -25,11 +25,16 @@
 // (`projections/proof.ts`) and the command line's presentation layer, neither of which
 // is banned from the specifier. A re-export nobody imported would be a public value
 // with no production caller, which is a defect however harmless it looks.
+//
+// `isUnannounced` is here for the same reason as the labels: which facts carry an agent name no
+// MCP client announced (FORMAT.md section 6.9) is a reading the context package's opening
+// document asks of an acceptance, and that package may not name the chain.
 export {
   ADDRESS_RELATIONS,
   ASKS_FOR_A_PERSON_RELATION,
   DERIVED_FROM_RELATION,
   GOVERNS_RELATION,
+  isUnannounced,
   REFUSES_A_WRITE_RELATION,
 } from '@mnema/chain';
 export {

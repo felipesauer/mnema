@@ -228,6 +228,11 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
     // the payload; there is no separate `which` to pass and no parent run to pin to.
     startRun(ctx, { agent: text('payload.agent'), goal: text('payload.goal') }),
 
+  // A mark is written beside its run's birth, and its `which` is the run's agent: that is the one
+  // text it carries, and it reaches the chain through the run (FORMAT.md section 6.9).
+  'run.unannounced': (ctx, text) =>
+    startRun(ctx, { agent: text('which'), unannounced: { handshake: true } }),
+
   'run.ended': (ctx, text) => {
     const run = landed(startRun(ctx, { agent: 'the opener' }));
     return endRun(ctx, {

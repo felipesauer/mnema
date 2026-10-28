@@ -132,6 +132,12 @@ export interface WhichCount {
    * Never more than `count`.
    */
   readonly attested?: number;
+  /**
+   * How many of those facts belong to a run their own key marked `run.unannounced` (FORMAT.md
+   * section 6.9): the name is a default no MCP client announced in a handshake, and not a name
+   * one gave. ABSENT where none does. Never more than `count`.
+   */
+  readonly unannounced?: number;
 }
 
 /** A factual account of authorship over the record, within an optional window. */
@@ -333,6 +339,8 @@ interface WhoAccumulator {
   readonly byWhich: Map<string | null, number>;
   /** Of `byWhich`, the facts an agent key enrolled under that name signed. */
   readonly attested: Map<string | null, number>;
+  /** Of `byWhich`, the facts of runs marked `run.unannounced`. */
+  readonly unannounced: Map<string | null, number>;
 }
 
 /**
@@ -352,6 +360,7 @@ function accumulate(
       byKind: new Map(),
       byWhich: new Map(),
       attested: new Map(),
+      unannounced: new Map(),
     };
     perWho.set(cell.who, acc);
   }
@@ -364,6 +373,9 @@ function accumulate(
   const agent = agents.get(cell.signer);
   if (agent !== undefined && agent.anchor === cell.who && agent.name === cell.which) {
     acc.attested.set(cell.which, (acc.attested.get(cell.which) ?? 0) + cell.count);
+  }
+  if (cell.unannounced === true) {
+    acc.unannounced.set(cell.which, (acc.unannounced.get(cell.which) ?? 0) + cell.count);
   }
 }
 
@@ -380,7 +392,13 @@ function finishWho(
   const byWhich = [...acc.byWhich.entries()]
     .map(([which, count]) => {
       const attested = acc.attested.get(which) ?? 0;
-      return { which, count, ...(attested > 0 ? { attested } : {}) };
+      const unannounced = acc.unannounced.get(which) ?? 0;
+      return {
+        which,
+        count,
+        ...(attested > 0 ? { attested } : {}),
+        ...(unannounced > 0 ? { unannounced } : {}),
+      };
     })
     .sort(byCountThenWhich);
   return {

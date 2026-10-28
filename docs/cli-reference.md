@@ -1316,7 +1316,8 @@ answer, it says nothing of either.
 It says, too, each file an agent host reads that lacks this version's mnema instructions (one with none, an earlier
 version's block, or a block somebody edited), with what `mnema instructions` would do about it. Of `AGENTS.md` and the
 three files of mnema's own it looks at the ones that hold the instructions, which is how it knows which you chose, and
-says they are missing only when none of the four does.
+says they are missing only when none of the four does. So with two or more chosen, taking the block out of one of them
+is not reported; with only one chosen, taking it out is, and `doctor` then names all four.
 
 And it says where another tool would rewrite the record, because a formatter that changed one byte of it breaks its
 signatures: a `.pre-commit-config.yaml` with a hook that rewrites files (`end-of-file-fixer`, `trailing-whitespace`,
@@ -1673,7 +1674,12 @@ When it founds a project, `mnema init` writes a short block into the files agent
 standing instructions, and names each file it wrote. At a terminal it first asks which of the four files
 below that it offers (`AGENTS.md` and the three of mnema's own), listing the hosts that read each:
 Enter writes all four, numbers write those, and Ctrl-C or Ctrl-D founds nothing and writes nothing. With no terminal
-(a script, a pipe, an agent's shell) or with `--all-hosts` it asks nothing and writes all four. The question comes
+(a script, a pipe, an agent's shell) or with `--all-hosts` it asks nothing and writes all four. What decides is whether
+standard input and standard error are a terminal, and `init` looks at nothing else: no host leaves a variable in the
+shell of its agent that the project has measured (see [Evidence](evidence.md): what is measured is the environment of the MCP
+server, and Codex and OpenCode leave none of the marks looked for). An agent whose shell is a real pseudo-terminal
+(an editor's integrated terminal, a node-pty) would be asked the question and wait for an answer nobody gives, so an
+agent that runs `mnema init` there passes `--all-hosts`. The question comes
 before the founding, so leaving it leaves the project and the home as they were, and a second `init` does not ask.
 A `CLAUDE.md`, `.claude/CLAUDE.md` or `GEMINI.md` that already exists gets the block whichever you choose. The block says when to call the mnema tools
 (`bootstrap` at the opening, `governing_rules` before changing a file, `record_decision` when a choice
@@ -1689,7 +1695,7 @@ through the plugin.
 
 | File | Written | Read by, as each host documents it |
 |---|---|---|
-| `AGENTS.md` | offered by `init`, created where there is none | Codex, Cursor, VS Code, Copilot CLI, OpenCode; Claude Code only where no `CLAUDE.md` exists |
+| `AGENTS.md` | offered by `init`, created where there is none | Codex, Cursor, VS Code, Copilot CLI, OpenCode, Qwen Code; Claude Code only where no `CLAUDE.md` exists |
 | `CLAUDE.md`, `.claude/CLAUDE.md` | where they exist | Claude Code, Copilot CLI |
 | `GEMINI.md` | where it exists | Gemini CLI, Copilot CLI |
 | `.claude/rules/mnema-instructions.md` | offered by `init` | Claude Code, at launch |
@@ -1712,8 +1718,9 @@ The files on disk are the choice. Of the four offered files, `mnema instructions
 `mnema doctor` look at the ones that hold the instructions; one you did not choose is not expected, and is
 reported missing only when none of the four holds them. Where none does, a terminal is asked the question
 `init` asks, and without one all four are written. A file of yours with no block (an `AGENTS.md` you wrote) does not
-count as chosen, so if you take the block out of the one file you chose, nothing says it is missing: `--all-hosts` puts
-it back, with the others.
+count as chosen. If you take the block out of the one file you chose, `doctor` says all four are missing (none holds it);
+if you chose two or more and delete the block from one, nothing says it is missing, because the others still hold it.
+`--all-hosts` puts it back, with the others.
 
 The block is written the way a Markdown formatter (prettier) leaves it: a blank line after the begin
 marker and before the end marker, the examples as indented code. In a repository that formats its

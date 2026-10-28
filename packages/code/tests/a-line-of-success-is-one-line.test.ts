@@ -271,6 +271,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the name an agent key was enrolled under, read back out of the record',
   },
+  'accountability.ts «{} {} ({} with {})» #1': {
+    verdict: 'collapsed',
+    why: 'the agent name of facts in a run marked run.unannounced, read back out of the record',
+  },
   'decision.ts «Moved {} of {}; the rest were refused above and nothing was written for them.» #1':
     {
       verdict: 'minted',
@@ -1016,8 +1020,9 @@ describe('every line this wiring words is classified', () => {
     // 157 with the two lines that name the observation a brief or a description was recorded as.
     // 158 with the line a handoff prints when no tree holds its task.
     // 159 with the line verify prints beside a refusal a formatter explains.
-    // 160 with the line `init` prints when the answer to which host files is not on the list.
-    expect(FOUND.sites.length).toBe(160);
+    // 160 with the agent name the account says no MCP client announced.
+    // 161 with the line `init` prints when the answer to which host files is not on the list.
+    expect(FOUND.sites.length).toBe(161);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1184,6 +1189,9 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'which-host-files.ts «"{}" is not on the list: {}.» #1':
     'needs a person at a terminal who types an answer off the list; driven with a break in it in ' +
     '`the-init-asks-which-host-files-to-write.test.ts`',
+  'accountability.ts «{} {} ({} with {})» #1':
+    'the name is the default the MCP server writes for a client that announced none, the only writer ' +
+    'of a run.unannounced; the tag is the fence for one written by hand',
   'accountability.ts «{} {} ({} attested)» #1':
     'the name is the one an agent key was enrolled under, which the name form holds to one line before ' +
     'the record has it; the tag is the second fence',

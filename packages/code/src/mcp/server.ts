@@ -362,9 +362,20 @@ const UNKNOWN_AGENT = 'unknown-agent';
  * announce an agent, record none, and route the session's writes to the team's
  * committed tree, because "no agent" reads as "a person captured this".
  */
-function connectingAgent(announced: string | undefined): string {
-  if (announced !== undefined && canonicalIdentity(announced) !== undefined) return announced;
-  return UNKNOWN_AGENT;
+function connectingAgent(client: { readonly name?: unknown } | undefined): {
+  readonly clientName: string;
+  readonly unannounced?: { readonly handshake: boolean };
+} {
+  const announced = client?.name;
+  if (typeof announced === 'string' && canonicalIdentity(announced) !== undefined) {
+    return { clientName: announced };
+  }
+  // THE DEFAULT IS SAID TO BE ONE. Recorded as a name, `unknown-agent` read exactly like a name
+  // a client announced, and a client announcing that very word read like one that announced
+  // nothing: the run opened under the default is marked (`run.unannounced`, FORMAT.md section
+  // 6.9), saying whether a handshake ran at all. No `initialize` is a client the protocol's
+  // 2026-07-28 revision allows, and the SDK answers it.
+  return { clientName: UNKNOWN_AGENT, unannounced: { handshake: client !== undefined } };
 }
 
 /** What the server needs from its host, injected so it is testable. */
@@ -482,11 +493,12 @@ export function buildMcpServer(options: McpServerOptions): {
   const ensureSession = (): Promise<Session> => {
     if (sessionPromise !== undefined) return sessionPromise;
     sessionPromise = (async () => {
-      const clientName = connectingAgent(server.server.getClientVersion()?.name);
+      const { clientName, unannounced } = connectingAgent(server.server.getClientVersion());
       const workspace = await clientWorkspace(server, options.cwd, log);
       const opened = openSession({
         ...workspace,
         clientName,
+        ...(unannounced !== undefined ? { unannounced } : {}),
         env,
         log,
         ...(options.configProject !== undefined ? { configProject: options.configProject } : {}),

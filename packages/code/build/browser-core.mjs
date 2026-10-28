@@ -21,5 +21,6 @@ export {
   projectLinks,
   projectObservations,
 } from '../../core/dist/projections/knowledge.js';
+export { isUnannounced } from '../../chain/dist/events/unannounced.js';
 export { orderedEvents } from '../../core/dist/projections/order.js';
 export { DECISION_STATES } from '../../core/dist/workflow/decision-states.js';

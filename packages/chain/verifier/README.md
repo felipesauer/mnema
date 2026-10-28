@@ -6,7 +6,7 @@ document** and importing **nothing** of the product it checks.
 ```
 python3 mnema_verify.py record <a record directory>    # T1, T2/T4, T3 over a real record
 python3 mnema_verify.py record <dir> --require signed  # ...and refuse an event no signature covers
-python3 mnema_verify.py vectors                        # reproduce the 38 published vectors
+python3 mnema_verify.py vectors                        # reproduce the 39 published vectors
 python3 mnema_verify.py self-test                      # RFC 8032, section 1, section 8's limits
 python3 mnema_verify.py all --record <dir>             # all three
 python3 mnema_verify.py gaps                           # where FORMAT.md did not suffice
@@ -56,7 +56,7 @@ rigour, so nobody goes looking for it.
 | **T2** | each checkpoint's content root folds over the events of its range, from their canonical bytes |
 | **T4** | the Ed25519 signature over the checkpoint's signed message, under a key whose material is **recomputed** to the fingerprint that names it, and a key file whose name is not its material's fingerprint refused whether or not a signature asks for it, as is a `.pub` that holds no key (a directory, a file it may not read, bytes that are not UTF-8, no PEM-wrapped Ed25519 `SubjectPublicKeyInfo`); a name that starts with `._` (macOS metadata) is skipped, as `.DS_Store` is, by name and with the reason, never with a traceback; and every event of the range names that key as its `signerFp`, with a `which` that is not its `who`; and every checkpoint and every event of a tail, checkpointed or not, names the key the tail id begins with, and one that names another is refused as `tail-signer-mismatch` |
 | **T3** | the OpenTimestamps proof's subject is the checkpoint's digest, the path folds to the merkle root the stored header carries, and the header's own hash meets the target it declares, with section 8's three declared limits refused by name |
-| **§1** | the 38 published vectors and the four aggregate digests, plus every refusal section 1 lists |
+| **§1** | the 39 published vectors and the four aggregate digests, plus every refusal section 1 lists |
 | **§4** | byte identity: re-serializing what a line holds reproduces that line exactly; and a line, its link, a checkpoint line or the tail proof holding a key beside the ones it has is refused, naming the keys |
 | **§4.1** | every event rebuilt from the fields its `(kind, v)` contract declares in `event-schema.json`, and any other refused, which catches a forged field on a **newly appended** event, where byte identity cannot |
 | **§6.2** | enrolment: every event's signer is a key **valid for its anchor** at that point in the fold, with a revocation and a restoring re-add taking effect only when signature-covered; a checker key signs check results only, and a retirement of one (signature-covered as well) leaves it signing nothing; an agent key signs only for the identity that enrolled it, under the `which` it was enrolled as, and nothing that changes who may sign, and a `key.enrolled` naming it is refused, and the facts it signed are counted as attested, those it signed before a retirement are counted per retired key, and every other `which` as declared, in the same numbers the product's census gives |
@@ -64,6 +64,7 @@ rigour, so nobody goes looking for it.
 | **§6.8** | a decision recorded again, by any identity, is named as not applied, informational: every `decision.recorded` of its id other than its text, the first writing in the merged order that the writer of its first applied judgment had read (or the first in the merged order while none has judged it), at the same place the product's census names it |
 | **§6.5** | a committed key with no tail is noted as a backup only when a signature-covered `backup.declared` by its own identity names it and the key is still that identity's; a declaration naming another identity's key is refused, and every other key with no tail is noted as one whose tail may have gone |
 | **§6.7** | every move of a workflow judged where the merged order puts it, against the tables the `workflows` of `event-schema.json` publishes (a birth once, a row with the proof it requires, a successor the record holds, a run ended once, and a `from` that is the state there or the one its writer saw) and a move they do not allow named with the rule it broke, at the same place the product's census names it, the verdict unchanged |
+| **§6.9** | a run marked `run.unannounced`: the facts the key that signed the mark wrote under that run (its birth, its marks and its end included; a mark its key opened no such run for marks nothing) are counted apart from the declared `which`, informational, in the same numbers the product's census gives |
 | **§6.1** | every tail carries `tailproof.json`, an Ed25519 signature over its own id under the key the tail id names (looked up by the id, never by the proof's own `signerFp`), and a proof whose `signerFp` is another key is refused as `signer-mismatch` |
 | n/a | the tail id's fingerprint is a key the record carries; whether the newest confirmed attestation reaches the last event |
 

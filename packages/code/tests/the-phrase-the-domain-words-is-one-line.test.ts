@@ -935,6 +935,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the `which` stored events carry; the catalog requires a non-empty string and nothing more',
     },
+  '@mnema/chain chain/verify.ts «{} event(s) name the agent "{}": no name an MCP client announced in a handshake, put in by the writer in place of one (section 6.9)» named.events #1':
+    {
+      verdict: 'minted',
+      why: 'a count the fold kept, of accepted facts of runs marked run.unannounced that carry the `which`',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) name the agent "{}": no name an MCP client announced in a handshake, put in by the writer in place of one (section 6.9)» oneLine(named.which) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the `which` stored events carry; the catalog requires a non-empty string and nothing more',
+    },
   '@mnema/chain chain/verify.ts «{} check result(s) signed by {} before » retirement.resultsBefore #1':
     {
       verdict: 'minted',
@@ -2243,6 +2253,8 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} agent key(s) attesting the agent their facts name (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} agent name(s) no MCP client announced in a handshake (see census: informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{}/» layout.root':
     'the prefix `withinChain` STRIPS: what makes the locus a path inside the chain rather ' +
     'than wherever this clone sits. It is never printed.',
@@ -2275,8 +2287,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(335);
-    expect(FOUND[0]?.sites.length).toBe(137);
+    expect(SITES.length).toBe(337);
+    expect(FOUND[0]?.sites.length).toBe(139);
     expect(FOUND[1]?.sites.length).toBe(198);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2327,11 +2339,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(229);
-    expect(count('minted')).toBe(81);
+    expect(count('collapsed')).toBe(230);
+    expect(count('minted')).toBe(82);
     expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      229,
+      230,
     );
   });
 

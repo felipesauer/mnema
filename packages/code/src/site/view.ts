@@ -65,11 +65,15 @@ const line = oneLine;
 const block = neutralized;
 
 /** The identity as the record names it, and what carried the act out: a person or an agent. */
-function actor(prefix: string, who: string, which?: string): VKid[] {
+function actor(prefix: string, who: string, which?: string, unannounced?: true): VKid[] {
   return [
     h('code', { 'data-field': `${prefix}-who` }, line(who)),
     ' ',
-    h('span', { class: 'badge', 'data-field': `${prefix}-by` }, line(actWording(which))),
+    h(
+      'span',
+      { class: 'badge', 'data-field': `${prefix}-by` },
+      line(actWording(which, unannounced)),
+    ),
   ];
 }
 
@@ -82,7 +86,7 @@ function actorsOf(d: PageDecision): { who: string[]; by: string[] } {
   ];
   return {
     who: [...new Set(acts.map((act) => oneLine(act.who)))],
-    by: [...new Set(acts.map((act) => oneLine(actWording(act.which))))],
+    by: [...new Set(acts.map((act) => oneLine(actWording(act.which, act.unannounced))))],
   };
 }
 
@@ -127,7 +131,7 @@ function noteView(note: PageNote, firstTime: boolean): VNode {
         ? []
         : [' about ', h('code', { 'data-field': 'note-about' }, line(note.about))],
       ', by ',
-      actor('note', note.who, note.which),
+      actor('note', note.who, note.which, note.unannounced),
       ' at ',
       h('time', { 'data-field': 'note-at' }, note.at),
     ),
@@ -199,7 +203,7 @@ function decisionView(
           'p',
           { class: 'meta' },
           'Recorded by ',
-          actor('recorded', d.recordedBy.who, d.recordedBy.which),
+          actor('recorded', d.recordedBy.who, d.recordedBy.which, d.recordedBy.unannounced),
           ' at ',
           h('time', { 'data-field': 'recorded-at' }, d.createdAt),
           '.',
@@ -210,7 +214,7 @@ function decisionView(
           'p',
           { class: 'meta' },
           'Accepted by ',
-          actor('accepted', d.acceptedBy.who, d.acceptedBy.which),
+          actor('accepted', d.acceptedBy.who, d.acceptedBy.which, d.acceptedBy.unannounced),
           '.',
         ),
     d.supersedes === undefined
@@ -264,7 +268,7 @@ function decisionView(
                 ' → ',
                 h('span', { 'data-field': 'move-to' }, line(move.to)),
                 ') by ',
-                actor('move', move.who, move.which),
+                actor('move', move.who, move.which, move.unannounced),
                 move.said === undefined
                   ? []
                   : h('pre', { 'data-field': 'move-said' }, block(move.said)),
@@ -291,7 +295,7 @@ function decisionView(
 
 /** What one entry of the timeline says: the act, who did it, and a link to what it is about. */
 function entryView(entry: TimelineEntry): VNode {
-  const by = actor('entry', entry.who, entry.which);
+  const by = actor('entry', entry.who, entry.which, entry.unannounced);
   const adr = h('span', { 'data-field': 'entry-adr' }, line(entry.adr ?? ''));
   const text: VKid[] = {
     'decision-recorded': [adr, ' recorded by ', by],

@@ -60,7 +60,7 @@
  * canonicalizing and comparing).
  */
 
-import { runEnded, runStarted } from '@mnema/chain';
+import { runEnded, runStarted, runUnannounced } from '@mnema/chain';
 import type { ReplacedClass } from '../content/personal.js';
 import {
   type ScreenedWrite,
@@ -72,7 +72,7 @@ import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/autho
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
 import { projectRuns } from '../projections/run.js';
-import { type AppendRefusal, appendFact, askTheDoor } from './append.js';
+import { type AppendRefusal, appendFact, appendFacts, askTheDoor } from './append.js';
 import {
   type Judged,
   onTheRecordAsItStands,
@@ -147,6 +147,14 @@ export interface StartRunInput {
   readonly agent: string;
   /** The stated goal of the session, if any. */
   readonly goal?: string;
+  /**
+   * Present when `agent` is a default and not a name anybody announced: the MCP server's, for a
+   * client that never sent `initialize` (`handshake: false`) or announced in it a name that is no
+   * name (`handshake: true`). The run is then opened with a `run.unannounced` beside its
+   * `run.started`, in one append, so no reader can take the default for an announced name
+   * (FORMAT.md section 6.9). Absent, the run makes no claim, and nothing beside it is written.
+   */
+  readonly unannounced?: { readonly handshake: boolean };
 }
 
 /** What the caller asks to close a run. */
@@ -231,7 +239,14 @@ export function prepareRun(ctx: WriteContext, input: StartRunInput): PreparedRun
   const id = mintId();
   const { fields } = text;
   const replaced = [...text.replaced, ...agent.replaced];
-  const run = { id, who, which, fields, replaced };
+  const run = {
+    id,
+    who,
+    which,
+    fields,
+    replaced,
+    ...(input.unannounced !== undefined ? { unannounced: input.unannounced } : {}),
+  };
   return {
     ok: true,
     id,
@@ -273,6 +288,28 @@ function runStartedOf(
   );
 }
 
+/**
+ * The `run.unannounced` beside a run whose agent nobody announced: the run is its subject, and, like
+ * the run's birth, it carries no `run`; its `which` is the run's (FORMAT.md section 6.9).
+ */
+function runUnannouncedOf(
+  run: { readonly id: string; readonly who: string; readonly which: string | undefined },
+  unannounced: { readonly handshake: boolean },
+  at: string,
+  ctx: WriteContext,
+): ReturnType<typeof runUnannounced> {
+  return runUnannounced(
+    {
+      at,
+      who: run.who,
+      signerFp: ctx.writer.signerFingerprint,
+      subject: run.id,
+      ...(run.which !== undefined ? { which: run.which } : {}),
+    },
+    { handshake: unannounced.handshake },
+  );
+}
+
 /** The `run.started` a {@link PreparedRun} appends, with what its preparation decided. */
 function appendRunStarted(
   ctx: WriteContext,
@@ -282,12 +319,21 @@ function appendRunStarted(
     readonly which: string | undefined;
     readonly fields: { readonly agent: string; readonly goal?: string | undefined };
     readonly replaced: readonly ReplacedClass[];
+    readonly unannounced?: { readonly handshake: boolean };
   },
 ): StartRunOk | StartRunError {
-  const { id, fields } = run;
+  const { id, fields, unannounced } = run;
   // The door asks the fact first, then founds this installation's anchor, so the fact's
-  // signer is a key valid for its anchor at verify (see `appendFact`).
-  const appended = appendFact(ctx, ({ at }) => runStartedOf(run, at, ctx));
+  // signer is a key valid for its anchor at verify (see `appendFact`). A run whose agent nobody
+  // announced is ONE atom with its mark: both are asked, and neither lands unless both do, so a
+  // run is never left saying an announced name by a mark that failed after it.
+  const appended =
+    unannounced === undefined
+      ? appendFact(ctx, ({ at }) => runStartedOf(run, at, ctx))
+      : appendFacts(ctx, ({ at }) => [
+          runStartedOf(run, at, ctx),
+          runUnannouncedOf(run, unannounced, at, ctx),
+        ]);
   if (!appended.ok) return appended;
   // Both reports, merged like every other operation's, and the count is right
   // rather than doubled because the screen is idempotent: this agent name went

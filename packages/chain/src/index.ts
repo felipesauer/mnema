@@ -250,6 +250,7 @@ export {
   observationRecorded,
   runEnded,
   runStarted,
+  runUnannounced,
   skillBirth,
   skillConsulted,
   skillCreated,
@@ -303,6 +304,7 @@ export {
   REFUSES_A_WRITE_RELATION,
   type RunEndedV1,
   type RunStartedV1,
+  type RunUnannouncedV1,
   type SkillConsultedV1,
   type SkillCreatedV1,
   type SkillTransitionedV1,
@@ -318,6 +320,7 @@ export { EventParseError, parseEvent, toCanonical, unreadableReason } from './ev
 export { PROOF_FIELDS, proofFields, transitionProse } from './events/proof.js';
 export { catalogUpcasters } from './events/registry.js';
 export { mayRetract } from './events/retraction.js';
+export { isUnannounced, unannouncedRuns, unannouncedRunsOf } from './events/unannounced.js';
 export {
   contractNotHeldIn,
   type LatestVersions,

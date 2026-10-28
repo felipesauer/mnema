@@ -1004,6 +1004,7 @@ function censusLocus(note: CensusNote): string {
     case 'attested-which':
       return note.agentFp;
     case 'declared-which':
+    case 'unannounced-which':
       return note.which;
   }
 }

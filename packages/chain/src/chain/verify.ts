@@ -210,7 +210,8 @@ export type CensusNote =
   | CitationNotHeldNote
   | ClockBehindNote
   | AttestedWhichNote
-  | DeclaredWhichNote;
+  | DeclaredWhichNote
+  | UnannouncedWhichNote;
 
 /**
  * A committed public key with no tail on disk.
@@ -589,8 +590,23 @@ export interface DeclaredWhichNote {
 }
 
 /**
+ * A `which` that accepted facts of a run marked `run.unannounced` carry (FORMAT.md section 6.9):
+ * no MCP client announced it in a handshake, and the writer put it in place of a name nobody gave.
+ * Said apart from {@link DeclaredWhichNote}, so the same word announced by a client and put in by
+ * default are two counts. Like that note, it has NO CLAUSE in the verdict's sentence.
+ */
+export interface UnannouncedWhichNote {
+  readonly kind: 'unannounced-which';
+  /** The `which`, as the facts carry it. */
+  readonly which: string;
+  /** How many accepted facts of marked runs carry it. */
+  readonly events: number;
+  readonly detail: string;
+}
+
+/**
  * What the census says of the agents the accepted facts name: one note per agent key that signed,
- * and one per `which` that a key without the role stated.
+ * one per `which` that a key without the role stated, and one per `which` no client announced.
  */
 function agentsNamed(agents: IdentityResolution['agents']): CensusNote[] {
   return [
@@ -610,6 +626,14 @@ function agentsNamed(agents: IdentityResolution['agents']): CensusNote[] {
         which: named.which,
         events: named.events,
         detail: `${named.events} event(s) name the agent "${oneLine(named.which)}": declared by the key that signed, not attested`,
+      }),
+    ),
+    ...agents.unannounced.map(
+      (named): UnannouncedWhichNote => ({
+        kind: 'unannounced-which',
+        which: named.which,
+        events: named.events,
+        detail: `${named.events} event(s) name the agent "${oneLine(named.which)}": no name an MCP client announced in a handshake, put in by the writer in place of one (section 6.9)`,
       }),
     ),
   ];
@@ -2276,6 +2300,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => str
   'attested-which': (count) =>
     `${count} agent key(s) attesting the agent their facts name (see census: informational, not a break)`,
   'declared-which': null,
+  'unannounced-which': (count) =>
+    `${count} agent name(s) no MCP client announced in a handshake (see census: informational, not a break)`,
 };
 
 /** One clause per kind of note present, in the order the kinds are declared in. */

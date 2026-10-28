@@ -185,6 +185,11 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
   'agent.enrolled': { emit: (ctx) => appendAgentFact(ctx, 'agent.enrolled') },
   'agent.retired': { emit: (ctx) => appendAgentFact(ctx, 'agent.retired') },
   'run.started': { emit: (ctx) => landed(startRun(ctx, { agent: 'a-fresh-agent' })) },
+  // A mark arrives with the birth of the run it marks, in one append (FORMAT.md section 6.9).
+  'run.unannounced': {
+    emit: (ctx) =>
+      landed(startRun(ctx, { agent: 'unknown-agent', unannounced: { handshake: false } })),
+  },
   'run.ended': {
     setup: (ctx) => landed(startRun(ctx, { agent: 'an-agent-that-will-stop' })).id,
     emit: (ctx, run) =>

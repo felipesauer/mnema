@@ -247,6 +247,13 @@
       }
     },
     {
+      "kind": "run.unannounced",
+      "v": 1,
+      "payload": {
+        "handshake": "boolean"
+      }
+    },
+    {
       "kind": "skill.consulted",
       "v": 1,
       "payload": {}

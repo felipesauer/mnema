@@ -83,6 +83,7 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   // A run's own two facts feed the run table, which every kind already feeds.
   'run.started': [...EVERY_KIND_FEEDS],
   'run.ended': [...EVERY_KIND_FEEDS],
+  'run.unannounced': [...EVERY_KIND_FEEDS],
   'task.created': [...EVERY_KIND_FEEDS, 'tasks', ...SEARCHED],
   'task.transitioned': [...EVERY_KIND_FEEDS, 'tasks', ...SEARCHED, ...MOVED],
   'decision.recorded': [...EVERY_KIND_FEEDS, 'decisions', ...SEARCHED],

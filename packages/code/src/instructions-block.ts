@@ -272,7 +272,7 @@ export const INSTRUCTIONS_TARGETS: readonly InstructionsTarget[] = [
     path: 'AGENTS.md',
     when: 'always',
     readers:
-      'Codex, Cursor, VS Code, Copilot CLI, OpenCode; Claude Code only where no CLAUDE.md exists',
+      'Codex, Cursor, VS Code, Copilot CLI, OpenCode, Qwen Code; Claude Code only where no CLAUDE.md exists',
   },
   { path: 'CLAUDE.md', when: 'exists' },
   { path: '.claude/CLAUDE.md', when: 'exists' },

@@ -754,6 +754,19 @@ export function agentRetired(
   };
 }
 
+/** Builds a `run.unannounced` event (subject = the run's id; no `run`, as the run's birth has none). */
+export function runUnannounced(
+  envelope: EnvelopeInput,
+  payload: { handshake: boolean },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'run.unannounced',
+    ...envelopeFields(envelope),
+    payload: { handshake: payload.handshake },
+  };
+}
+
 /**
  * Builds an `account.linked` event (subject = the ANCHOR that names its account).
  *

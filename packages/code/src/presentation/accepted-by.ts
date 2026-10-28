@@ -10,11 +10,14 @@
  */
 
 import type { Acceptance } from '@mnema/context';
-import { A_PERSON, oneLine } from '../one-line.js';
+import { A_PERSON, NO_NAME_ANNOUNCED, oneLine } from '../one-line.js';
 
 /** `accepted by mnid:ab12cd34 (a person)`, `(agent claude-code; unconfirmed)`. */
 export function acceptedBy(acceptance: Acceptance): string {
-  const act = acceptance.agent === undefined ? A_PERSON : `agent ${oneLine(acceptance.agent)}`;
+  const act =
+    acceptance.agent === undefined
+      ? A_PERSON
+      : `agent ${oneLine(acceptance.agent)}${acceptance.unannounced === true ? `, ${NO_NAME_ANNOUNCED}` : ''}`;
   const mark = acceptance.unconfirmed ? '; unconfirmed' : '';
   return `accepted by ${oneLine(acceptance.by)} (${act}${mark})`;
 }
