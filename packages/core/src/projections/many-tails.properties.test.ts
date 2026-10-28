@@ -50,6 +50,7 @@ import {
   canonicalStringify,
   catalogUpcasters,
   decisionBirth,
+  decisionRecorded,
   decisionTransitioned,
   identityFounded,
   illegalMoves,
@@ -129,7 +130,9 @@ type Act =
     }
   | { readonly kind: 'move'; readonly decision: string; readonly to: 'accepted' | 'rejected' }
   /** `decision` is superseded BY `by`: the subject is the superseded one. */
-  | { readonly kind: 'supersede'; readonly decision: string; readonly by: string };
+  | { readonly kind: 'supersede'; readonly decision: string; readonly by: string }
+  /** A `decision.recorded` of a decision already recorded: what no honest writer appends. */
+  | { readonly kind: 'rewrite'; readonly decision: string };
 
 /** One thing one machine does, at the instant ITS clock gives, which may run backwards. */
 interface Op {
@@ -274,6 +277,15 @@ class Scribe {
       })) {
         this.put(op.slot, event);
       }
+    } else if (act.kind === 'rewrite') {
+      this.put(
+        op.slot,
+        decisionRecorded(env(act.decision), {
+          title: `rewrite ${index}`,
+          rationale: `rewritten by machine ${op.slot}`,
+          adr: `ADR-${index}`,
+        }),
+      );
     } else if (act.kind === 'supersede') {
       this.put(
         op.slot,
@@ -824,6 +836,87 @@ describe('P2: a cache brought forward is a replay', () => {
               expect(live.getDecision(X)?.state).toEqual(
                 last?.kind === 'decision.transitioned' ? last.payload.to : undefined,
               );
+            } finally {
+              live.close();
+              replay.close();
+            }
+          } finally {
+            cleanUp(root);
+          }
+        },
+        20,
+      );
+    },
+    CASE_TIMEOUT,
+  );
+});
+
+describe('a decision is the text its first writer recorded, however the tails arrive', () => {
+  // X is born on machine 0; any machine, its own included, then records X again at a drawn
+  // clock, which may tie with or run before the birth. FORMAT.md section 6.8: the first
+  // `decision.recorded` of X in the merged order is the text, so a cache brought forward over
+  // the writings in any batches has to land where a replay does, on the first one.
+  const rewritesArb: fc.Arbitrary<Op[]> = fc
+    .tuple(
+      fc.array(fc.record({ slot: slotArb, at: atArb }), { minLength: 1, maxLength: 4 }),
+      fc.array(noiseArb, { maxLength: 4 }),
+    )
+    .chain(([rewrites, noise]) => {
+      const ops = [
+        ...rewrites.map(({ slot, at }): Op => ({ slot, at, act: { kind: 'rewrite', decision: X } })),
+        ...noise,
+      ];
+      return fc.shuffledSubarray(ops, { minLength: ops.length, maxLength: ops.length });
+    })
+    .map((rest): Op[] => [{ slot: 0, at: 0, act: { kind: 'birth', decision: X } }, ...rest]);
+
+  it(
+    'after any arrivals, with the cache deleted at a drawn point, X reads as its first writing',
+    () => {
+      holds(
+        fc.tuple(
+          rewritesArb,
+          fc.array(fc.nat({ max: 4 }), { maxLength: 3 }),
+          fc.option(fc.nat({ max: 3 }), { nil: undefined }),
+        ),
+        ([history, cuts, wipeAt]) => {
+          const root = freshDir('first-writing');
+          try {
+            const scribe = new Scribe(root);
+            let from = 0;
+            let round = 0;
+            for (const cut of [...cuts.map((c) => from + c), history.length]) {
+              const to = Math.min(history.length, Math.max(from, cut));
+              for (const op of history.slice(from, to)) scribe.apply(op);
+              from = to;
+              const cache = ProjectionCache.open(root, { upcasters, persist: true });
+              try {
+                cache.refresh();
+              } finally {
+                cache.close();
+              }
+              if (wipeAt === round) rmSync(projectionCachePath({ root }), { force: true });
+              round += 1;
+            }
+            const first = model(streamsOf(scribe.appended)).find(
+              (event) => event.kind === 'decision.recorded' && event.subject === X,
+            );
+            if (first?.kind !== 'decision.recorded') throw new Error('X was never recorded');
+            const live = ProjectionCache.open(root, { upcasters, persist: true });
+            const replay = ProjectionCache.open(root, { upcasters });
+            try {
+              live.refresh();
+              replay.rebuild();
+              expect(live.listDecisions()).toEqual(replay.listDecisions());
+              expect(projectDecisions(orderedEvents({ root }, upcasters)).get(X)).toEqual(
+                replay.getDecision(X),
+              );
+              const read = live.getDecision(X);
+              expect(read?.title).toBe(first.payload.title);
+              expect(read?.rationale).toBe(first.payload.rationale);
+              expect(read?.adr).toBe(first.payload.adr);
+              expect(read?.recordedBy?.who).toBe(first.who);
+              expect(read?.createdAt).toBe(first.at);
             } finally {
               live.close();
               replay.close();

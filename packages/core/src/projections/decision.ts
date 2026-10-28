@@ -8,7 +8,11 @@
  *   - a decision EXISTS once its `decision.recorded` is seen;
  *   - its STATE is the `to` of its last `decision.transitioned` (birth included);
  *   - its title, rationale, `alternatives` and `adr` label are read literally
- *     from the record.
+ *     from the record, the FIRST `decision.recorded` of its id in the order: a later
+ *     one, whoever signed it, is not applied (FORMAT.md section 6.8). The product mints
+ *     a decision's id when it records it, so it never writes one id twice, and the
+ *     order is what nobody can be made to lose: the last writing would be whichever
+ *     carried the latest clock, and a clock is the signer's to write.
  *
  * `alternatives` is projected only when the record carries one. A decision that
  * recorded none has NO key for it, not an empty string, so "did this decision
@@ -160,6 +164,10 @@ export const decisionFold: AccumulatorFold<DecisionAccumulator, DecisionProjecti
   step(of, event) {
     if (event.kind === 'decision.recorded') {
       const entry = of(event.subject);
+      // A decision is the text its FIRST writer recorded (FORMAT.md section 6.8): a later
+      // `decision.recorded` of the id, by any identity, is not applied. Every record has a
+      // `createdAt`, so its presence is what says this id was recorded already.
+      if (entry.createdAt !== undefined) return;
       entry.adr = event.payload.adr;
       entry.title = event.payload.title;
       entry.rationale = event.payload.rationale;
