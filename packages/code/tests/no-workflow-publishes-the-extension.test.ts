@@ -128,7 +128,11 @@ function installOffences(block: string): string[] {
 }
 
 /** The three actions the publishing job may use, and no other (an action is code of a third party beside the token). */
-const ACTIONS_OF_THE_JOB = ['actions/checkout@', 'actions/setup-node@', 'actions/download-artifact@'];
+const ACTIONS_OF_THE_JOB = [
+  'actions/checkout@',
+  'actions/setup-node@',
+  'actions/download-artifact@',
+];
 
 /** The jobs of `release.yml` that may hold `id-token: write`: the npm publish and the extension's. */
 const MAY_HOLD_ID_TOKEN = ['publish', PLACE.job];
@@ -202,6 +206,9 @@ function offences(where: string, text: string): string[] {
   }
   return found;
 }
+
+/** The expression that reads the Marketplace token, written so that this file does not hold one as a string. */
+const PAT_EXPRESSION = ['$', '{{ secrets.VSCE', '_PAT }}'].join('');
 
 const RELEASE = readFileSync(join(ROOT, PLACE.workflow), 'utf-8');
 
@@ -413,15 +420,19 @@ describe('one job publishes the extension, behind an approval', () => {
       expect(offences(PLACE.workflow, elsewhere), step).toEqual([
         `${PLACE.workflow}: job vsix publishes the extension or holds a token for it`,
       ]);
-      expect(offences('.github/workflows/ci.yml', `jobs:\n  a:\n    steps:\n${step}`), step).toEqual(
-        ['.github/workflows/ci.yml: publishes the extension or holds a token for it'],
-      );
+      expect(
+        offences('.github/workflows/ci.yml', `jobs:\n  a:\n    steps:\n${step}`),
+        step,
+      ).toEqual(['.github/workflows/ci.yml: publishes the extension or holds a token for it']);
     }
     // the Marketplace token, back in the one job or anywhere, is refused as a way to a secret no place may use
-    const back = RELEASE.replace(/^( {10}VERSION: .*\n)( {8}run: \|\n {10}set -euo pipefail\n {10}served=)/m, '$1          VSCE_PAT: ${{ secrets.VSCE_PAT }}\n$2');
+    const back = RELEASE.replace(
+      /^( {10}VERSION: .*\n)( {8}run: \|\n {10}set -euo pipefail\n {10}served=)/m,
+      `$1          VSCE_PAT: ${PAT_EXPRESSION}\n$2`,
+    );
     expect(back).not.toBe(RELEASE);
     expect(offences(PLACE.workflow, back)).toHaveLength(1);
-    expect(offences('.github/workflows/ci.yml', 'env:\n  T: ${{ secrets.VSCE_PAT }}\n')).toHaveLength(1);
+    expect(offences('.github/workflows/ci.yml', `env:\n  T: ${PAT_EXPRESSION}\n`)).toHaveLength(1);
   });
 
   it('refuses the Entra flag in the one job on a line that is not the installed vsce', () => {
