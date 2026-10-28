@@ -107,6 +107,10 @@ describe('what is still an edit after a reflow', () => {
       'an example command changed',
       (text: string) => text.replace('mnema decision record', 'mnema decision recorded'),
     ],
+    [
+      'an example command no longer indented as code',
+      (text: string) => text.replace('    mnema decision supersede', '  mnema decision supersede'),
+    ],
   ])('%s', async (_name, change) => {
     put('AGENTS.md', '# Rules\n');
     writeInstructions(project, ['AGENTS.md']);
