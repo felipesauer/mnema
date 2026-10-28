@@ -1142,17 +1142,38 @@ after it.
 kind, and it is **not part of the fold of §6.2**. What this section adds is which of several
 writings of one `subject` a reader applies.
 
-**A decision is the text its first writer recorded.** Of every `decision.recorded` of one
-`subject`, the FIRST in the merged order of §6.2 is applied: its title, rationale, alternatives
-and label are the decision's, its `who` is who recorded it and its `at` when. Every later one is
-not applied, **whoever signed it**: another identity, and the identity that wrote the first one
-with any key of it. The moves of the decision (§6.7) are judged and applied as they are with one
-writing, so an accept, a rejection or a supersede keeps the text it was made on. A reader serves
-the first writing, and this product's `verify` names every later one in its census, with the
-rule `decision-rewrite`, informational, the exit unchanged: like a stranger's writing of a note
-(§6.4) it is **not a break**, since the event is intact and its key speaks for its own `who`;
-what it lacks is a place in a decision that was already written
-(`packages/core/src/projections/a-decision-is-the-text-its-first-writer-recorded.test.ts`).
+**A decision is the text its first judgment was made on.** A JUDGMENT of a decision is a move
+of it after its birth (§6.7: an accept, a rejection, a supersede), and its writer was shown a
+text when it made it. Of every `decision.recorded` of one `subject`, the text is the FIRST in the
+merged order of §6.2 among those the writer of the decision's first APPLIED judgment had read:
+by the sight §6.7 judges a move with, the writings its own tail holds before it and, on every
+other tail, those up to the last entry its tail cites at or before it. While nothing has judged
+the decision, and when the writer of its first judgment had read none of its writings (a record
+written before citations, a writer that cited nothing), the text is the FIRST writing in the
+merged order. Its title, rationale, alternatives and label are the decision's, its `who` is who
+recorded it and its `at` when. Every other writing is not applied, **whoever signed it**:
+another identity, and the identity that wrote the text with any key of it. A move §6.7 does not
+apply judges nothing, so it binds no text. The moves of the decision are judged and applied as
+they are with one writing. A reader serves the text, and this product's `verify` names every
+other writing in its census, with the rule `decision-rewrite`, informational, the exit
+unchanged: like a stranger's writing of a note (§6.4) it is **not a break**, since the event is
+intact and its key speaks for its own `who`; what it lacks is a place in a decision that was
+already written
+(`packages/core/src/projections/a-decision-is-the-text-its-first-writer-recorded.test.ts`,
+`packages/chain/src/chain/decision-text.test.ts`).
+
+**Why the judgment binds the text.** An accept is a person's word on what they read, and what
+they had read is in the bytes: its own tail, and the heads its tail cites, which this product's
+writer cites at every append ("Reading many tails"). A writing dated back on a tail the judgment
+never cited, appended after it or on a clone its writer had not pulled, is first in the merged
+order whatever it says, because `at` is the signer's to write; it is not what was accepted, and
+it is named, never served ("serves the text accepted, and names the writing dated back from an
+older tail after the accept"). A writing the judge had read IS what it was shown, since every
+reader serves the first writing in the order while nothing has judged the decision, so the
+judgment holds for it, and the later honest writing is the one named ("serves the text the accept
+was shown, when its writer had read the writing dated back"). The text is bound at the FIRST
+judgment and never moved after it: a later move, a supersede included, is made on a decision that
+already has a text, so nothing appended after the accept, by any key, changes what was accepted.
 
 **Stricter than a note, and why.** A note served its author's later writing in place of the
 earlier one (§6.4). A decision does not, because no honest writer writes one twice: this
@@ -1163,21 +1184,34 @@ key replace the text would let a key that is that identity's, or a cold backup o
 a person accepted after they accepted it. The first and not the last, for the reason §6.4 gives:
 the last is whichever writing the latest `at` stamped, and `at` is the signer's to write.
 
-**A second writing in the same bytes is named too.** A writing whose payload repeats the first
-one's changes nothing a reader serves, and it is named all the same: the product's writer never
+**A second writing in the same bytes is named too.** A writing whose payload repeats the text's
+changes nothing a reader serves, and it is named all the same: the product's writer never
 appends it (a response lost and asked for again records a new id, not the same one), so it was
 made past the writer as well, and a rule that kept it silent would have to say which bytes count
 as the same, in both readers, for a case that only a hand-made line reaches. Naming it costs a
 census line and hides nothing.
 
-**What no order can settle** is the same as for a note: two writings no citation relates are
-ordered by `at`, which a hand-made writing can backdate to come first. The reader then serves that
-one and names the other, so the contest is shown whichever writing was taken.
+**What no order can settle.** Before any judgment, two writings no citation relates are ordered
+by `at`, which a hand-made writing can backdate to come first: a pending decision shows that one
+and names the other, so the contest is shown whichever writing was taken, and whoever judges it
+next is shown the text the judgment then holds to. A judgment whose writer cited nothing is held
+to the first writing on its own tail, and one with none there to the first in the order. And a
+key that may judge the decision can judge it FIRST, with a move of its own dated before the
+accept on a tail the accept did not read, on the text it wrote: the decision is then judged by
+that move, on that text, and the accept that did not see it is a second move out of the same
+state, named as a divergence of the two ("What is detected", under "Reading many tails"). No
+rule over these bytes tells that apart from two people judging at once; the record names it.
 
-**Both readers judge.** The second reader beside this file names every writing after the first
-with the same rule at the same tail and `seq` as this product's census, the verdict unchanged
+**Both readers judge.** The second reader beside this file names every writing that is not the
+text with the same rule at the same tail and `seq` as this product's census, the verdict
+unchanged, over records written by hand and over drawn records with clocks that disagree and
+citations that come and go
 (`packages/chain/src/chain/second-reader-agrees-on-what-is-not-applied.test.ts`, "a decision
-recorded again"). **A binary from before this section** applies every writing in the merged
+recorded again", "a decision is the text its first judgment saw", and "drawn records on two
+machines"). A reader that keeps a cache serves what a replay serves: a cache brought forward over
+the first judgment of a decision written more than once reads the record again
+(`packages/core/src/projections/many-tails.properties.test.ts`, "X reads as the writing its
+first judgment saw"). **A binary from before this section** applies every writing in the merged
 order, so it serves the LAST one, and names none: a record holding a second writing verifies
 there as here and is read there with the later text. This section tightened a rule inside a kind
 and version that already existed, after the first publication: §7.1 says what that promise
@@ -1511,7 +1545,8 @@ envelope's optional `after` (§4.1) names the entry hashes of the heads of other
 writer had read when it wrote. A reader that wants ONE sequence of events, to replay them into a
 state, has to choose the rest. This section says which choice the product's reader makes, and what
 it leaves undecided. Apart from §6.2, which folds enrolment in this same order, and §6.7, which
-judges every move in it (and §6.4, which names it for the retraction that holds), it describes what
+judges every move in it (and §6.4, which names it for the retraction that holds, and §6.8, which
+binds a decision's text by the same sight), it describes what
 the code does and is not part of what a verifier checks: another reader may order the tails
 otherwise without disagreeing about a single byte. It would then disagree about what those two
 sections do with the bytes: §6.2 can refuse an event of an honest record that another order

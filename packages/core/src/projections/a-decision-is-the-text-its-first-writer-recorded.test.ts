@@ -11,6 +11,11 @@
  * the cache's projection, so the cache is asked here, the way those readings ask it: the decision
  * by its id, the list, and the full-text index. And `verify` names the second writing in its
  * census, informational, its verdict unchanged.
+ *
+ * The first writing in the merged order is not enough once a decision is judged: a writing dated
+ * back on an older tail the accept never cited comes first by its clock. So the text is the one
+ * the decision's first judgment saw, and the cases below write that record as the product writes
+ * its side of it, citing the heads it read.
  */
 
 import { mkdtempSync, rmSync } from 'node:fs';
