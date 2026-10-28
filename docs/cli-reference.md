@@ -1509,6 +1509,13 @@ mnema decision import docs/decisions
 #> 3 proposal(s), 1 refused: nothing written. Add --write to record them.
 ```
 
+A file whose decision the record already holds (an earlier run drew it from that file) is listed
+as already in the record, unchanged. So is a file that says exactly the words of a decision
+already recorded (a copy under another name, or two files in one run): nothing is written for
+it, the line names the decision that holds those words, and no `derived-from` is drawn from
+that file, since the decision was not born from it. Such a file is reported the same way on
+every later run.
+
 **Other places decisions are written** are read with `--format`, down the same road: planned
 before written, every one born `proposed`, cited to where it was read, and the reason of each opens with
 a line saying it was imported as written there and is not yet the project's own words.
@@ -1652,7 +1659,6 @@ absent in the other differ). If there is one, nothing is written and the answer 
 in the <scope> tree with this title, rationale and alternatives. Nothing was written.`, with the existing label and id and none
 of the offers below. This is what makes a call repeated after a lost reply safe. A rejected or superseded decision is not
 matched: the same words recorded again are a new proposal.
-
 
 ### The mnema instructions in the files a host reads
 

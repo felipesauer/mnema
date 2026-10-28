@@ -56,6 +56,14 @@ export function promotionDone(render: Render, done: PromoteDone): string[] {
     done.kind === 'skill'
       ? `\`mnema skill move review ${done.id} --note "<why>"\`, then \`mnema skill move adopt ${done.id} --note "<why>"\``
       : `\`mnema decision move accept ${done.id} --note "<why>"\``;
+  if (done.alreadyRecorded === true) {
+    return [
+      subjectLine(
+        `The global tree already holds ${done.kind} "${oneLine(done.title)}" (${done.id})`,
+      ),
+      fact('It has these words already. Nothing was written, and no derived-from was added.'),
+    ].map((line) => render(line));
+  }
   const lines: Line[] = [
     subjectLine(`Promoted ${done.kind} "${oneLine(done.title)}" (${done.id})`),
     fact('It is in the global tree, born proposed, and carries no address.'),

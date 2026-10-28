@@ -70,6 +70,12 @@ export interface PromoteDone extends Replacement, Landed {
   readonly title: string;
   /** Every instance the copy cites, the project the caller stands in first. */
   readonly derivedFrom: readonly PatternInstance[];
+  /**
+   * The global tree already held this decision with these words: nothing was written, `id` is the
+   * one that was there, and no `derived-from` edge was drawn to it (it was not born from these
+   * instances, and a promotion repeated would otherwise grow the record by edges alone).
+   */
+  readonly alreadyRecorded?: true;
 }
 
 /** The promotion was refused and nothing was appended. */
@@ -229,7 +235,8 @@ export function runPromote(
     return born.reason === 'NO_PROJECT' ? born : refused(born.code, born.message);
   }
 
-  for (const from of labelled) {
+  const alreadyRecorded = 'alreadyRecorded' in born && born.alreadyRecorded === true;
+  for (const from of alreadyRecorded ? [] : labelled) {
     const linked = runLink(ctx, {
       subject: born.id,
       target: from.id,
@@ -249,6 +256,7 @@ export function runPromote(
     title: candidate.title,
     derivedFrom: labelled,
     scope: 'global',
+    ...(alreadyRecorded ? { alreadyRecorded: true as const } : {}),
     ...forwardReplacement(born),
   };
 }
