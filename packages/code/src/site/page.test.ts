@@ -67,6 +67,7 @@ const move: Required<DecisionMove> = {
   to: 'accepted',
   who: 'mnid:move',
   which: 'mover',
+  unannounced: true,
   said: 'agreed in review',
 };
 const note: Required<Omit<PageNote, 'retracted'>> & {
@@ -80,6 +81,7 @@ const note: Required<Omit<PageNote, 'retracted'>> & {
   at: '2026-01-03T00:00:00.000Z',
   who: 'mnid:note',
   which: 'noter',
+  unannounced: true,
   retracted: {
     at: '2026-01-04T00:00:00.000Z',
     who: 'mnid:taker',
@@ -97,6 +99,7 @@ const entry = (kind: TimelineEntry['kind'], subject: string): TimelineEntry => (
   ...(kind === 'decision-recorded' ? { adr: 'ADR-1' } : {}),
   ...(kind === 'decision-moved' ? { adr: 'ADR-1', action: 'accept', to: 'accepted' } : {}),
   ...(kind === 'note-recorded' ? { topic: 'cents' } : {}),
+  ...(kind === 'decision-moved' ? { unannounced: true as const } : {}),
 });
 /** Every field an entry can have: a field the model gains is a type error here, and then a key to add above. */
 const everyEntryField: Required<TimelineEntry> = {
@@ -104,6 +107,7 @@ const everyEntryField: Required<TimelineEntry> = {
   at: '',
   who: '',
   which: '',
+  unannounced: true,
   subject: '',
   adr: '',
   action: '',
