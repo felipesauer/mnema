@@ -376,6 +376,14 @@ gap and rules on the rest, and it never accepts a break. A path whose `.mnema/` 
 but holds no tail with anything in it is a project, not a gap: it is ruled on, and refused
 (below), with the flag or without it.
 
+**`mnema verify --json` prints the reading as one JSON document, and two of its fields answer the
+question a script asks.** `ok` is the verdict on the record, the same as `record.ok`: `true` when
+every tree it covered verified, `false` over a broken record (it used to be `true` there, because it
+said only that the command ran) and `false` where nothing was covered (a set in which no path holds a
+record has no `record` field). `requirementMet` says whether the level `--require` asked for was
+reached. The exit code is the one the prose reading has, and `--json` changes the shape of the
+answer and never the answer. What no `--require` value answers is in `notAnswered`.
+
 **A break is not the only way a record can lie, and the default does not catch the
 others.** This paragraph used to say `verify` exits non-zero "when the record is
 broken" and leave it there, which reads as a promise about forgery. It is not one.
@@ -1379,6 +1387,22 @@ terminal it prints a link that opens GitHub's issue form with the report filled 
 leaves until you press Submit there. `--decline` stops offering reports of that kind of error, and
 `--off` switches reporting off on this machine. An agent that meets the error is told to leave the
 report to you: no tool of the MCP server sends one or accepts one.
+
+### The exit codes
+
+A script reads `mnema`'s exit code, so each one has one meaning. These are all the numbers the
+code sets; a shell, a signal or the host can end a process with another, and that is not
+`mnema` saying anything.
+
+| Code | Who ends with it | What it says |
+|---|---|---|
+| `0` | `mnema` | The command ran and nothing it was asked to rule on failed. |
+| `1` | `mnema` | A refusal: what was asked was not done (a usage error, a write that was refused, a `verify` that found a break or did not reach the level `--require` asked for). It is the person's or their environment's to act on. |
+| `2` | the `SubagentStop` hook (`plugin/hooks/subagent-stop.mjs`), never the command line | The hook sends a subagent's reply back with the reason on the second stream, which is how Claude Code reads a block; once per subagent. |
+| `70` | `mnema` | An internal error: a fault in `mnema`'s own code, not a refusal. It is named as one, a note of it is kept on this machine, and `mnema report` shows what it would send (above). |
+| `127` | the plugin's launcher of the MCP server (`plugin/server/launch.mjs`) | It could not start `mnema`. Where it started it, the launcher ends with the code the server ended with. |
+
+`mnema verify --json` has the same exit codes as the prose reading (the fields are described with `verify`, above).
 
 ### What goes into the record
 

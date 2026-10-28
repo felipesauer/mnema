@@ -13,9 +13,9 @@ export type Verdict =
   | { readonly kind: 'unreadable' };
 
 /**
- * The reading of `mnema verify --json`. The top `ok` says the command ran and found a project; the
- * verdict on the record is `record.ok` (the exit code of `mnema verify` follows it), so that is the
- * one read. Only an answer with no `record.ok` falls back to the top `ok`.
+ * The reading of `mnema verify --json`. The verdict on the record is `record.ok` (the exit code of
+ * `mnema verify` follows it), so that is the one read; the top `ok` says the same, and is
+ * what an answer from an older `mnema`, or one with no `record`, falls back to.
  */
 export function readVerdict(stdout: string): Verdict {
   let answer: unknown;
