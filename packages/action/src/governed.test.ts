@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { approvedByAnotherPerson, askingForAPerson, isGoverned, rulesInForce } from './governed.js';
+import { approvedByAnotherPerson, isGoverned, needingAPerson, rulesInForce } from './governed.js';
 
 const hit = (rule: string, state: string, kind = 'decision') => ({
   rule,
@@ -54,10 +54,16 @@ describe('approvedByAnotherPerson', () => {
   });
 });
 
-describe('askingForAPerson', () => {
+describe('needingAPerson', () => {
   it('keeps the files an accepted asks rule addresses', () => {
     const a = rulesInForce('a', { asks: [hit('d', 'accepted')] });
     const b = rulesInForce('b', { rules: [hit('d', 'accepted')] });
-    expect(askingForAPerson([a, b]).map((f) => f.path)).toEqual(['a']);
+    expect(needingAPerson([a, b]).map((f) => f.path)).toEqual(['a']);
+  });
+
+  it('keeps the files an accepted refuses rule addresses, and not a superseded one', () => {
+    const a = rulesInForce('a', { refuses: [hit('d', 'accepted')] });
+    const b = rulesInForce('b', { refuses: [hit('d', 'superseded')] });
+    expect(needingAPerson([a, b]).map((f) => f.path)).toEqual(['a']);
   });
 });

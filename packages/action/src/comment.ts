@@ -158,14 +158,14 @@ export function renderComment(report: Report): string {
   }
 
   if (report.approval !== undefined) {
-    out.push('', '**Approval for rules that ask for a person**', '');
+    out.push('', '**Approval for rules that ask for a person or refuse a write**', '');
     if (report.approval.asking.length === 0) {
       out.push('No changed file is addressed by such a rule.');
     } else if (report.approval.approved) {
       out.push('Approved by a reviewer other than the author.');
     } else {
       out.push(
-        'No reviewer other than the author has approved, and these files ask for a person:',
+        'No reviewer other than the author has approved, and these files ask for a person or refuse a write:',
         '',
         ...report.approval.asking.map((file) => `- ${named(file)}`),
       );

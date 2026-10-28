@@ -109,9 +109,9 @@ describe('a pull request that lifts the rule off the file it edits', () => {
    * A base where accepted rule R asks for a person at src/auth.ts, a branch that supersedes R and
    * edits the file ("attack"), and one that only edits it ("control").
    */
-  function theRepository(): { repo: string; base: string } {
-    const repo = join(sandbox, 'repo-auth');
-    const home = join(sandbox, 'home-auth');
+  function theRepository(rel = 'asks-for-a-person'): { repo: string; base: string } {
+    const repo = join(sandbox, `repo-${rel}`);
+    const home = join(sandbox, `home-${rel}`);
     mkdirSync(join(repo, 'src'), { recursive: true });
     mkdirSync(home);
     git(repo, 'init', '-q', '-b', 'main');
@@ -129,7 +129,7 @@ describe('a pull request that lifts the rule off the file it edits', () => {
       '--note',
       'Maintainer: auth needs a person',
     );
-    mnemaAs(home, repo, 'link', old, 'src/auth.ts', '--rel', 'asks-for-a-person');
+    mnemaAs(home, repo, 'link', old, 'src/auth.ts', '--rel', rel);
     git(repo, 'add', '.mnema', 'src');
     git(repo, 'commit', '-q', '-m', 'base');
     const base = gitOut(repo, 'rev-parse', 'HEAD');
@@ -216,6 +216,18 @@ describe('a pull request that lifts the rule off the file it edits', () => {
     }
     const renamed = await judged(repo, base, 'moved-and-edited');
     expect(renamed.comment).toContain('`src/auth.ts` (renamed to src/auth2.ts)');
+  }, 120_000);
+
+  it('fails the same way when the rule refuses a write, edited, moved or removed', async () => {
+    const { repo, base } = theRepository('refuses-a-write');
+    for (const branch of ['attack', 'control', 'moved', 'moved-and-edited', 'deleted']) {
+      const run = await judged(repo, base, branch);
+      expect(run.verdict.failed, `${branch}: ${run.comment}`).toBe(true);
+      expect(run.verdict.reasons, branch).toEqual([
+        'a rule refuses a write to a changed file and no one but the author has approved',
+      ]);
+      expect(run.comment, branch).toContain('a write is refused by Auth needs a person');
+    }
   }, 120_000);
 
   it('leaves no copy of the base behind', async () => {

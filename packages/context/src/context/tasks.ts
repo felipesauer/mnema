@@ -82,6 +82,7 @@
 
 import {
   isTaskState,
+  lastSeenOfSweptTask,
   type ProjectionCache,
   TASK_STATES,
   type TaskProjection,
@@ -154,15 +155,44 @@ export interface TaskAwaitingJudgement extends WorkItem {
  * ONE statement per cache, classifying the rows: see the module doc for the number
  * that decided it against four indexed reads.
  */
-export function liveWork(caches: readonly ProjectionCache[]): WorkItem[] {
+export function liveWork(caches: readonly ProjectionCache[], asOf?: string): WorkItem[] {
   const live: WorkItem[] = [];
   for (const cache of caches) {
     for (const task of cache.listTasks()) {
       if (!isTaskState(task.state) || !LIVE.has(task.state)) continue;
+      if (asOf !== undefined && sweptLongAgo(task, asOf)) continue;
       live.push(named(task, task.state));
     }
   }
   return live;
+}
+
+/**
+ * How many days back a swept session's task is still listed as live work. A sweep blocks the task of a
+ * session nobody saw end, and a session nobody has touched for two weeks is not one a new session
+ * continues: past that, the task is counted in one line and stays whole to `read_record`, `show` and
+ * `search`. Two weeks is a fortnight's sprint, the longest an agent's work is likely to wait for its
+ * author to return; a task a person blocked, or a sweep's that someone unblocked, is never cut.
+ */
+export const SWEPT_DAYS_SHOWN = 14;
+
+/** Whether a task is blocked by a sweep and its session was last seen more than the days shown ago. */
+function sweptLongAgo(task: TaskProjection, asOf: string): boolean {
+  const lastSeen = lastSeenOfSweptTask(task.state, task.proof);
+  if (lastSeen === undefined) return false;
+  const age = Date.parse(asOf) - Date.parse(lastSeen);
+  return age > SWEPT_DAYS_SHOWN * 86_400_000;
+}
+
+/** How many live tasks {@link liveWork} leaves out of `asOf`'s list because a sweep blocked them long ago. */
+export function sweptWorkLeftOut(caches: readonly ProjectionCache[], asOf: string): number {
+  let left = 0;
+  for (const cache of caches) {
+    for (const task of cache.listTasks()) {
+      if (isTaskState(task.state) && LIVE.has(task.state) && sweptLongAgo(task, asOf)) left += 1;
+    }
+  }
+  return left;
 }
 
 /**

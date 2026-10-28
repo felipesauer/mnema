@@ -12,10 +12,10 @@ import { renderComment, renderNoRecord, worthSaying } from './comment.js';
 import type { GitHub } from './github.js';
 import {
   approvedByAnotherPerson,
-  askingForAPerson,
   bothReadings,
   type GovernedFile,
   isGoverned,
+  needingAPerson,
   rulesInForce,
 } from './governed.js';
 import { decisionLabels, eventsAdded, readEvents, whatItDoes } from './record.js';
@@ -135,11 +135,20 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
 
   let approval: { asking: GovernedFile[]; approved: boolean } | undefined;
   if (pr.requireApprovalForAsks) {
-    const asking = askingForAPerson(governed);
+    const asking = needingAPerson(governed);
     const approved =
       asking.length === 0 || approvedByAnotherPerson(await world.github.reviews(), pr.author);
     approval = { asking, approved };
-    if (!approved) reasons.push('a rule asks for a person and no one but the author has approved');
+    if (!approved) {
+      if (asking.some((file) => file.asks.length > 0)) {
+        reasons.push('a rule asks for a person and no one but the author has approved');
+      }
+      if (asking.some((file) => file.refuses.length > 0)) {
+        reasons.push(
+          'a rule refuses a write to a changed file and no one but the author has approved',
+        );
+      }
+    }
   }
 
   // Before the comment, so that the comment carries the results; the run only writes the
