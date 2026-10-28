@@ -197,6 +197,20 @@ with its own changelog.
 
 ### Changed
 
+- **The block of instructions `mnema init` writes is now version `v3`: already formatted, with an example that runs, and with the
+  supersede.** The files agent hosts read (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, the rule files) used to fail the
+  repository's own Markdown `format:check` the moment `init` wrote them: prettier wants a blank line after the begin marker and
+  before the end marker. The block now has both, and its examples are indented code (a fence of ours would be closed by, or would
+  close, an unclosed fence of yours, and a second run would write a second block). Measured with prettier 3 over a project `init` founded: the
+  five files that failed with the default configuration and with `tabWidth: 4, printWidth: 100` now pass. One file still fails
+  under a `singleQuote: true` configuration: prettier rewrites the `applyTo: "**"` of `.github/instructions/mnema-instructions.instructions.md` to single quotes. The
+  shell line where the tools are not connected is no longer a template with `<title>` placeholders but a command that runs as
+  written, with `--alternatives` (a test runs it against the built binary and reads the decision back), and the block now says
+  that a decision is not edited once recorded: a new one that replaces it is recorded and the earlier one superseded
+  (`decision_transition` with `action` `supersede`, or `mnema decision supersede <old-id> <new-id> --reason "<why>"`), and the new one is then read as replacing the earlier one, which it names. `mnema
+  instructions` replaces a `v2` block by this one in every file, and still refuses a block whose text you edited (a formatter
+  that re-wraps prose, `proseWrap: "always"`, counts as an edit). The text is 2,390 characters, 570 tokens, against 1,721 and 409:
+  every host file that carries it carries 669 characters more. The Gemini extension's context file is generated from it.
 - **The top `ok` of `mnema verify --json` is the verdict on the record.** It said that the command ran and found a project, and it was
   `true` over a record that was tampered with, so a script that read the first field took a broken record for a sound one. It is now the same
   as `record.ok`: `false` over a broken record, and `false` where a set of paths covered no record. `requirementMet` still says whether

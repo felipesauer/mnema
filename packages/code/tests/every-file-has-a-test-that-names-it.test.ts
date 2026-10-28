@@ -1269,6 +1269,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-init-says-no-file-of-yours-only-when-true.test.ts': 6,
   'packages/code/tests/the-input-has-its-own-place.test.ts': 22,
   'packages/code/tests/the-install-line-is-one.test.ts': 5,
+  'packages/code/tests/the-instructions-block-is-formatted-and-its-example-runs.test.ts': 9,
   'packages/code/tests/the-instructions-block.test.ts': 8,
   'packages/code/tests/the-instructions-verb-says-each-file.test.ts': 7,
   'packages/code/tests/the-key-lives-in-one-place.test.ts': 8,

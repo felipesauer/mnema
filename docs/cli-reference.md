@@ -1629,10 +1629,13 @@ a URL. The dry run cannot catch that. You can, by opening two of the files it wr
 When it founds a project, `mnema init` writes a short block into the files agent hosts read as
 standing instructions, and names each file it wrote. The block says when to call the mnema tools
 (`bootstrap` at the opening, `governing_rules` before changing a file, `record_decision` when a choice
-is settled, `capture_memory` for what the code does not show), that a decision is born `proposed`
-and a person accepts it, that a subagent hands its decisions back rather than recording them, the
-`mnema decision record` command where the tools are not connected, and what never goes in the
-record. It applies only where the mnema tools are connected, so a fork without mnema reads it as
+is settled, `capture_memory` for what the code does not show), that a decision is born `proposed` and,
+once accepted, is in force (an agent's acceptance is recorded as an agent's, and `mnema switch off agent-accepts`
+leaves it to a person), that a subagent hands its decisions back rather than recording them, the
+`mnema decision record` command where the tools are not connected, as an example that runs as it
+stands (with `--alternatives`), how a decision that replaces an earlier one says so
+(`decision_transition` with `action` `supersede`, or `mnema decision supersede <old-id> <new-id>
+--reason "<why>"`; the new decision is then read as replacing the earlier one, which `read_record`, `show` and the opening name), and what never goes in the record. It applies only where the mnema tools are connected, so a fork without mnema reads it as
 inert, and it carries nothing of the record: the decisions in force reach a session as it opens,
 through the plugin.
 
@@ -1648,7 +1651,7 @@ through the plugin.
 The Gemini CLI extension carries the same text as its own context file. Every copy is the same
 text, so a host that reads several (Claude Code reads its `CLAUDE.md` or `AGENTS.md` and the rule
 file; Copilot CLI reads them all) reads it more than once rather than two versions of it. The text
-is 1,524 characters.
+is 2,390 characters (the one before was 1,721).
 
 ```sh
 mnema instructions            # write the block where it is missing or an earlier version's
@@ -1656,7 +1659,16 @@ mnema instructions --check    # say what each file holds; exits 1 where one lack
 mnema instructions --remove   # take it out of each file
 ```
 
-The block sits between `<!-- mnema:begin v2 … -->` and `<!-- mnema:end -->`, after what your file
+The block is written the way a Markdown formatter (prettier) leaves it: a blank line after the begin
+marker and before the end marker, the examples as indented code. In a repository that formats its
+Markdown, `format:check` passes over the files `init` writes, with one exception: prettier writes
+the `applyTo: "**"` of the `.github/instructions` file with the quotes your own configuration
+asks for, so with `singleQuote: true` that one file is reported until you run the formatter over it
+(it keeps the block). An earlier version's block (the begin marker names it, `v2`) is replaced by
+the current one; and a formatter that re-wraps prose (`proseWrap: "always"`) changes the text between the
+markers, which makes it your edit: it is left as it is, and said.
+
+The block sits between `<!-- mnema:begin v3 … -->` and `<!-- mnema:end -->`, after what your file
 holds, and nothing outside the markers changes; a file the block was all of is deleted by
 `--remove`, which takes out with the block the one line break that went in with it only where the
 block is the last thing in the file (a line you wrote after it is never glued to the one above), and
