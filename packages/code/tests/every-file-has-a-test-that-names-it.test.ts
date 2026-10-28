@@ -667,7 +667,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 49,
+  wiring: 50,
   presentation: 8,
   projections: 3,
   completion: 4,
@@ -2131,8 +2131,9 @@ describe('every file has a test that names it', () => {
     // 81 once the search store's test names materializeDecisions.
     // 80 once the session journal's test names the host-transcript reader.
     // 79 once the inherited rule's test asserts on the governance page's rows.
-    expect(found.size).toBe(79);
-    expect(byReach('nobody imports it')).toBe(79);
+    // 80 with the beside-a-write verb's wiring, which a-rule-is-handed-after-a-write drives through the built binary.
+    expect(found.size).toBe(80);
+    expect(byReach('nobody imports it')).toBe(80);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2154,7 +2155,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(79);
+    expect(reasons).toHaveLength(80);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
