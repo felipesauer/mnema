@@ -629,6 +629,18 @@ function run(args, cwd, input, timeout = WAIT) {
 }
 
 /**
+ * Whether a run did not happen to the end. A CLOSED INPUT IS NOT THAT: a \`mnema\` that answers before it
+ * has read the payload leaves a write that lost the race to its exit a closed one, and \`spawnSync\`
+ * reports \`EPIPE\` with the \`status\` and the streams the program left, so what it said is read as it
+ * would be had the write gone through.
+ */
+function didNotRun(ran) {
+  return (
+    ran.error !== undefined && /** @type {NodeJS.ErrnoException} */ (ran.error).code !== 'EPIPE'
+  );
+}
+
+/**
  * Which \`mnema\` is on the PATH: this product, another program of that name, none, or one that did
  * not answer the question (it exited non-zero or did not finish), which is the case a gate exists for.
  */
@@ -745,7 +757,7 @@ export const Mnema = async ({ directory }) => {
         directory,
         JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: input.tool }),
       );
-      if (ran.error !== undefined || ran.status !== 0) return;
+      if (didNotRun(ran) || ran.status !== 0) return;
       let said;
       try {
         said = JSON.parse(ran.stdout).hookSpecificOutput?.additionalContext;

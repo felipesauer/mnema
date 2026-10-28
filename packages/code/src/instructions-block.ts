@@ -333,3 +333,58 @@ export function withoutTheBlock(text: string): string {
   }
   return kept + text.slice(from);
 }
+
+/**
+ * `text` as its blocks, with the line breaks and the spaces a formatter may move taken out: the lines
+ * of a paragraph or of one list item are one line, every run of white space is one space, and
+ * indented code, headings and comment lines are kept as they are. Two texts with the same blocks say
+ * the same thing; a word, a block taken out or two blocks run into one makes them differ.
+ */
+function blocksOf(text: string): string {
+  const blocks: string[] = [];
+  let open: string | undefined;
+  let blankBefore = true;
+  let codeBefore = false;
+  const flush = (): void => {
+    if (open !== undefined) blocks.push(open.replace(/\s+/g, ' '));
+    open = undefined;
+  };
+  for (const line of text.replace(/\r\n/g, '\n').split('\n')) {
+    if (line.trim() === '') {
+      flush();
+      if (blocks.length > 0 && blocks[blocks.length - 1] !== '') blocks.push('');
+      blankBefore = true;
+      codeBefore = false;
+      continue;
+    }
+    if (line.startsWith('    ') && (blankBefore || codeBefore)) {
+      flush();
+      blocks.push(line);
+      codeBefore = true;
+    } else if (/^(#|<!--)/.test(line)) {
+      flush();
+      blocks.push(line.trim());
+      codeBefore = false;
+    } else if (/^(- |\d+\. )/.test(line) || open === undefined || blankBefore) {
+      flush();
+      open = line.trim();
+      codeBefore = false;
+    } else {
+      open += ` ${line.trim()}`;
+      codeBefore = false;
+    }
+    blankBefore = false;
+  }
+  flush();
+  while (blocks[blocks.length - 1] === '') blocks.pop();
+  return blocks.join('\n');
+}
+
+/**
+ * Whether two texts of the block are the same words in the same shape: equal byte for byte once the
+ * line endings are one, or once a formatter's reflow (`proseWrap`) is set aside. An edit of the content
+ * is not a reflow.
+ */
+export function sameInstructionsText(held: string, written: string): boolean {
+  return held.replace(/\r\n/g, '\n') === written || blocksOf(held) === blocksOf(written);
+}

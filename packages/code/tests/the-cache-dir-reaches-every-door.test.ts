@@ -35,10 +35,18 @@ beforeEach(() => {
   home = join(sandbox, 'home');
   repo = join(sandbox, 'repo');
   cacheDir = join(sandbox, 'cache');
-  for (const dir of [home, repo, cacheDir]) mkdirSync(dir, { recursive: true });
+  for (const dir of [home, repo, cacheDir, join(sandbox, 'setup-cache')]) {
+    mkdirSync(dir, { recursive: true });
+  }
   const init = mnema({}, 'init');
   expect(init.status, init.stderr).toBe(0);
-  const noted = mnema({}, 'memory', 'a note so that the project has a record to read');
+  // A write reads the projection to look for a twin, so it keeps one: kept somewhere else than the
+  // two places the cases below look at.
+  const noted = mnema(
+    { MNEMA_CACHE_DIR: join(sandbox, 'setup-cache') },
+    'memory',
+    'a note so that the project has a record to read',
+  );
   expect(noted.status, noted.stderr).toBe(0);
 });
 

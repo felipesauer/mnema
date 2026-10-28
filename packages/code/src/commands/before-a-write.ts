@@ -338,7 +338,7 @@ function recordTheService(
   which: string,
   session: string,
 ): void {
-  const taken = takeTheFirstServing(trees, session, EDIT_PUSH_CHANNEL);
+  const taken = takeTheFirstServing(trees, session, EDIT_PUSH_CHANNEL, which);
   if (taken === undefined) return;
   try {
     const scope = resolveScope('channel.served', { which });
