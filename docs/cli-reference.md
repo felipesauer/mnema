@@ -1626,8 +1626,9 @@ a URL. The dry run cannot catch that. You can, by opening two of the files it wr
 When it founds a project, `mnema init` writes a short block into the files agent hosts read as
 standing instructions, and names each file it wrote. The block says when to call the mnema tools
 (`bootstrap` at the opening, `governing_rules` before changing a file, `record_decision` when a choice
-is settled, `capture_memory` for what the code does not show), that a decision is born `proposed`
-and a person accepts it, that a subagent hands its decisions back rather than recording them, the
+is settled, `capture_memory` for what the code does not show), that a decision is born `proposed` and,
+once accepted, is in force (an agent's acceptance is recorded as an agent's, and `mnema switch off agent-accepts`
+leaves it to a person), that a subagent hands its decisions back rather than recording them, the
 `mnema decision record` command where the tools are not connected, as an example that runs as it
 stands (with `--alternatives`), how a decision that replaces an earlier one says so
 (`decision_transition` with `action` `supersede`, or `mnema decision supersede <old-id> <new-id>
@@ -1647,7 +1648,7 @@ through the plugin.
 The Gemini CLI extension carries the same text as its own context file. Every copy is the same
 text, so a host that reads several (Claude Code reads its `CLAUDE.md` or `AGENTS.md` and the rule
 file; Copilot CLI reads them all) reads it more than once rather than two versions of it. The text
-is 2,289 characters (the one before was 1,721).
+is 2,390 characters (the one before was 1,721).
 
 ```sh
 mnema instructions            # write the block where it is missing or an earlier version's

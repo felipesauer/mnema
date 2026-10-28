@@ -208,8 +208,8 @@ with its own changelog.
   that a decision is not edited once recorded: a new one that replaces it is recorded and the earlier one superseded
   (`decision_transition` with `action` `supersede`, or `mnema decision supersede <old-id> <new-id> --reason "<why>"`), and the new one is then read as replacing the earlier one, which it names. `mnema
   instructions` replaces a `v2` block by this one in every file, and still refuses a block whose text you edited (a formatter
-  that re-wraps prose, `proseWrap: "always"`, counts as an edit). The text is 2,289 characters, 545 tokens, against 1,721 and 409:
-  every host file that carries it carries 568 characters more. The Gemini extension's context file is generated from it.
+  that re-wraps prose, `proseWrap: "always"`, counts as an edit). The text is 2,390 characters, 570 tokens, against 1,721 and 409:
+  every host file that carries it carries 669 characters more. The Gemini extension's context file is generated from it.
 - **The top `ok` of `mnema verify --json` is the verdict on the record.** It said that the command ran and found a project, and it was
   `true` over a record that was tampered with, so a script that read the first field took a broken record for a sound one. It is now the same
   as `record.ok`: `false` over a broken record, and `false` where a set of paths covered no record. `requirementMet` still says whether
