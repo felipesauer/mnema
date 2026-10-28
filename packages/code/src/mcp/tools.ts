@@ -75,6 +75,7 @@ import {
   lookupServedSkill,
   type NextAction,
   nextActionsForTask,
+  pathInProject,
   type RecordBody,
   type RecordQuery,
   type RecordSearch,
@@ -167,6 +168,12 @@ import {
   successorOnlyForASupersede,
   supersedeLeavesNothingInForce,
 } from '../moved-record.js';
+import {
+  addressOfferLines,
+  decisionsCited,
+  decisionsInView,
+  supersedeOfferLines,
+} from '../offers-beside-a-recorded-decision.js';
 import { oneLine } from '../one-line.js';
 import {
   ASKS_A_PERSON_CHANNEL,
@@ -216,7 +223,14 @@ import {
   type WorkspaceTree,
 } from './locate.js';
 import { personSignedIn, routedTo, routeWrite, whereItFell } from './route.js';
-import { anchorIn, openWrite, type Session, type WriteTarget, whichOfWrite } from './session.js';
+import {
+  anchorIn,
+  MOST_PATHS_REMEMBERED,
+  openWrite,
+  type Session,
+  type WriteTarget,
+  whichOfWrite,
+} from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
 export type CaptureResult =
@@ -288,6 +302,12 @@ export type RecordDecisionResult =
         readonly id: string;
         /** The citable `ADR-<n>` label frozen into the record: a decision's name. */
         readonly adr: string;
+        /**
+         * What the new decision OFFERS beside its acknowledgement, as lines (none when there is
+         * nothing to offer): the paths this connection looked at it could be addressed at, and the
+         * decisions it cites that it could replace. Nothing is linked and nothing is moved.
+         */
+        readonly offered: readonly string[];
       })
   | {
       readonly ok: false;
@@ -916,7 +936,56 @@ export function runRecordDecision(
     scope: route.scope,
     ...routedTo(session, route),
     ...forwardReplacement(recorded),
+    offered: offersBesideADecision(session, route, input, recorded),
   };
+}
+
+/**
+ * What a decision just recorded OFFERS, composed by the ONE function the command line asks too
+ * ({@link decisionsCited}, in `offers-beside-a-recorded-decision.ts`): the address and the
+ * replacement, neither of them done.
+ *
+ * THE ADDRESS comes from {@link Session.looked}, and only when the decision landed in the
+ * session's OWN project: a path is relative to a root, and the paths this connection looked at
+ * are relative to this one. THE REPLACEMENT is read over the tree the decision landed in
+ * ({@link decisionsInView}): the gate finds a successor in the tree of the decision replaced, and
+ * a public decision is offered no title out of a private one. A read that cannot be made is no offer: the write already stands
+ * and this reply is not the place for it to fail.
+ */
+function offersBesideADecision(
+  session: Session,
+  route: { readonly scope: Scope; readonly target?: WriteTarget },
+  input: { title: string; rationale: string; alternatives?: string },
+  recorded: { readonly id: string; readonly adr: string },
+): string[] {
+  const own = route.target === undefined || route.target.dir === session.project;
+  const lines = own ? addressOfferLines(session.looked, recorded, route.scope) : [];
+  try {
+    const trees = route.target?.trees ?? session.trees;
+    const sources = withCaches(session, recordTrees(trees, route.target?.dir ?? session.project));
+    const cited = decisionsCited(
+      input,
+      decisionsInView(sources, route.scope, (source) => source.cache.listDecisions()),
+      recorded.id,
+    );
+    return [...lines, ...supersedeOfferLines(cited, recorded, 'mcp')];
+  } catch {
+    return lines;
+  }
+}
+
+/**
+ * The path a connection was asked about, remembered for {@link Session.looked} when it is this
+ * project's: spelled as an address spells it (`pathInProject`), the latest first, once, and no more
+ * than {@link MOST_PATHS_REMEMBERED}. A path outside the project, or the root itself, is not kept.
+ */
+function lookedAt(session: Session, path: string): void {
+  const relative = pathInProject(path, session.project ?? '');
+  if (relative === undefined) return;
+  const at = session.looked.indexOf(relative);
+  if (at !== -1) session.looked.splice(at, 1);
+  session.looked.unshift(relative);
+  session.looked.length = Math.min(session.looked.length, MOST_PATHS_REMEMBERED);
 }
 
 /**
@@ -2667,6 +2736,7 @@ export function runGoverningRulesTool(
   // `inProject` is what `requireProject` just checked, and a project session always
   // carries its directory: the two are set together by the cascade.
   const root = session.project ?? '';
+  lookedAt(session, input.path);
   return {
     ok: true,
     value: readGoverningRules(governanceCaches(session), {
@@ -2788,6 +2858,8 @@ export function runRulesBeforeAnEditTool(
 ): IntelligenceResult<HookReply> {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
+  // The path of an edit is one this connection looked at, said or not by the reply below.
+  lookedAt(session, input.path);
   // A RECORD THAT CANNOT BE READ REFUSES THE WRITE, as a reply and never as a tool error, which the
   // host would read as leave to write; the command hook answers the same (`runBeforeAPath`).
   try {
