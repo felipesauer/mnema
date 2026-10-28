@@ -99,6 +99,10 @@ exports.run = async () => {
     if (!existsSync(join(extension.extensionPath, container.icon))) {
       throw new Error(`the container icon ${container.icon} is not in the installed extension`);
     }
+    const mark = extension.packageJSON.contributes.icons?.['mnema-m'];
+    if (!mark || !existsSync(join(extension.extensionPath, mark.default.fontPath))) {
+      throw new Error('the icon font of the M is not in the installed extension');
+    }
     const badge = await until('the badge to count the proposed decision', () => {
       const now = extension.exports.shown();
       return now.badge?.value === 1 ? now.badge : undefined;
@@ -106,7 +110,7 @@ exports.run = async () => {
     if (badge.tooltip !== '1 decision awaits a judgment') {
       throw new Error(`the badge says ${JSON.stringify(badge.tooltip)}`);
     }
-    if (!/^\$\((book|info)\) [a-z-]+( · \d+ to judge)?$/.test(shown.text)) {
+    if (!/^\$\(mnema-m\) [a-z-]+( · \d+ to judge)?$/.test(shown.text)) {
       throw new Error(`with a record the bar says ${JSON.stringify(shown.text)}`);
     }
     if (!shown.text.endsWith(' · 1 to judge')) {

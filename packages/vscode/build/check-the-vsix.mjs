@@ -4,7 +4,8 @@
  * It opens the packed file (with the system `unzip`, which a runner has) and fails unless the
  * manifest inside is the one a store takes: published by `mnema`, not `private`, with its icon, its
  * changelog and its readme in the file, the icon a 128 by 128 PNG, and the side bar's icon the
- * monochrome SVG the manifest names. It needs no token and sends
+ * monochrome SVG the manifest names and the status bar's icon font a real TrueType file with the
+ * tables a browser sanitizer asks for. It needs no token and sends
  * nothing: it is the proof, before any store is asked, that the file is acceptable as it stands.
  */
 
@@ -53,6 +54,56 @@ else {
         refusals.push(`the container icon sets ${name}="${value}", not currentColor or none`);
     }
   }
+}
+// The status bar's M is a glyph of a font the manifest names: the file is in the vsix, is TrueType, and
+// holds the tables the editor's sanitizer asks of a web font (one it refuses draws nothing, silently).
+const FONT_TABLES = ['OS/2', 'cmap', 'glyf', 'head', 'hhea', 'hmtx', 'loca', 'maxp', 'name', 'post'];
+const icons = Object.entries(manifest.contributes?.icons ?? {});
+if (icons.length === 0) refusals.push('the manifest names no icon font in contributes.icons');
+for (const [id, icon] of icons) {
+  const fontPath = icon?.default?.fontPath;
+  const inside = `extension/${fontPath}`;
+  if (typeof fontPath !== 'string' || !listing.includes(inside)) {
+    refusals.push(`${id}: the font ${fontPath} is not in the file`);
+    continue;
+  }
+  const font = read(inside);
+  if (font.length < 12 || font.readUInt32BE(0) !== 0x00010000) {
+    refusals.push(`${id}: ${fontPath} does not begin as a TrueType file`);
+    continue;
+  }
+  const found = new Set();
+  for (let i = 0; i < font.readUInt16BE(4); i++) found.add(font.toString('latin1', 12 + 16 * i, 16 + 16 * i));
+  for (const table of FONT_TABLES)
+    if (!found.has(table)) refusals.push(`${id}: ${fontPath} has no ${table} table`);
+  // A table whose bytes do not sum to the checksum its record carries, or a file that does not sum to
+  // 0xB1B0AFBA once `checkSumAdjustment` is in, is damaged: the editor's sanitizer drops it and draws a square.
+  const sum = (bytes, skip = -1) => {
+    let total = 0;
+    for (let at = 0; at < bytes.length; at += 4) {
+      let word = 0;
+      for (let k = 0; k < 4; k++) word = word * 256 + (at + k < bytes.length && at !== skip ? bytes[at + k] : 0);
+      total = (total + word) % 0x100000000;
+    }
+    return total;
+  };
+  for (let i = 0; i < font.readUInt16BE(4); i++) {
+    const at = 12 + 16 * i;
+    const tag = font.toString('latin1', at, at + 4);
+    const start = font.readUInt32BE(at + 8);
+    const length = font.readUInt32BE(at + 12);
+    if (start + length > font.length) {
+      refusals.push(`${id}: ${fontPath} has a ${tag} table that runs past the end of the file`);
+      continue;
+    }
+    const bytes = font.subarray(start, start + length);
+    if (sum(bytes, tag === 'head' ? 8 : -1) !== font.readUInt32BE(at + 4))
+      refusals.push(`${id}: ${fontPath} has a ${tag} table whose checksum does not match its bytes`);
+  }
+  if (sum(font) !== 0xb1b0afba)
+    refusals.push(`${id}: ${fontPath} does not sum to 0xB1B0AFBA, its checkSumAdjustment is wrong`);
+  if (!/^\\E[0-9A-F]{3}$/i.test(icon.default.fontCharacter ?? ''))
+    refusals.push(`${id}: the character ${icon.default.fontCharacter} is not a private-use escape`);
 }
 const identity = read('extension.vsixmanifest').toString('utf8').match(/<Identity [^>]*>/)?.[0] ?? '';
 if (!/Publisher="mnema"/.test(identity)) refusals.push(`the vsix manifest says ${identity}`);

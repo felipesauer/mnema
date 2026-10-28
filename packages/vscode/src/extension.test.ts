@@ -468,7 +468,7 @@ describe('the extension reads the record through the command line', () => {
     const w = world(base());
     await settle();
     expect(w.bar.name).toBe('mnema');
-    expect(w.bar.text).toBe('$(book) fully-signed · 1 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 1 to judge');
     expect(w.bar.accessibilityInformation).toEqual({
       label: 'mnema: fully-signed, 1 decision awaits a judgment',
       role: 'button',
@@ -623,7 +623,7 @@ describe('the extension reads the record through the command line', () => {
       true,
       false,
     ]);
-    expect(w.bar.text).toBe('$(book) fully-signed · 1 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 1 to judge');
     expect(w.bar.command).toBe(CONTAINER_COMMAND);
     expect(w.tree().getChildren()).toHaveLength(1);
   });
@@ -643,7 +643,7 @@ describe('the extension reads the record through the command line', () => {
     expect(w.bar.text).toBe('$(warning) mnema not found');
     for (const l of w.settingListeners) l({ affectsConfiguration: (s) => s === 'mnema.command' });
     await settle();
-    expect(w.bar.text).toBe('$(book) fully-signed · 1 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 1 to judge');
     expect(w.makeRuns.at(-1)).toBe('good');
 
     // And a Refresh alone reads it too, with no event.
@@ -1242,7 +1242,7 @@ describe('the record is watched, and a new proposal raises the badge and the bar
     await vi.advanceTimersByTimeAsync(QUIET_MS);
     expect(w.shown).toEqual([]);
     expect(w.badge()?.value).toBe(2);
-    expect(w.bar.text).toBe('$(book) fully-signed · 2 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 2 to judge');
     expect(w.bar.accessibilityInformation).toMatchObject({
       label: 'mnema: fully-signed, 2 decisions await a judgment',
     });
@@ -1324,7 +1324,7 @@ describe('what awaits a judgment is a number on the side bar icon', () => {
     );
     for (const node of nodes.slice(20)) expect(node.description).toMatch(/^[0-9a-f-]{36}$/);
     expect(w.badge()).toEqual({ value: 25, tooltip: '25 decisions await a judgment' });
-    expect(w.bar.text).toBe('$(book) fully-signed · 25 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 25 to judge');
     expect(w.ran.filter((args) => args[0] === 'search')).toEqual([[...LIST.split(' ')]]);
   });
 
@@ -1375,7 +1375,7 @@ describe('what awaits a judgment is a number on the side bar icon', () => {
     answers[STATUS] = { code: 1, stdout: '', stderr: 'boom' };
     await w.command('mnema.refresh')();
     expect(w.badge()).toBeUndefined();
-    expect(w.bar.text).toBe('$(book) fully-signed');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed');
     expect(w.tree().getChildren()).toEqual([]);
     expect(w.executed.filter((e) => e[1] === 'mnema.proposedRead').map((e) => e[2])).toEqual([
       true,
@@ -1449,7 +1449,7 @@ describe('in a folder with no .mnema the command line is never run', () => {
     await vi.advanceTimersByTimeAsync(QUIET_MS);
     expect(w.ran).toContainEqual(['--version']);
     expect(w.bar.visible).toBe(true);
-    expect(w.bar.text).toBe('$(book) fully-signed · 1 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 1 to judge');
     expect(w.badge()?.value).toBe(1);
   });
 
@@ -1972,7 +1972,7 @@ describe('the record is read with few processes, and the work waits for what is 
   it('says the command is gone in the same reading in which a call came back with no exit code', async () => {
     const answers = withTwo();
     const w = await started(answers);
-    expect(w.bar.text).toBe('$(book) fully-signed · 2 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 2 to judge');
     const gone = { code: null, stdout: '', stderr: 'spawn mnema ENOENT' };
     answers[STATUS] = gone;
     answers['--version'] = gone;
@@ -1995,7 +1995,7 @@ describe('the record is read with few processes, and the work waits for what is 
     answers['--version'] = ok(`${MIN_CLI_VERSION}\n`);
     w.watcher.change[0]?.();
     await vi.advanceTimersByTimeAsync(QUIET_MS);
-    expect(w.bar.text).toBe('$(book) fully-signed · 2 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 2 to judge');
   });
 
   it('verifies at most once in ten seconds, and a write inside the interval is verified when it ends', async () => {
@@ -2083,7 +2083,7 @@ describe('the record is read with few processes, and the work waits for what is 
     await vi.advanceTimersByTimeAsync(100);
     expect(w.bar.text).toBe('mnema: reading');
     await vi.advanceTimersByTimeAsync(500);
-    expect(w.bar.text).toBe('$(book) fully-signed · 2 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 2 to judge');
     const slowVerify: Run = async (args) => {
       if (args[0] === 'verify') await new Promise((resolve) => setTimeout(resolve, 500));
       return answers[args.join(' ')] ?? { code: 1, stdout: '', stderr: 'no answer' };
@@ -2092,18 +2092,18 @@ describe('the record is read with few processes, and the work waits for what is 
     await vi.advanceTimersByTimeAsync(100);
     expect(other.bar.text).toBe('mnema: reading');
     await vi.advanceTimersByTimeAsync(500);
-    expect(other.bar.text).toBe('$(book) fully-signed · 2 to judge');
+    expect(other.bar.text).toBe('$(mnema-m) fully-signed · 2 to judge');
   });
 
   it('keeps the level it last read, with the count that is new, between two verifications', async () => {
     const answers = withTwo();
     const w = await started(answers);
-    expect(w.bar.text).toBe('$(book) fully-signed · 2 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 2 to judge');
     answers[STATUS] = awaiting(decision('d1', 'Use X', 'ADR-1'));
     w.watcher.change[0]?.();
     await vi.advanceTimersByTimeAsync(QUIET_MS);
     expect(verifies(w)).toBe(1);
-    expect(w.bar.text).toBe('$(book) fully-signed · 1 to judge');
+    expect(w.bar.text).toBe('$(mnema-m) fully-signed · 1 to judge');
   });
 
   it('does not read the stacks while their view is hidden, reads them when it appears, and says it has not read them until then', async () => {
