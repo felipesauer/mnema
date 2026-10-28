@@ -1590,7 +1590,7 @@ export function installTable(): string {
     const [rung = 'none', ...caveat] = rungOf(name).split(', ');
     // The rung keeps its caveat: a host whose (a) is only documented is not the same as one measured.
     const shown =
-      caveat.length === 0 ? `**${rung}**` : `**${rung}**<br><sub>${caveat.join(', ')}</sub>`;
+      caveat.length === 0 ? `**${rung}**` : `**${rung}** <sub>${caveat.join(', ')}</sub>`;
     return `| [${SHOWN[name].name}](hosts.md#${HOSTS[name].install.at}) | ${shown} | ${installLine(name)} |`;
   });
   return ['| Host | Rung | Install |', '| :--- | :---: | :--- |', ...rows].join('\n');

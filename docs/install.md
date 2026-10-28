@@ -79,15 +79,15 @@ person ([how each cell is known](evidence.md#each-hosts-rung)).
 | [Claude Code](hosts.md#claude-code) | **(d)** | `claude plugin marketplace add felipesauer/mnema`, then `claude plugin install mnema@mnema` |
 | [VS Code](hosts.md#vs-code-and-cursor) | **(d)** | The Claude Code plugin, then `mnema doctor --fix vscode` |
 | [Cursor CLI](hosts.md#vs-code-and-cursor) | **(c)** | The Claude Code plugin, installed on the same machine |
-| [Codex](hosts.md#codex) | **(c)**<br><sub>with (a) documented, not measured</sub> | `codex plugin marketplace add felipesauer/mnema`, then `codex plugin add mnema@mnema` |
-| [Copilot CLI](hosts.md#github-copilot-cli) | **(d)**<br><sub>with (a) documented, not measured</sub> | `copilot plugin marketplace add felipesauer/mnema`, then `copilot plugin install mnema@mnema` |
-| [OpenCode](hosts.md#opencode) | **(c)**<br><sub>with (a) documented, not measured</sub> | One file copied into `.opencode/plugins/`, and the server declared in `opencode.json` |
-| [Gemini CLI](hosts.md#gemini-cli) | **(c)**<br><sub>with (a) documented, not measured</sub> | `gemini extensions install /path/to/mnema/plugin/gemini` |
-| [Qwen Code](hosts.md#qwen-code) | **(c)**<br><sub>with (a) documented, not measured</sub> | `qwen extensions install /path/to/mnema/plugin` |
-| [Cursor](hosts.md#any-other-host-with-an-mcp-client) | **(a)**<br><sub>documented, not measured</sub> | The server: the command `mnema` with the argument `mcp` |
-| [Antigravity CLI](hosts.md#any-other-host-with-an-mcp-client) | **(a)**<br><sub>documented, not measured</sub> | The server: the command `mnema` with the argument `mcp` |
-| [Factory Droid](hosts.md#any-other-host-with-an-mcp-client) | **(a)**<br><sub>documented, not measured</sub> | The server: the command `mnema` with the argument `mcp` |
-| [Goose](hosts.md#any-other-host-with-an-mcp-client) | **(a)**<br><sub>documented, not measured</sub> | The server: the command `mnema` with the argument `mcp` |
+| [Codex](hosts.md#codex) | **(c)** <sub>with (a) documented, not measured</sub> | `codex plugin marketplace add felipesauer/mnema`, then `codex plugin add mnema@mnema` |
+| [Copilot CLI](hosts.md#github-copilot-cli) | **(d)** <sub>with (a) documented, not measured</sub> | `copilot plugin marketplace add felipesauer/mnema`, then `copilot plugin install mnema@mnema` |
+| [OpenCode](hosts.md#opencode) | **(c)** <sub>with (a) documented, not measured</sub> | One file copied into `.opencode/plugins/`, and the server declared in `opencode.json` |
+| [Gemini CLI](hosts.md#gemini-cli) | **(c)** <sub>with (a) documented, not measured</sub> | `gemini extensions install /path/to/mnema/plugin/gemini` |
+| [Qwen Code](hosts.md#qwen-code) | **(c)** <sub>with (a) documented, not measured</sub> | `qwen extensions install /path/to/mnema/plugin` |
+| [Cursor](hosts.md#any-other-host-with-an-mcp-client) | **(a)** <sub>documented, not measured</sub> | The server: the command `mnema` with the argument `mcp` |
+| [Antigravity CLI](hosts.md#any-other-host-with-an-mcp-client) | **(a)** <sub>documented, not measured</sub> | The server: the command `mnema` with the argument `mcp` |
+| [Factory Droid](hosts.md#any-other-host-with-an-mcp-client) | **(a)** <sub>documented, not measured</sub> | The server: the command `mnema` with the argument `mcp` |
+| [Goose](hosts.md#any-other-host-with-an-mcp-client) | **(a)** <sub>documented, not measured</sub> | The server: the command `mnema` with the argument `mcp` |
 
 <!-- End of the generated host table. -->
 
