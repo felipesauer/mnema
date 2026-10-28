@@ -180,8 +180,7 @@ export const SWEPT_DAYS_SHOWN = 14;
 function sweptLongAgo(task: TaskProjection, asOf: string): boolean {
   const lastSeen = lastSeenOfSweptTask(task.state, task.proof);
   if (lastSeen === undefined) return false;
-  const age = Date.parse(asOf) - Date.parse(lastSeen);
-  return age > SWEPT_DAYS_SHOWN * 86_400_000;
+  return Date.parse(lastSeen) < Date.parse(asOf) - SWEPT_DAYS_SHOWN * 86_400_000;
 }
 
 /** How many live tasks {@link liveWork} leaves out of `asOf`'s list because a sweep blocked them long ago. */

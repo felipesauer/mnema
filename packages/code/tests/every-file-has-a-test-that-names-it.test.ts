@@ -391,10 +391,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "Words every run phrase for three readings; only regex spot-checks through `focus` and `resume` reach it, so humanDuration's two-unit cut and negative-clock branch go unobserved.",
   },
-  'packages/code/src/presentation/status.ts': {
-    reached: 'nobody imports it',
-    why: 'The `mnema status` printer: nothing imports it, its lines are only read by an end-to-end test about two doors sharing one derivation, and no fixture caps a list so `3 of 12` never prints.',
-  },
   'packages/code/src/presentation/tails.ts': {
     reached: 'nobody imports it',
     why: 'The `tail list` renderer: an e2e test does take the id off its printed row and feed `tail prune`, but nothing imports `tailReport`, so every column is observed only through the verb.',
@@ -668,7 +664,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   wiring: 50,
-  presentation: 8,
+  presentation: 7,
   projections: 3,
   completion: 4,
   commands: 2,
@@ -1292,6 +1288,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-name-and-the-hints.test.ts': 17,
   'packages/code/tests/the-name-in-full-blocks.test.ts': 10,
   'packages/code/tests/the-node-below-the-floor-is-refused.test.ts': 8,
+  'packages/code/tests/the-older-swept-tasks-are-one-line.test.ts': 3,
   'packages/code/tests/the-opening-and-the-doctor-say-no-more-than-they-prove.test.ts': 10,
   'packages/code/tests/the-opening-fits-the-height.test.ts': 17,
   'packages/code/tests/the-opening-fits-the-screen.test.ts': 17,
@@ -1531,6 +1528,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/workflow/stack-form.test.ts': 2,
   'packages/core/src/workflow/stack-operations.test.ts': 8,
   'packages/core/src/workflow/states.test.ts': 2,
+  'packages/core/src/workflow/swept-session.test.ts': 2,
   'packages/core/src/workflow/the-anchor-follows-the-founding.test.ts': 12,
   'packages/core/src/workflow/the-gates-refuse-in-words-and-hand-back-what-was-proved.test.ts': 4,
   'packages/core/src/workflow/the-second-move-sees-the-first.test.ts': 14,
@@ -2067,6 +2065,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/workflow/stack-form.ts',
   'packages/core/src/workflow/stack-operations.ts',
   'packages/core/src/workflow/states.ts',
+  'packages/core/src/workflow/swept-session.ts',
   'packages/core/src/workflow/transitions.ts',
   'packages/core/src/write.ts',
   'packages/sdk/src/hooks.ts',
@@ -2153,8 +2152,9 @@ describe('every file has a test that names it', () => {
     // 80 once the session journal's test names the host-transcript reader.
     // 79 once the inherited rule's test asserts on the governance page's rows.
     // 80 with the beside-a-write verb's wiring, which a-rule-is-handed-after-a-write drives through the built binary.
-    expect(found.size).toBe(80);
-    expect(byReach('nobody imports it')).toBe(80);
+    // 79 once the status printer's test imports it.
+    expect(found.size).toBe(79);
+    expect(byReach('nobody imports it')).toBe(79);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2176,7 +2176,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(80);
+    expect(reasons).toHaveLength(79);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

@@ -8,6 +8,8 @@
  */
 
 import type { TransitionProof } from '../projections/proof.js';
+import { taskDisposition } from './disposition.js';
+import { isTaskState } from './states.js';
 
 /** The first sentence of the reason a swept session's task is blocked with. */
 const LEAD = 'The session stopped with no end, so how it ended is unknown.';
@@ -41,8 +43,9 @@ export function lastSeenOfSweptTask(
   state: string,
   proof: readonly TransitionProof[] | undefined,
 ): string | undefined {
-  if (state !== 'BLOCKED') return undefined;
-  const blocked = [...(proof ?? [])].reverse().find((one) => one.action === 'block');
+  if (!isTaskState(state) || taskDisposition(state) !== 'stalled') return undefined;
+  let blocked: TransitionProof | undefined;
+  for (const one of proof ?? []) if (one.action === 'block') blocked = one;
   const line = blocked?.said.split('\n').find((said) => said.startsWith(REASON));
   if (blocked === undefined || line === undefined) return undefined;
   return LAST_SEEN.exec(line)?.[1] ?? blocked.at;
