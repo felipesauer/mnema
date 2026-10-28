@@ -1580,7 +1580,7 @@ export function hostSummary(base: string): string {
 export function installLine(name: HostName): string {
   const install = HOSTS[name].install;
   return 'commands' in install
-    ? install.commands.map((command) => `\`${command}\``).join('<br>')
+    ? install.commands.map((command) => `\`${command}\``).join(', then ')
     : install.words;
 }
 

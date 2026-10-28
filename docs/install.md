@@ -76,11 +76,11 @@ person ([how each cell is known](evidence.md#each-hosts-rung)).
 
 | Host | Rung | Install | The rest |
 | :--- | :---: | :--- | :--- |
-| Claude Code | **(d)** | `claude plugin marketplace add felipesauer/mnema`<br>`claude plugin install mnema@mnema` | [Details](hosts.md#claude-code) |
+| Claude Code | **(d)** | `claude plugin marketplace add felipesauer/mnema`, then `claude plugin install mnema@mnema` | [Details](hosts.md#claude-code) |
 | VS Code | **(d)** | The Claude Code plugin, then `mnema doctor --fix vscode` | [Details](hosts.md#vs-code-and-cursor) |
 | Cursor CLI | **(c)** | The Claude Code plugin, installed on the same machine | [Details](hosts.md#vs-code-and-cursor) |
-| Codex | **(c)** | `codex plugin marketplace add felipesauer/mnema`<br>`codex plugin add mnema@mnema` | [Details](hosts.md#codex) |
-| Copilot CLI | **(d)** | `copilot plugin marketplace add felipesauer/mnema`<br>`copilot plugin install mnema@mnema` | [Details](hosts.md#github-copilot-cli) |
+| Codex | **(c)** | `codex plugin marketplace add felipesauer/mnema`, then `codex plugin add mnema@mnema` | [Details](hosts.md#codex) |
+| Copilot CLI | **(d)** | `copilot plugin marketplace add felipesauer/mnema`, then `copilot plugin install mnema@mnema` | [Details](hosts.md#github-copilot-cli) |
 | OpenCode | **(c)** | One file copied into `.opencode/plugins/`, and the server declared in `opencode.json` | [Details](hosts.md#opencode) |
 | Gemini CLI | **(c)** | `gemini extensions install /path/to/mnema/plugin/gemini` | [Details](hosts.md#gemini-cli) |
 | Qwen Code | **(c)** | `qwen extensions install /path/to/mnema/plugin` | [Details](hosts.md#qwen-code) |
