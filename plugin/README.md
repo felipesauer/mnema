@@ -163,7 +163,7 @@ document, delivered by the host instead of waited for.
   quotes is a sentence typed into a conversation and not something written to be committed. Each
   proposal cites the session and the line, at most five are recorded at a `Stop`, and the same line
   is never recorded twice. A match is a pattern and not a judgement: that is why it is only
-  proposed, and nothing is in force until a person accepts it. No model is called.
+  proposed, and nothing is in force until it is accepted. No model is called.
 - **A `PostToolUse` hook after a write, in Claude Code**, that runs `mnema after-a-write`. A shell in
   front reads the path out of the payload and starts nothing for a path that can be neither of the two
   kinds below, so a common write costs that shell and no process (about 6 ms, measured on a loaded

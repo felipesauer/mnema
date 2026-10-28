@@ -34,6 +34,8 @@ import {
   type Presence,
 } from '../../src/host-names.js';
 import { INSTRUCTIONS_BODY } from '../../src/instructions-block.js';
+import type { ArrivalHost } from '../host-contract/support/the-arms-of-a-rule.js';
+import { theCell } from '../host-contract/support/the-arrival-table.js';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
 
@@ -1273,6 +1275,34 @@ const COLUMNS: readonly { readonly capability: Capability; readonly heading: str
   { capability: 'pushes', heading: 'The rules beside a write (not a rung)' },
 ];
 
+/** The hosts the arrival table measures, by the name this table gives them. */
+const ARRIVAL_OF: Partial<Record<HostName, ArrivalHost>> = {
+  codex: 'codex',
+  copilot: 'copilot',
+  opencode: 'opencode',
+  gemini: 'gemini',
+  qwen: 'qwen',
+};
+
+/**
+ * A host's cell, as the pages say it. The rules file of a host the arrival table measures is no
+ * longer only documented: a case starts the host and looks for the rule in a request, at the start
+ * of the session, from `AGENTS.md` or from the host's own file, and that case holds the cell. A
+ * host the table does not measure keeps the cell the documentation gave.
+ */
+function cellOf(name: HostName, capability: Capability): Cell {
+  const cell: Cell = HOSTS[name].cells[capability];
+  const measured = ARRIVAL_OF[name];
+  if (capability !== 'rulesFile' || cell.held !== 'documentation' || measured === undefined) {
+    return cell;
+  }
+  const arrives = (['agents-md', 'host-file'] as const).some(
+    (arm) => theCell(measured, arm, 'start').is === 'arrived',
+  );
+  const held = HOSTS[name].cells.pushes;
+  return arrives && held.held === 'a test' ? { does: true, held: 'a test', by: held.by } : cell;
+}
+
 /** One cell, in words, with the link that holds it relative to the page at `base`. */
 function cellText(cell: Cell, base: string): string {
   switch (cell.held) {
@@ -1290,7 +1320,7 @@ function cellText(cell: Cell, base: string): string {
 /** The rung a host reaches: the last of (a) to (d) whose cells all say yes, in order. */
 function rungOf(name: HostName): string {
   const cells = HOSTS[name].cells;
-  const a: readonly Cell[] = [cells.server, cells.rulesFile];
+  const a: readonly Cell[] = [cells.server, cellOf(name, 'rulesFile')];
   if (!a.every((cell) => cell.held !== 'not ported' && cell.does)) return 'none';
   const climbed = (['opens', 'refuses', 'asks'] as const).findIndex((c) => !does(name, c));
   const rung = ['(a)', '(b)', '(c)', '(d)'][climbed === -1 ? 3 : climbed] ?? 'none';
@@ -1307,7 +1337,7 @@ export function rungTable(base: string): string {
   const rule = `|${' --- |'.repeat(COLUMNS.length + 2)}`;
   const rows = HOST_NAMES.map((name) => {
     const host = HOSTS[name];
-    const cells = COLUMNS.map((c) => cellText(host.cells[c.capability], base));
+    const cells = COLUMNS.map((c) => cellText(cellOf(name, c.capability), base));
     return `| ${host.title} | ${cells.join(' | ')} | ${rungOf(name)} |`;
   });
   return [head, rule, ...rows].join('\n');
@@ -1544,18 +1574,17 @@ const SHORT: { readonly [C in Capability]: string } = {
  * the real host and what only its documentation says, each with its own mark.
  */
 function whatItGets(name: HostName): string {
-  const cells = HOSTS[name].cells;
   const all = Object.keys(SHORT) as Capability[];
   const words = (held: readonly Capability[]) => held.map((c) => SHORT[c]).join(' · ');
   const tested = all.filter((c) => {
-    const cell = cells[c];
+    const cell = cellOf(name, c);
     return cell.held === 'a test' && cell.does;
   });
   const readOnce = all.filter((c) => {
-    const cell = cells[c];
+    const cell = cellOf(name, c);
     return cell.held === 'not yet' && cell.does;
   });
-  const documented = all.filter((c) => cells[c].held === 'documentation');
+  const documented = all.filter((c) => cellOf(name, c).held === 'documentation');
   const said = words(tested);
   const marks = [
     ...(readOnce.length === 0 ? [] : [`${words(readOnce)}: read once`]),

@@ -212,6 +212,24 @@ export type NamedDecision =
   | { readonly found: false; readonly id: string };
 
 /**
+ * The decision each decision of `caches` replaced, named, by the id of the replacing one.
+ *
+ * The same reading of the other end as {@link nameDecision}, asked once for the whole record by
+ * the readings that serve many rules at a time (the rules addressed at a path), so a rule that
+ * replaced another says so wherever it is told, and in the same words.
+ */
+export function replacements(caches: readonly ProjectionCache[]): Map<string, NamedDecision> {
+  const named = new Map<string, NamedDecision>();
+  for (const cache of caches) {
+    for (const decision of cache.listDecisions()) {
+      if (decision.supersedes === undefined || named.has(decision.id)) continue;
+      named.set(decision.id, nameDecision(caches, decision.supersedes));
+    }
+  }
+  return named;
+}
+
+/**
  * Names the decision `id` from the first of `caches` that holds it, or says that none does.
  *
  * The ONE reading of a supersede's other end, asked by `readRecord` (so `read_record`, `show`

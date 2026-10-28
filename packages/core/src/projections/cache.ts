@@ -62,6 +62,7 @@ import {
   listLinksTo,
   listMemories,
   listObservationsAbout,
+  memoriesSaying,
 } from './knowledge-store.js';
 import { type ChainFrontier, chainArrivals, chainReplay } from './order.js';
 import { rebuild } from './rebuild.js';
@@ -689,6 +690,11 @@ export class ProjectionCache {
   /** Reads one captured memory by id, or null if it is not projected. */
   getMemory(id: string): MemoryProjection | null {
     return getMemory(this.db, id);
+  }
+
+  /** The captured memories still standing whose content is exactly this text, ordered by id. */
+  memoriesSaying(content: string): MemoryProjection[] {
+    return memoriesSaying(this.db, content);
   }
 
   /** Lists all captured memories, ordered by id. */

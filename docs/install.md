@@ -79,11 +79,11 @@ person ([how each cell is known](evidence.md#each-hosts-rung)).
 | [Claude Code](hosts.md#claude-code) | **(d)** | `claude plugin marketplace add felipesauer/mnema`, then `claude plugin install mnema@mnema` |
 | [VS Code](hosts.md#vs-code-and-cursor) | **(d)** | The Claude Code plugin, then `mnema doctor --fix vscode` |
 | [Cursor CLI](hosts.md#vs-code-and-cursor) | **(c)** | The Claude Code plugin, installed on the same machine |
-| [Codex](hosts.md#codex) | **(c)** *with (a) documented, not measured* | `codex plugin marketplace add felipesauer/mnema`, then `codex plugin add mnema@mnema` |
-| [Copilot CLI](hosts.md#github-copilot-cli) | **(d)** *with (a) documented, not measured* | `copilot plugin marketplace add felipesauer/mnema`, then `copilot plugin install mnema@mnema` |
-| [OpenCode](hosts.md#opencode) | **(c)** *with (a) documented, not measured* | One file copied into `.opencode/plugins/`, and the server declared in `opencode.json` |
-| [Gemini CLI](hosts.md#gemini-cli) | **(c)** *with (a) documented, not measured* | `gemini extensions install /path/to/mnema/plugin/gemini` |
-| [Qwen Code](hosts.md#qwen-code) | **(c)** *with (a) documented, not measured* | `qwen extensions install /path/to/mnema/plugin` |
+| [Codex](hosts.md#codex) | **(c)** | `codex plugin marketplace add felipesauer/mnema`, then `codex plugin add mnema@mnema` |
+| [Copilot CLI](hosts.md#github-copilot-cli) | **(d)** | `copilot plugin marketplace add felipesauer/mnema`, then `copilot plugin install mnema@mnema` |
+| [OpenCode](hosts.md#opencode) | **(c)** | One file copied into `.opencode/plugins/`, and the server declared in `opencode.json` |
+| [Gemini CLI](hosts.md#gemini-cli) | **(c)** | `gemini extensions install /path/to/mnema/plugin/gemini` |
+| [Qwen Code](hosts.md#qwen-code) | **(c)** | `qwen extensions install /path/to/mnema/plugin` |
 | [Cursor](hosts.md#any-other-host-with-an-mcp-client) | **(a)** *documented, not measured* | The server: the command `mnema` with the argument `mcp` |
 | [Antigravity CLI](hosts.md#any-other-host-with-an-mcp-client) | **(a)** *documented, not measured* | The server: the command `mnema` with the argument `mcp` |
 | [Factory Droid](hosts.md#any-other-host-with-an-mcp-client) | **(a)** *documented, not measured* | The server: the command `mnema` with the argument `mcp` |

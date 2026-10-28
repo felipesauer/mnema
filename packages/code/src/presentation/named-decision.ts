@@ -13,10 +13,27 @@ import type { NamedDecision } from '@mnema/context';
 import { oneLine } from '../one-line.js';
 import { asState } from './state.js';
 
-/** `ADR-16: <title> (superseded)`, or `<id> (not in the trees read)`. */
-export function namedDecisionText(named: NamedDecision): string {
+/**
+ * The most characters of a replaced decision's title a LINE THAT IS FITTED to a ceiling names.
+ * The title is a field of 64 KB somebody typed, and a line that grew with it would stop fitting
+ * and drop out of the text whole, so the rule in force would vanish for the length of a title of
+ * another decision. A longer title is cut here and ends in an ellipsis; `show` and `read_record`
+ * carry it whole.
+ */
+export const NAMED_TITLE_LIMIT = 120;
+
+function cutTitle(title: string, limit: number): string {
+  const chars = Array.from(title);
+  return chars.length <= limit ? title : `${chars.slice(0, limit).join('')}…`;
+}
+
+/**
+ * `ADR-16: <title> (superseded)`, or `<id> (not in the trees read)`. `titleLimit` caps the title,
+ * in characters, for a line that has to fit a ceiling.
+ */
+export function namedDecisionText(named: NamedDecision, titleLimit?: number): string {
   if (!named.found) return `${oneLine(named.id)} (not in the trees read)`;
   // The state is parenthesized in the ONE place that composes a state into a part, `asState`.
   const state = asState(oneLine(named.state)).text;
-  return `${oneLine(named.adr)}: ${oneLine(named.title)} ${state}`;
+  return `${oneLine(named.adr)}: ${titleLimit === undefined ? oneLine(named.title) : cutTitle(oneLine(named.title), titleLimit)} ${state}`;
 }

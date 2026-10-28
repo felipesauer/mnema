@@ -89,6 +89,18 @@ with its own changelog.
   committed brief document with `supersedes ADR-<n>: <title> (<state>)`: one more field of the same line, so a rule is still one line.
   Only the immediate decision is named, never the chain behind it and never its rationale. Nothing about the record changes: no
   kind, field or event, and no tool description.
+- **`governing_rules`, the rules pushed at an edit and the record page name the decision a rule replaced.** The previous entry
+  named it in `read_record`, `show` and the opening, and left three doors that tell the same rule without it. A rule that
+  replaced another now carries `supersedes` as `{ found, id, adr, title, state }` in each rule `governing_rules` lists, and ends
+  the line the rules pushed beside an edit (and the rules file written for another host) with `supersedes ADR-<n>: <title>
+  (<state>)`, in the same words and the same reading as the opening, still one line per rule. In the record page `mnema site`
+  writes, the two links of a decision that replaced or was replaced by another now carry the other decision's title and state
+  after the label, and say `(not in the trees read)` where the page does not hold it. What it costs where bytes are counted: a
+  rule that replaced nothing adds nothing; a rule that replaced one adds about 36 bytes plus the replaced title, 89 to 252 bytes for
+  the six replacements this project's own record holds (a mean of 199). The title named on those lines is cut at 120 characters
+  and ends in an ellipsis, so a replaced decision with a very long title (the field takes 64 KB) cannot make the line that
+  replaced it stop fitting and be left out of the text; `show` and `read_record` carry the title whole. No kind, field or
+  event changes, and no tool description.
 - **The rules of the record reach the model at an edit in Codex, Qwen Code and OpenCode.** Until now only Claude Code was handed
   the rules addressed at a path beside a write that goes through; the other hosts got the opening and the refusal, and the
   arrival measurement read `not arrived` at an edit for all of them. `mnema before-a-write --host codex|qwen|opencode` now answers,
@@ -244,6 +256,18 @@ with its own changelog.
   them; `mnema status` prints one line saying so. Nothing new is written, each stays whole to `read_record`, `show` and `search`, and
   a task a person blocked, or one whose block was lifted, is never cut. The age is counted from when the session was last seen, not
   from when the sweep ran.
+- **The pages say who accepts a decision, and what was measured of each host's rules file.** The README and the two skills of
+  the plugin said a person accepts a decision; with the switch `agent-accepts` on, which is the default, an agent may too, and
+  its acceptance is recorded as its own. And the host tables (the README, `docs/install.md`, `docs/evidence.md`) called the
+  rules file of Codex, Copilot CLI, OpenCode, Gemini CLI and Qwen Code "documented, not measured" after
+  `docs/rule-arrival.md` had measured it: those cells now say it is held by the arrival case of the host, and the rung
+  of those hosts no longer carries the caveat. Cursor, Antigravity, Factory Droid and Goose, which the arrival table does not
+  measure, keep it.
+- **The mnema instructions block survives a Markdown formatter that re-wraps it.** With prettier's `proseWrap: "always"` the block is
+  broken at the print width, and every check read it as somebody's edit and refused to touch it. The text between the markers (and the whole of a file that is wholly mnema's) is now compared by its blocks: the lines of a paragraph
+  or of one list item are one, and runs of white space are one space; a word changed, a list item taken out or two blocks run into one is still an edit and still refused. Checked against the real prettier with `always`, `never` and `preserve`.
+
+- **Recording the same memory or observation twice answers with the one on the record.** A `capture_memory` or a `record_observation` repeated after a reply that never arrived wrote a second note with another id, as a decision did until it was fixed. A memory whose text is exactly the one being captured, or an observation with the same text, topic and `about`, in the same tree and not retracted (compared on the text a write stores, after the replacement of secrets), is now the note already there: nothing is written, and the tools and the `memory` and `observe` commands answer `Memory <id> is already recorded in the <scope> tree with this text. Nothing was written.` (or `Observation <id> about <about> is already recorded ... with this topic and text.`) instead of `Captured memory` or `Recorded observation`. The rule is in the core operations, so both doors and the copy of a host's memory note ask it, and a twin another session wrote meanwhile is seen under the tail's lock. The brief of a handoff is not looked for: each handoff writes its own, so the newest brief stays the newest handoff's. A memory written now keeps the projection of its tree up to date, as recording a decision does. A retracted note is not a twin, and a task is not looked for: two tasks with one title are two tasks. No kind, field or event changes, and no tool description.
 - **The Action reads the rules of a pull request's files in one process, not one process per file.** It asked the rules command of the
   head and of the base for each changed file, which started the binary twice per file: about 0.8 s a file, some 160 s for a
   pull request of two hundred. It now calls the function the command is made of, once per path, inside its own process; the

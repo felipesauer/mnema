@@ -81,6 +81,7 @@
     "@sigstore/mock": "0.13.0",
     "@types/react": "^19.3.0",
     "@vscode/test-electron": "^3.1.0",
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "prettier": "3.9.10"
   }
 }

@@ -77,9 +77,11 @@ function openOn(...projects: readonly string[]): Session {
 }
 
 /** Captures a memory in a project (or the session's own), returning its id. */
+let facts = 0;
 function memoryIn(session: Session, project?: string): string {
+  facts += 1;
   const captured = runCaptureMemory(session, {
-    content: `a fact${project !== undefined ? ` in ${project}` : ''}`,
+    content: `fact ${facts}${project !== undefined ? ` in ${project}` : ''}`,
     ...(project !== undefined ? { project } : {}),
   });
   if (!captured.ok) throw new Error(`setup: capture refused: ${captured.message}`);
