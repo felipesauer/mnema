@@ -230,6 +230,13 @@ with its own changelog.
 
 ### Fixed
 
+- **The pages say who accepts a decision, and what was measured of each host's rules file.** The README and the two skills of
+  the plugin said a person accepts a decision; with the switch `agent-accepts` on, which is the default, an agent may too, and
+  its acceptance is recorded as its own. And the host tables (the README, `docs/install.md`, `docs/evidence.md`) called the
+  rules file of Codex, Copilot CLI, OpenCode, Gemini CLI and Qwen Code "documented, not measured" after
+  `docs/rule-arrival.md` had measured it: those cells now say it is held by the arrival case of the host, and the rung
+  of those hosts no longer carries the caveat. Cursor, Antigravity, Factory Droid and Goose, which the arrival table does not
+  measure, keep it.
 - **The mnema instructions block survives a Markdown formatter that re-wraps it.** With prettier's `proseWrap: "always"` the block is
   broken at the print width, and every check read it as somebody's edit and refused to touch it. The text between the markers (and the whole of a file that is wholly mnema's) is now compared by its blocks: the lines of a paragraph
   or of one list item are one, and runs of white space are one space; a word changed, a list item taken out or two blocks run into one is still an edit and still refused. Checked against the real prettier with `always`, `never` and `preserve`.

@@ -1193,7 +1193,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/support/reading-the-site.ts': 4,
   'packages/code/tests/support/screen.ts': 3,
   'packages/code/tests/support/the-cache-is-not-the-record.ts': 1,
-  'packages/code/tests/support/the-host-files.ts': 6,
+  'packages/code/tests/support/the-host-files.ts': 8,
   'packages/code/tests/support/the-line-a-path-takes.ts': 4,
   'packages/code/tests/support/the-record-held.ts': 3,
   'packages/code/tests/support/the-switch-pages.ts': 2,

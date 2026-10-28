@@ -23,7 +23,7 @@ record it. Then skip the rest of this skill.
 ## What a ruling becomes
 
 A ruling is a decision made without waiting for an answer, which is the state a decision is born
-in here: `proposed`, awaiting a judgement. Nothing about it is in force until a person accepts it.
+in here: `proposed`, awaiting a judgement. Nothing about it is in force until it is accepted, by a person or by an agent where `agent-accepts` is on.
 
 | In the ledger | In the record |
 |---|---|
