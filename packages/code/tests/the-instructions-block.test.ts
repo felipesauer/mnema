@@ -88,7 +88,8 @@ describe('the text of the block', () => {
       '`capture_memory`',
       'born `proposed`',
       'A subagent records no decision',
-      '`mnema decision record',
+      'mnema decision record "',
+      'mnema decision supersede',
     ]) {
       expect(INSTRUCTIONS_BODY).toContain(door);
     }

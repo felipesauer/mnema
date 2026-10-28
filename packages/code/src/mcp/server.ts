@@ -1349,7 +1349,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return recorded(active, `Recorded decision ${result.adr} (${result.id})`, result);
+      return recorded(active, `Recorded decision ${result.adr} (${result.id})`, result, {
+        after: result.offered,
+      });
     },
   );
 

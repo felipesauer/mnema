@@ -12,6 +12,10 @@ the keyless hashes are recomputed (`--require=signed` fails when they were taken
 material it loads, so swapping the committed key for another is caught too. The
 verdict names the **level** it reached rather than saying yes or no.
 
+![One word of a recorded decision changed by hand in the record's file, and mnema verify failing with entry hash mismatch](../recordings/a-tamper-caught.gif)
+
+*One word of an accepted decision, changed by hand: `verify` fails and exits 1. A cut that takes the newest events together with their checkpoint would not be caught: a hash chain shows what changed, never what is gone. The script that made it is [`recordings/a-tamper-caught.sh`](../recordings/a-tamper-caught.sh).*
+
 **What does not hold, stated as plainly as the rest.**
 
 | The claim somebody will read into it | What actually holds |

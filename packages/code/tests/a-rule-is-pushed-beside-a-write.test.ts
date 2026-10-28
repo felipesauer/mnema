@@ -22,7 +22,7 @@ import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { editRulesNotice, editRulesToldAcross, pathsLeftOut } from '../src/edit-rules-push.js';
-import { does, HOOK_HOSTS, type HookHost } from '../src/host-names.js';
+import { HOOK_HOSTS, type HookHost, pushesWithTheGate } from '../src/host-names.js';
 import { hookCeilingOf } from '../src/presentation/within-a-hook.js';
 import { type CliIo, run } from '../src/program.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
@@ -163,8 +163,10 @@ afterEach(() => {
 });
 
 describe('the hosts that take the push are the ones the table says', () => {
-  it('is every command host whose pushes cell says yes, and no other', () => {
-    expect(HOOK_HOSTS.filter((host) => does(host, 'pushes')).sort()).toEqual([...PUSHING].sort());
+  it('is every command host whose pushes cell says yes and whose gate carries it, and no other', () => {
+    expect(HOOK_HOSTS.filter((host) => pushesWithTheGate(host)).sort()).toEqual(
+      [...PUSHING].sort(),
+    );
   });
 });
 

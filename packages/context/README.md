@@ -39,6 +39,10 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   down from `readRecord`, asked for the one item that turned out to matter. Only
   `accepted` decisions are served: proposed is still on the table, rejected was
   refused, and superseded was replaced, so none of the three governs anything.
+  A decision in force that replaced another carries `supersedes`, the replaced one
+  named (`{ found, id, adr, title, state }`, `found: false` when no tree handed in
+  holds it), and `readRecord` names both ends of a decision's links as `supersedes`
+  and `supersededBy` beside the raw ids in `record`.
   `awaitingJudgement` is the other side of that filter: everything somebody has
   to rule on before it means anything: a task `IN_REVIEW`, a decision still
   `proposed`, a pattern `proposed` or `reviewed`. One list holding all three,

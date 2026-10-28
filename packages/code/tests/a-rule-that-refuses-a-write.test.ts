@@ -35,7 +35,7 @@ import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { asksAPerson, pathsOfAWrite } from '../src/host-hook.js';
-import { does, HOOK_HOSTS, type HookHost } from '../src/host-names.js';
+import { HOOK_HOSTS, type HookHost, pushesWithTheGate } from '../src/host-names.js';
 import { hookReply } from '../src/mcp/hook-reply.js';
 import { openSession } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
@@ -367,10 +367,11 @@ describe('the verb a command host runs', () => {
       await did('switch', 'off', 'edit-refuses-a-write');
       // The refused path asks nothing of its own (only the ledger path has an asking rule), so it
       // is silent; the ledger path, refused AND asked, falls to the asking where the host asks.
-      // A host that takes the push is handed the rules that govern that path, as context and with no
-      // decision; the others are answered nothing.
+      // A host that takes the push in the gate's own reply is handed the rules that govern that path,
+      // as context and with no decision; the others are answered nothing (Copilot CLI and Gemini CLI
+      // are handed them by the verb that runs after the write).
       const governed = verb(host, 'src/billing/invoice.ts').reply;
-      if (does(host, 'pushes')) {
+      if (pushesWithTheGate(host)) {
         expect(decided(governed)).toEqual({});
         expect(JSON.stringify(governed)).toContain(governing);
       } else {

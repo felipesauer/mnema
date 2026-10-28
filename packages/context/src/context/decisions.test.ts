@@ -13,6 +13,7 @@ import {
   acceptances,
   decisionsAwaitingJudgement,
   decisionsInForce,
+  nameDecision,
   ruleIdsInForce,
 } from './decisions.js';
 
@@ -121,6 +122,57 @@ describe('decisionsInForce: the calls that govern', () => {
     }
   });
 
+  it('names the decision it replaced on the line of the one that replaced it', () => {
+    const b = bench();
+    accept(b, 'dec-1', 'First');
+    accept(b, 'dec-2', 'Second');
+    accept(b, 'dec-3', 'Third');
+    supersedeDecision(b, 'dec-1', 'dec-2');
+    supersedeDecision(b, 'dec-2', 'dec-3');
+    const cache = b.cache();
+    try {
+      const [third] = decisionsInForce([cache]);
+      expect(third?.id).toBe('dec-3');
+      // The immediate one, by label, title and the state it is in now; not the chain behind it.
+      expect(third?.supersedes).toEqual({
+        found: true,
+        id: 'dec-2',
+        adr: 'ADR-dec-2',
+        title: 'Second',
+        state: 'superseded',
+      });
+      expect(JSON.stringify(third)).not.toContain('dec-1');
+      expect(JSON.stringify(third)).not.toContain('why Second');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('names a decision from whichever tree holds it, and says so when none does', () => {
+    // A supersede is applied only when the record holds the successor's birth, so the two ends
+    // of an applied one are projected together; what can differ is the set of trees a READER
+    // was handed. The other end is named from any of them and said to be absent from all.
+    const team = bench();
+    const mine = bench();
+    accept(team, 'dec-1', 'The team call');
+    birthDecision(mine, 'dec-2', 'My own call');
+    const teamCache = team.cache();
+    const mineCache = mine.cache();
+    try {
+      expect(nameDecision([teamCache, mineCache], 'dec-2')).toEqual({
+        found: true,
+        id: 'dec-2',
+        adr: 'ADR-dec-2',
+        title: 'My own call',
+        state: 'proposed',
+      });
+      expect(nameDecision([teamCache], 'dec-2')).toEqual({ found: false, id: 'dec-2' });
+    } finally {
+      teamCache.close();
+      mineCache.close();
+    }
+  });
+
   it('never carries the RATIONALE: the key is absent, not empty', () => {
     // Absence, not an empty string: a present-but-blank `rationale` would say the
     // decision was argued with nothing, which is the opposite of what is true. The
@@ -140,7 +192,8 @@ describe('decisionsInForce: the calls that govern', () => {
       expect(JSON.stringify(served)).not.toContain('why A call with a long argument');
       expect(served).not.toHaveProperty('alternatives');
       expect(JSON.stringify(served)).not.toContain('turned down for A call with a long');
-      // Nor the links the projection carries: a supersede is the audit's reading.
+      // Nor a link this decision has none of: it replaced nothing, so no `supersedes` is
+      // carried (a decision that replaced one names it, see "names the decision it replaced").
       expect(served).not.toHaveProperty('supersedes');
       expect(served).not.toHaveProperty('supersededBy');
     } finally {

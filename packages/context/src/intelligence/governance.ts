@@ -686,6 +686,20 @@ function posix(segments: readonly string[]): string {
 }
 
 /**
+ * The project-relative, `/`-separated spelling of `path`, or `undefined` when it names the root
+ * itself or something outside the project.
+ *
+ * It is {@link relativeSegments} said once more for a caller that keeps paths (the MCP session
+ * remembers the ones it was asked about) and so must keep only the ones that are this project's
+ * and spell each as an address spells it: the same normalization, so `./src/../src/a.ts`, an
+ * absolute path under the root and `src/a.ts` are one path, and `../other/a.ts` is none.
+ */
+export function pathInProject(path: string, root: string): string | undefined {
+  const segments = relativeSegments(path, root);
+  return segments === null || segments.length === 0 ? undefined : posix(segments);
+}
+
+/**
  * A path reduced to the segments it names, relative to `root`, or null when it
  * names something outside the project.
  *

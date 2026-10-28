@@ -151,7 +151,7 @@ waiting for a judgment is on the Visual Studio Marketplace and on Open VSX as `m
 In VS Code and Cursor, the server is the same `mnema mcp`, and the plugin is the same
 one. VS Code's agent reads the Claude Code plugin format, and Cursor's command-line agent
 picks up a plugin installed in Claude Code on the same machine; the per-host details (what
-each one runs, the rules at each edit (which Claude Code, Codex, Qwen Code and OpenCode get, and these two do not yet), and the pause for a person
+each one runs, the rules at each edit (which Claude Code, Codex, Copilot CLI, Gemini CLI, Qwen Code and OpenCode get, and these two do not yet), and the pause for a person
 that reaches VS Code as well) are in the [plugin's page](../plugin/README.md#in-vs-code-and-cursor).
 
 VS Code's agent loads the plugin only from a folder listed in its `chat.pluginLocations` setting,

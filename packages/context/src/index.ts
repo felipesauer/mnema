@@ -75,6 +75,7 @@ export {
   type Acceptance,
   type DecisionRef,
   decisionDisposition,
+  type NamedDecision,
   ruleIdsInForce,
 } from './context/decisions.js';
 // The vocabulary the two accessors answer IN. A consumer that maps every disposition
@@ -244,6 +245,7 @@ export {
   governsInForceEverywhere,
   type InheritedAddresses,
   type PushedRule,
+  pathInProject,
   type ReachQuery,
   type RulesAtPath,
   refusesAWriteAt,

@@ -290,7 +290,7 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
   'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-pages.mjs':
     'The readings the site is made of, plain functions over text: the title that moves to the frontmatter, the link that lands, the sections of the README and the groups of its Docs. The case runs them over a fixture and over the real tree, and the specifier is the proof of the site and not a dependency the scanner could follow.',
   'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts -> ../../../site/build/the-pages.mjs':
-    'The one function of the readings the built-site case needs, the address /record/ links back to, so that the case that compares /record/ with what `mnema site --back-link` writes asks for the same address the build used. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
+    'Two things of the readings the built-site case needs: the address /record/ links back to, so that the case that compares /record/ with what `mnema site --back-link` writes asks for the same address the build used, and the path of the recording the proof shows, so that the case that looks for it in the built page reads it from where the build does. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
   'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-record.mjs':
     'The step that writes the verifier page of the record by running the binary of this commit, and stops when the record does not verify. The case runs it over this repository and over a copy with one byte changed, so the specifier is the proof that a record that fails never becomes a page of the site.',
 };
@@ -430,6 +430,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/wiring/before-a-write.ts': {
     reached: 'nobody imports it',
     why: "The before-a-write verb's wiring, reading a host's payload through the standard-input port; a-host-that-runs-commands-asks-for-a-person.test.ts runs it through the binary with a payload and through the plugin's own command, and every-verb-says-if-it-writes.test.ts exercises it in process.",
+  },
+  'packages/code/src/wiring/beside-a-write.ts': {
+    reached: 'nobody imports it',
+    why: "The beside-a-write verb's wiring, reading a host's payload through the standard-input port; a-rule-is-handed-after-a-write.test.ts runs it through the binary with a payload, in four processes at once, and refuses it for a host that does not run it after a write.",
   },
   'packages/code/src/wiring/brief.ts': {
     reached: 'nobody imports it',
@@ -663,7 +667,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 49,
+  wiring: 50,
   presentation: 8,
   projections: 3,
   completion: 4,
@@ -924,6 +928,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/mcp/hook-reply.test.ts': 2,
   'packages/code/src/mcp/lifecycle.test.ts': 2,
   'packages/code/src/not-a-project.test.ts': 8,
+  'packages/code/src/offers-beside-a-recorded-decision.test.ts': 4,
   'packages/code/src/one-voice-for-a-no.test.ts': 11,
   'packages/code/src/outside-the-record.test.ts': 14,
   'packages/code/src/pinned-run.test.ts': 11,
@@ -931,6 +936,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/presentation/folded.test.ts': 15,
   'packages/code/src/presentation/forms.test.ts': 6,
   'packages/code/src/presentation/git-bridge.test.ts': 6,
+  'packages/code/src/presentation/named-decision.test.ts': 2,
   'packages/code/src/presentation/one-line-per-item.test.ts': 10,
   'packages/code/src/presentation/parts.test.ts': 11,
   'packages/code/src/presentation/recall.test.ts': 7,
@@ -1003,6 +1009,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-read-by-path-finds-the-link.test.ts': 16,
   'packages/code/tests/a-read-by-path-in-a-workspace-of-two-roots.test.ts': 10,
   'packages/code/tests/a-record-no-tail-holds-is-refused.test.ts': 6,
+  'packages/code/tests/a-recorded-decision-offers-the-address-and-the-supersede.test.ts': 13,
   'packages/code/tests/a-refresh-landing-in-a-project-signs-as-the-agent.test.ts': 10,
   'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
   'packages/code/tests/a-refusal-leaves-nothing.test.ts': 13,
@@ -1012,6 +1019,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-retired-agent-key-without-a-tail-is-called-retired.test.ts': 7,
   'packages/code/tests/a-routed-write-says-where-it-landed.test.ts': 11,
   'packages/code/tests/a-rule-carries-its-check.test.ts': 10,
+  'packages/code/tests/a-rule-is-handed-after-a-write.test.ts': 14,
   'packages/code/tests/a-rule-is-pushed-beside-a-write.test.ts': 17,
   'packages/code/tests/a-rule-says-who-ruled-it.test.ts': 11,
   'packages/code/tests/a-rule-that-refuses-a-write.test.ts': 17,
@@ -1263,6 +1271,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-init-says-no-file-of-yours-only-when-true.test.ts': 6,
   'packages/code/tests/the-input-has-its-own-place.test.ts': 22,
   'packages/code/tests/the-install-line-is-one.test.ts': 5,
+  'packages/code/tests/the-instructions-block-is-formatted-and-its-example-runs.test.ts': 9,
   'packages/code/tests/the-instructions-block.test.ts': 8,
   'packages/code/tests/the-instructions-verb-says-each-file.test.ts': 7,
   'packages/code/tests/the-key-lives-in-one-place.test.ts': 8,
@@ -1320,6 +1329,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-refused-run-is-refused-everywhere.test.ts': 13,
   'packages/code/tests/the-release-prepare-writes-every-number.test.ts': 7,
   'packages/code/tests/the-release-workflow-publishes-without-a-token.test.ts': 4,
+  'packages/code/tests/the-replaced-decision-is-named-where-it-is-read.test.ts': 16,
   'packages/code/tests/the-rule-has-an-address.test.ts': 11,
   'packages/code/tests/the-rule-reaches-the-writing.test.ts': 15,
   'packages/code/tests/the-rulers-are-read-by-the-rules.test.ts': 6,
@@ -1626,6 +1636,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/aging.ts',
   'packages/code/src/commands/antipatterns.ts',
   'packages/code/src/commands/before-a-write.ts',
+  'packages/code/src/commands/beside-a-write.ts',
   'packages/code/src/commands/brief.ts',
   'packages/code/src/commands/check.ts',
   'packages/code/src/commands/commit-hook.ts',
@@ -1746,6 +1757,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/moved-record.ts',
   'packages/code/src/node-floor.ts',
   'packages/code/src/not-a-project.ts',
+  'packages/code/src/offers-beside-a-recorded-decision.ts',
   'packages/code/src/one-line.ts',
   'packages/code/src/outside-the-record.ts',
   'packages/code/src/pinned-run.ts',
@@ -1762,6 +1774,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/presentation/git-bridge.ts',
   'packages/code/src/presentation/items.ts',
   'packages/code/src/presentation/line.ts',
+  'packages/code/src/presentation/named-decision.ts',
   'packages/code/src/presentation/occurrence.ts',
   'packages/code/src/presentation/plain.ts',
   'packages/code/src/presentation/promoted.ts',
@@ -1855,6 +1868,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/antipatterns.ts',
   'packages/code/src/wiring/audit.ts',
   'packages/code/src/wiring/before-a-write.ts',
+  'packages/code/src/wiring/beside-a-write.ts',
   'packages/code/src/wiring/body-source.ts',
   'packages/code/src/wiring/brief.ts',
   'packages/code/src/wiring/check.ts',
@@ -2127,8 +2141,9 @@ describe('every file has a test that names it', () => {
     // 81 once the search store's test names materializeDecisions.
     // 80 once the session journal's test names the host-transcript reader.
     // 79 once the inherited rule's test asserts on the governance page's rows.
-    expect(found.size).toBe(79);
-    expect(byReach('nobody imports it')).toBe(79);
+    // 80 with the beside-a-write verb's wiring, which a-rule-is-handed-after-a-write drives through the built binary.
+    expect(found.size).toBe(80);
+    expect(byReach('nobody imports it')).toBe(80);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2150,7 +2165,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(79);
+    expect(reasons).toHaveLength(80);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

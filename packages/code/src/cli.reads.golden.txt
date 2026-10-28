@@ -1642,6 +1642,13 @@ $ mnema status --actor <anchor> --json
 |       "acceptance": {
 |         "by": "<anchor-short>",
 |         "unconfirmed": false
+|       },
+|       "supersedes": {
+|         "found": true,
+|         "id": "<decision-wiki>",
+|         "adr": "ADR-2",
+|         "title": "Keep the runbook in the wiki",
+|         "state": "superseded"
 |       }
 |     }
 |   ],
@@ -1823,7 +1830,7 @@ $ mnema brief
 | 1 more decision is recorded here and awaiting a judgement, and it is not below.
 | Nothing waiting governs anything yet; ask `bootstrap` for what is waiting.
 |
-| - **ADR-1: Keep the runbook in the record** · `<decision-runbook>` · accepted by <anchor-short> (a person)
+| - **ADR-1: Keep the runbook in the record** · `<decision-runbook>` · accepted by <anchor-short> (a person) · supersedes ADR-2: Keep the runbook in the wiki (superseded)
 |
 | ## Patterns adopted (1)
 |
@@ -1922,7 +1929,7 @@ $ mnema show <task-runbook>
 $ mnema show <decision-runbook>
 | decision <decision-runbook>  ·  public
 |   ADR-1: Keep the runbook in the record (accepted)
-|   supersedes <decision-wiki>
+|   supersedes ADR-2: Keep the runbook in the wiki (superseded) · <decision-wiki>
 |   recorded by <anchor-short> (a person)
 |   accepted by <anchor-short> (a person)
 |
@@ -1937,7 +1944,7 @@ $ mnema show <decision-runbook>
 $ mnema show <decision-wiki>
 | decision <decision-wiki>  ·  public
 |   ADR-2: Keep the runbook in the wiki (superseded)
-|   superseded by <decision-runbook>
+|   superseded by ADR-1: Keep the runbook in the record (accepted) · <decision-runbook>
 |   recorded by <anchor-short> (a person)
 |
 | it is where we look

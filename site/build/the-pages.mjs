@@ -113,6 +113,9 @@ export function whereItLands(target, from, facts, docs) {
   if (page && docs.has(page[1])) return `${facts.base}/docs/${page[1]}/${fragment}`;
   const asset = /^docs\/assets\/([^/]+)$/.exec(resolved);
   if (asset) return `${facts.base}/assets/${asset[1]}${fragment}`;
+  // A recording a page shows is an image: on GitHub its path is an HTML page, so the site carries the GIF itself.
+  const recording = /^recordings\/([^/]+\.gif)$/.exec(resolved);
+  if (recording) return `${facts.base}/recordings/${recording[1]}${fragment}`;
   const kept = target.endsWith('/') && !resolved.endsWith('/') ? `${resolved}/` : resolved;
   return `${facts.repoUrl}/blob/${facts.sha}/${kept}${fragment}`;
 }
@@ -267,6 +270,9 @@ export function stepsOf(readme, heading) {
   if (steps.length !== 4) throw new Error(`the README's "${heading}" has ${steps.length} numbered steps, and the hero reads four`);
   return { heading, steps };
 }
+
+/** The recording the landing shows beside the verdict: one of those the repository already holds. */
+export const RECORDING = 'recordings/a-tamper-caught.gif';
 
 /**
  * What the README says of a recording: the `alt` of its `<img>` and the caption beside it (`<sub>`), as HTML, the

@@ -111,6 +111,13 @@ export interface Host {
     readonly tokensAt: string;
     readonly bytesPerTokenAt: string;
   };
+  /**
+   * Where the host's hook can put text beside a write that goes through, for a host whose
+   * `pushes` cell says yes: `after` is a hook that runs once the write is done (Copilot CLI's
+   * `PostToolUse`, Gemini CLI's `AfterTool`), because the host's hook before a write has no field
+   * for text. Absent, the push rides in the same reply as the gate, before the write.
+   */
+  readonly pushesAt?: 'after';
   /** What the page says under the table about this host, beside its cells. */
   readonly note?: string;
   /**
@@ -149,6 +156,8 @@ const HELD = {
   codexArrives: 'packages/code/tests/host-contract/the-rule-arrives.codex.test.ts',
   qwenArrives: 'packages/code/tests/host-contract/the-rule-arrives.qwen.test.ts',
   opencodeArrives: 'packages/code/tests/host-contract/the-rule-arrives.opencode.test.ts',
+  copilotArrives: 'packages/code/tests/host-contract/the-rule-arrives.copilot.test.ts',
+  geminiArrives: 'packages/code/tests/host-contract/the-rule-arrives.gemini.test.ts',
   claudeHandback:
     'packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts',
   claudeSubagentStart:
@@ -365,6 +374,7 @@ export const HOSTS = {
   copilot: {
     title: 'GitHub Copilot CLI',
     door: 'command',
+    pushesAt: 'after',
     // Copilot CLI reads the plugin through a manifest of its own (`.github/plugin/plugin.json`,
     // which it looks for before `.claude-plugin/plugin.json` and VS Code does not look for at all)
     // that names this hooks file, so no other host runs its command and none of theirs runs here.
@@ -382,7 +392,10 @@ export const HOSTS = {
       'its timeout is let through by the host (read, not measured: [read 14 October 2026](' +
       `${COPILOT_DOCS}/reference/hooks-reference.md#exit-codes-for-command-hooks)). The opening is the same ` +
       'text Claude Code gets, cut at 10,000 units, far under the 10 MiB the host accumulates ' +
-      '(read, not measured). Run without a person (`copilot -p`), a hook’s `ask` is a denial ' +
+      '(read, not measured). The rules of the record at an edit ride in `postToolUse`, whose ' +
+      'top-level `additionalContext` the host appends to the result of the write (held by its ' +
+      'arrival case): the hook before a write has no field for text. ' +
+      'Run without a person (`copilot -p`), a hook’s `ask` is a denial ' +
       '(held by its test); with one, the host asks (held by its test). The model is any ' +
       'the host is pointed at, with no GitHub account (`COPILOT_OFFLINE`), under the license ' +
       'at [`LICENSE.md`](https://github.com/github/copilot-cli/blob/a7ae5b0ce17beddfa5930812bb064138fd3a1cb5/LICENSE.md).',
@@ -414,7 +427,7 @@ export const HOSTS = {
       opens: { does: true, held: 'a test', by: HELD.copilotContract },
       refuses: { does: true, held: 'a test', by: HELD.copilotContract },
       asks: { does: true, held: 'a test', by: HELD.copilotContract },
-      pushes: { held: 'not ported' },
+      pushes: { does: true, held: 'a test', by: HELD.copilotArrives },
     },
     places: {
       // `.agents/skills` under the project and under the home are two of the folders in the loading
@@ -489,6 +502,7 @@ export const HOSTS = {
   gemini: {
     title: 'Gemini CLI',
     door: 'command',
+    pushesAt: 'after',
     // Gemini CLI reads no hooks file of this plugin's: it loads an extension, a folder with a
     // `gemini-extension.json` at its root and its hooks in `hooks/hooks.json`, the path the Claude
     // Code plugin's own hooks file already has, so the extension is a folder of its own
@@ -505,7 +519,10 @@ export const HOSTS = {
       '`<hook_context>`, and in a non-interactive run puts it before the prompt (read in ' +
       `[\`types.ts\`](${GEMINI_SOURCE}/packages/core/src/hooks/types.ts#L263-L277) and ` +
       `[\`gemini.tsx\`](${GEMINI_SOURCE}/packages/cli/src/gemini.tsx#L951-L956)); a ceiling of ` +
-      'its own on that text was not found in the source read, so it is cut at 10,000 units. A hook ' +
+      'its own on that text was not found in the source read, so it is cut at 10,000 units. ' +
+      'The rules of the record at an edit ride in an `AfterTool` hook, whose ' +
+      '`hookSpecificOutput.additionalContext` the host appends to the result of the write inside ' +
+      '`<hook_context>` (held by its arrival case): `BeforeTool` has no field for text. A hook ' +
       'that exits with a code other than 0 or 2 is a warning and the call goes on, and the script ' +
       'fails open where nothing says the path is governed: with no `mnema` on the PATH, or a ' +
       'program of that name that is not this product, the write goes through (held by its ' +
@@ -541,7 +558,7 @@ export const HOSTS = {
       opens: { does: true, held: 'a test', by: HELD.geminiContract },
       refuses: { does: true, held: 'a test', by: HELD.geminiContract },
       asks: { does: false, held: 'a test', by: HELD.geminiContract },
-      pushes: { held: 'not ported' },
+      pushes: { does: true, held: 'a test', by: HELD.geminiArrives },
     },
     places: {
       // `.agents/skills` under the project and under the home, beside `.gemini/skills`. Its agents
@@ -785,6 +802,27 @@ export type HookHost = {
 export const HOOK_HOSTS = HOST_NAMES.filter(
   (name) => HOSTS[name].door === 'command',
 ) as readonly HookHost[];
+
+/**
+ * A host whose rules ride in a hook that runs AFTER the write (`mnema beside-a-write`), because
+ * its hook before the write cannot carry text: the hook hosts whose row says so.
+ */
+export type BesideHost = {
+  [H in HookHost]: (typeof HOSTS)[H] extends { readonly pushesAt: 'after' } ? H : never;
+}[HookHost];
+
+/** Every {@link BesideHost}, as the list `mnema beside-a-write --host` enumerates. */
+export const BESIDE_HOSTS = HOOK_HOSTS.filter(
+  (name) => (HOSTS[name] as Host).pushesAt === 'after',
+) as readonly BesideHost[];
+
+/**
+ * Whether the gate before a write, `mnema before-a-write`, hands the rules over in its own reply for
+ * this host: where the cell says it does and the row does not put the hook after the write.
+ */
+export function pushesWithTheGate(host: HookHost): boolean {
+  return does(host, 'pushes') && (HOSTS[host] as Host).pushesAt !== 'after';
+}
 
 /**
  * A host this product prints a rules file for (see `host-rules-file.ts`): the hosts whose rules

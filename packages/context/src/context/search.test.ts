@@ -10,8 +10,10 @@ import {
   handoff,
   link,
   makeBench,
+  moveDecision,
   observe,
   startRun,
+  supersedeDecision,
 } from '../../tests/support/chain.js';
 import type { ScopedCache } from '../sources.js';
 import { pertinentFirst, pertinentRecords, readRecord, searchRecords } from './search.js';
@@ -371,5 +373,69 @@ describe('pertinentFirst: the near records first, then the newest', () => {
     // Beside a word that does tell them apart, it neither adds nor takes away.
     const told = pertinentFirst(sources, { kind: 'memory', words: ['session', 'rounding'] });
     expect(told.pertinent).toBe(3);
+  });
+});
+
+describe('readRecord: the decision a decision replaced is named, not only numbered', () => {
+  /** Births a decision and accepts it. */
+  function accepted(b: Bench, id: string, title: string): void {
+    birthDecision(b, id, title);
+    moveDecision(b, id, 'proposed', 'accepted', 'accept');
+  }
+
+  function decisionBody(sources: readonly ScopedCache[], id: string) {
+    const body = readRecord(sources, id);
+    if (body === null || body.kind !== 'decision') throw new Error(`${id} is not a decision`);
+    return body;
+  }
+
+  it('names the replaced decision on the successor and the successor on the replaced one', () => {
+    const b = bench();
+    accepted(b, 'd-old', 'The first call');
+    accepted(b, 'd-new', 'The call that replaced it');
+    supersedeDecision(b, 'd-old', 'd-new');
+    const sources = [tree(b, 'public')];
+
+    const successor = decisionBody(sources, 'd-new');
+    expect(successor.supersedes).toEqual({
+      found: true,
+      id: 'd-old',
+      adr: 'ADR-d-old',
+      title: 'The first call',
+      state: 'superseded',
+    });
+    expect(successor.supersededBy).toBeUndefined();
+    // The raw id stays where it was.
+    expect(successor.record.supersedes).toBe('d-old');
+
+    const replaced = decisionBody(sources, 'd-old');
+    expect(replaced.supersededBy).toEqual({
+      found: true,
+      id: 'd-new',
+      adr: 'ADR-d-new',
+      title: 'The call that replaced it',
+      state: 'accepted',
+    });
+    expect(replaced.record.supersededBy).toBe('d-new');
+  });
+
+  it('names both ends of a chain of three from its middle', () => {
+    const b = bench();
+    accepted(b, 'd-1', 'First');
+    accepted(b, 'd-2', 'Second');
+    accepted(b, 'd-3', 'Third');
+    supersedeDecision(b, 'd-1', 'd-2');
+    supersedeDecision(b, 'd-2', 'd-3');
+    const middle = decisionBody([tree(b, 'public')], 'd-2');
+    expect(middle.supersedes).toMatchObject({ found: true, id: 'd-1', title: 'First' });
+    expect(middle.supersededBy).toMatchObject({ found: true, id: 'd-3', title: 'Third' });
+  });
+
+  it('carries neither field for a decision that replaced nothing and was replaced by nothing', () => {
+    const b = bench();
+    accepted(b, 'd-1', 'Alone');
+    const body = decisionBody([tree(b, 'public')], 'd-1');
+    expect(body).not.toHaveProperty('supersedes');
+    expect(body).not.toHaveProperty('supersededBy');
   });
 });
