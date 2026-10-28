@@ -728,7 +728,7 @@ export const HANDED_OVER: Readonly<
   'docs/how-it-works.md': { line: 2, name: 2 },
   'docs/install.md': { line: 5, name: 8 },
   'docs/packages.md': { line: 2, name: 3 },
-  'docs/rule-arrival.md': { line: 3 },
+  'docs/rule-arrival.md': { line: 1 },
   'docs/site.md': { line: 3, name: 7 },
   'docs/switches.md': { line: 20, name: 4 },
   'docs/verify-without-installing.md': { name: 1 },
