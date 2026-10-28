@@ -877,27 +877,33 @@ export interface ChannelSwitchedV1 extends Envelope {
  * reached that session" from "the plugin was not installed that week". This is the
  * missing fact, and it is what gives a silence a name.
  *
- * IT COUNTS WHAT IS PUSHED AT AN EDIT, AND ONLY THAT. The channels that append it are the two
- * the per-edit hook carries (the rules addressed at a path, and the asking for a person)
- * because that is where something is pushed and something is written in the same act. The
- * two texts a session OPENS with are pushed too, and they are not counted: they are printed
- * by reads, and a read of this record writes nothing to it, on purpose. So "the channel was
- * live in that run" is a sentence about the edits of that run; a run with no such fact says
- * nothing about whether its opening texts arrived.
+ * IT COUNTS WHAT IS PUSHED AT AN EDIT, AND ONLY THAT. The channels that append it are the
+ * ones where something is pushed and something is written in the same act: the rules addressed
+ * at a path and the asking for a person, whether the per-edit hook of Claude Code carries
+ * them or the process door a host runs before a write (`before-a-write --host codex`, `qwen`
+ * or `opencode`). The two texts a session OPENS with are pushed too, and they are not counted:
+ * they are printed by reads, and a read of this record writes nothing to it, on purpose. So
+ * "the channel was live" is a sentence about the edits, never about whether the opening texts
+ * arrived.
  *
- * IT IS ONCE PER RUN AND PER CHANNEL, never once per push, and the granularity is the
- * granularity of the POWER rather than of the mechanism. An injection is continuous
- * service, not a discrete act: the median session of this bench edits 34 files, the p90
- * edits 121 and the largest seen edited 3,424, and a signed append on each would put
- * thousands of writes on the hottest read path this product has to say the same sentence
- * over and over. What a reader needs is that the channel was live in that run, which one
- * fact carries exactly.
+ * IT IS ONCE PER RUN AND PER CHANNEL WHERE THERE IS A RUN, AND ONCE PER SESSION OF THE HOST
+ * WHERE THERE IS NONE, never once per push; the granularity is the granularity of the POWER
+ * rather than of the mechanism. The first premise was that the fact is made by a process that
+ * holds the run, so the run is in the envelope. A hook that is a process per write holds none:
+ * it stands the host's session id in for it, remembers outside the record that the session was
+ * served, and appends the fact on the first edit only, with no `run` in the envelope (a
+ * payload that names no session is pushed nothing). Losing that memory
+ * costs one fact more and never a push less. An injection is continuous service, not a discrete
+ * act: the median session of this bench edits 34 files, the p90 edits 121 and the largest seen
+ * edited 3,424, and a signed append on each would put thousands of writes on the hottest read
+ * path this product has to say the same sentence over and over. What a reader needs is that the
+ * channel was live in that run or session, which one fact carries exactly.
  *
  * ITS SUBJECT IS THE CHANNEL, the way {@link ChannelSwitchedV1}'s is, so a channel's own
  * history holds both what was done TO it and what it did. The payload is empty for the
  * same reason a consultation's is: everything the fact says (who, which agent, which
- * run, when) is envelope, and a payload field here would be a second spelling of
- * something already signed.
+ * run where there is one, when) is envelope, and a payload field here would be a second
+ * spelling of something already signed.
  */
 export interface ChannelServedV1 extends Envelope {
   readonly kind: 'channel.served';

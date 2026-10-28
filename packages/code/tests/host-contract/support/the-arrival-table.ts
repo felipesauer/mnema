@@ -93,7 +93,7 @@ export const THE_TABLE: TheTable = {
       absent,
       NO_CHANNEL_AT_AN_EDIT,
     ),
-    mnema: row(arrived, arrived, arrived, absent),
+    mnema: row(arrived, arrived, arrived, arrived),
   },
   opencode: {
     control: row(absent, absent, absent, NO_CHANNEL_AT_AN_EDIT),
@@ -108,7 +108,7 @@ export const THE_TABLE: TheTable = {
       absent,
       NO_CHANNEL_AT_AN_EDIT,
     ),
-    mnema: row(arrived, arrived, arrived, absent),
+    mnema: row(arrived, arrived, arrived, arrived),
   },
   copilot: {
     control: row(absent, absent, COPILOT_ENDS_AT_ITS_SUMMARY, NO_CHANNEL_AT_AN_EDIT),
@@ -147,7 +147,7 @@ export const THE_TABLE: TheTable = {
       absent,
       NO_CHANNEL_AT_AN_EDIT,
     ),
-    mnema: row(arrived, arrived, arrived, absent),
+    mnema: row(arrived, arrived, arrived, arrived),
   },
 };
 

@@ -142,13 +142,9 @@ import {
   transitionTask,
 } from '@mnema/core/write';
 import { agentMayAccept } from '../agent-accepts.js';
-import { editRulesNotice, editRulesTold, firstWriteNotice } from '../edit-rules-push.js';
+import { editRulesTold, firstWriteNotice, readThePush } from '../edit-rules-push.js';
 import { type FileBehindAPath, fileOfTheOrigin } from '../file-behind-a-path.js';
-import {
-  reachOfAddress,
-  readGoverningRules,
-  readRulesInForceWhereItLands,
-} from '../governed-tree.js';
+import { reachOfAddress, readGoverningRules } from '../governed-tree.js';
 import { inheritedNotReadLine, inheritedTreeOf } from '../inherited-record.js';
 import {
   projectEventsOf,
@@ -2745,9 +2741,13 @@ export function governingRulesInheritedNotRead(session: Session): readonly strin
  *   - `channel.served`, once per run and per channel, saying the push was live. It pays a
  *     tie this channel shipped owing: a push that recorded nothing left "the rules reached
  *     that session" and "the plugin was never installed" as the same nothing. It is written
- *     HERE AND NOWHERE ELSE, so it counts what is pushed at an edit and nothing more: the two
- *     texts a session opens with are reads and leave no fact (`CountedChannel`, in
- *     `record-framing.ts`, is the type that holds the line).
+ *     HERE AND BY THE COMMAND HOOK OF THE HOSTS THAT TAKE THE PUSH (`mnema before-a-write` for
+ *     Codex, Qwen Code and OpenCode, once per session of the host, which is that process's stand-in
+ *     for a run: `commands/before-a-write.ts`), and by nothing else; this note said "here and nowhere
+ *     else" while that command carried the gate alone, and what falsified it is the session id those
+ *     hosts hand the hook. So it counts what is pushed at an edit and nothing more: the two texts a
+ *     session opens with are reads and leave no fact (`CountedChannel`, in `record-framing.ts`, is
+ *     the type that holds the line).
  *   - `channel.asked`, once per asking, citing the rule and the path, or `channel.refused`, once
  *     per rule that refuses, in the place of both of the above: a refusal is the fact itself, so
  *     it records no service.
@@ -2857,15 +2857,17 @@ function rulesBeforeAnEdit(
   // THE RULES OF A PATH ARE THE RULES OF WHERE IT REALLY IS, for the push and the hold alike: a
   // path the rules do not address as written is read again at where a link leads inside the
   // project (`realPathInside`), so a link does not step around the hold of a first write.
-  const rulesAt = pushing || holding ? readRulesInForceWhereItLands(addressed, read) : undefined;
-  const context = !pushing || rulesAt === undefined ? undefined : editRulesNotice(rulesAt);
+  const gate = met?.grade === 'ask' ? met : undefined;
+  const pushed =
+    pushing || holding ? readThePush(addressed, caches, read, gate === undefined) : undefined;
+  const rulesAt = pushed?.at;
+  const context = !pushing || rulesAt === undefined ? undefined : editRulesTold(rulesAt, []);
 
   // THE GATE, AND ITS WHOLE ORDER OF OPERATIONS. The rules that ask are derived, the text
   // is composed, and only then is the fact appended, because the fact cites what the text
   // cites, and appending first would mean recording an accusation whose wording could still
   // fail to compose. Then the reply: the charge rides only if the append landed. What asks
   // is decided where the other doors decide it too (`whatAWriteMeets`).
-  const gate = met?.grade === 'ask' ? met : undefined;
   const charged: ChargeRecorded =
     gate === undefined ? { ok: true } : recordTheCharge(() => recordWhatItMet(session, gate));
   const unasked = charged.ok ? [] : [unrecordedCharge('ask', charged.why)];
@@ -2914,9 +2916,7 @@ function rulesBeforeAnEdit(
   const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
   // A RULE MOVED APART IS SAID IN ONE LINE beside the rules, where the asking has not said it already
   // (its reason carries the line): the push shows the state the record leaves, and not that it was disputed.
-  const apart =
-    rulesAt === undefined || gate !== undefined ? undefined : movedApartLine(caches, rulesAt.rules);
-  if (apart !== undefined) founded.push(apart);
+  if (pushed?.apart !== undefined) founded.push(pushed.apart);
   // THEY SHARE THE CEILING with the rules, since the host measures the one string it is
   // handed, which is why the rules and they are joined by one function (`edit-rules-push.ts`).
   // On a held write the rules ride in the refusal, so the context is what was founded and nothing

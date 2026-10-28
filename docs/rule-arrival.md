@@ -48,7 +48,11 @@ host's job red.
   back; the case proves that request is the compacted conversation by what it carries of the
   summary and of the results.
 - **At an edit**: a write that is permitted and that a rule only governs. The rule arrives if it
-  is in the result of the write, or beside it. A refusal is another thing, held by the cases that
+  is in the result of the write, or beside it: for the record, in what the host put in the
+  conversation from the item of the call on (its output, and what a hook said for it), never in the
+  request as a whole, which in that arm already carries the rule from the start. The same read,
+  with the push switched off in the same record (`mnema switch off edit-rules-push`), finds
+  nothing; that is what says the reading sees the push and not the opening. A refusal is another thing, held by the cases that
   open and refuse in each host (`*-opens-and-refuses.*.test.ts`), and a rule kept in a file has no
   channel at a write.
 
@@ -82,7 +86,7 @@ table.
 | the rule in the host's own instructions file | not applicable (note 2) | not applicable (note 2) | not applicable (note 2) | not applicable (note 2) |
 | the rule in a file the instructions file imports with `@` | not arrived | not arrived | not arrived | not applicable (note 1) |
 | the rule in a file the instructions file only mentions | not arrived (the mention did) | not arrived | not arrived | not applicable (note 1) |
-| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | not arrived |
+| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | arrived |
 
 1. Not applicable: a file is read when the session opens and has no channel at a write; the late column says whether it is still in front of the model
 2. Not applicable: the instructions file Codex reads is `AGENTS.md`, the place above
@@ -96,7 +100,7 @@ table.
 | the rule in the host's own instructions file | not applicable (note 2) | not applicable (note 2) | not applicable (note 2) | not applicable (note 2) |
 | the rule in a file the instructions file imports with `@` | not arrived | not arrived | not arrived | not applicable (note 1) |
 | the rule in a file the instructions file only mentions | not arrived (the mention did) | not arrived | not arrived | not applicable (note 1) |
-| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | not arrived |
+| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | arrived |
 
 1. Not applicable: a file is read when the session opens and has no channel at a write; the late column says whether it is still in front of the model
 2. Not applicable: the instructions file OpenCode reads is `AGENTS.md`, the place above
@@ -138,7 +142,7 @@ table.
 | the rule in the host's own instructions file | arrived | arrived | arrived | not applicable (note 1) |
 | the rule in a file the instructions file imports with `@` | arrived | arrived | arrived | not applicable (note 1) |
 | the rule in a file the instructions file only mentions | not arrived (the mention did) | not arrived | not arrived | not applicable (note 1) |
-| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | not arrived |
+| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | arrived |
 
 1. Not applicable: a file is read when the session opens and has no channel at a write; the late column says whether it is still in front of the model
 
@@ -153,9 +157,13 @@ table.
   compaction, and at the edit, beside the result of the write.
 - **Codex.** `AGENTS.md` arrived at the start, late and after a compaction. An `@` import was not
   expanded: the rule behind it did not arrive. The record arrived at the start, late and after a
-  compaction, and not at the edit: for a rule that only governs, the output of the patch carries
-  nothing of it.
-- **OpenCode.** The same as Codex.
+  compaction, and at the edit: the hook that runs before the patch answers with the rules of the
+  path as context, and the host records it as an item of its own between the call and its output.
+  The command that answers is `mnema before-a-write --host codex`: it hands the rules over beside a
+  patch that goes through, and records that it did once per session of the host.
+- **OpenCode.** `AGENTS.md` arrived at the start, late and after a compaction, an `@` import did
+  not. The record arrived at the start, late and after a compaction, and at the edit: the plugin
+  module keeps what the gate answered for the call and appends it to the result of the write.
 - **GitHub Copilot CLI.** `AGENTS.md`, its own instructions file and an `@` import all arrived at
   the start and late. The record arrived at the start and late, not at the edit. After a
   compaction is not measured: see the note.
@@ -163,7 +171,8 @@ table.
   `context.fileName` can list it). The record arrived at the start and late, not at
   the edit. After a compaction is not measured: see the note.
 - **Qwen Code.** `AGENTS.md`, `QWEN.md` and an `@` import arrived at every moment, as did the
-  record, except at the edit.
+  record, at the edit too: the hook that runs before the write answers with the rules of the path
+  as context, and the host puts it in the result of the write.
 
 ## How it is held
 

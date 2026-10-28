@@ -128,17 +128,20 @@
  * this project never made, in a text that arrives while code is being written.
  */
 
-import type { PushedRule, RulesAtPath } from '@mnema/context';
+import type { PushedRule, RulesAtPath, ScopedCache } from '@mnema/context';
+import { type GovernedRead, readRulesInForceWhereItLands } from './governed-tree.js';
 import { inheritedFromText } from './inherited-record.js';
 import { oneLine } from './one-line.js';
 import { acceptedBy } from './presentation/accepted-by.js';
 import {
+  CLAUDE_CODE_CEILING,
+  ceilingInWords,
   fitWhole,
-  HOOK_CEILING_IN_WORDS,
-  HOOK_TEXT_CEILING,
+  type HookCeiling,
 } from './presentation/within-a-hook.js';
 import { DERIVED_FROM } from './provenance.js';
 import { recordFramingBlock } from './record-framing.js';
+import { movedApartLine } from './what-a-write-meets.js';
 
 /**
  * What these rules are ABOUT: the one sentence this channel adds over the framing.
@@ -187,10 +190,11 @@ const ONE_IS_NOT_COMMITTED =
  */
 export function editRulesNotice(
   at: RulesAtPath,
-  room: number = HOOK_TEXT_CEILING,
+  room: number = CLAUDE_CODE_CEILING.most,
+  ceiling: HookCeiling = CLAUDE_CODE_CEILING,
 ): string | undefined {
   if (at.rules.length === 0) return undefined;
-  return fitted(at, room).join('\n');
+  return fitted(at, room, ceiling).join('\n');
 }
 
 /** What separates the rules from what the same reply carries after them. */
@@ -209,14 +213,102 @@ const BESIDE = '\n\n';
 export function editRulesTold(
   at: RulesAtPath | undefined,
   beside: readonly string[],
+  ceiling: HookCeiling = CLAUDE_CODE_CEILING,
 ): string | undefined {
-  if (beside.length === 0) return at === undefined ? undefined : editRulesNotice(at);
+  if (beside.length === 0) {
+    return at === undefined ? undefined : editRulesNotice(at, ceiling.most, ceiling);
+  }
   const after = beside.join(BESIDE);
   const within =
     at === undefined
       ? undefined
-      : editRulesNotice(at, HOOK_TEXT_CEILING - after.length - BESIDE.length);
+      : editRulesNotice(at, ceiling.most - ceiling.lengthOf(after) - BESIDE.length, ceiling);
   return [...(within !== undefined ? [within] : []), after].join(BESIDE);
+}
+
+/** What a write's push stands on: the rules in force where the path lands, and the line owed beside them. */
+export interface ThePush {
+  readonly at: RulesAtPath;
+  /** The one line that says a rule was moved apart, where `saysApart` asked for it; else `undefined`. */
+  readonly apart: string | undefined;
+}
+
+/**
+ * THE ONE READING OF WHAT THE PUSH STANDS ON, for every door that pushes: the MCP tool Claude Code's
+ * hook calls (`rules_before_an_edit`) and the verb a command hook runs (`before-a-write`). Both ask
+ * this and nothing else for the rules at a path and for the line that says one was moved apart, and
+ * both compose the text with {@link editRulesTold} or {@link editRulesToldAcross}; a door that read
+ * the rules or composed the text on its own would be a second reading, which is the divergence this
+ * module is here to prevent (`a-rule-is-pushed-beside-a-write.test.ts` holds it).
+ *
+ * `addressed` is every source the rules are read from (the project's own and the record it inherits);
+ * `own` is the project's, where the line about a rule moved apart is read. A rule is read at EVERY
+ * place the path lands (`readRulesInForceWhereItLands`): a path the rules do not address as written is
+ * read again at where a link leads inside the project. `saysApart` is false where the same reply
+ * already carries the asking, whose reason says the line itself.
+ */
+export function readThePush(
+  addressed: readonly ScopedCache[],
+  own: readonly ScopedCache[],
+  read: GovernedRead,
+  saysApart: boolean,
+): ThePush {
+  const at = readRulesInForceWhereItLands(addressed, read);
+  return { at, apart: saysApart ? movedApartLine(own, at.rules) : undefined };
+}
+
+/** The room kept for {@link pathsLeftOut}, whose longest form is below it. */
+const PATHS_LEFT_OUT_ROOM = 300;
+
+/** What a push that did not fit every path of a write says about the paths it left out. */
+export function pathsLeftOut(left: number): string {
+  return `Left out of this text: the rules addressed at ${left} more ${left === 1 ? 'path' : 'paths'} this write touches. \`governing_rules\` with that path serves them.`;
+}
+
+/**
+ * What a write that touches SEVERAL paths pushes: the notice of each path a rule is addressed at, one
+ * after the other inside the one ceiling, and `beside` after them (what the same call founded or
+ * replaced, and the moved-apart line). With one path it is {@link editRulesTold}, byte for byte.
+ *
+ * A path whose notice no longer fits is not cut to nothing: it is counted, in one sentence at the end
+ * ({@link pathsLeftOut}), and the read that serves it is named, as {@link leftOut} does for the rules
+ * of one path. The sentence says what the text is and not what to do, like every one this module
+ * writes.
+ */
+export function editRulesToldAcross(
+  ats: readonly RulesAtPath[],
+  beside: readonly string[],
+  ceiling: HookCeiling = CLAUDE_CODE_CEILING,
+): string | undefined {
+  const governed = ats.filter((at) => at.rules.length > 0);
+  const [first, ...rest] = governed;
+  if (first === undefined || rest.length === 0) return editRulesTold(first, beside, ceiling);
+  const after = beside.join(BESIDE);
+  let room =
+    ceiling.most -
+    (after === '' ? 0 : ceiling.lengthOf(after) + BESIDE.length) -
+    PATHS_LEFT_OUT_ROOM;
+  const shown: string[] = [];
+  let left = 0;
+  for (const at of governed) {
+    const least = ceiling.lengthOf(editRulesNotice(at, 0, ceiling) as string);
+    if (shown.length > 0 && room < least + BESIDE.length) {
+      left += 1;
+      continue;
+    }
+    const notice = editRulesNotice(
+      at,
+      shown.length === 0 ? room : room - BESIDE.length,
+      ceiling,
+    ) as string;
+    shown.push(notice);
+    room -= ceiling.lengthOf(notice) + (shown.length > 1 ? BESIDE.length : 0);
+  }
+  return [
+    ...shown,
+    ...(left > 0 ? [pathsLeftOut(left)] : []),
+    ...(after === '' ? [] : [after]),
+  ].join(BESIDE);
 }
 
 /**
@@ -226,18 +318,23 @@ export function editRulesTold(
  * after every line, so the room it is handed is one more, and a notice of exactly the
  * ceiling is not cut.
  */
-function fitted(at: RulesAtPath, room: number): string[] {
-  return fitWhole(at.rules.length, room + 1, (shown) => composed(at, shown));
+function fitted(at: RulesAtPath, room: number, ceiling: HookCeiling): string[] {
+  return fitWhole(
+    at.rules.length,
+    room + 1,
+    (shown) => composed(at, shown, ceiling),
+    ceiling.lengthOf,
+  );
 }
 
 /** The notice with its first `shown` rules, saying what it left out when that is not all. */
-function composed(at: RulesAtPath, shown: number): string[] {
+function composed(at: RulesAtPath, shown: number, ceiling: HookCeiling): string[] {
   const printed = at.rules.slice(0, shown);
   return [
     ...opening(at),
     ...printed.map(ruleLine),
     ...closing(printed),
-    ...leftOut(at.rules.length - shown),
+    ...leftOut(at.rules.length - shown, ceiling),
   ];
 }
 
@@ -259,11 +356,11 @@ function closing(printed: readonly PushedRule[]): readonly string[] {
  * carries them all: how many, which ones (the end of the order above), why, and the read that
  * serves every one. It says what the text is, as every sentence here does, and not what to do.
  */
-function leftOut(left: number): readonly string[] {
+function leftOut(left: number, ceiling: HookCeiling): readonly string[] {
   if (left === 0) return [];
   return [
     `Left out of this text: ${left} ${left === 1 ? 'rule' : 'rules'} addressed at this path, the last ${left === 1 ? 'one' : 'ones'} in the order above.`,
-    `A hook hands a session at most ${HOOK_CEILING_IN_WORDS} characters, and a file path in place of a longer text, so this one stops at a whole rule instead. \`governing_rules\` with this path serves every one of them.`,
+    `A hook hands a session at most ${ceilingInWords(ceiling)}, and a file path in place of a longer text, so this one stops at a whole rule instead. \`governing_rules\` with this path serves every one of them.`,
   ];
 }
 
@@ -285,7 +382,7 @@ function heldSentence(at: RulesAtPath): string {
 export function firstWriteNotice(at: RulesAtPath): string | undefined {
   if (at.rules.length === 0) return undefined;
   const held = heldSentence(at);
-  const rules = editRulesNotice(at, HOOK_TEXT_CEILING - held.length - BESIDE.length);
+  const rules = editRulesNotice(at, CLAUDE_CODE_CEILING.most - held.length - BESIDE.length);
   return rules === undefined ? undefined : `${held}${BESIDE}${rules}`;
 }
 
@@ -312,9 +409,13 @@ export function ourWordsInTheHold(at: RulesAtPath): readonly string[] {
  * record's taken out, rather than a second composition beside it. `room` is the notice's:
  * a room that cuts is how the guard reaches the sentences only a cut notice says.
  */
-export function ourWordsIn(at: RulesAtPath, room: number = HOOK_TEXT_CEILING): readonly string[] {
+export function ourWordsIn(
+  at: RulesAtPath,
+  room: number = CLAUDE_CODE_CEILING.most,
+  ceiling: HookCeiling = CLAUDE_CODE_CEILING,
+): readonly string[] {
   const theRecords = new Set(at.rules.map(ruleLine));
-  return fitted(at, room).filter((line) => !theRecords.has(line));
+  return fitted(at, room, ceiling).filter((line) => !theRecords.has(line));
 }
 
 /**

@@ -94,6 +94,21 @@ describe('where a rule arrives in OpenCode', () => {
       });
       expect(existsSync(join(edit.project, THE_GOVERNED_FILE))).toBe(true);
       arrived.edit = theSentinelIsIn(theResultOfTheCall(edit));
+      // THE INSTRUMENT: the same read of the same record with the push switched off finds nothing, so
+      // a sentinel found above is the push and not the opening, which already carries the rule.
+      const off = await start({
+        files,
+        project: (project) => {
+          record?.(project);
+          project.mnema('switch', 'off', 'edit-rules-push');
+        },
+        call: writing(THE_GOVERNED_FILE),
+      });
+      expect(existsSync(join(off.project, THE_GOVERNED_FILE))).toBe(true);
+      expect(
+        theSentinelIsIn(theResultOfTheCall(off)),
+        'the instrument sees a push that was switched off',
+      ).toBe(false);
     }
     return { arrived, mentioned: theMentionIsIn(first?.body) };
   });
