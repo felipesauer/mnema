@@ -13,6 +13,7 @@ import type { GitHub } from './github.js';
 import {
   approvedByAnotherPerson,
   askingForAPerson,
+  bothReadings,
   type GovernedFile,
   isGoverned,
   rulesInForce,
@@ -36,8 +37,13 @@ export interface World {
      * taken with the checkpoint that covered them), which no reading of the record alone can see.
      */
     verify(base: string): { passed: boolean; said: string };
-    /** `mnema rules <path> --json`, parsed. */
+    /** `mnema rules <path> --json`, parsed, over what is checked out. */
     rules(path: string): unknown;
+    /**
+     * The same question asked of the record as the commit `base` holds it, which a pull request
+     * cannot have edited. `close` removes what was made to ask it.
+     */
+    rulesAt(base: string): { rules(path: string): unknown; close(): void };
     /**
      * `mnema check run`, signing with the checker key whose private half is `key`: whether it
      * exited zero (every check passed) and what it said.
@@ -96,11 +102,36 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
   const head = textsOf(headTexts);
   const record = whatItDoes(eventsAdded(textsOf(baseTexts), head), decisionLabels(headTexts));
 
-  const changed = (await world.github.changedFiles()).filter((path) => !path.startsWith('.mnema/'));
+  // A file renamed leaves one path and takes another; the rules of both judge it, so a rename
+  // cannot carry a protected file out from under its rule.
+  const changed = (await world.github.changedFiles())
+    .flatMap(({ path, renamedFrom }): { path: string; rename?: string }[] =>
+      renamedFrom === undefined
+        ? [{ path }]
+        : [
+            { path, rename: `renamed from ${renamedFrom}` },
+            { path: renamedFrom, rename: `renamed to ${path}` },
+          ],
+    )
+    .filter(({ path }) => !path.startsWith('.mnema/'));
   const asked = changed.slice(0, MOST_ASKED);
-  const governed: GovernedFile[] = asked
-    .map((path) => rulesInForce(path, world.mnema.rules(path)))
-    .filter(isGoverned);
+  // The rules that judge the files are the base's, so a pull request cannot lift a rule off the
+  // very files it edits; a rule it adds counts as well, since it can only add protection. A base
+  // with no record has no rules to read.
+  const atBase = baseTexts.length > 0 ? world.mnema.rulesAt(pr.baseSha) : undefined;
+  let governed: GovernedFile[];
+  try {
+    governed = asked
+      .map(({ path, rename }) => {
+        const here = rulesInForce(path, world.mnema.rules(path));
+        const both =
+          atBase === undefined ? here : bothReadings(rulesInForce(path, atBase.rules(path)), here);
+        return rename === undefined ? both : { ...both, rename };
+      })
+      .filter(isGoverned);
+  } finally {
+    atBase?.close();
+  }
 
   let approval: { asking: GovernedFile[]; approved: boolean } | undefined;
   if (pr.requireApprovalForAsks) {
@@ -125,6 +156,7 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
     record,
     governed,
     notAsked: changed.length - asked.length,
+    rulesFromBase: atBase === undefined ? undefined : pr.baseSha,
     approval,
     ...(checks !== undefined ? { checks } : {}),
   };

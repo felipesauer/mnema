@@ -32,14 +32,22 @@ const address = { apiUrl: 'https://api.test/', repository: 'o/r', number: 7, tok
 describe('connect', () => {
   it('lists the changed files and the reviews, sending the token as a bearer', async () => {
     const { fetch, calls } = fake({
-      'GET /pulls/7/files': [{ filename: 'a.ts' }, { filename: 'b/c.ts' }],
+      'GET /pulls/7/files': [
+        { filename: 'a.ts' },
+        { filename: 'b/c.ts' },
+        { filename: 'd2.ts', previous_filename: 'd.ts', status: 'renamed', changes: 0 },
+      ],
       'GET /pulls/7/reviews': [
         { user: { login: 'ana' }, state: 'APPROVED' },
         { user: null, state: 'COMMENTED' },
       ],
     });
     const github = connect(address, fetch);
-    expect(await github.changedFiles()).toEqual(['a.ts', 'b/c.ts']);
+    expect(await github.changedFiles()).toEqual([
+      { path: 'a.ts' },
+      { path: 'b/c.ts' },
+      { path: 'd2.ts', renamedFrom: 'd.ts' },
+    ]);
     expect(await github.reviews()).toEqual([{ user: 'ana', state: 'APPROVED' }]);
     expect(calls.every((call) => call.authorization === 'Bearer tok')).toBe(true);
   });

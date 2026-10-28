@@ -85,13 +85,16 @@ function environment(
 }
 
 /** GitHub as a table: the changed files, the reviews, and a log of what was written. */
-function github(files: string[], reviews: unknown[] = []) {
+function github(
+  files: (string | { filename: string; previous_filename: string })[],
+  reviews: unknown[] = [],
+) {
   const written: { method: string; body: string }[] = [];
   const fetchIt: Fetch = async (url, init) => {
     const path = url.replace('https://api.test/repos/o/r', '').split('?')[0];
     const answer = (value: unknown) => ({ ok: true, status: 200, json: async () => value });
     if (init.method === 'GET' && path === '/pulls/7/files') {
-      return answer(files.map((filename) => ({ filename })));
+      return answer(files.map((file) => (typeof file === 'string' ? { filename: file } : file)));
     }
     if (init.method === 'GET' && path === '/pulls/7/reviews') return answer(reviews);
     if (init.method === 'GET' && path === '/issues/7/comments') return answer([]);
@@ -230,6 +233,25 @@ describe('the Action on a real repository', { timeout: A_REAL_BINARY_PER_CASE },
       () => {},
     );
     expect(approved).toBe(0);
+  });
+
+  it('fails on a rename of the file a rule asks a person about, as the API lists it', async () => {
+    const baseSha = committedBase();
+    const id = idOf(mnema('decision', 'record', 'Review billing', 'A person looks.'));
+    mnema('decision', 'move', 'accept', id, '--note', 'agreed');
+    mnema('link', id, 'src/billing/invoice.ts', '--rel', 'asks-for-a-person');
+    git('add', '.');
+    git('commit', '-q', '-m', 'head');
+
+    const renamed = [
+      { filename: 'src/billing/invoice2.ts', previous_filename: 'src/billing/invoice.ts' },
+    ];
+    const { fetchIt, written } = github(renamed);
+    const code = await main(environment(baseSha, 'true'), fetchIt, () => {});
+    expect(code).toBe(1);
+    expect(written[0]?.body).toContain(
+      '`src/billing/invoice.ts` (renamed to src/billing/invoice2.ts)',
+    );
   });
 
   it('writes nothing to the record and nothing to git', async () => {
