@@ -329,6 +329,50 @@ export function skippedOf(file: string): number {
   }
 }
 
+/** The suffix of the marker that says a channel's service was recorded for a session. */
+const SERVED_SUFFIX = '.served';
+
+/**
+ * What a session of the host remembers about a channel it was served through, outside the record: the
+ * marker `<journal>.<channel>.served`, made with an EXCLUSIVE create, so that of several processes
+ * asking at once about the same session and channel exactly one is told it is the first.
+ *
+ * WHY HERE. A hook that is a process per write has no connection to remember the run by, and the
+ * fact that the push was live (`channel.served`) is declared once per run and per channel: recorded
+ * on every edit it is the thousands-of-writes shape the declaration refuses. The session's id is the
+ * run's stand-in, and this directory is the memory a session already has on this machine: one file
+ * per session, 0600, pruned with the journals, never read by `verify`, no format changes. A sibling
+ * file and not a field of the journal, because the journal is rewritten whole by whoever reads the
+ * transcript (`journalAfter`), and a field that writer does not carry would be dropped by it.
+ *
+ * LOSING IT COSTS AT MOST ONE FACT MORE, NEVER A PUSH LESS: a marker that was pruned or deleted makes
+ * the next edit the first again. Where the marker cannot be made at all (a directory that refuses
+ * it) the answer is `true`, so the fact is recorded and the push goes out; the fact then repeats for
+ * as long as the directory refuses, which is the cost of never pushing without a fact.
+ *
+ * Returns the marker to give back (`release`) when the fact could not be recorded, so that the next
+ * edit tries again, or `undefined` when this session was already served. Never throws.
+ */
+export function takeTheFirstServing(
+  trees: ResolvedTrees,
+  session: string,
+  channel: string,
+): { readonly release: () => void } | undefined {
+  const file = journalFile(trees, session);
+  if (file === undefined) return { release: () => undefined };
+  const marker = `${file}.${channel}${SERVED_SUFFIX}`;
+  try {
+    const dir = dirname(file);
+    mkdirSync(dir, { recursive: true, mode: DIRECTORY_MODE });
+    chmodSync(dir, DIRECTORY_MODE);
+    writeFileSync(marker, '', { mode: FILE_MODE, flag: 'wx' });
+    return { release: () => rmSync(marker, { force: true }) };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') return undefined;
+    return { release: () => undefined };
+  }
+}
+
 /** A journal that names a task the session's end never closed, with where it is. */
 export interface LeftOpen {
   readonly file: string;
@@ -366,7 +410,12 @@ export function leftOpen(trees: ResolvedTrees, own: string, now: Date): readonly
 function prune(dir: string, now: Date): void {
   const kept: { path: string; mtime: number }[] = [];
   for (const name of readdirSync(dir)) {
-    if (!name.endsWith('.json') && !name.endsWith('.tmp') && !name.endsWith(SKIPPED_SUFFIX))
+    if (
+      !name.endsWith('.json') &&
+      !name.endsWith('.tmp') &&
+      !name.endsWith(SKIPPED_SUFFIX) &&
+      !name.endsWith(SERVED_SUFFIX)
+    )
       continue;
     const path = join(dir, name);
     try {
