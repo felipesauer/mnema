@@ -1295,6 +1295,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-prose-carries-no-em-dash.test.ts': 5,
   'packages/code/tests/the-pull-request-text.test.ts': 5,
   'packages/code/tests/the-python-floor-is-declared-once.test.ts': 5,
+  'packages/code/tests/the-quick-start-runs-as-it-reads.test.ts': 7,
   'packages/code/tests/the-read-says-the-record-does-not-chain.test.ts': 6,
   'packages/code/tests/the-reads-follow-a-link-to-where-it-lands.test.ts': 10,
   'packages/code/tests/the-recipe-says-what-it-overwrites.test.ts': 8,

@@ -8,6 +8,11 @@
 <h3>mnema is the decision record for AI coding agents.</h3>
 
 <p>
+Who decided this, and why? What was turned down? Has it changed since? When an agent settles a
+choice in a chat that ends, nothing answers. mnema keeps the answer in the repository.
+</p>
+
+<p>
 Your decisions, handed to your agents' sessions and held at the edits they govern: append-only and signed in the repository, and checkable by anyone.
 </p>
 
@@ -71,21 +76,27 @@ was not changed since it was signed. What is measured, and what is not, is on [t
 
 ```sh
 npm i -g @mnema/code                              # the binary
-claude plugin marketplace add felipesauer/mnema   # the plugin hands each session the record
-claude plugin install mnema@mnema
-cd your-repository && mnema init
+cd your-repository
+mnema init                                        # founds the record in .mnema/
 mnema decision record "Keep money as integer cents" "Float sums drift; cents are exact."
-mnema decision move accept <id> --note "Agreed in review."   # a decision enters proposed; accepting puts it in force
-mnema verify   # reads the signed record, whatever the decisions' states; one line saying it is intact is the green
+mnema decision move accept ADR-1 --note "Agreed in review."   # a decision enters proposed; accepting puts it in force
+mnema link ADR-1 src/billing --rel refuses-a-write             # the rule, addressed at a path
+mnema verify   # reads the signed record; one line saying it is intact is the green
 ```
 
-At a terminal, `mnema decision review` goes through what awaits a judgement one by one, with no id
-to copy. `mnema init` also leaves a `README.md` and an `.editorconfig` in `.mnema/`, adds `.mnema/`
-to the `.prettierignore` where the repository has one or declares prettier, and writes the mnema
+No agent has run yet: that is the record, a rule in force, and the proof. `ADR-1` names the first
+decision of a new record. To hand the record to an agent, install the plugin for your host; in
+Claude Code:
+
+```sh
+claude plugin marketplace add felipesauer/mnema
+claude plugin install mnema@mnema
+```
+
+Every other host is on [the install page](docs/install.md). `mnema init` also writes the mnema
 instructions into `AGENTS.md` and the other files agent hosts read, naming each
-(`mnema instructions --remove` takes them out). The whole install, the
-other hosts and the first record, line by line, are in [`docs/install.md`](docs/install.md) and
-[`docs/first-record.md`](docs/first-record.md).
+(`mnema instructions --remove` takes them out). The first record, step by step, is
+[Your first record](docs/first-record.md).
 
 ## How it works
 
