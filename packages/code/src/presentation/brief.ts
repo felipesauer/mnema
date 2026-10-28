@@ -1141,7 +1141,10 @@ function rule(
   const by = acceptance === undefined ? '' : ` · ${acceptedBy(acceptance)}`;
   // LAST, because the replaced decision's title is text somebody typed: whatever follows a free
   // title on the line is a field it could try to forge, and nothing follows this one.
-  const replaced = supersedes === undefined ? '' : ` · supersedes ${namedDecisionText(supersedes, NAMED_TITLE_LIMIT)}`;
+  const replaced =
+    supersedes === undefined
+      ? ''
+      : ` · supersedes ${namedDecisionText(supersedes, NAMED_TITLE_LIMIT)}`;
   return `- **${oneLine(name)}** · \`${oneLine(id)}\`${from}${by}${replaced}`;
 }
 

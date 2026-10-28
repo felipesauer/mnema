@@ -453,6 +453,8 @@ export function ruleLine(rule: PushedRule): string {
   // nothing may follow a free title on the line. It is the same reading and the same words
   // (`namedDecisionText`), and it costs the rule that replaced one a part of ITS line, never a line.
   const replaced =
-    rule.supersedes === undefined ? '' : ` · supersedes ${namedDecisionText(rule.supersedes, NAMED_TITLE_LIMIT)}`;
+    rule.supersedes === undefined
+      ? ''
+      : ` · supersedes ${namedDecisionText(rule.supersedes, NAMED_TITLE_LIMIT)}`;
   return `“${oneLine(rule.name)}”: governs ${oneLine(rule.address)} · ${oneLine(rule.id)}${inherited}${from}${by}${replaced}`;
 }

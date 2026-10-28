@@ -306,7 +306,9 @@ describe('the replaced decision is named where the rules addressed at a file are
       expect(lines).toHaveLength(1);
       expect(text).not.toContain('Left out');
       // The title is cut at 120 characters and says so; the line stays a few hundred bytes.
-      expect(lines[0]).toMatch(/ · supersedes ADR-\d+: Keep sessions (in memory ){10}in mem… \(superseded\)$/);
+      expect(lines[0]).toMatch(
+        / · supersedes ADR-\d+: Keep sessions (in memory ){10}in mem… \(superseded\)$/,
+      );
       expect(lines[0]?.length).toBeLessThan(600);
     } finally {
       closeSession(active);
