@@ -6,8 +6,8 @@ import { drawIconFont } from '../build/icon-font.mjs';
  * The reader below is this file's own, and it shares blind spots with the writer in
  * `build/icon-font.mjs`: both were written by the same hand from the same reading of the format.
  * What does NOT share them is FreeType (`fc-scan` on the packed file, in the pull request) and the
- * editor itself (the captures, and `install-check`, where the font is loaded by Chromium's own
- * sanitizer). These cases pin the bytes and the geometry; they do not prove the editor takes it.
+ * editor itself (the captures; `install-check` loads the font, but nothing there verifies that Chromium
+ * accepted it). These cases pin the bytes and the geometry; they do not prove the editor takes it.
  */
 
 /** The M as the wordmark's full blocks draw it, ten columns by five rows, written out by hand. */

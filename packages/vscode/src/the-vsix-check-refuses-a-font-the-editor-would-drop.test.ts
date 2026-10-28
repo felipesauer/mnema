@@ -69,6 +69,34 @@ describe('the vsix check refuses a font the editor would drop without a word', (
     },
   );
 
+  it('refuses a font whose glyf bytes were zeroed at the same length', () => {
+    const font = Buffer.from(good);
+    for (let i = 0; i < font.readUInt16BE(4); i++) {
+      const at = 12 + 16 * i;
+      if (font.toString('latin1', at, at + 4) === 'glyf')
+        font.fill(
+          0,
+          font.readUInt32BE(at + 8),
+          font.readUInt32BE(at + 8) + font.readUInt32BE(at + 12),
+        );
+    }
+    expect(check(font)).toContain('has a glyf table whose checksum does not match its bytes');
+  });
+
+  it('refuses a font whose only fault is the checkSumAdjustment', () => {
+    const font = Buffer.from(good);
+    for (let i = 0; i < font.readUInt16BE(4); i++) {
+      const at = 12 + 16 * i;
+      if (font.toString('latin1', at, at + 4) === 'head') {
+        const adjustment = font.readUInt32BE(font.readUInt32BE(at + 8) + 8);
+        font.writeUInt32BE((adjustment + 1) % 0x100000000, font.readUInt32BE(at + 8) + 8);
+      }
+    }
+    const stderr = check(font);
+    expect(stderr).toContain('does not sum to 0xB1B0AFBA');
+    expect(stderr).not.toContain('checksum does not match its bytes');
+  });
+
   it('refuses a file that is not TrueType, a font that is not in the file, and a character outside the private use area', () => {
     expect(check(Buffer.from('wOFF0000000000000000'))).toContain(
       'does not begin as a TrueType file',
