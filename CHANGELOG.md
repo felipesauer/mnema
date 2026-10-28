@@ -102,6 +102,14 @@ with its own changelog.
 
 - **The host contract holds the Copilot CLI 1.0.104.** The weekly run against the newest Copilot CLI failed on the weight of the 27 definitions: from 1.0.103 the host marks each one `defer_loading` (21 bytes each) and drops a `cache_control` from one, so they weigh 51,540 bytes and 11,942 tokens instead of 51,010 and 11,762. The pinned version is now 1.0.104 and the figure on the evidence page is the new one.
 - **The check of the links after a merge no longer accuses a page the server did not answer for.** An address that ended on HTTP 408, 502, 503 or 504 after three attempts was counted as broken, as five badges were once when the badge host timed out; it is now listed as unreachable and opens no issue, like a rate limit (429) or no answer at all. A 404, a 410 or a 500 still count as broken.
+- **A decision is the text its first writer recorded, in every reader.** A second `decision.recorded` of an accepted
+  decision's id, signed by any key (one of another identity its writer had founded itself included), replaced the
+  decision's title, rationale, alternatives and author in `show`, `brief`, `search`, the rules a path is governed by and the
+  record page, while the decision stayed accepted on the note its first text was accepted with, and `mnema verify
+  --require=signed` and the second reader passed and named nothing. Every reader now applies the first writing in the
+  merged order and none after it, whoever signed it (FORMAT.md §6.8), and both verifiers name each later writing in the census
+  (`decision-rewrite`), informational, exit unchanged. The product mints a decision's id when it records it, so no record it
+  wrote holds a second writing; a binary from before this serves the last one.
 - **A note is the identity that wrote it first, in every reader.** The read and the write took a note's author from its LAST
   writing in the merged order, and `mnema verify` and the second reader from its last writing in the order of the tail ids. A
   key of another identity that wrote the same id again with a later clock took the note: its content and its author were

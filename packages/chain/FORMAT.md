@@ -1,7 +1,7 @@
 # The mnema chain format
 
 This document specifies the bytes, and the rules by which a reader decides which of
-them it applies (§6.2, §6.4, §6.7). It is written so that **someone who did not
+them it applies (§6.2, §6.4, §6.7, §6.8). It is written so that **someone who did not
 write this code can implement a verifier from it**, run the published vectors
 against their implementation, and get the same digests we do.
 
@@ -1134,6 +1134,56 @@ version it already reads (§4.1). This section tightened rules inside kinds and 
 already existed, before the first publication; §7.1 says why the promise between versions starts
 after it.
 
+### 6.8 A decision recorded again
+
+`decision.recorded` (`payload.title`, `payload.rationale`, `payload.adr`, and
+`payload.alternatives` when it says what was turned down) is the text of the decision its
+`subject` names. Nothing about its bytes, its chaining or its signature differs from any other
+kind, and it is **not part of the fold of §6.2**. What this section adds is which of several
+writings of one `subject` a reader applies.
+
+**A decision is the text its first writer recorded.** Of every `decision.recorded` of one
+`subject`, the FIRST in the merged order of §6.2 is applied: its title, rationale, alternatives
+and label are the decision's, its `who` is who recorded it and its `at` when. Every later one is
+not applied, **whoever signed it**: another identity, and the identity that wrote the first one
+with any key of it. The moves of the decision (§6.7) are judged and applied as they are with one
+writing, so an accept, a rejection or a supersede keeps the text it was made on. A reader serves
+the first writing, and this product's `verify` names every later one in its census, with the
+rule `decision-rewrite`, informational, the exit unchanged: like a stranger's writing of a note
+(§6.4) it is **not a break**, since the event is intact and its key speaks for its own `who`;
+what it lacks is a place in a decision that was already written
+(`packages/core/src/projections/a-decision-is-the-text-its-first-writer-recorded.test.ts`).
+
+**Stricter than a note, and why.** A note served its author's later writing in place of the
+earlier one (§6.4). A decision does not, because no honest writer writes one twice: this
+product's writer mints a decision's id when it records it, and changing one's mind about a
+decision is a new decision that supersedes it, never a new text under the old id. So every second
+writing of a `subject` was made past the writer, by hand, and a rule that let its author's own
+key replace the text would let a key that is that identity's, or a cold backup of it, change what
+a person accepted after they accepted it. The first and not the last, for the reason §6.4 gives:
+the last is whichever writing the latest `at` stamped, and `at` is the signer's to write.
+
+**A second writing in the same bytes is named too.** A writing whose payload repeats the first
+one's changes nothing a reader serves, and it is named all the same: the product's writer never
+appends it (a response lost and asked for again records a new id, not the same one), so it was
+made past the writer as well, and a rule that kept it silent would have to say which bytes count
+as the same, in both readers, for a case that only a hand-made line reaches. Naming it costs a
+census line and hides nothing.
+
+**What no order can settle** is the same as for a note: two writings no citation relates are
+ordered by `at`, which a hand-made writing can backdate to come first. The reader then serves that
+one and names the other, so the contest is shown whichever writing was taken.
+
+**Both readers judge.** The second reader beside this file names every writing after the first
+with the same rule at the same tail and `seq` as this product's census, the verdict unchanged
+(`packages/chain/src/chain/second-reader-agrees-on-what-is-not-applied.test.ts`, "a decision
+recorded again"). **A binary from before this section** applies every writing in the merged
+order, so it serves the LAST one, and names none: a record holding a second writing verifies
+there as here and is read there with the later text. This section tightened a rule inside a kind
+and version that already existed, after the first publication: §7.1 says what that promise
+covers, and it does not cover this (a rule tightened is allowed; the two binaries read the same
+bytes two ways, and the earlier one refuses nothing).
+
 ## 7. Versions, and why a proof is never recomputed over a reading
 
 Every event carries `kind` and `v`. Together they select exactly one payload
@@ -1197,7 +1247,8 @@ are this product's, and the test named below holds both readers beside this docu
   than the one that does. This product's `verify` fails on it.
 - **A rule of authenticity or of legality is never loosened within an existing `kind` and `v`.**
   What a line may carry (§4.1), which key may sign it (§6.2), who may take a note or a link back
-  (§6.4) and which moves a workflow allows (§6.7) stay what they were for every `kind` and `v`
+  (§6.4), which moves a workflow allows (§6.7) and which writing of a decision is its text (§6.8)
+  stay what they were for every `kind` and `v`
   that already exists. A new permission, one between records included, is a new `kind` or a new
   `v`, which a version from before it refuses by naming the version, as above. The envelope is
   shared by every kind, so it gains no field within an existing `kind` and `v` either, as `after`
@@ -1688,7 +1739,8 @@ Stated plainly, because a published format invites all three readings:
   always was. See the "What it proves, and what it does not" table in `README.md`.
 - **This document specifies the bytes and the rules that read them, not the
   product's reading of them.** Which moves of a workflow a reader applies is here
-  (§6.7), as are the enrolment fold (§6.2) and who may take a note back (§6.4). Which
+  (§6.7), as are the enrolment fold (§6.2), who may take a note back (§6.4) and which writing of
+  a decision is its text (§6.8). Which
   scope a fact is written to, and what a green verdict is worth to the person who
   reads it, are not: those are the product's.
 
