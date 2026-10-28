@@ -88,6 +88,8 @@ describe('the Quick start on the front page', () => {
       expect(ran.stderr, `${where} printed on stderr`).toBe('');
       out[verbOf(argv)] = ran.stdout;
     }
+    // The page calls the linked decision "a rule in force": the move it teaches has to accept it.
+    expect(out['decision move']).toContain('→ accepted');
     expect(out.link).toContain('refuses-a-write');
     expect(out.link).toContain('src/billing');
     expect(out.verify).toContain('local integrity verified');
