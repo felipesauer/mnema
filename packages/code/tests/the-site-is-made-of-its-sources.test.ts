@@ -43,7 +43,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { prepare, RECORDING } from '../../../site/build/the-build.mjs';
+import { prepare } from '../../../site/build/the-build.mjs';
 import {
   cardsOf,
   copyOf,
@@ -52,6 +52,7 @@ import {
   llmsTxt,
   pageOf,
   pitchOf,
+  RECORDING,
   recordBackLink,
   recordingOf,
   rewriteLinks,

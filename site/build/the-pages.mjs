@@ -271,8 +271,11 @@ export function stepsOf(readme, heading) {
   return { heading, steps };
 }
 
+/** The recording the landing shows beside the verdict: one of those the repository already holds. */
+export const RECORDING = 'recordings/a-tamper-caught.gif';
+
 /**
- * What the README says of a recording: the `alt` of its `<img>` and the caption beside it (`<sub>`), as HTML, the
+ * What the README says of a recording:the `alt` of its `<img>` and the caption beside it (`<sub>`), as HTML, the
  * links of the caption landed where they land on the site. The README's table cell is the source of both.
  */
 export function recordingOf({ readme: source, path, facts, docs }) {

@@ -39,8 +39,7 @@ import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { RECORDING } from '../../../site/build/the-build.mjs';
-import { copyOf, recordBackLink, themeOf } from '../../../site/build/the-pages.mjs';
+import { copyOf, RECORDING, recordBackLink, themeOf } from '../../../site/build/the-pages.mjs';
 import { runInAVm } from './support/a-page-in-a-vm.js';
 import {
   addressesOf,

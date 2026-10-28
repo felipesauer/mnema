@@ -13,6 +13,7 @@ import {
   llmsTxt,
   pageOf,
   pitchOf,
+  RECORDING,
   recordingOf,
   stepsOf,
   templateOf,
@@ -36,9 +37,6 @@ export const WRITTEN = Object.freeze([
 ]);
 
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
-
-/** The recording the landing shows beside the verdict: one of those the repository already holds. */
-export const RECORDING = 'recordings/a-tamper-caught.gif';
 
 /** The width and the height of a GIF, from its header (bytes 6 to 9, little-endian). */
 export function sizeOfGif(bytes) {
