@@ -427,6 +427,45 @@ describe('the hooks that call the verb', () => {
     expect(readFileSync(calls, 'utf-8')).toContain('beside-a-write --host copilot');
   }, 60_000);
 
+  it('starts no mnema in Gemini CLI where no rule has an address, and starts the two where one does', async () => {
+    const bare = join(sandbox, 'bare-gemini');
+    mkdirSync(bare, { recursive: true });
+    process.chdir(bare);
+    await did('init');
+    process.chdir(repo);
+    const bin = join(sandbox, 'bin-gemini');
+    mkdirSync(bin, { recursive: true });
+    const calls = join(sandbox, 'calls-gemini.log');
+    writeFileSync(
+      join(bin, 'mnema'),
+      `#!/bin/sh\necho "$*" >> "${calls}"\nif [ "$1" = "--identify" ]; then echo "@mnema/code stub"; exit 0; fi\necho '{"hookSpecificOutput":{"hookEventName":"AfterTool","additionalContext":"the rules"}}'\n`,
+    );
+    chmodSync(join(bin, 'mnema'), 0o755);
+    const script = fileURLToPath(
+      new URL('../../../plugin/gemini/hooks/mnema.mjs', import.meta.url),
+    );
+    const asked = (cwd: string, relative: string) =>
+      spawnSync(process.execPath, [script, 'beside'], {
+        cwd,
+        env: { HOME: join(sandbox, 'home'), PATH: `${bin}:${process.env.PATH ?? ''}` },
+        encoding: 'utf-8',
+        input: afterAWrite('gemini', relative, 's1').replaceAll(repo, cwd),
+      });
+    // No rule has an address in the bare project: no process of mnema, not even `--identify`.
+    expect(asked(bare, 'src/other/a.ts').stdout).toBe('');
+    expect(existsSync(calls), 'a mnema was started where no rule has an address').toBe(false);
+    // A rule addressed elsewhere than the write: still none (the verb would answer nothing).
+    expect(asked(repo, 'docs/elsewhere.md').stdout).toBe('');
+    expect(existsSync(calls), 'a mnema was started for a path no rule addresses').toBe(false);
+    // Where a rule only governs the path, both start (the control: the pre-filter is not what silenced the cases above).
+    const some = asked(repo, 'src/other/a.ts');
+    expect(some.stdout).toContain('the rules');
+    const started = readFileSync(calls, 'utf-8').trim().split('\n');
+    expect(started).toHaveLength(2);
+    expect(started[0]).toBe('--identify');
+    expect(started[1]).toContain('beside-a-write --host gemini');
+  }, 60_000);
+
   it('stops waiting for a mnema that does not answer, silent, well inside the host’s own 15 seconds', () => {
     const began = Date.now();
     const ran = handlerWith('exec sleep 30');

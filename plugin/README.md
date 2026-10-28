@@ -101,7 +101,8 @@ document, delivered by the host instead of waited for.
   session of the host as they do, never refuses or asks, and answers `{}` for a payload with no
   session id. A `mnema` too old to know the verb leaves the write and the session as they were.
   Copilot CLI's runs under `exit 0`, as its gate does, starts no `mnema` where no rule of any tree has
-  an address, and gives it 6 seconds (a `mnema` that never answers costs the session 6 seconds, the
+  an address, and so does Gemini CLI's script (it reads the stored lines itself, `governs` links
+  included, before `--identify` and before the verb), and both give it 6 seconds (a `mnema` that never answers costs the session 6 seconds, the
   write goes through, and no fact is left). Where a rule has an address, the second process costs about
   250 ms per write (median of 25 rounds, the two orders alternating: 247 ms for the gate alone, 503 ms
   for the gate and this hook, one machine). Held, in each host, by the case that starts the

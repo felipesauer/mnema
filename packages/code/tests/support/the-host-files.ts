@@ -981,6 +981,9 @@ function answer(mode, raw) {
   if (mode === 'gate' && !WRITES.has(input?.tool_name)) return undefined;
   if (mode === 'settled' && input?.tool_name !== ASKS) return undefined;
   if (mode === 'beside' && !WRITES.has(input?.tool_name)) return undefined;
+  // NO RULE CAN BE ADDRESSED AT THIS WRITE, SO NO \`mnema\` STARTS: neither \`--identify\` nor the verb, which
+  // would answer nothing. Read from the stored lines of every tree, and any doubt goes on.
+  if (mode === 'beside' && !aRuleReaches(cwd, process.env, raw, ADDRESSED)) return undefined;
   if (mode === 'gate' && theRuntime().refusal !== null) {
     return closedWhere(theRuntime().refusal, cwd, raw);
   }
