@@ -8,7 +8,9 @@
  * changed in the other would leave a reader typing what the section never said. So: every command
  * of a row is, letter for letter, a line of a fenced block in the section the row points to, and
  * every command a row names in backticks instead of giving a line is one that section also names.
- * The anchor of each row is a heading of `docs/hosts.md`.
+ * The anchor of each row is a heading of `docs/hosts.md`. The two lines that install the Claude Code plugin
+ * are also written as a block on the README, `docs/first-record.md` and `plugin/README.md`: each carries
+ * the host table's commands, so the four places cannot part.
  *
  * What this does not hold: that the host runs the command. How each host is known is the rung
  * table of `docs/evidence.md`, and the row says the rung beside the line.
@@ -73,6 +75,20 @@ describe('the install line of a host', () => {
     const section = sectionOf(HOSTS_PAGE, install.at) ?? '';
     expect(unsaid(section, install)).toEqual([]);
   });
+
+  // The Claude Code plugin is installed by two lines that four pages write as a block. The host
+  // table is the one source: each of those blocks carries its commands, letter for letter.
+  it.each(['README.md', 'docs/first-record.md', 'docs/hosts.md', 'plugin/README.md'])(
+    '%s writes the Claude Code install lines of the host table',
+    (page) => {
+      const written = fencedLinesOf(readFileSync(join(ROOT, page), 'utf-8'));
+      const install = HOSTS.claude.install;
+      expect('commands' in install ? install.commands : []).toHaveLength(2);
+      expect(
+        ('commands' in install ? install.commands : []).filter((line) => !written.includes(line)),
+      ).toEqual([]);
+    },
+  );
 
   it('is not vacuous: most hosts give a command, and a changed letter is seen', () => {
     const given = HOST_NAMES.filter((name) => 'commands' in HOSTS[name].install);
