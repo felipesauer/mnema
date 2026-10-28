@@ -11,9 +11,12 @@
 
 import type { NamedDecision } from '@mnema/context';
 import { oneLine } from '../one-line.js';
+import { asState } from './state.js';
 
 /** `ADR-16: <title> (superseded)`, or `<id> (not in the trees read)`. */
 export function namedDecisionText(named: NamedDecision): string {
   if (!named.found) return `${oneLine(named.id)} (not in the trees read)`;
-  return `${oneLine(named.adr)}: ${oneLine(named.title)} (${oneLine(named.state)})`;
+  // The state is parenthesized in the ONE place that composes a state into a part, `asState`.
+  const state = asState(oneLine(named.state)).text;
+  return `${oneLine(named.adr)}: ${oneLine(named.title)} ${state}`;
 }

@@ -12,14 +12,14 @@ with its own changelog.
 
 ### Added
 
-- **`read_record`, `mnema show` and the opening name the decision a decision replaced.** They handed back `supersedes` as a bare id,
+- **`read_record`, `show` and the opening name the decision a decision replaced.** They handed back `supersedes` as a bare id,
   and in the comparison of 27 October the sessions that read the record through the MCP tools did not tell the story of a
   replacement in 2 of 2, while those that opened both ids by hand told it in 2 of 2. The link is now named, by one reading shared
-  by every door, with the label, the title and the state the other decision is in now: `read_record` and `mnema show --json` add
+  by every door, with the label, the title and the state the other decision is in now: `read_record` and `show --json` add
   `supersedes` and `supersededBy` as `{ found, id, adr, title, state }` beside the raw ids in `record` (`found: false` with the `id`
-  alone when no tree read holds it, said and not left out), `mnema show` prints `supersedes ADR-<n>: <title> (<state>) · <id>` and
+  alone when no tree read holds it, said and not left out), `show` prints `supersedes ADR-<n>: <title> (<state>) · <id>` and
   its twin, and a decision in force that replaced another carries `supersedes` in the opening's JSON and ends its line in the
-  document `mnema brief` with `supersedes ADR-<n>: <title> (<state>)`: one more field of the same line, so a rule is still one line.
+  committed brief document with `supersedes ADR-<n>: <title> (<state>)`: one more field of the same line, so a rule is still one line.
   Only the immediate decision is named, never the chain behind it and never its rationale. Nothing about the record changes: no
   kind, field or event, and no tool description.
 
