@@ -105,7 +105,7 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
   // A file renamed leaves one path and takes another; the rules of both judge it, so a rename
   // cannot carry a protected file out from under its rule.
   const changed = (await world.github.changedFiles())
-    .flatMap(({ path, renamedFrom }) =>
+    .flatMap(({ path, renamedFrom }): { path: string; rename?: string }[] =>
       renamedFrom === undefined
         ? [{ path }]
         : [
