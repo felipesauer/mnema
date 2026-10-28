@@ -520,7 +520,7 @@ describe('the extension reads the record through the command line', () => {
   it('wears the warning background of the theme when mnema verify failed, and says what failed', async () => {
     const answers: Record<string, CliResult> = {
       ...base(),
-      'verify --json': ok('{"ok": true, "record": {"ok": false, "level": "broken"}}'),
+      'verify --json': ok('{"ok": false, "record": {"ok": false, "level": "broken"}}'),
     };
     const w = world(answers);
     await settle();
@@ -536,7 +536,7 @@ describe('the extension reads the record through the command line', () => {
   it('carries the issues mnema verify listed on its error output when it failed, as they came', async () => {
     const answers: Record<string, CliResult> = {
       ...base(),
-      'verify --json': ok('{"ok": true, "record": {"ok": false, "level": "broken"}}'),
+      'verify --json': ok('{"ok": false, "record": {"ok": false, "level": "broken"}}'),
       verify: {
         code: 1,
         stdout: 'public: local integrity FAILED: see issues\n',

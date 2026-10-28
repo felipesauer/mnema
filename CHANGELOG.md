@@ -37,10 +37,6 @@ with its own changelog.
   there now, as not part of the proof and never read by a reader, and a test founds a tree, writes to it and reads it, and requires every
   entry at its root and in `locks/` to be named by the listing. Nothing about what a reader reads changes.
 
-- **`mnema verify --json` says `recordOk` beside the top `ok`.** The top `ok` says the command ran and found a project, and it is `true`
-  over a record that was tampered with; the verdict was `record.ok`. `recordOk` is that verdict at the top, right after `ok` (`false` where a
-  set of paths covered no record), and `ok` keeps its meaning, so nothing that reads it breaks. The exit code is the one it always was.
-
 - **`docs/cli-reference.md` has a table of the exit codes.** `0`, `1`, `2` (the `SubagentStop` hook only), `70` (an internal error) and `127`
   (the plugin's launcher could not start `mnema`), each with who ends with it, held by a test that reads `70` from `INTERNAL_ERROR_EXIT`,
   `1` from what `fail()` sets, and the others from the files that set them, and that refuses a literal exit in the source that the table omits.
@@ -139,6 +135,11 @@ with its own changelog.
 - **The counts the format pages spell are held to the artifacts.** The 38 vectors, the four aggregate digests and the twenty-seven points the second reader's writing found, as `FORMAT.md`, the verifier's page, `@mnema/chain`'s page and `docs/verify-without-installing.md` spell them, are read off `canonical-vectors.json` and the second reader's `gaps` by a test, so a vector or a gap added reddens the sentence that counts them.
 
 ### Changed
+
+- **The top `ok` of `mnema verify --json` is the verdict on the record.** It said that the command ran and found a project, and it was
+  `true` over a record that was tampered with, so a script that read the first field took a broken record for a sound one. It is now the same
+  as `record.ok`: `false` over a broken record, and `false` where a set of paths covered no record. `requirementMet` still says whether
+  `--require` was reached, and the exit code is the one it always was. `docs/cli-reference.md` describes both fields in the section of `verify`.
 
 - **A build of the site sends no telemetry.** `site/package.json` sets `ASTRO_TELEMETRY_DISABLED=1` in front of `astro build` and the site
   workflow's build step sets it in its `env`; a test refuses a script or a step that builds the site without it, and a workflow of any other

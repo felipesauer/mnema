@@ -373,6 +373,14 @@ gap and rules on the rest, and it never accepts a break. A path whose `.mnema/` 
 but holds no tail with anything in it is a project, not a gap: it is ruled on, and refused
 (below), with the flag or without it.
 
+**`mnema verify --json` prints the reading as one JSON document, and two of its fields answer the
+question a script asks.** `ok` is the verdict on the record, the same as `record.ok`: `true` when
+every tree it covered verified, `false` over a broken record (it used to be `true` there, because it
+said only that the command ran) and `false` where nothing was covered (a set in which no path holds a
+record has no `record` field). `requirementMet` says whether the level `--require` asked for was
+reached. The exit code is the one the prose reading has, and `--json` changes the shape of the
+answer and never the answer. What no `--require` value answers is in `notAnswered`.
+
 **A break is not the only way a record can lie, and the default does not catch the
 others.** This paragraph used to say `verify` exits non-zero "when the record is
 broken" and leave it there, which reads as a promise about forgery. It is not one.
@@ -1390,11 +1398,7 @@ code sets; a shell, a signal or the host can end a process with another, and tha
 | `70` | `mnema` | An internal error: a fault in `mnema`'s own code, not a refusal. It is named as one, a note of it is kept on this machine, and `mnema report` shows what it would send (above). |
 | `127` | the plugin's launcher of the MCP server (`plugin/server/launch.mjs`) | It could not start `mnema`. Where it started it, the launcher ends with the code the server ended with. |
 
-`mnema verify --json` prints `"ok": true` at the top whenever the command ran and found a project,
-including over a record that was tampered with: that `ok` is not the verdict. The verdict is
-`record.ok`, and `recordOk` beside the top `ok` says the same thing where a script looks first
-(`false` where nothing was covered). The exit code is `1` for the same cases as the prose reading,
-with or without `--json`.
+`mnema verify --json` has the same exit codes as the prose reading (the fields are described with `verify`, above).
 
 ### What goes into the record
 

@@ -125,6 +125,27 @@ describe('the page that says where a rule arrives', () => {
     expect(said).toBeGreaterThan(0);
   });
 
+  it("marks Gemini CLI's readings after a compaction as made in a resumed session, as Copilot CLI marks its own", () => {
+    const marked = ARMS.flatMap((arm) => {
+      const cell = theCell('gemini', arm, 'compaction');
+      return cell.is === 'arrived' || cell.is === 'not-arrived' ? [cell.note] : [];
+    });
+    expect(marked.length).toBeGreaterThan(0);
+    for (const note of marked) expect(note).toContain('resumes the session');
+    // No other moment of Gemini CLI carries the note: the start and the late reading are of one run.
+    for (const arm of ARMS) {
+      for (const moment of ['start', 'late', 'edit'] as const) {
+        const cell = theCell('gemini', arm, moment);
+        expect('note' in cell, `${arm} ${moment}`).toBe(false);
+      }
+    }
+    const gemini = renderTheTable()
+      .split('### ')
+      .find((section) => section.startsWith('Gemini'));
+    expect(gemini).toMatch(/arrived \(note 1\) \| not applicable \(note 2\)/);
+    expect(gemini).toMatch(/^1\. Resumed: read in a second run/m);
+  });
+
   it('measures something for every host', () => {
     for (const host of ARRIVAL_HOSTS) {
       const measured = ARMS.flatMap((arm) =>

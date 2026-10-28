@@ -25,11 +25,17 @@ import {
 } from './the-arms-of-a-rule.js';
 
 export type Outcome =
-  | { readonly is: 'arrived' }
+  | {
+      readonly is: 'arrived';
+      /** A reading made under a condition the page says: the table marks it with a note. */
+      readonly note?: string;
+    }
   | {
       readonly is: 'not-arrived';
       /** For the arm that only mentions the file: whether the mention itself reached the model. */
       readonly mentioned?: boolean;
+      /** A reading made under a condition the page says: the table marks it with a note. */
+      readonly note?: string;
     }
   | { readonly is: 'not-applicable'; readonly why: string }
   | { readonly is: 'not-measured'; readonly why: string };
@@ -57,6 +63,16 @@ const THE_ARMS_IN_A_FILE_ARE_READ_AGAIN = row(arrived, arrived, arrived, NO_CHAN
 /** The cells of a place that has none for a host, by the reason. */
 const noSuchPlace = (why: string): Record<Moment, Outcome> =>
   row(notApplicable(why), notApplicable(why), notApplicable(why), notApplicable(why));
+
+/** The condition of a reading after a compaction where the host only compacts a session that was resumed. */
+const IN_A_RESUMED_SESSION =
+  'read in a second run that resumes the session (`--resume`), which starts the session again: it says nothing about a compaction in a session that was never resumed';
+
+/** The same reading, marked as made in a resumed session. */
+const resumed = (cell: Outcome): Outcome =>
+  cell.is === 'arrived' || cell.is === 'not-arrived'
+    ? { ...cell, note: IN_A_RESUMED_SESSION }
+    : cell;
 
 const COPILOT_ENDS_AT_ITS_SUMMARY = notMeasured(
   'with `copilot -p` the host asks for its summary at the end of the run and the run ends; a second run that resumed the session sent the whole conversation again, the results and not the summary, so no request of a compacted conversation was seen',
@@ -120,17 +136,17 @@ export const THE_TABLE: TheTable = {
     mnema: row(arrived, arrived, COPILOT_ENDS_AT_ITS_SUMMARY, absent),
   },
   gemini: {
-    control: row(absent, absent, absent, NO_CHANNEL_AT_AN_EDIT),
-    'agents-md': row(absent, absent, absent, NO_CHANNEL_AT_AN_EDIT),
-    'host-file': THE_ARMS_IN_A_FILE_ARE_READ_AGAIN,
-    'at-reference': THE_ARMS_IN_A_FILE_ARE_READ_AGAIN,
+    control: row(absent, absent, resumed(absent), NO_CHANNEL_AT_AN_EDIT),
+    'agents-md': row(absent, absent, resumed(absent), NO_CHANNEL_AT_AN_EDIT),
+    'host-file': row(arrived, arrived, resumed(arrived), NO_CHANNEL_AT_AN_EDIT),
+    'at-reference': row(arrived, arrived, resumed(arrived), NO_CHANNEL_AT_AN_EDIT),
     'prose-reference': row(
       { is: 'not-arrived', mentioned: true },
       absent,
-      absent,
+      resumed(absent),
       NO_CHANNEL_AT_AN_EDIT,
     ),
-    mnema: row(arrived, arrived, arrived, absent),
+    mnema: row(arrived, arrived, resumed(arrived), absent),
   },
   qwen: {
     control: row(absent, absent, absent, NO_CHANNEL_AT_AN_EDIT),
@@ -193,9 +209,11 @@ const MOMENT_NAMES: Record<Moment, string> = {
 function wordsOf(cell: Outcome, note: string | undefined): string {
   switch (cell.is) {
     case 'arrived':
-      return 'arrived';
-    case 'not-arrived':
-      return cell.mentioned === true ? 'not arrived (the mention did)' : 'not arrived';
+      return note === undefined ? 'arrived' : `arrived (note ${note})`;
+    case 'not-arrived': {
+      const mention = cell.mentioned === true ? ' (the mention did)' : '';
+      return `not arrived${mention}${note === undefined ? '' : ` (note ${note})`}`;
+    }
     case 'not-applicable':
       return `not applicable (note ${note})`;
     case 'not-measured':
@@ -209,8 +227,11 @@ export function renderTheTable(): string {
   for (const host of ARRIVAL_HOSTS) {
     const notes: string[] = [];
     const noteOf = (cell: Outcome): string | undefined => {
-      if (cell.is !== 'not-applicable' && cell.is !== 'not-measured') return undefined;
-      const text = `${cell.is === 'not-applicable' ? 'Not applicable' : 'Not measured'}: ${cell.why}`;
+      let text: string;
+      if (cell.is === 'not-applicable') text = `Not applicable: ${cell.why}`;
+      else if (cell.is === 'not-measured') text = `Not measured: ${cell.why}`;
+      else if (cell.note !== undefined) text = `Resumed: ${cell.note}`;
+      else return undefined;
       let at = notes.indexOf(text);
       if (at < 0) at = notes.push(text) - 1;
       return String(at + 1);

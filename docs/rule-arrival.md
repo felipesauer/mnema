@@ -59,7 +59,8 @@ host's job red.
 
 The four words in a cell: **arrived**, **not arrived** (a reading was made and found nothing),
 **not applicable** and **not measured**, each of the last two with its reason in the note under the
-table.
+table. A reading that was made under a condition (Gemini CLI's after a compaction, in a resumed
+session) carries a note too.
 
 ## The table
 
@@ -124,14 +125,15 @@ table.
 
 | Where the rule is kept | start | late | after a compaction | at an edit |
 |---|---|---|---|---|
-| no rule anywhere (the control) | not arrived | not arrived | not arrived | not applicable (note 1) |
-| the rule in `AGENTS.md` | not arrived | not arrived | not arrived | not applicable (note 1) |
-| the rule in the host's own instructions file | arrived | arrived | arrived | not applicable (note 1) |
-| the rule in a file the instructions file imports with `@` | arrived | arrived | arrived | not applicable (note 1) |
-| the rule in a file the instructions file only mentions | not arrived (the mention did) | not arrived | not arrived | not applicable (note 1) |
-| the rule in the mnema record, addressed at a path | arrived | arrived | arrived | not arrived |
+| no rule anywhere (the control) | not arrived | not arrived | not arrived (note 1) | not applicable (note 2) |
+| the rule in `AGENTS.md` | not arrived | not arrived | not arrived (note 1) | not applicable (note 2) |
+| the rule in the host's own instructions file | arrived | arrived | arrived (note 1) | not applicable (note 2) |
+| the rule in a file the instructions file imports with `@` | arrived | arrived | arrived (note 1) | not applicable (note 2) |
+| the rule in a file the instructions file only mentions | not arrived (the mention did) | not arrived | not arrived (note 1) | not applicable (note 2) |
+| the rule in the mnema record, addressed at a path | arrived | arrived | arrived (note 1) | not arrived |
 
-1. Not applicable: a file is read when the session opens and has no channel at a write; the late column says whether it is still in front of the model
+1. Resumed: read in a second run that resumes the session (`--resume`), which starts the session again: it says nothing about a compaction in a session that was never resumed
+2. Not applicable: a file is read when the session opens and has no channel at a write; the late column says whether it is still in front of the model
 
 ### Qwen Code
 

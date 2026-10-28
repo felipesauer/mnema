@@ -440,9 +440,10 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
     .option(
       '--json',
       'emit the verdict as JSON instead of prose: the whole reading, per tree, plus ' +
-        'what NO --require value answers. The top "ok" says the command ran, not that the ' +
-        'record is sound: "recordOk" (the same as "record.ok") is the verdict. The exit code ' +
-        'is unchanged: this changes the shape of the answer, never the answer',
+        'what NO --require value answers. The top "ok" is the verdict on the record, the same ' +
+        'as "record.ok": false over a broken record, and false where no path covered a record. ' +
+        '"requirementMet" says whether --require was reached. The exit code is unchanged: this ' +
+        'changes the shape of the answer, never the answer',
     )
     .action(
       async (opts: {
@@ -770,10 +771,13 @@ function githubLine(author: GithubAuthor): string {
  * where "local integrity" quietly becomes "verified". The two readings are therefore
  * the same facts in two shapes, and neither is derived from the other's words.
  *
- * THE TOP `ok` IS NOT THE VERDICT. It says the command ran, and it is `true` over a tampered record.
- * `recordOk` beside it is the verdict (`record.ok`, which the exit code follows for a break); the
- * extension of the editor reads `record.ok` for the same reason. Where a reading has no `record`
- * (a set whose every path holds no record) `recordOk` is `false`: nothing was ruled sound.
+ * THE TOP `ok` IS THE VERDICT ON THE RECORD: `record.ok`, which the exit code follows for a break.
+ * It used to say that the command ran and found something to rule on, and that premise was
+ * wrong for a reader: it was `true` over a record that was tampered with, and a script that took
+ * the first field of the document for the answer took a broken record for a sound one. Where a
+ * reading has no `record` (a set whose every path holds no record) `ok` is `false`: nothing was
+ * ruled sound. That the command ran is what a JSON document on stdout already says, so it has
+ * no field of its own. `requirementMet` is the other answer: whether `--require` was reached.
  *
  * THE EXIT CODE IS THE SAME VERDICT, unchanged. A caller who adds `--json` has changed
  * the shape of the answer and not the answer, so the criterion is passed in rather than
@@ -797,14 +801,10 @@ function reportAsJson(
   notAnswered: readonly string[],
 ): void {
   const { io } = wiring;
-  // `ok` at the top says the command ran and found something to rule on; it is `true` over a record
-  // that was tampered with. The verdict is `record.ok`, and a consumer who read the top `ok` as the
-  // verdict took a broken record for a sound one. `recordOk` is that verdict where a consumer
-  // looks first, right after `ok`, and it is `false` where nothing was covered (a set whose paths
-  // hold no record has no `record`). `ok` keeps its meaning.
-  const recordOk = reading.record?.ok === true;
-  const { ok, ...rest } = reading;
-  io.out(JSON.stringify({ ok, recordOk, ...rest, notAnswered }, null, 2));
+  // `ok` is overwritten with the verdict: the reading carries `ok: true` for "the command ran",
+  // which was `true` over a tampered record. `false` where nothing was covered (no `record`).
+  const { ok: _ran, ...rest } = reading;
+  io.out(JSON.stringify({ ok: reading.record?.ok === true, ...rest, notAnswered }, null, 2));
   if (!met) io.fail();
 }
 

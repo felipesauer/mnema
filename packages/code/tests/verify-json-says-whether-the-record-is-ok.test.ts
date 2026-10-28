@@ -1,15 +1,15 @@
 /**
- * `mnema verify --json` SAYS, BESIDE THE TOP `ok`, WHETHER THE RECORD IS OK.
+ * THE TOP `ok` OF `mnema verify --json` IS THE VERDICT ON THE RECORD.
  *
- * The top `ok` of the document says the command ran and found a project, and it is `true` over a
- * record that was tampered with. A script that read it as the verdict took a broken record for a
- * sound one; the editor's extension already read `record.ok` for this. `recordOk` is that verdict
- * at the top, next to `ok`, and `ok` keeps its meaning so nothing that reads it breaks.
+ * It used to say the command ran and found a project, and it was `true` over a record that was
+ * tampered with: a script that read it as the verdict took a broken record for a sound one. It is
+ * now the same as `record.ok`, and `false` where nothing was covered (a set whose every path holds
+ * no record has no `record`, and nothing was ruled sound).
  *
  * HELD OVER THE REAL BINARY, in a home and a project of its own: an intact record, and the same
  * record after a byte of a stored fact was changed WITHOUT recomputing the links, which is what
- * tampering is. In the second, `ok` stays `true`, `recordOk` and `record.ok` are `false`, and the
- * exit is 1; and for a named set of projects, one of which is that record, the same.
+ * tampering is. In the second, `ok` and `record.ok` are `false` and the exit is 1; and for a named
+ * set of projects, one of which is that record, the same.
  *
  * NOT HELD: that `record.ok` is right about every kind of tampering; that is `verify`'s own cases'.
  */
@@ -50,7 +50,6 @@ function mnema(...argv: string[]): { status: number | null; stdout: string; stde
 
 interface TheDocument {
   readonly ok: unknown;
-  readonly recordOk: unknown;
   readonly record?: { readonly ok: unknown };
 }
 
@@ -90,26 +89,22 @@ function tamper(): void {
 }
 
 describe('verify --json over an intact record', () => {
-  it('says ok and recordOk, both true, and record.ok the same', () => {
+  it('says ok true, and record.ok the same', () => {
     aProject();
     const { status, document } = verifyJson();
     expect(status).toBe(0);
     expect(document.ok).toBe(true);
-    expect(document.recordOk).toBe(true);
     expect(document.record?.ok).toBe(true);
   });
 });
 
 describe('verify --json over a record that was tampered with', () => {
-  it('keeps the top ok true, says recordOk false as record.ok does, and exits 1', () => {
+  it('says ok false as record.ok does, and exits 1', () => {
     aProject();
     tamper();
     const { status, document } = verifyJson();
-    // The top `ok` is the command having run, and that has not changed.
-    expect(document.ok).toBe(true);
-    // The verdict, at the top and where it always was.
     expect(document.record?.ok).toBe(false);
-    expect(document.recordOk).toBe(false);
+    expect(document.ok).toBe(false);
     expect(status).toBe(1);
   });
 
@@ -117,9 +112,8 @@ describe('verify --json over a record that was tampered with', () => {
     aProject();
     tamper();
     const set = verifyJson('--workspace', repo);
-    expect(set.document.ok).toBe(true);
     expect(set.document.record?.ok).toBe(false);
-    expect(set.document.recordOk).toBe(false);
+    expect(set.document.ok).toBe(false);
     expect(set.status).toBe(1);
 
     const nowhere = join(sandbox, 'nowhere');
@@ -127,13 +121,6 @@ describe('verify --json over a record that was tampered with', () => {
     const nothing = verifyJson('--workspace', nowhere, '--allow-no-record');
     // Nothing was covered: there is no `record`, and "no record ruled sound" is not `true`.
     expect(nothing.document.record).toBeUndefined();
-    expect(nothing.document.recordOk).toBe(false);
-  });
-
-  it('puts recordOk right after ok, where a script looks first', () => {
-    aProject();
-    const ran = mnema('verify', '--json');
-    const keys = Object.keys(JSON.parse(ran.stdout) as object);
-    expect(keys.slice(0, 2)).toEqual(['ok', 'recordOk']);
+    expect(nothing.document.ok).toBe(false);
   });
 });
