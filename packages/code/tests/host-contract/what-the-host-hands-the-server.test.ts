@@ -68,7 +68,7 @@ describe('what Claude Code hands the server it starts', () => {
   });
 
   it('lights when a host begins to speak the revision with no handshake', () => {
-    const handed = { client: undefined, chain: [], present: [], declared: {} };
+    const handed = { client: undefined, firstMethods: [], chain: [], present: [], declared: {} };
     expect(
       theRevisionWithoutInitialize({ ...handed, protocol: '2025-11-25', withoutInitialize: false }),
     ).toBe(false);

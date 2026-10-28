@@ -185,6 +185,8 @@ export interface WhatTheServerWasHanded {
   readonly protocol: string | undefined;
   /** True where the first thing the client sent was a request, not `initialize` (the 2026-07-28 revision). */
   readonly withoutInitialize: boolean;
+  /** The methods of the first messages the client sent, up to its `initialize`. */
+  readonly firstMethods: readonly (string | undefined)[];
   /** The base names of the executables from the server up to the root, nearest first. */
   readonly chain: readonly string[];
   /** Which of a closed list of variables were present in its environment, by name; never a value. */

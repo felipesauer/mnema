@@ -82,7 +82,8 @@ const server = new Server(
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [] }));
 let asked;
 let withoutInitialize = false;
-let seenFirst = false;
+let seenInitialize = false;
+const firstMethods = [];
 
 const reportWhatWasHanded = () => {
   writeFileSync(
@@ -91,6 +92,7 @@ const reportWhatWasHanded = () => {
       client: server.getClientVersion()?.name,
       protocol: asked,
       withoutInitialize,
+      firstMethods,
       chain: theChain(),
       present: THE_MARKS.filter((name) => process.env[name] !== undefined),
       declared: Object.fromEntries(
@@ -109,11 +111,15 @@ await server.connect(transport);
 // `initialize`, and the SDK does not keep it where the server can read it.
 const handOn = transport.onmessage;
 transport.onmessage = (message, extra) => {
-  if (!seenFirst) {
-    seenFirst = true;
-    if (message.method === 'initialize') asked = message.params?.protocolVersion;
-    else {
+  if (!seenInitialize) {
+    if (firstMethods.length < 5) firstMethods.push(message.method);
+    if (message.method === 'initialize') {
+      seenInitialize = true;
+      asked = message.params?.protocolVersion;
+    } else if (message.id !== undefined) {
+      // A request before any `initialize`: the revision with no handshake begins like this.
       withoutInitialize = true;
+      seenInitialize = true;
       reportWhatWasHanded();
     }
   }

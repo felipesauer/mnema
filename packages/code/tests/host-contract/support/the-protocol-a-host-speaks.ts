@@ -29,7 +29,9 @@ export function theRevisionWithoutInitialize(handed: WhatTheServerWasHanded): bo
  * without a client name. Nothing is returned for a host that still begins with `initialize`.
  */
 export function theProtocolOf(host: string, handed: WhatTheServerWasHanded): string | undefined {
-  const spoken = handed.withoutInitialize ? '(no initialize at all)' : (handed.protocol ?? '?');
+  const spoken = handed.withoutInitialize
+    ? `(no initialize first: ${handed.firstMethods.join(', ')})`
+    : (handed.protocol ?? '?');
   const summary = process.env['GITHUB_STEP_SUMMARY'];
   if (summary !== undefined && summary !== '') {
     appendFileSync(summary, `- ${host} speaks MCP ${spoken}\n`);
