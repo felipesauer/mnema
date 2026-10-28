@@ -1741,7 +1741,7 @@ asks for, so with `singleQuote: true` that one file is reported until you run th
 with `singleQuote: true` can leave the file out of prettier (a line in `.prettierignore`) or accept the
 rewrite to `applyTo: '**'`: the two are the same YAML value, and VS Code's own page on custom
 instructions writes the field with single quotes in its example
-(`code.visualstudio.com/docs/copilot/customization/custom-instructions`). An earlier version's block (the begin marker names it, `v2`) is replaced by
+(`code.visualstudio.com/docs/agent-customization/custom-instructions`). An earlier version's block (the begin marker names it, `v2`) is replaced by
 the current one; and a formatter that re-wraps prose (`proseWrap: "always"`) changes the text between the
 markers, which makes it your edit: it is left as it is, and said.
 
