@@ -100,7 +100,11 @@ document, delivered by the host instead of waited for.
   (`mnema switch off edit-rules-push`) and the same ceiling, records `channel.served` once for each
   session of the host as they do, never refuses or asks, and answers `{}` for a payload with no
   session id. A `mnema` too old to know the verb leaves the write and the session as they were.
-  Copilot CLI's runs under `exit 0`, as its gate does. Held, in each host, by the case that starts the
+  Copilot CLI's runs under `exit 0`, as its gate does, starts no `mnema` where no rule of any tree has
+  an address, and gives it 6 seconds (a `mnema` that never answers costs the session 6 seconds, the
+  write goes through, and no fact is left). Where a rule has an address, the second process costs about
+  250 ms per write (median of 25 rounds, the two orders alternating: 247 ms for the gate alone, 503 ms
+  for the gate and this hook, one machine). Held, in each host, by the case that starts the
   real host against a stand-in for its model (`the-rule-arrives.copilot.test.ts`, `.gemini.test.ts`:
   the sentinel of a rule is looked for in the result of the write and found nothing when the switch
   is off), and for the verb by `a-rule-is-handed-after-a-write.test.ts`. VS Code and Cursor do not

@@ -14,7 +14,15 @@
  */
 
 import { spawn, spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -387,6 +395,37 @@ describe('the hooks that call the verb', () => {
     expect(ran.status).toBe(0);
     expect(ran.stdout).toBe('{"additionalContext":"the rules"}\n');
   });
+
+  it('starts no mnema where no rule of the record has an address', async () => {
+    const bare = join(sandbox, 'bare');
+    mkdirSync(bare, { recursive: true });
+    process.chdir(bare);
+    await did('init');
+    process.chdir(repo);
+    const bin = join(sandbox, 'bin');
+    mkdirSync(bin, { recursive: true });
+    const calls = join(sandbox, 'calls.log');
+    writeFileSync(
+      join(bin, 'mnema'),
+      `#!/bin/sh\necho "$*" >> "${calls}"\nif [ "$1" = "--identify" ]; then echo "@mnema/code stub"; exit 0; fi\necho '{"additionalContext":"the rules"}'\n`,
+    );
+    chmodSync(join(bin, 'mnema'), 0o755);
+    const asked = (cwd: string) =>
+      spawnSync(process.execPath, [HANDLER, '--host', 'copilot'], {
+        cwd,
+        env: { HOME: join(sandbox, 'home'), PATH: `${bin}:${process.env.PATH ?? ''}` },
+        encoding: 'utf-8',
+        input: afterAWrite('copilot', 'src/other/a.ts', 's1'),
+      });
+    // No rule has an address in the bare project: nothing starts, nothing is said.
+    const none = asked(bare);
+    expect(none.stdout).toBe('');
+    expect(existsSync(calls), 'a mnema was started where no rule has an address').toBe(false);
+    // And where one does, it starts (the control: the pre-filter is not what silenced the case above).
+    const some = asked(repo);
+    expect(some.stdout).toBe('{"additionalContext":"the rules"}\n');
+    expect(readFileSync(calls, 'utf-8')).toContain('beside-a-write --host copilot');
+  }, 60_000);
 
   it('stops waiting for a mnema that does not answer, silent, well inside the host’s own 15 seconds', () => {
     const began = Date.now();

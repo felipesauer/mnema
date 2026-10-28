@@ -36,7 +36,11 @@ with its own changelog.
   edit-rules-push`) and the host's ceiling, and records `channel.served` once for each session of the host, remembered the same
   way. It is a verb of its own because `before-a-write` run after a write would record a second `channel.refused` or
   `channel.asked` for a write already refused or asked about: this one never refuses or asks and records no such fact. A payload
-  with no session id is handed no rules; a `mnema` too old to know the verb leaves the write and the session as they were. The
+  with no session id is handed no rules; a `mnema` too old to know the verb leaves the write and the session as they were. Copilot
+  CLI's hook starts no `mnema` where no rule of any tree has an address (the same pre-filter the gate before a write uses) and
+  gives it 6 seconds, where the host's own kill would stall the session for 15 (a `mnema` that never answers: the write goes through,
+  no fact is left). Where a rule does have an address, the second process costs about 250 ms per write (median of 25 rounds
+  alternating the two orders, 247 ms for the gate alone and 503 ms for the gate and the hook after it, one machine). The
   host table's `pushes` cell is now yes for both, held by the arrival cases, and the cells of `docs/rule-arrival.md` for the two
   hosts at an edit are `arrived`, read from the result of the write alone, with the same read finding nothing when the push is
   switched off. VS Code and Cursor are not handed the rules at an edit yet.

@@ -10,7 +10,8 @@
  * Its own arguments (`--host`, `--agent-key`, from the hooks file) are handed to the verb. The rule
  * for running a verb is `hand-over.mjs`'s, and so is the silence: the write has happened, so a
  * `mnema` that is missing, one too old to know the verb (it refuses it and exits non-zero), no
- * project, no rule at the path, the channel off or a payload with no session id all write no byte.
+ * project, no rule at the path, the channel off or a payload with no session id all write no byte, and
+ * where no rule of any tree has an address (`an-address-can-be-met.mjs`) no `mnema` is started at all.
  * Unlike the gate before a write there is nothing to close: this never refuses.
  */
 
@@ -31,14 +32,21 @@ const WAIT = 6000;
 
 try {
   const { whatTheVerbAnswers, whereTheSessionIs } = await import('./hand-over.mjs');
+  const { anAddressCanBeMet } = await import('./an-address-can-be-met.mjs');
   const chunks = [];
   for await (const chunk of process.stdin) chunks.push(chunk);
-  const answer = whatTheVerbAnswers(
-    ['beside-a-write', ...process.argv.slice(2)],
-    whereTheSessionIs(),
-    Buffer.concat(chunks).toString('utf-8'),
-    WAIT,
-  );
+  const where = whereTheSessionIs();
+  // NO RULE HAS AN ADDRESS, SO NO `mnema` STARTS, as in the gate before a write: the verb would answer
+  // `{}`, and loading it is most of what a write costs here (about 250 ms, measured). Read from the
+  // stored lines of every tree, and any doubt starts it.
+  const answer = anAddressCanBeMet(where, process.env)
+    ? whatTheVerbAnswers(
+        ['beside-a-write', ...process.argv.slice(2)],
+        where,
+        Buffer.concat(chunks).toString('utf-8'),
+        WAIT,
+      )
+    : null;
   if (answer !== null) process.stdout.write(answer);
 } catch {
   // Silence: the one thing this handler must never do is make somebody else's session worse
