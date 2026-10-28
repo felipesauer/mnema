@@ -119,6 +119,12 @@ with its own changelog.
 
 ### Changed
 
+- **The README opens on the questions a record answers, and its Quick start reaches a rule in force and a green `verify` with no
+  agent.** Under the headline, three questions (who decided this and why, what was turned down, has it changed since) come
+  before the sentence about what mnema is. The Quick start's first block is the binary, `mnema init`, a decision recorded and
+  accepted as `ADR-1`, `mnema link` addressing it at a path, and `mnema verify`; the plugin is a second step, with the
+  other hosts on the install page. A new test runs that block as written, through the built binary, in a sandbox.
+
 - **The VS Code extension shows the mnema M in the status bar.** Wherever `mnema verify` was read, the item wears the M of the
   console's wordmark instead of a book or an info mark (the level, strong or weak, stays in the word beside it); a failed
   check keeps the editor's error icon and an unreadable answer its question mark, so a record that does not verify never wears the
