@@ -787,6 +787,13 @@ $ mnema rules docs/runbook/rollback.md --json
 |         "by": "<anchor-short>",
 |         "unconfirmed": false
 |       },
+|       "supersedes": {
+|         "found": true,
+|         "id": "<decision-wiki>",
+|         "adr": "ADR-2",
+|         "title": "Keep the runbook in the wiki",
+|         "state": "superseded"
+|       },
 |       "assertedIn": "public",
 |       "who": "<anchor>",
 |       "at": "<at:13>"
@@ -806,6 +813,13 @@ $ mnema rules docs/runbook/rollback.md --json
 |       "acceptance": {
 |         "by": "<anchor-short>",
 |         "unconfirmed": false
+|       },
+|       "supersedes": {
+|         "found": true,
+|         "id": "<decision-wiki>",
+|         "adr": "ADR-2",
+|         "title": "Keep the runbook in the wiki",
+|         "state": "superseded"
 |       },
 |       "assertedIn": "public",
 |       "who": "<anchor>",
