@@ -1668,6 +1668,16 @@ in the <scope> tree with this title, rationale and alternatives. Nothing was wri
 of the offers below. This is what makes a call repeated after a lost reply safe. A rejected or superseded decision is not
 matched: the same words recorded again are a new proposal.
 
+### Recording the same memory or observation twice
+
+`memory` and `capture_memory`, `observe` and `record_observation` look, before they write, for a note of the same tree that has
+not been retracted and says the same: a memory with exactly the text given, an observation with the same text, topic and
+`about` (after the replacement of secrets every write applies). If there is one, nothing is written and the answer is `Memory
+<id> is already recorded in the <scope> tree with this text. Nothing was written.` (an observation says `Observation <id>
+about <about> ... with this topic and text.`), with the existing id. This is what makes a call repeated after a lost reply
+safe. A retracted note is not matched: the same words recorded again are a new note. A task is not looked for: two tasks with
+one title are two tasks.
+
 ### The mnema instructions in the files a host reads
 
 When it founds a project, `mnema init` writes a short block into the files agent hosts read as
@@ -1727,7 +1737,11 @@ marker and before the end marker, the examples as indented code. In a repository
 Markdown, `format:check` passes over the files `init` writes, with one exception: prettier writes
 the `applyTo: "**"` of the `.github/instructions` file with the quotes your own configuration
 asks for, so with `singleQuote: true` that one file is reported until you run the formatter over it
-(it keeps the block). An earlier version's block (the begin marker names it, `v2`) is replaced by
+(it keeps the block). `init` writes that `applyTo` with double quotes, prettier's default. A project
+with `singleQuote: true` can leave the file out of prettier (a line in `.prettierignore`) or accept the
+rewrite to `applyTo: '**'`: the two are the same YAML value, and VS Code's own page on custom
+instructions writes the field with single quotes in its example
+(`code.visualstudio.com/docs/agent-customization/custom-instructions`). An earlier version's block (the begin marker names it, `v2`) is replaced by
 the current one; and a formatter that re-wraps prose (`proseWrap: "always"`) changes the text between the
 markers, which makes it your edit: it is left as it is, and said.
 

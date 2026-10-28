@@ -9,7 +9,7 @@
  */
 
 import type { Command } from 'commander';
-import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
+import { alreadyRecordedNoteLine, RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { addBodySourceOptions } from './body-source.js';
 import { hereWriting } from './context.js';
 import { scopeOption } from './enumerated.js';
@@ -75,6 +75,10 @@ export function registerObserve(program: Command, wiring: Wiring): Declared {
         ...(opts.which !== undefined ? { which: opts.which } : {}),
         ...(run !== undefined ? { run } : {}),
       });
+      if (result.ok && result.alreadyRecorded) {
+        io.out(alreadyRecordedNoteLine({ id: result.id, about }, result.scope));
+        return;
+      }
       if (result.ok) {
         // The id is minted here; `about` is the positional, and the doc above says it
         // is NOT validated: a dangling reference is honest cross-tree. So the value

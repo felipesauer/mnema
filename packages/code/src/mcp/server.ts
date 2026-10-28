@@ -113,6 +113,7 @@ import { offOnThisMachine } from '../record-framing.js';
 import { linkBreakBlock, linkBreakBlockOnWrite } from '../record-integrity.js';
 import {
   alreadyRecordedLine,
+  alreadyRecordedNoteLine,
   type FellIn,
   type Landed,
   landedNotice,
@@ -991,6 +992,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         // the agent sees the capture did not happen, not a silent no-op.
         return refused(active, result);
       }
+      if (result.alreadyRecorded) {
+        return replied(active, [alreadyRecordedNoteLine(result, result.scope)], { wrote: false });
+      }
       return recorded(active, `Captured memory ${result.id}`, result);
     },
   );
@@ -1028,6 +1032,11 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       });
       if (!result.ok) {
         return refused(active, result);
+      }
+      if (result.alreadyRecorded) {
+        return replied(active, [alreadyRecordedNoteLine({ id: result.id, about }, result.scope)], {
+          wrote: false,
+        });
       }
       return recorded(active, `Recorded observation ${result.id} about ${about}`, result);
     },

@@ -239,6 +239,11 @@ export type CaptureResult =
         readonly ok: true;
         /** The minted memory id (the event subject). */
         readonly id: string;
+        /**
+         * Set when the note was already on the record (the same text, still standing, in the
+         * same tree): nothing was written and `id` is the existing note's.
+         */
+        readonly alreadyRecorded?: true;
       })
   | {
       readonly ok: false;
@@ -425,8 +430,8 @@ export function runCaptureMemory(
       which,
       run,
     });
-    // Checkpoint so the capture is fully signed the moment the tool returns.
-    if (written.ok) ctx.writer.checkpoint();
+    // Checkpoint so the capture is fully signed the moment the tool returns: nothing to sign for a repeat.
+    if (written.ok && !('already' in written)) ctx.writer.checkpoint();
     return written;
   });
   // A capture runs no gate, but the authority invariant still applies: surface
@@ -440,6 +445,7 @@ export function runCaptureMemory(
     scope: route.scope,
     ...routedTo(session, route),
     ...forwardReplacement(captured),
+    ...('already' in captured ? { alreadyRecorded: true as const } : {}),
   };
 }
 
@@ -450,6 +456,11 @@ export type RecordObservationResult =
         readonly ok: true;
         /** The observation's OWN minted id (the event subject). */
         readonly id: string;
+        /**
+         * Set when the note was already on the record (the same text, still standing, in the
+         * same tree): nothing was written and `id` is the existing note's.
+         */
+        readonly alreadyRecorded?: true;
       })
   | {
       readonly ok: false;
@@ -521,8 +532,8 @@ export function runRecordObservation(
       which,
       run,
     });
-    // Checkpoint so the record is fully signed the moment the tool returns.
-    if (written.ok) ctx.writer.checkpoint();
+    // Checkpoint so the record is fully signed the moment the tool returns: nothing to sign for a repeat.
+    if (written.ok && !('already' in written)) ctx.writer.checkpoint();
     return written;
   });
   if (!recorded.ok) {
@@ -534,6 +545,7 @@ export function runRecordObservation(
     scope: route.scope,
     ...routedTo(session, route),
     ...forwardReplacement(recorded),
+    ...('already' in recorded ? { alreadyRecorded: true as const } : {}),
   };
 }
 

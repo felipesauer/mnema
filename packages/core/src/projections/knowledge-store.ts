@@ -112,6 +112,14 @@ export function getMemory(db: SqliteDatabase, id: string): MemoryProjection | nu
   return row === undefined ? null : toProjection(row);
 }
 
+/** The memories still standing whose content is exactly this text, ordered by id. */
+export function memoriesSaying(db: SqliteDatabase, content: string): MemoryProjection[] {
+  const rows = db
+    .prepare(`SELECT * FROM memories WHERE content = ? AND ${STANDING} ORDER BY id`)
+    .all(content) as MemoryRow[];
+  return rows.map(toProjection);
+}
+
 /** Lists the projected memories still standing (not retracted), ordered by id for a stable result. */
 export function listMemories(db: SqliteDatabase): MemoryProjection[] {
   const rows = db
