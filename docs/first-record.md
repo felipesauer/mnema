@@ -81,7 +81,8 @@ claude plugin install mnema@mnema
 ```
 
 In Claude Code, a session now opens with the decisions in force, and a write under `src/billing`
-is refused: the model is handed the rule that refused it. The other hosts, and what each one
+through the host's own edit tools is refused (a shell command is not stopped): the model is handed
+the rule that refused it. The other hosts, and what each one
 gets, are on [the install page](install.md).
 
 ## 5. Check it
