@@ -57,9 +57,9 @@ describe('the install line', () => {
   });
 
   it('is pinned on the page to the version of the root package.json, in both lines that name one', () => {
-    const pinned = [...page.matchAll(/^npm i (?:-g|--ignore-scripts) @mnema\/code@(\S+)$/gm)];
-    expect(pinned.map((one) => one[0].split(' ').slice(2, -1).join(' '))).toEqual(['-g', '--ignore-scripts']);
-    expect(pinned.map((one) => one[1])).toEqual([PUBLISHED, PUBLISHED]);
+    const pinned = [...page.matchAll(/^npm i (-g|--ignore-scripts) @mnema\/code@(\S+)$/gm)];
+    expect(pinned.map((one) => one[1])).toEqual(['-g', '--ignore-scripts']);
+    expect(pinned.map((one) => one[2])).toEqual([PUBLISHED, PUBLISHED]);
   });
 
   it('is the line of the README quick start, and the README says nothing of 404 or the source', () => {
