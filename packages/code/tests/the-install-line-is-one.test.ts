@@ -25,12 +25,13 @@ const INSTALL_LINE = 'npm i -g @mnema/code';
 const RELEASE_URL = /releases\/download|\.tgz/;
 /** What the pages said while nothing was on npm, in every spelling the repository used. */
 const NOT_ON_NPM =
-  /nothing is on npm|not on npm yet|is not on npm|answers 404|a 404 means|until the (first )?publication|built from the source|build it from the source|build from the source/i;
+  /nothing is on npm|not on npm yet|is not on npm|answers 404|a 404 means|until the (first )?publication|built from the source|build it from the source|build from the source|from its source/i;
 
 const read = (...parts: string[]): string => readFileSync(join(REPO, ...parts), 'utf-8');
 
 const page = read('docs', 'install.md');
 const buildPage = read('docs', 'build-from-source.md');
+const PUBLISHED = JSON.parse(read('package.json')).version as string;
 
 /** The first `sh` block of the page: the install. */
 const FIRST_BLOCK = [...page.matchAll(/```sh\n([\s\S]*?)```/g)][0]?.[1] ?? '';
@@ -53,6 +54,12 @@ describe('the install line', () => {
     expect(page).toContain('npm i -g --prefix ~/.local @mnema/code');
     expect(page).not.toMatch(NOT_ON_NPM);
     expect(page).not.toMatch(RELEASE_URL);
+  });
+
+  it('is pinned on the page to the version of the root package.json, in both lines that name one', () => {
+    const pinned = [...page.matchAll(/^npm i (?:-g|--ignore-scripts) @mnema\/code@(\S+)$/gm)];
+    expect(pinned.map((one) => one[0].split(' ').slice(2, -1).join(' '))).toEqual(['-g', '--ignore-scripts']);
+    expect(pinned.map((one) => one[1])).toEqual([PUBLISHED, PUBLISHED]);
   });
 
   it('is the line of the README quick start, and the README says nothing of 404 or the source', () => {
@@ -91,6 +98,16 @@ describe('the install line', () => {
     const proof = read('.github', 'the-packed-install', 'run.sh');
     expect(proof).toContain('pnpm pack --pack-destination');
     expect(proof).toContain('npm i -g --prefix "$prefix"');
+  });
+
+  it('is never "from its source" in the extension that needs the command', () => {
+    const walkthrough = read('packages', 'vscode', 'media', 'walkthrough', 'command.md');
+    const manifest = read('packages', 'vscode', 'package.json');
+    for (const text of [walkthrough, manifest]) {
+      expect(text).not.toMatch(NOT_ON_NPM);
+      expect(text).toContain(INSTALL_LINE);
+    }
+    expect(manifest.match(/npm i -g @mnema\/code/g)).toHaveLength(3);
   });
 
   it('is what `mnema doctor` says when there is no mnema on the PATH', () => {

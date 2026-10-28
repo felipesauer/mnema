@@ -1275,7 +1275,8 @@ files on this machine and, asked alone, writes nothing; it does not ask the regi
 that is published and not installed here is outside what it can say.
 
 Where this machine holds an agent key it also says, for each, in which of the trees it reaches the record enrols
-it, and says when `MNEMA_AGENT_KEY` in the environment of the `doctor` itself names one this machine does not hold.
+it, and says when `MNEMA_AGENT_KEY` in the environment of the `doctor` itself names one this machine does not hold, and
+when your own key is still unprotected while an agent key exists.
 
 In a project it also names each macOS metadata file (`keys/._<name>.pub`) in the committed record: both verifiers skip
 it as they skip `.DS_Store`, and the line says you can delete it.

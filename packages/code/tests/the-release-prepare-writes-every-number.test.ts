@@ -12,6 +12,9 @@
  *
  * WHAT IT DOES NOT COVER. Remaking `recordings/console.cast` and the GIF: that needs the built
  * binary, a pseudo-terminal and `agg`, so the fixture has no cast and the script skips it.
+ *
+ * The install page's two pinned lines (`npm i -g @mnema/code@x.y.z` and `npm i --ignore-scripts
+ * @mnema/code@x.y.z`) are one of the places the number lives, so the copy of the page is in the fixture.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -28,7 +31,8 @@ const VERSION_TS = 'packages/code/src/version.ts';
 const READER_TS = 'packages/chain/src/version.ts';
 const GOLDEN = 'packages/code/src/cli.help.golden.txt';
 const PYPROJECT = 'packages/chain/verifier/pyproject.toml';
-const SOURCES = [VERSION_TS, READER_TS, GOLDEN, PYPROJECT];
+const INSTALL_PAGE = 'docs/install.md';
+const SOURCES = [VERSION_TS, READER_TS, GOLDEN, PYPROJECT, INSTALL_PAGE];
 /**
  * THE NUMBERS ARE DERIVED FROM THE ONE THE PRODUCT IS AT, never typed: a test file that spelled
  * the current number would be accused by `the-version-is-one-number.test.ts` on the day it is
@@ -123,6 +127,9 @@ describe('release:prepare with a number', () => {
     expect(readFileSync(join(dir, READER_TS), 'utf-8')).toContain(`READER_VERSION = '${TARGET}'`);
     expect(readFileSync(join(dir, GOLDEN), 'utf-8')).toContain(`$ mnema --version\n| ${TARGET}\n`);
     expect(readFileSync(join(dir, PYPROJECT), 'utf-8')).toContain(`\nversion = "${TARGET}"\n`);
+    const install = readFileSync(join(dir, INSTALL_PAGE), 'utf-8');
+    expect(install).toContain(`\nnpm i -g @mnema/code@${TARGET}\n`);
+    expect(install).toContain(`\nnpm i --ignore-scripts @mnema/code@${TARGET}\n`);
 
     const log = readFileSync(join(dir, 'CHANGELOG.md'), 'utf-8');
     expect(log).toContain(`## [Unreleased]\n\n## [${TARGET}] - 2030-01-02\n\n### Added`);
