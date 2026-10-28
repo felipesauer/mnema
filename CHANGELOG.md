@@ -119,6 +119,18 @@ with its own changelog.
 
 ### Changed
 
+- **The page `mnema site` writes checks its own lists against the events it verified.** The decisions, notes and timeline were
+  written by the command and nothing in the browser looked at them, so a green verdict stood beside lists it did not cover. Now,
+  once the verdict is `verified`, the page derives the lists again in the browser from the files it verified, with the same
+  TypeScript the command writes them with (the page's script now bundles the model and the projections it reads, and the build
+  refuses a bundle that names a `node:` module or calls `require(`), and says `match` or names each difference by its item: a
+  state word, a `data-state`, a card taken away or made up (also one without the class a card carries, and a paragraph put inside a list), a counts line added beside the real one, the text of a note, a badge, the counts, an entry of the timeline in
+  another place, a move missing from a history, a sentence added outside every field. Over a record that did not verify it says the
+  lists were not checked. It is not a second, independent reader (the Python reader verifies the chain and does not derive
+  decisions), it reads no style, it does not read text outside the lists or an attribute or a wrapper added to a field, it holds the
+  main thread for about one to two seconds after the verdict on a large record, and a page handed over by the party it checks
+  carries the script that checks it. What it holds to the events is every element directly inside the decision list, the list of
+  notes apart and the timeline (each must be an item the events give, with no text between), and each part of the page's body.
 - **The VS Code extension starts far fewer `mnema` processes per reading.** The decisions awaiting a judgment come from one
   `mnema status --json` (with the `ADR-n` of each), and `mnema search` is asked too only when `status` served fewer than it counted,
   so the view still lists up to 200; the one `mnema show` per new proposal is gone, and with it the justification in an item's
@@ -151,7 +163,7 @@ with its own changelog.
   The verification now starts after the first paint. The stored events are no longer written into the page a second time: opening
   a tail draws its lines from the files the page already carries for the verification (the same text, a byte that is not UTF-8
   as U+FFFD), so without JavaScript they are not drawn. At this repository's own record the page went from 1,328,541 to
-  1,042,443 bytes (321 KB to 261 KB gzipped), and a record of 2,112 events made by the product's own writers from 6,002,316 to 4,889,518 bytes. What the page lists is still written by the command and still not checked against the files in the browser.
+  1,042,443 bytes (321 KB to 261 KB gzipped), and a record of 2,112 events made by the product's own writers from 6,002,316 to 4,889,518 bytes.
 
 - **The VS Code extension has a container of its own in the activity bar, with the M, and a badge.** The two views, now
   "Awaiting Judgment" and "Stacks", left the Explorer (below Outline and Timeline, collapsed) for a container titled mnema whose

@@ -100,7 +100,12 @@ export class FakeElement {
     for (const listener of this.listeners.get(type) ?? []) listener();
   }
 
+  get tagName(): string {
+    return this.tag;
+  }
+
   querySelectorAll(selector: string): FakeElement[] {
+    if (selector === ':scope > *') return this.children.filter((child) => child.tag !== '#text');
     const found: FakeElement[] = [];
     const walk = (node: FakeElement): void => {
       for (const child of node.children) {
@@ -203,7 +208,14 @@ export class FakePage {
           stack.push(element);
         }
       } else if (text !== undefined) {
-        const node = new FakeElement('#text', new Map(), this.writes, decode(text));
+        // A browser's parser drops the one line break that directly follows `<pre>`.
+        const first = top().tag === 'pre' && top().children.length === 0;
+        const node = new FakeElement(
+          '#text',
+          new Map(),
+          this.writes,
+          decode(first && text.startsWith('\n') ? text.slice(1) : text),
+        );
         node.parent = top();
         top().children.push(node);
       }
@@ -251,6 +263,8 @@ export class FakeTimers {
 
 /** A page, its timers, and the script run over it. */
 export interface PageRun {
+  /** The context the script ran in, for a case that asks the script what it holds. */
+  readonly context: vm.Context;
   readonly page: FakePage;
   readonly timers: FakeTimers;
   /** The window's address and what a reader does to it: a new fragment, then `hashchange`. */
@@ -290,5 +304,5 @@ export function runInAVm(html: string, script: string, hash = ''): PageRun {
   });
   vm.runInContext('delete globalThis.SharedArrayBuffer', context);
   vm.runInContext(script, context);
-  return { page, timers, address };
+  return { context, page, timers, address };
 }

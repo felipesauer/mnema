@@ -4,8 +4,11 @@
  * `pageModel` takes the events of the public tree in the record's own order and returns the
  * decisions (each with the notes and the addresses that belong to it), the notes that belong to
  * no decision, the timeline and the counts. `mnema site` calls it on the machine that writes the
- * page. It reads no file and names no `node:` module, so the same function can run over the same
- * events somewhere else; nothing in it is worded for a reader (the page does that).
+ * page, and the page's own script calls it again over the events of the files it verified
+ * (`browser/check.ts`): the same function, so what the page lists can be held against what the
+ * verified events give. It reads no file and names no `node:` module, which is what lets the
+ * script bundle it (the build refuses a bundle that names one); nothing in it is worded for a
+ * reader (`view.ts` does that).
  *
  * THE RULES ARE THE PRODUCT'S, NOT RESTATED HERE. Whether a decision governs now is
  * `decisionDisposition`; the notes are what `projectKnowledge` and `projectObservations` serve

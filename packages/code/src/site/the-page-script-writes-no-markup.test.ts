@@ -28,7 +28,27 @@ import { codeOnly, sourceFiles } from '../../tests/support/reading-source.js';
 import { renderPage } from './page.js';
 import { theSiteVerifier } from './verifier-bundle.js';
 
-const BROWSER = join(dirname(fileURLToPath(import.meta.url)), 'browser');
+const SITE = dirname(fileURLToPath(import.meta.url));
+const BROWSER = join(SITE, 'browser');
+/**
+ * Every file the script is bundled from that is not in `browser/`, found by following the relative
+ * imports from the entry the bundle starts at (what the lists are, what they are made of, and what
+ * those read in turn), so a file the bundle comes to carry is read without anyone adding it here.
+ */
+function bundledBeside(): string[] {
+  const seen = new Set<string>();
+  const follow = (file: string): void => {
+    if (seen.has(file)) return;
+    seen.add(file);
+    const source = readFileSync(file, 'utf-8');
+    for (const [, spec] of source.matchAll(/(?:from|import)\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g)) {
+      follow(join(dirname(file), (spec as string).replace(/\.js$/, '.ts')));
+    }
+  };
+  follow(join(BROWSER, 'entry.ts'));
+  return [...seen].filter((file) => dirname(file) !== BROWSER).sort();
+}
+const BUNDLED_BESIDE = bundledBeside();
 
 /** What no file of the script may say, in code, with the reason it is here. */
 const SINKS: readonly { readonly name: string; readonly found: RegExp }[] = [
@@ -45,13 +65,17 @@ const SINKS: readonly { readonly name: string; readonly found: RegExp }[] = [
 const FORBIDDEN_ATTRIBUTE = /setAttribute\(\s*['"`](?:style|on[a-z]*)['"`]/i;
 
 describe('the script of the page', () => {
-  const files = sourceFiles(BROWSER);
+  const files = [...sourceFiles(BROWSER), ...BUNDLED_BESIDE];
 
-  it('is read whole: every file of the browser directory, the verifier and its shims among them', () => {
+  it('is read whole: every file of the browser directory, the verifier and its shims among them, and the model and the trees the lists are made of', () => {
     const names = files.map((file) => relative(BROWSER, file)).sort();
     expect(names).toEqual(
       expect.arrayContaining([
+        '../../one-line.ts',
+        '../model.ts',
+        '../view.ts',
         'buffer.ts',
+        'check.ts',
         'crypto.ts',
         'entry.ts',
         'filters.ts',

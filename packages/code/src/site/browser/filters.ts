@@ -36,6 +36,8 @@ export interface El {
   appendChild(child: El): void;
   addEventListener(type: string, listener: () => void): void;
   querySelectorAll(selector: string): ArrayLike<El>;
+  /** The tag, in lower case. */
+  tagName?: string;
   /** Brings the element into view; a place that cannot scroll leaves it out. */
   scrollIntoView?(): void;
 }

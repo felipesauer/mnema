@@ -1,0 +1,416 @@
+/**
+ * The lists of the page, checked against the events the page verified.
+ *
+ * `mnema site` wrote the lists (decisions, notes, timeline) into the page from the public tree's
+ * events. A verdict beside lists nothing checked says nothing about them, so once the verdict is
+ * `verified` the script derives the lists AGAIN, in the reader's browser, from the files it
+ * verified: the same `orderedEvents` the product reads a record with, the same `pageModel`, the same
+ * `listViews`. Then it reads what the page shows (the DOM) and names every difference, each one by
+ * the item it is about: `ADR-9 (state): the page says accepted; the events say proposed`.
+ *
+ * WHAT IS COMPARED, enumerated from the derived trees and not from a list written here:
+ *   - every `[data-field]` node of each decision card, note, timeline entry and tail summary: its
+ *     name, its text and the attributes that carry a claim (`href`, `aria-label`, `data-state`). A
+ *     node whose name the events do not give is a difference, and so is one the page lost;
+ *   - the root of each of those items: its `id`, its `class` and the `data-*` the filters read, and
+ *     that the page does not hide an entry, a note apart or a tail (only the filters hide a card);
+ *   - the whole text of each item, with white space collapsed: a sentence put in or taken out of a
+ *     card outside any field shows here and nowhere else;
+ *   - every element directly in the decision list, the list of notes apart and the timeline is an
+ *     item the events give, and the text of each of them is only that of its items; every child of
+ *     `<main>` is a part the page has (a counts line put beside the real one is one that is not);
+ *   - the ids the page has and the events do not give, and the other way round, their order, the
+ *     number of timeline entries, notes and tails, and the counts line.
+ *
+ * WHAT IT DOES NOT SAY. It does not read text outside the lists, an attribute it was not told to
+ * compare, or an element wrapped around a field. It does not read a style: a rule of the page that hides a card or recolours
+ * a word is not in the lists and is not compared. It does not read the page's own script, which is
+ * the script doing the reading: a page served by the party it checks carries the script that checks
+ * it, so the check counts for more when the page is made again from a clone. And it is not a second
+ * reader: it is this product's TypeScript run twice. The Python reader verifies the chain and does
+ * not derive decisions.
+ *
+ * IT SAYS `match` ONLY OVER A RECORD THAT VERIFIED. Over any other the answer is `unchecked`, with
+ * the reason, and never `match`; a derivation that throws is `unchecked` as well. A difference is not
+ * a verdict on the chain: that line is the verifier's and stays as it is.
+ */
+
+import { catalogUpcasters } from '@mnema/chain';
+import { orderedEvents } from '@mnema/core';
+import { type PageModel, pageModel } from '../model.js';
+import {
+  fieldsOf,
+  type ItemView,
+  listViews,
+  NO_DECISIONS,
+  type SiteTail,
+  textOf,
+  type VNode,
+} from '../view.js';
+import type { Doc, El } from './filters.js';
+import { mountRecord, RECORD_ROOT } from './fs.js';
+import { tailsOfFiles } from './tails.js';
+
+/** What the page's lists are derived to be: the model and the tails, from the files. */
+export interface Derived {
+  readonly model: PageModel;
+  readonly tails: readonly SiteTail[];
+}
+
+/** The lists derived from the files a page carries, by the code `mnema site` writes them with. */
+export function deriveLists(files: Readonly<Record<string, string>>): Derived {
+  mountRecord(files, true);
+  return {
+    model: pageModel(orderedEvents({ root: RECORD_ROOT }, catalogUpcasters())),
+    tails: tailsOfFiles(files),
+  };
+}
+
+const collapse = (text: string | null): string => (text ?? '').replace(/\s+/g, ' ').trim();
+
+/** A value as a difference quotes it: short, on one line, and JSON so a control character is seen. */
+function show(value: string | null): string {
+  if (value === null) return 'nothing';
+  const short = collapse(value);
+  return JSON.stringify(short.length > 80 ? `${short.slice(0, 77)}...` : short);
+}
+
+/** Where two texts first differ, each with a little of what is around it. */
+function excerpts(page: string, events: string): { page: string; events: string } {
+  let at = 0;
+  while (at < page.length && at < events.length && page[at] === events[at]) at++;
+  const window = (text: string): string => {
+    const from = Math.max(0, at - 12);
+    return JSON.stringify(`${from > 0 ? '...' : ''}${text.slice(from, at + 40)}`);
+  };
+  return { page: window(page), events: window(events) };
+}
+
+function compareAttributes(label: string, el: El, node: VNode, out: string[]): void {
+  for (const [name, value] of Object.entries(node.attrs)) {
+    const got = el.getAttribute(name);
+    if (got !== value) {
+      out.push(`${label}: its attribute ${name} says ${show(got)}; the events say ${show(value)}`);
+    }
+  }
+}
+
+/** Compares the fields and, when they all agree, the whole text, of `el` against what `node` is. */
+function compareContent(label: string, el: El, node: VNode, out: string[]): void {
+  const before = out.length;
+  const want = fieldsOf(node);
+  const have = Array.from(el.querySelectorAll('[data-field]'), (field) => ({
+    el: field,
+    name: field.getAttribute('data-field') ?? '',
+  }));
+  let next = 0;
+  for (const field of want) {
+    const what = field.of === undefined ? field.name : `${field.name} of note ${field.of}`;
+    const found = have[next];
+    if (found === undefined || found.name !== field.name) {
+      out.push(`${label}: the field ${what} is missing from the page`);
+      continue;
+    }
+    next++;
+    const text = collapse(found.el.textContent);
+    if (text !== collapse(field.text)) {
+      out.push(
+        `${label} (${what}): the page says ${show(text)}; the events say ${show(field.text)}`,
+      );
+    }
+    for (const [name, value] of Object.entries(field.attrs)) {
+      const got = found.el.getAttribute(name);
+      if (got !== value) {
+        out.push(
+          `${label} (${what}): its attribute ${name} says ${show(got)}; the events say ${show(value)}`,
+        );
+      }
+    }
+  }
+  for (; next < have.length; next++) {
+    out.push(
+      `${label}: the page has a field named ${show(have[next]?.name ?? '')} that the events do not give`,
+    );
+  }
+  if (out.length > before) return;
+  const [page, events] = [collapse(el.textContent), collapse(textOf(node))];
+  if (page !== events) {
+    const at = excerpts(page, events);
+    out.push(
+      `${label}: the page says something the events do not give, outside its fields: the page says ${at.page}; the events say ${at.events}`,
+    );
+  }
+}
+
+/** The most differences one item names; a card that is something else altogether would name dozens. */
+const MOST_PER_ITEM = 4;
+
+function compareItem(label: string, el: El, node: VNode, out: string[], mayBeHidden = false): void {
+  const mine: string[] = [];
+  // Nothing but the filters hides a card; an entry, a note apart or a tail that the page hides is hidden by the server.
+  if (!mayBeHidden && el.hidden === true) mine.push(`${label}: the page hides it`);
+  compareAttributes(label, el, node, mine);
+  compareContent(label, el, node, mine);
+  out.push(...mine.slice(0, MOST_PER_ITEM));
+  if (mine.length > MOST_PER_ITEM) {
+    out.push(`${label}: and ${mine.length - MOST_PER_ITEM} more differences`);
+  }
+}
+
+/**
+ * Matches what the page has to what the events give, by id, and says what is on one side only and
+ * whether the ones both have come in the same order. Returns the pairs both have.
+ */
+function matchById(
+  kind: string,
+  wanted: readonly ItemView[],
+  have: readonly El[],
+  idOf: (el: El) => string,
+  nameOf: (el: El) => string,
+  out: string[],
+): { item: ItemView; el: El }[] {
+  const taken = new Set<El>();
+  const pairs: { item: ItemView; el: El }[] = [];
+  for (const item of wanted) {
+    const el = have.find((candidate) => !taken.has(candidate) && idOf(candidate) === item.id);
+    if (el === undefined) {
+      out.push(`${item.label} is in the events and not on the page (${kind})`);
+      continue;
+    }
+    taken.add(el);
+    pairs.push({ item, el });
+  }
+  for (const el of have) {
+    if (!taken.has(el)) out.push(`${nameOf(el)} is on the page and not in the events (${kind})`);
+  }
+  const onPage = pairs.map((pair) => have.indexOf(pair.el));
+  if (onPage.some((place, i) => i > 0 && place < (onPage[i - 1] as number))) {
+    out.push(`the ${kind} are in another order on the page than the events give`);
+  }
+  return pairs;
+}
+
+/** The parts of `<main>`, by id, in the order the page has them: nothing else is a child of it. */
+const PARTS_OF_MAIN = [
+  'verdict',
+  'lists-check',
+  'about',
+  'counts',
+  'decisions',
+  'filters',
+  'showing',
+  'decision-list',
+  'other-notes',
+  'timeline',
+  'events',
+];
+
+const withoutSpace = (text: string | null): string => (text ?? '').replace(/\s+/g, '');
+
+/** What an element is, for a difference: its tag and a little of what it says. */
+function whatIs(el: El): string {
+  return `a ${(el.tagName ?? 'node').toLowerCase()} saying ${show(el.textContent)}`;
+}
+
+/**
+ * Holds a container to its items. Every element directly in it must be one of them (`className` is the
+ * class an item carries; `null` where the events give no item and the container says so in text), and its whole text, white space aside, must be the text of the items the
+ * events give and nothing else: an element made up inside the list, a paragraph between two
+ * cards, a word outside any card. Text the events do not give is told apart from an element, so
+ * a bare text node is named too.
+ */
+function onlyItems(
+  label: string,
+  what: string,
+  container: El | null,
+  className: string | null,
+  wanted: string,
+  out: string[],
+): void {
+  if (container === null) return;
+  const before = out.length;
+  const kids = className === null ? [] : Array.from(container.querySelectorAll(':scope > *'));
+  for (const child of kids) {
+    if (!(child.getAttribute('class') ?? '').split(/\s+/).includes(className ?? '')) {
+      out.push(`the ${label} holds an element that is not ${what}: ${whatIs(child)}`);
+    }
+  }
+  if (out.length > before) return;
+  // The items' own differences are named by their own lines; the whole text is for what they do not hold.
+  if (out.length > 0) return;
+  const [page, events] = [withoutSpace(container.textContent), withoutSpace(wanted)];
+  if (page !== events) {
+    const at = excerpts(page, events);
+    out.push(
+      `the ${label} holds text the events do not give, outside its items: the page says ${at.page}; the events say ${at.events}`,
+    );
+  }
+}
+
+/** Every difference between what the page shows and what `derived` says it should show. */
+export function checkLists(page: Doc, derived: Derived): string[] {
+  const views = listViews({ ...derived.model, tails: derived.tails });
+  const out: string[] = [];
+
+  const counts = page.getElementById('counts');
+  if (counts === null) out.push('the counts line is missing from the page');
+  else compareItem('the counts line', counts, views.counts, out);
+  const main = Array.from(page.querySelectorAll('main'))[0];
+  if (main !== undefined) {
+    const known = new Set(PARTS_OF_MAIN);
+    for (const part of Array.from(main.querySelectorAll(':scope > *'))) {
+      if (!known.has(part.getAttribute('id') ?? '')) {
+        out.push(`the page has an element that is not one of its parts: ${whatIs(part)}`);
+      }
+    }
+  }
+
+  const adrOf = (card: El): string =>
+    collapse(card.querySelectorAll('[data-field="adr"]')[0]?.textContent ?? null) ||
+    `a decision with the id ${show(card.getAttribute('id'))}`;
+  for (const { item, el } of matchById(
+    'decisions',
+    views.decisions,
+    Array.from(page.querySelectorAll('.decision')),
+    (card) => card.getAttribute('id') ?? '',
+    adrOf,
+    out,
+  )) {
+    compareItem(item.label, el, item.node, out, true);
+  }
+  onlyItems(
+    'decision list',
+    'a decision card',
+    page.getElementById('decision-list'),
+    views.decisions.length === 0 ? null : 'decision',
+    views.decisions.length === 0
+      ? NO_DECISIONS
+      : views.decisions.map((i) => textOf(i.node)).join(''),
+    out,
+  );
+
+  const apart = page.getElementById('other-notes');
+  const noteName = (el: El): string => `note ${el.getAttribute('data-note') ?? ''}`;
+  for (const { item, el } of matchById(
+    'notes that belong to no decision',
+    views.otherNotes,
+    apart === null ? [] : Array.from(apart.querySelectorAll('.note')),
+    (note) => note.getAttribute('data-note') ?? '',
+    noteName,
+    out,
+  )) {
+    compareItem(item.label, el, item.node, out);
+  }
+  onlyItems(
+    'list of notes that belong to no decision',
+    'a note',
+    Array.from(apart?.querySelectorAll('ul.notes') ?? [])[0] ?? null,
+    'note',
+    views.otherNotes.map((i) => textOf(i.node)).join(''),
+    out,
+  );
+
+  const entries = Array.from(page.querySelectorAll('.entry'));
+  for (let i = 0; i < Math.max(entries.length, views.timeline.length); i++) {
+    const [el, node] = [entries[i], views.timeline[i]];
+    if (node === undefined)
+      out.push(`timeline entry ${i + 1} is on the page and not in the events`);
+    else if (el === undefined) {
+      out.push(`timeline entry ${i + 1} is in the events and not on the page`);
+    } else compareItem(`timeline entry ${i + 1}`, el, node, out);
+  }
+
+  onlyItems(
+    'timeline',
+    'an entry',
+    Array.from(page.querySelectorAll('ol.timeline'))[0] ?? null,
+    'entry',
+    views.timeline.map(textOf).join(''),
+    out,
+  );
+
+  for (const { item, el } of matchById(
+    'tails',
+    views.tails,
+    Array.from(page.querySelectorAll('.tail')),
+    (tail) => tail.getAttribute('data-tail') ?? '',
+    (tail) => `tail ${tail.getAttribute('data-tail') ?? ''}`,
+    out,
+  )) {
+    compareAttributes(item.label, el, item.node, out);
+    if (el.hidden === true) out.push(`${item.label}: the page hides it`);
+    const summary = Array.from(el.querySelectorAll('summary'))[0];
+    const wanted = item.node.kids[0];
+    if (summary === undefined) out.push(`${item.label}: its summary is missing from the page`);
+    else if (typeof wanted !== 'string' && wanted !== undefined) {
+      compareContent(item.label, summary, wanted, out);
+    }
+  }
+
+  const notes = page.querySelectorAll('.note').length;
+  if (out.length === 0 && notes !== views.noteItems) {
+    out.push(`the page lists ${notes} note(s), and the events give ${views.noteItems}`);
+  }
+  return out;
+}
+
+/** How many differences the page writes out; the rest are counted. */
+const MOST_LINES = 50;
+
+/**
+ * Runs the check where the page keeps its answer. `verified` is whether the record verified: over one
+ * that did not, nothing is derived and the answer is `unchecked`.
+ */
+export function showListsCheck(
+  page: Doc,
+  files: Readonly<Record<string, string>>,
+  verified: boolean,
+): void {
+  const status = page.getElementById('lists-status');
+  const summary = page.getElementById('lists-summary');
+  const issues = page.getElementById('lists-issues');
+  if (status === null || summary === null || issues === null) return;
+  const say = (state: 'match' | 'differ' | 'unchecked', word: string, text: string): void => {
+    status.setAttribute('data-state', state);
+    status.textContent = word;
+    summary.textContent = text;
+  };
+  if (!verified) {
+    say(
+      'unchecked',
+      'not checked',
+      'The record did not verify, so the lists on this page were not checked against it.',
+    );
+    return;
+  }
+  let differences: string[];
+  try {
+    differences = checkLists(page, deriveLists(files));
+  } catch (error) {
+    say(
+      'unchecked',
+      'not checked',
+      `The lists on this page were not checked: the events could not be derived from the verified files (${error instanceof Error ? error.message : String(error)}).`,
+    );
+    return;
+  }
+  if (differences.length === 0) {
+    say('match', 'match', 'The lists on this page match the events verified above.');
+    return;
+  }
+  say(
+    'differ',
+    'differ',
+    `${differences.length} difference(s) between the lists on this page and the events verified above:`,
+  );
+  for (const text of differences.slice(0, MOST_LINES)) {
+    const item = page.createElement('li');
+    item.textContent = text;
+    issues.appendChild(item);
+  }
+  if (differences.length > MOST_LINES) {
+    const item = page.createElement('li');
+    item.textContent = `and ${differences.length - MOST_LINES} more`;
+    issues.appendChild(item);
+  }
+}

@@ -8,10 +8,15 @@
  * where it is written into the page ({@link escapeHtml}) and, behind that, a title that
  * somehow reached the page as markup would meet a policy that runs no script but ours.
  *
- * THE LISTS ARE WRITTEN HERE AND THE VERDICT IS COMPUTED THERE. The decisions, their notes and
- * the timeline are rendered by `mnema site` from the public tree's events (`model.ts`); the verdict
- * is computed in the reader's browser from the files, which travel inside the page. The page does
- * not derive the lists from those files again, and says so beside the verdict.
+ * THE LISTS ARE WRITTEN HERE, AND THE BROWSER DERIVES THEM AGAIN. The decisions, their notes and
+ * the timeline are rendered by `mnema site` from the public tree's events (`model.ts`), as the trees
+ * `view.ts` makes (this file only writes them as markup); the verdict is computed in the reader's
+ * browser from the files, which travel inside the page. This used to say that the page does not
+ * derive the lists from those files again, and that premise is what the check falsified: once the
+ * verdict is `verified`, the script runs the same `pageModel` and the same `listViews` over the
+ * files it verified and names every difference from what the page shows (`browser/check.ts`,
+ * held by `the-verdict-in-the-browser.test.ts`). It is the product's own TypeScript run twice, not a
+ * second reader, and a page served by the party it checks carries the script that checks it.
  *
  * WITHOUT THE SCRIPT THE WHOLE LIST IS THERE. Every decision, note and entry of the timeline is
  * written visible, and no rule of the style hides one: a reader whose browser runs no script, or
@@ -33,24 +38,12 @@
  */
 
 import { createHash } from 'node:crypto';
-import { neutralized, oneLine } from '../one-line.js';
 import { mix, textAccent } from './colour.js';
-import {
-  actWording,
-  type PageDecision,
-  type PageLink,
-  type PageModel,
-  type PageNote,
-  type TimelineEntry,
-} from './model.js';
+import type { PageModel } from './model.js';
+import { listViews, NO_DECISIONS, type SiteTail, textOf, type VKid } from './view.js';
 
 export type { DecisionMove, PageDecision, PageModel, PageNote, TimelineEntry } from './model.js';
-
-/** One tail's stored lines: how many there are. The lines themselves are drawn from the files. */
-export interface SiteTail {
-  readonly id: string;
-  readonly events: number;
-}
+export type { SiteTail } from './view.js';
 
 /** Everything the page is written from. */
 export interface SiteModel extends PageModel {
@@ -68,16 +61,6 @@ export function escapeHtml(text: string): string {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
-
-/**
- * A record's short field as it is drawn: the rule of the line `mnema show` applies to the same
- * field ({@link oneLine}), then escaped. A `which`, a title or a path holding a right-to-left
- * override, a bell, an escape or a line break cannot reorder, forge or break what is drawn.
- */
-const line = (text: string): string => escapeHtml(oneLine(text));
-
-/** A record's long text (rationale, a note) as `mnema show` prints it ({@link neutralized}), escaped. */
-const block = (text: string): string => escapeHtml(neutralized(text));
 
 /** The floor for text: WCAG 2, level AA. */
 export const TEXT_FLOOR = 4.5;
@@ -195,12 +178,13 @@ code { overflow-wrap: anywhere; }
 .skip:focus { left: 0.5rem; top: 0.5rem; z-index: 1; }
 .meta, .muted { color: var(--muted); }
 .meta { font-size: 0.9em; margin: 0.25rem 0; }
-.card, #verdict, .filters { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
-#verdict { border-width: 2px; }
-#verdict-status { font-weight: 700; }
-#verdict-status[data-state="verified"] { color: var(--ok); }
-#verdict-status[data-state="broken"], #verdict-status[data-state="unverified"] { color: var(--bad); }
-#verdict-status[data-state="pending"] { color: var(--wait); }
+.card, #verdict, #lists-check, .filters { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
+#verdict, #lists-check { border-width: 2px; }
+#lists-check { margin-top: 0.75rem; }
+#verdict-status, #lists-status { font-weight: 700; }
+#verdict-status[data-state="verified"], #lists-status[data-state="match"] { color: var(--ok); }
+#verdict-status[data-state="broken"], #verdict-status[data-state="unverified"], #lists-status[data-state="differ"] { color: var(--bad); }
+#verdict-status[data-state="pending"], #lists-status[data-state="unchecked"] { color: var(--wait); }
 .decision { margin: 1rem 0; border-left: 4px solid var(--accent); }
 .decision h3 { margin: 0 0 0.25rem; }
 .permalink { margin-left: 0.5rem; font-size: 0.85em; text-decoration: none; }
@@ -224,147 +208,19 @@ details { margin: 0.5rem 0; }
 summary { cursor: pointer; }
 `;
 
-/** The identity as the record names it, and what carried the act out: a person or an agent. */
-function actor(who: string, which?: string): string {
-  return `<code>${line(who)}</code> <span class="badge">${line(actWording(which))}</span>`;
-}
-
-function permalinkOf(d: PageDecision): string {
-  return d.adrIsUnique ? d.adr : d.id;
-}
-
-/** The people, and the agents, who acted on a decision: what the filters by author read. */
-function actorsOf(d: PageDecision): { who: string[]; by: string[] } {
-  const acts = [
-    ...(d.recordedBy === undefined ? [] : [d.recordedBy]),
-    ...(d.acceptedBy === undefined ? [] : [d.acceptedBy]),
-    ...d.moves,
-  ];
-  return {
-    who: [...new Set(acts.map((act) => oneLine(act.who)))],
-    by: [...new Set(acts.map((act) => oneLine(actWording(act.which))))],
-  };
-}
-
-function noteHtml(note: PageNote, firstTime: boolean): string {
-  const retraction =
-    note.retracted === undefined
-      ? ''
-      : `<p class="retraction">Retracted at <time>${escapeHtml(note.retracted.at)}</time> by ${actor(note.retracted.who, note.retracted.which)}. Why: ${line(note.retracted.reason)}</p>`;
-  const what = note.kind === 'memory' ? 'Memory' : 'Observation';
-  const topic = note.topic === undefined ? '' : ` on <strong>${line(note.topic)}</strong>`;
-  const about = note.about === undefined ? '' : ` about <code>${line(note.about)}</code>`;
-  return (
-    `<li class="note${note.retracted === undefined ? '' : ' retracted'}"${firstTime ? ` id="note-${escapeHtml(note.id)}"` : ''}>` +
-    `<p class="meta">${what}${topic}${about}, by ${actor(note.who, note.which)} at <time>${escapeHtml(note.at)}</time></p>` +
-    `<pre>${block(note.text)}</pre>${retraction}</li>`
-  );
-}
-
-function linkHtml(link: PageLink): string {
-  return `<span class="rel">${line(link.rel)}</span><code class="target">${line(link.target)}</code>`;
-}
-
-function decisionHtml(
-  d: PageDecision,
-  known: ReadonlyMap<string, PageDecision>,
-  shown: Set<string>,
-): string {
-  const history = d.moves
-    .map(
-      (move) =>
-        `<li><time>${escapeHtml(move.at)}</time> ${line(move.action)}` +
-        ` (${line(move.before ?? 'new')} → ${line(move.to)}) by ${actor(move.who, move.which)}` +
-        (move.said === undefined ? '' : `<pre>${block(move.said)}</pre>`) +
-        '</li>',
-    )
+/**
+ * A tree as markup. Every text and every attribute value goes through {@link escapeHtml}, and the
+ * tags and attribute names are the ones `view.ts` writes, never the record's. A `<pre>` that begins
+ * with a line break is written with one more, because a browser's parser drops the first and the
+ * text the tree holds would otherwise not be the text the reader gets.
+ */
+function html(kid: VKid): string {
+  if (typeof kid === 'string') return escapeHtml(kid);
+  const attrs = Object.entries(kid.attrs)
+    .map(([name, value]) => ` ${name}="${escapeHtml(value)}"`)
     .join('');
-  const reference = (id: string): string => {
-    const other = known.get(id);
-    return other === undefined
-      ? `<code>${line(id)}</code>`
-      : `<a href="#${escapeHtml(id)}">${line(other.adr)}</a>`;
-  };
-  const rows = [
-    d.recordedBy === undefined
-      ? ''
-      : `<p class="meta">Recorded by ${actor(d.recordedBy.who, d.recordedBy.which)} at <time>${escapeHtml(d.createdAt)}</time>.</p>`,
-    d.acceptedBy === undefined
-      ? ''
-      : `<p class="meta">Accepted by ${actor(d.acceptedBy.who, d.acceptedBy.which)}.</p>`,
-    d.supersedes === undefined ? '' : `<p class="meta">Supersedes ${reference(d.supersedes)}.</p>`,
-    d.supersededBy === undefined
-      ? ''
-      : `<p class="meta">Superseded by ${reference(d.supersededBy)}.</p>`,
-  ].join('');
-  const notes =
-    d.notes.length === 0
-      ? ''
-      : `<h4>Notes</h4><ul class="notes">${d.notes
-          .map((note) => {
-            const firstTime = !shown.has(note.id);
-            shown.add(note.id);
-            return noteHtml(note, firstTime);
-          })
-          .join('')}</ul>`;
-  const addresses =
-    d.addresses.length === 0
-      ? ''
-      : `<h4>Addressed at</h4><ul class="addresses">${d.addresses
-          .map((link) => `<li>${linkHtml(link)}</li>`)
-          .join('')}</ul>`;
-  const linked =
-    d.linkedTo.length === 0
-      ? ''
-      : `<p class="meta">Linked to: ${d.linkedTo.map((link) => linkHtml(link)).join(', ')}</p>`;
-  const { who, by } = actorsOf(d);
-  const data = [
-    ['data-state', d.state],
-    ['data-force', d.inForce ? 'in-force' : 'not-in-force'],
-    ['data-date', d.createdAt.slice(0, 10)],
-    ['data-who', JSON.stringify(who)],
-    ['data-by', JSON.stringify(by)],
-  ]
-    .map(([name, value]) => `${name}="${escapeHtml(value as string)}"`)
-    .join(' ');
-  const anchor = d.adrIsUnique ? `<span id="${escapeHtml(d.adr)}"></span>` : '';
-  return (
-    `<article class="card decision ${d.inForce ? 'in-force' : 'not-in-force'}" id="${escapeHtml(d.id)}" ${data}>` +
-    `<h3>${anchor}${line(d.adr)} · ${line(d.title)} ` +
-    `<span class="state" data-state="${escapeHtml(d.state)}">${line(d.state)}</span>` +
-    `<a class="permalink" href="#${escapeHtml(permalinkOf(d))}" aria-label="Permanent link to ${escapeHtml(d.adr)}">#</a></h3>` +
-    `<pre>${block(d.rationale)}</pre>` +
-    (d.alternatives === undefined
-      ? ''
-      : `<p><strong>Turned down:</strong></p><pre>${block(d.alternatives)}</pre>`) +
-    rows +
-    addresses +
-    linked +
-    (d.moves.length === 0
-      ? ''
-      : `<details><summary>History</summary><ol>${history}</ol></details>`) +
-    notes +
-    '</article>'
-  );
-}
-
-function timelineHtml(entry: TimelineEntry): string {
-  const by = actor(entry.who, entry.which);
-  const topic = entry.topic === undefined ? '' : ` on ${line(entry.topic)}`;
-  const text = {
-    'decision-recorded': `${line(entry.adr ?? '')} recorded by ${by}`,
-    'decision-moved': `${line(entry.adr ?? '')}: ${line(entry.action ?? '')} (to ${line(entry.to ?? '')}) by ${by}`,
-    'note-recorded': `Note recorded${topic} by ${by}`,
-    'note-retracted': `Note retracted by ${by}`,
-  }[entry.kind];
-  const target =
-    entry.kind === 'decision-recorded' || entry.kind === 'decision-moved'
-      ? entry.subject
-      : `note-${entry.subject}`;
-  return (
-    `<li class="entry"><time>${escapeHtml(entry.at)}</time> ${text} ` +
-    `<a href="#${escapeHtml(target)}">open</a></li>`
-  );
+  const lead = kid.tag === 'pre' && textOf(kid).startsWith('\n') ? '\n' : '';
+  return `<${kid.tag}${attrs}>${lead}${kid.kids.map(html).join('')}</${kid.tag}>`;
 }
 
 /** The base64 digest a `Content-Security-Policy` names a script or a style by. */
@@ -394,46 +250,38 @@ const FILTERS = `<div id="filters" class="filters" hidden>
 </div>
 <p id="showing" class="muted" aria-live="polite" hidden></p>`;
 
+/** What the check of the lists says until the script has run it: without the script it never does. */
+const LISTS_UNCHECKED =
+  'The lists below were written by mnema site. Checking them against the verified events needs JavaScript, so they have not been checked.';
+
 /**
  * The page, as the text of `index.html`. `script` is the file `dist/site-verifier.js` holds: the
  * verifier, the filters and the drawing of the raw lines. With a `backLink` the page opens with
  * one link to it; without, the page opens with the link that skips to the decisions.
  */
 export function renderPage(model: SiteModel, script: string, backLink?: string): string {
-  const { counts } = model;
-  const events = model.tails.reduce((n, tail) => n + tail.events, 0);
   const fileCount = Object.keys(model.files).length;
   const policy = [
     "default-src 'none'",
     `script-src ${cspHash(script)}`,
     `style-src ${cspHash(STYLE)}`,
   ].join('; ');
-  const known = new Map(model.decisions.map((d) => [d.id, d]));
-  const shown = new Set<string>();
+  const views = listViews(model);
   const decisions =
-    model.decisions.length === 0
-      ? '<p>No decision is recorded in the public tree.</p>'
-      : model.decisions.map((d) => decisionHtml(d, known, shown)).join('\n');
+    views.decisions.length === 0
+      ? `<p>${NO_DECISIONS}</p>`
+      : views.decisions.map((item) => html(item.node)).join('\n');
   const otherNotes =
-    model.otherNotes.length === 0
+    views.otherNotes.length === 0
       ? ''
-      : `<section id="other-notes">\n<h2>Other notes</h2>\n<p>Notes that belong to no decision on this page.</p>\n<ul class="notes">${model.otherNotes
-          .map((note) => {
-            shown.add(note.id);
-            return noteHtml(note, true);
-          })
+      : `<section id="other-notes">\n<h2>Other notes</h2>\n<p>Notes that belong to no decision on this page.</p>\n<ul class="notes">${views.otherNotes
+          .map((item) => html(item.node))
           .join('')}</ul>\n</section>\n`;
   const timeline =
-    model.timeline.length === 0
+    views.timeline.length === 0
       ? '<p>No decision or note is recorded in the public tree.</p>'
-      : `<ol class="timeline">\n${model.timeline.map(timelineHtml).join('\n')}\n</ol>`;
-  const tails = model.tails
-    .map(
-      (tail) =>
-        `<details class="tail" data-tail="${escapeHtml(tail.id)}"><summary><code>${escapeHtml(tail.id)}</code>: ${tail.events} event(s)</summary>` +
-        '<pre></pre></details>',
-    )
-    .join('\n');
+      : `<ol class="timeline">\n${views.timeline.map(html).join('\n')}\n</ol>`;
+  const tails = views.tails.map((item) => html(item.node)).join('\n');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -453,14 +301,24 @@ ${backLink === undefined ? '' : `<p><a href="${escapeHtml(backLink)}">Back</a></
 <ul id="verdict-issues"></ul>
 <noscript><p>This page verifies the record with JavaScript. Without it, nothing here has been verified, and the stored lines under Events are not drawn: the files they come from are in this page, in base64.</p></noscript>
 </section>
-<p>The verdict above is the sentence <code>mnema verify</code> gives a fresh clone of the repository,
+<section id="lists-check" role="status" aria-live="polite">
+<p><span id="lists-status" data-state="unchecked">not checked</span></p>
+<p id="lists-summary">${LISTS_UNCHECKED}</p>
+<ul id="lists-issues"></ul>
+</section>
+<p id="about">The verdict above is the sentence <code>mnema verify</code> gives a fresh clone of the repository,
 computed in this browser by the same verifier (<code>@mnema/chain</code>) over the ${fileCount} file(s)
 this page carries, with no network request and no key of yours. It checks the hash chain and every
 checkpoint signature against the public keys carried with the files. It does not say that a key
-belongs to the person a list names, and it does not check the lists below against the files: they
-were written from those files by <code>mnema site</code>. Only the committed public tree is in this
-page (no private tree and no machine-global tree), and all of its text is.</p>
-<p id="counts">${counts.decisions} decision(s): ${counts.inForce} in force, ${counts.decisions - counts.inForce} not in force. ${counts.notes} note(s), ${events} stored event(s).</p>
+belongs to the person a list names. The lists below were written from those files by
+<code>mnema site</code>; once the record verifies, this browser derives them again from the files it
+verified, with the same TypeScript code the product runs, and names each difference between what it
+derived and what the page shows (the text of each decision, note and timeline entry, the attributes
+the filters read, the ids and the counts). It reads the lists and the parts of this page, not the text around them, nor a style, nor what is wrapped around a field. That is not a second, independent reader: the Python reader
+verifies the chain and does not derive decisions. A page handed over by the party it checks carries its
+own script, so the check counts for more when the page is made again from a clone. Only the committed
+public tree is in this page (no private tree and no machine-global tree), and all of its text is.</p>
+${html(views.counts)}
 <h2 id="decisions">Decisions</h2>
 ${FILTERS}
 <div id="decision-list">
