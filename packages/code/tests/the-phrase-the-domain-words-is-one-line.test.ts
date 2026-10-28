@@ -1393,11 +1393,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the subject of a stored writing of a decision, the id it records again',
     },
-  '@mnema/chain chain/verify.ts «a decision.recorded of {} signed by {}, » oneLine(event.who) #1':
-    {
-      verdict: 'collapsed',
-      why: 'the identity a stored writing of a decision names as its signer',
-    },
+  '@mnema/chain chain/verify.ts «a decision.recorded of {} signed by {}, » oneLine(event.who) #1': {
+    verdict: 'collapsed',
+    why: 'the identity a stored writing of a decision names as its signer',
+  },
   '@mnema/chain chain/verify.ts «after the first writing of it (signed by {}): a decision is the text » oneLine(author) #1':
     {
       verdict: 'collapsed',
