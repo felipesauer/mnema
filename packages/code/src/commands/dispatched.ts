@@ -21,7 +21,7 @@
  * A session that ended with no `SessionEnd` (a killed terminal) leaves its task in progress; the next
  * session that dispatches in the project BLOCKS the ones whose journal has been untouched for a day, with
  * a reason that says the outcome is unknown: a session nobody saw end is not a success. If it comes back,
- * the dispatch unblocks the task.
+ * the dispatch unblocks the task, and its end completes it.
  *
  * A HOST RUNS IT AND IT NEVER FAILS THE HOST: every outcome is the empty reply `{}`, and what could
  * not be done is a note on the second stream. Nothing is printed to the model, and a failure of the
@@ -345,13 +345,18 @@ function ended(ctx: DispatchedContext, trees: ResolvedTrees, session: string): D
     (): DispatchedDone => {
       const previous = readJournal(file);
       const held = previous?.handedOver;
-      if (held === undefined || held.closed) return silent();
-      const refused = move(ctx, held.task, 'complete', {
-        note: closingNote(held.handoffs, skippedOf(file)),
-      });
+      if (held === undefined) return silent();
+      // A closed task is done with, except one the sweep blocked: its session came back and ended
+      // with a word, so the sweep's "how it ended is unknown" is no longer true.
+      if (held.closed && held.swept !== true) return silent();
+      const unblocked = held.swept === true ? move(ctx, held.task, 'unblock', {}) : undefined;
+      const refused =
+        unblocked ??
+        move(ctx, held.task, 'complete', { note: closingNote(held.handoffs, skippedOf(file)) });
+      const { swept: _swept, ...rest } = held;
       writeJournal(
         file,
-        journalOf(session, previous, now, { ...held, closed: refused === undefined }),
+        journalOf(session, previous, now, refused === undefined ? { ...rest, closed: true } : held),
         now,
       );
       return silent(refused === undefined ? [] : [refused]);
@@ -361,7 +366,7 @@ function ended(ctx: DispatchedContext, trees: ResolvedTrees, session: string): D
   return (
     done ??
     silent([
-      'The end of the session was not mirrored: another process held its journal. The next session that dispatches in this project closes the task.',
+      'The end of the session was not mirrored: another process held its journal. The task stays in progress, and a later session that dispatches in this project blocks it once this journal has been untouched for a day.',
     ])
   );
 }

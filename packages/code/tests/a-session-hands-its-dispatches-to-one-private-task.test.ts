@@ -426,6 +426,39 @@ describe('a swept session that comes back', () => {
   );
 });
 
+describe('a swept session that comes back and ends', () => {
+  it(
+    'has its blocked task completed with the closing note, and its journal stops saying swept',
+    () => {
+      mirror(dispatch({ session: 'old-session' }));
+      const old = journalFile(resolveTrees(repo, env), 'old-session') as string;
+      const longAgo = new Date(Date.now() - STALE_AFTER_MS - 60_000);
+      utimesSync(old, longAgo, longAgo);
+      mirror(dispatch({ session: 'new-session' }));
+      expect(whatTheRecordHolds().tasks.map((task) => task.state).sort()).toEqual([
+        'BLOCKED',
+        'IN_PROGRESS',
+      ]);
+      expect(readJournal(old)?.handedOver?.swept).toBe(true);
+      const done = mirror(theEnd('old-session'));
+      expect(done.notes).toEqual([]);
+      const held = whatTheRecordHolds();
+      expect(held.tasks.map((task) => task.state).sort()).toEqual(['DONE', 'IN_PROGRESS']);
+      const finished = held.tasks.find((task) => task.state === 'DONE');
+      expect(finished?.proof).toContain('note: 1 handoff recorded in this session.');
+      expect(readJournal(old)?.handedOver?.closed).toBe(true);
+      expect(readJournal(old)?.handedOver?.swept).toBeUndefined();
+      // A second end finds nothing left to do.
+      expect(mirror(theEnd('old-session')).notes).toEqual([]);
+      expect(whatTheRecordHolds().tasks.map((task) => task.state).sort()).toEqual([
+        'DONE',
+        'IN_PROGRESS',
+      ]);
+    },
+    WAITS_ON_WRITES,
+  );
+});
+
 describe('where it stays silent, and never fails', () => {
   it(
     'does nothing for another tool, another event, or a session that names no id',
