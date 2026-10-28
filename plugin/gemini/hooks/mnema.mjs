@@ -747,6 +747,19 @@ function run(args, cwd, input, timeout = WAIT) {
 }
 
 /**
+ * Whether a run did not happen to the end. A CLOSED INPUT IS NOT THAT: a `mnema` that answers before it
+ * has read the payload, or refuses an option at its arguments, leaves a payload larger than the pipe
+ * (or a write that lost the race to its exit) a closed one, and `spawnSync` reports `EPIPE` with the
+ * `status` and the streams the program left, so what it said is read as it would be had the write gone through.
+ * @param {import('node:child_process').SpawnSyncReturns<string>} ran
+ */
+function didNotRun(ran) {
+  return (
+    ran.error !== undefined && /** @type {NodeJS.ErrnoException} */ (ran.error).code !== 'EPIPE'
+  );
+}
+
+/**
  * Which `mnema` is on the PATH: this product, another program of that name, none, or one that did
  * not answer the question (it exited non-zero or did not finish), which is the case a gate exists for.
  * @param {string} cwd
@@ -819,7 +832,7 @@ function answer(mode, raw) {
   }
   if (mode === 'settled') {
     const ran = run(['settled'], cwd, raw);
-    if (ran.error !== undefined || ran.status !== 0) return undefined;
+    if (didNotRun(ran) || ran.status !== 0) return undefined;
     const said = JSON.parse(ran.stdout);
     return said.hookSpecificOutput === undefined ? undefined : said;
   }
@@ -832,7 +845,7 @@ function answer(mode, raw) {
     if (heard.status !== 0 && heard.stderr.includes('--agent-key')) {
       heard = run(beside, cwd, raw, Math.max(1, GATE_WAIT - (Date.now() - began)));
     }
-    if (heard.error !== undefined || heard.status !== 0) return undefined;
+    if (didNotRun(heard) || heard.status !== 0) return undefined;
     const handed = JSON.parse(heard.stdout);
     return handed.hookSpecificOutput === undefined ? undefined : handed;
   }
