@@ -63,9 +63,10 @@ describe('the session opens with the record', () => {
       const sent = JSON.stringify(request.body);
       const mentions = sent.match(/Bill in local time/g)?.length ?? 0;
       const clauses = sent.match(new RegExp(clause, 'g'))?.length ?? 0;
-      expect(mentions, 'the superseded decision reached the host outside the clause naming it').toBe(
-        clauses,
-      );
+      expect(
+        mentions,
+        'the superseded decision reached the host outside the clause naming it',
+      ).toBe(clauses);
     }
     expect(opened[0]).not.toMatch(/^- \*\*ADR-\d+: Bill in local time\*\*/m);
   }, 120_000);
