@@ -1643,6 +1643,17 @@ line names the call that would do it.
 
 The working tree's changes are never read to find the paths: they could credit the session with what it did not do.
 
+### Recording the same decision twice
+
+`mnema decision record` and the `record_decision` tool look, before they write, for a decision of the same tree that is
+`proposed` or `accepted` and whose title, rationale and alternatives are exactly the ones given (after the replacement of
+secrets every write applies, so a text with a credential matches the second time too; alternatives present in one and
+absent in the other differ). If there is one, nothing is written and the answer is `Decision ADR-n (id) is already recorded
+in the <scope> tree with this title, rationale and alternatives. Nothing was written.`, with the existing label and id and none
+of the offers below. This is what makes a call repeated after a lost reply safe. A rejected or superseded decision is not
+matched: the same words recorded again are a new proposal.
+
+
 ### The mnema instructions in the files a host reads
 
 When it founds a project, `mnema init` writes a short block into the files agent hosts read as

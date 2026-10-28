@@ -124,6 +124,20 @@ export interface RecordInput {
   readonly run?: string;
 }
 
+/**
+ * The same decision was already on the record: nothing was written, and this names the one that is.
+ * A `record_decision` repeated after a reply that never arrived lands here, not as a second
+ * decision with another id and another `ADR-<n>`.
+ */
+export interface RecordedAlready extends ScreenedWrite {
+  readonly ok: true;
+  readonly already: true;
+  /** The id of the decision already recorded. */
+  readonly id: string;
+  /** Its `ADR-<n>` label. */
+  readonly adr: string;
+}
+
 /** What the caller asks for a plain (non-supersede) transition. */
 export interface DecisionTransitionInput {
   /** The decision to move (the event subject). */
@@ -165,7 +179,7 @@ export interface SupersedeInput extends DecisionTransitionInput {
 export function recordDecision(
   ctx: DecisionWriteContext,
   input: RecordInput,
-): RecordOk | DecisionWriteError {
+): RecordOk | RecordedAlready | DecisionWriteError {
   // The title, the rationale and the alternatives in ONE screen: a decision's
   // prose is the longest text this domain records, and the likeliest place a
   // connection string is pasted as evidence of what was decided. The alternatives
@@ -212,48 +226,79 @@ export function recordDecision(
   // that is a legibility clash the projection surfaces, never a merge (the ids
   // stay distinct). Between two sessions of this installation it cannot: the count
   // the label is minted from is the one the tail's lock vouches for.
+  //
+  // THE SAME DECISION TWICE. A decision whose title, rationale and alternatives are the ones
+  // being recorded, and that is still `proposed` or `accepted`, is the decision already on the
+  // record: a call repeated after a reply that never arrived. It is looked for in the SCREENED
+  // text (what a write stores, so a secret replaced the first time is replaced again and the two
+  // compare equal) against the projection's text for the decision (which is the text of its first
+  // writing, never a later one), and it is asked inside the judgement, so the second reading
+  // under the lock sees a twin another session wrote meanwhile. A rejected or superseded
+  // decision is not a twin: the same words recorded again are a new proposal.
   return onTheRecordAsItStands(
     ctx,
-    () => ({ size: asTheChainIs(ctx, (cache) => cache.countDecisions()) }),
-    (decisions) => ({
-      write: (): RecordOk | DecisionWriteError => {
-        const adr = `ADR-${decisions.size + 1}`;
-        // The door asks the birth pair first, then founds this installation's anchor, so both
-        // events' signer is a key valid for its anchor at verify (see `appendFact`).
-        const appended = appendFacts(ctx, ({ at }) =>
-          decisionBirth(
-            {
-              at,
-              who,
-              signerFp: ctx.writer.signerFingerprint,
-              subject: id,
-              ...(which !== undefined ? { which } : {}),
-              ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
-            },
-            {
-              title: text.fields.title,
-              rationale: text.fields.rationale,
-              adr,
-              initial: INITIAL_DECISION_STATE,
-              // The SCREENED value, and omitted when the caller gave none: absence in,
-              // absence out, so a decision with no alternative records no key for one.
-              ...(text.fields.alternatives !== undefined
-                ? { alternatives: text.fields.alternatives }
-                : {}),
-            },
+    () =>
+      asTheChainIs(ctx, (cache) => ({
+        size: cache.countDecisions(),
+        twin: cache
+          .decisionsTitled(text.fields.title)
+          .find(
+            (held) =>
+              (held.state === 'proposed' || held.state === 'accepted') &&
+              held.rationale === text.fields.rationale &&
+              held.alternatives === text.fields.alternatives,
           ),
-        );
-        if (!appended.ok) return appended;
-        const [e1, e2] = appended.entries as [Entry, Entry];
-        return {
-          ok: true,
-          id,
-          adr,
-          entries: [e1, e2],
-          ...screened([...text.replaced, ...agent.replaced]),
-        };
-      },
-    }),
+      })),
+    (decisions) =>
+      decisions.twin !== undefined
+        ? {
+            refuse: {
+              ok: true,
+              already: true,
+              id: decisions.twin.id,
+              adr: decisions.twin.adr,
+              ...screened([...text.replaced, ...agent.replaced]),
+            },
+          }
+        : {
+            write: (): RecordOk | RecordedAlready | DecisionWriteError => {
+              const adr = `ADR-${decisions.size + 1}`;
+              // The door asks the birth pair first, then founds this installation's anchor, so both
+              // events' signer is a key valid for its anchor at verify (see `appendFact`).
+              const appended = appendFacts(ctx, ({ at }) =>
+                decisionBirth(
+                  {
+                    at,
+                    who,
+                    signerFp: ctx.writer.signerFingerprint,
+                    subject: id,
+                    ...(which !== undefined ? { which } : {}),
+                    ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
+                  },
+                  {
+                    title: text.fields.title,
+                    rationale: text.fields.rationale,
+                    adr,
+                    initial: INITIAL_DECISION_STATE,
+                    // The SCREENED value, and omitted when the caller gave none: absence in,
+                    // absence out, so a decision with no alternative records no key for one.
+                    ...(text.fields.alternatives !== undefined
+                      ? { alternatives: text.fields.alternatives }
+                      : {}),
+                  },
+                ),
+              );
+              if (!appended.ok) return appended;
+              const [e1, e2] = appended.entries as [Entry, Entry];
+              return {
+                ok: true,
+                id,
+                adr,
+                entries: [e1, e2],
+                ...screened([...text.replaced, ...agent.replaced]),
+              };
+            },
+          },
   );
 }
 

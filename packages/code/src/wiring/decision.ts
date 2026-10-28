@@ -19,7 +19,11 @@ import type { Command } from 'commander';
 import type { runDecisionImport } from '../commands/decision-import.js';
 import type { runDecisionTransition } from '../commands/decision-transition.js';
 import { fact } from '../presentation/detail.js';
-import { RECORD_CONTRACT_HELP, replacementNotice } from '../recorded-content.js';
+import {
+  alreadyRecordedLine,
+  RECORD_CONTRACT_HELP,
+  replacementNotice,
+} from '../recorded-content.js';
 import { addBodySourceOptions } from './body-source.js';
 import { hereWriting } from './context.js';
 import {
@@ -144,6 +148,10 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       ...(given.which !== undefined ? { which: given.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
+    if (result.ok && result.alreadyRecorded) {
+      io.out(alreadyRecordedLine(result, result.scope));
+      return;
+    }
     if (result.ok) {
       io.out(`Recorded decision ${result.adr} (${result.id})`);
       reportRecorded(result, io);

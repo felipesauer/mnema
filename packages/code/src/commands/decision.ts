@@ -66,6 +66,11 @@ export interface DecisionRecorded extends Replacement, Landed {
   readonly id: string;
   /** The citable `ADR-<n>` label frozen into the record: a decision's human name. */
   readonly adr: string;
+  /**
+   * Set when the decision was already on the record (same title, rationale and alternatives,
+   * still proposed or accepted): nothing was written, and `id` and `adr` are the existing one's.
+   */
+  readonly alreadyRecorded?: true;
 }
 
 /** The record was refused. */
@@ -139,14 +144,21 @@ export function runDecision(
     );
     // Checkpoint so the new decision is signature-covered at once: the tree stays
     // fully signed after every command, the same posture init leaves it in.
-    if (written.ok) writer.checkpoint();
+    if (written.ok && !('already' in written)) writer.checkpoint();
     return written;
   });
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
   }
 
-  return { ok: true, id: recorded.id, adr: recorded.adr, scope, ...forwardReplacement(recorded) };
+  return {
+    ok: true,
+    id: recorded.id,
+    adr: recorded.adr,
+    scope,
+    ...forwardReplacement(recorded),
+    ...('already' in recorded ? { alreadyRecorded: true as const } : {}),
+  };
 }
 
 /**

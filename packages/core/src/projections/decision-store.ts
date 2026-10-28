@@ -80,6 +80,14 @@ export function countDecisions(db: SqliteDatabase): number {
   return (db.prepare('SELECT COUNT(*) AS n FROM decisions').get() as { n: number }).n;
 }
 
+/** The decisions projected under exactly this title, ordered by id. */
+export function decisionsTitled(db: SqliteDatabase, title: string): DecisionProjection[] {
+  const rows = db
+    .prepare('SELECT * FROM decisions WHERE title = ? ORDER BY id')
+    .all(title) as DecisionRow[];
+  return rows.map(toProjection);
+}
+
 /** Reads one decision by id, or null if it is not projected. */
 export function getDecision(db: SqliteDatabase, id: string): DecisionProjection | null {
   const row = db.prepare('SELECT * FROM decisions WHERE id = ?').get(id) as DecisionRow | undefined;
