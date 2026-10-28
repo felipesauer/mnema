@@ -47,6 +47,8 @@ export interface MemoryCaptured extends Replacement, Landed {
   readonly ok: true;
   /** The minted memory id (the event subject). */
   readonly id: string;
+  /** Set when the note was already on the record: nothing was written and `id` is the existing one's. */
+  readonly alreadyRecorded?: true;
 }
 
 /** The capture was refused. */
@@ -110,13 +112,19 @@ export function runMemory(
       },
     );
     // Checkpoint so the new memory is signature-covered at once: the tree stays
-    // fully signed after every command, the same posture init leaves it in.
-    if (written.ok) writer.checkpoint();
+    // fully signed after every command, the same posture init leaves it in. A repeat wrote nothing.
+    if (written.ok && !('already' in written)) writer.checkpoint();
     return written;
   });
   if (!captured.ok) {
     return { ok: false, reason: 'REFUSED', code: captured.code, message: captured.message };
   }
 
-  return { ok: true, id: captured.id, scope, ...forwardReplacement(captured) };
+  return {
+    ok: true,
+    id: captured.id,
+    scope,
+    ...forwardReplacement(captured),
+    ...('already' in captured ? { alreadyRecorded: true as const } : {}),
+  };
 }

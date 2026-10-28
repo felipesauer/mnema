@@ -122,6 +122,7 @@ export {
   type LinkRetractInput,
   type LinkRetractOk,
   linkKnowledge,
+  type NoteRecordedAlready,
   type ObservationInput,
   type ObservationOk,
   type RetractError,
