@@ -67,7 +67,7 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timezone
-from typing import Any, NamedTuple, Optional
+from typing import Any, Iterable, NamedTuple, Optional
 
 from .canonical import utf16_order
 from .checkpoint import IDENTITY_TRIM
@@ -141,10 +141,43 @@ class Resolution(NamedTuple):
     # role stated on one. Informational: nothing here moves the verdict.
     attested: list[tuple[str, str, str, int]]
     declared: list[tuple[str, int]]
+    # Section 6.9: (which, events) of every `which` an accepted fact of a run marked
+    # run.unannounced carries, signed by a key without the agent role - counted apart from
+    # `declared`, since no client announced it.
+    unannounced: list[tuple[str, int]]
     # Section 6.2: (agentFp, anchor that retired it, events) of every agent key a covered
     # agent.retired took out of the role that had signed an accepted fact before it - the count the
     # product's census names, said and never judged.
     retired_agents: list[tuple[str, str, int]]
+
+
+def _run_of(event: dict[str, Any]) -> Any:
+    """Section 6.9: the run a fact belongs to - its `run`, or, for a run's own birth or mark, the
+    run it is."""
+    run = event.get("run")
+    if run is not None:
+        return run
+    if event.get("kind") in ("run.started", "run.unannounced"):
+        return event.get("subject")
+    return None
+
+
+def unannounced_runs(events: Iterable[dict[str, Any]]) -> set[tuple[Any, Any]]:
+    """Section 6.9: (signerFp, run) of every run a run.unannounced marks, for the key that signed
+    the mark and for no other."""
+    return {
+        (event.get("signerFp"), event.get("subject"))
+        for event in events
+        if event.get("kind") == "run.unannounced"
+    }
+
+
+def is_unannounced(event: dict[str, Any], marked: set[tuple[Any, Any]]) -> bool:
+    """Section 6.9: whether the key that signed `event` marked the run it belongs to."""
+    if not marked:
+        return False
+    run = _run_of(event)
+    return run is not None and (event.get("signerFp"), run) in marked
 
 
 def merged_order(entries_by_tail: dict[str, list[Entry]]) -> Merged:
@@ -287,9 +320,9 @@ def resolve(
     # For each of them, (the anchor that retired it, how many facts the fold had judged by then);
     # the facts that count are the ones no issue names, which is known only after the fold.
     retirements: dict[str, tuple[str, int]] = {}
-    # (tail, seq, agent key or None, which) of every event that reached its kind's conditions,
-    # so the census counts, after the fold, only the ones no issue names.
-    judged: list[tuple[str, int, str | None, Any]] = []
+    # (tail, seq, agent key or None, which, of a marked run) of every event that reached its
+    # kind's conditions, so the census counts, after the fold, only the ones no issue names.
+    judged: list[tuple[str, int, str | None, Any, bool]] = []
 
     def keys_of(anchor: str) -> set[str]:
         return valid.setdefault(anchor, set())
@@ -318,6 +351,10 @@ def resolve(
         return True
 
     merged = merged_order(entries_by_tail)
+    # Section 6.9: the runs a run.unannounced marks, each for the key that signed the mark. Read
+    # off every event before the fold: a mark follows its run's birth, which is one of the run's
+    # facts.
+    marked = unannounced_runs(entry.event for _tail, entry in merged.order)
     for tail, entry in merged.order:
         event = entry.event
         seq = entry.seq
@@ -358,7 +395,9 @@ def resolve(
             if refusal is not None:
                 issues.append(Issue(tail, seq, f"{kind} is signed by an agent key, {refusal}"))
                 continue
-        judged.append((tail, seq, signer if role is not None else None, which))
+        judged.append(
+            (tail, seq, signer if role is not None else None, which, is_unannounced(event, marked))
+        )
 
         if kind == "agent.enrolled":
             anchor = subject
@@ -625,19 +664,21 @@ def resolve(
     refused = {(issue.tail, issue.seq) for issue in issues}
     attested: dict[str, int] = {}
     declared: dict[str, int] = {}
-    for tail, seq, agent_key, which in judged:
+    unannounced: dict[str, int] = {}
+    for tail, seq, agent_key, which, of_marked_run in judged:
         if (tail, seq) in refused:
             continue
         if agent_key is not None:
             attested[agent_key] = attested.get(agent_key, 0) + 1
         elif isinstance(which, str):
-            declared[which] = declared.get(which, 0) + 1
+            named = unannounced if of_marked_run else declared
+            named[which] = named.get(which, 0) + 1
     # A key retired before it signed anything has nothing to name.
     retired_with_facts: list[tuple[str, str, int]] = []
     for agent, (by, upto) in retirements.items():
         before = sum(
             1
-            for tail, seq, agent_key, _which in judged[:upto]
+            for tail, seq, agent_key, _which, _marked in judged[:upto]
             if agent_key == agent and (tail, seq) not in refused
         )
         if before > 0:
@@ -650,6 +691,7 @@ def resolve(
         merged.behind,
         [(fp, agents[fp][0], agents[fp][1], count) for fp, count in attested.items()],
         list(declared.items()),
+        list(unannounced.items()),
         retired_with_facts,
     )
 

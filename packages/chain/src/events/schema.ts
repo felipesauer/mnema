@@ -270,6 +270,7 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
   'agent.enrolled': { agentFp: 'string', name: 'string', reverseSig: 'string' },
   // Required for the reason a checker's retirement requires it.
   'agent.retired': { agentFp: 'string', reason: 'string' },
+  'run.unannounced': { handshake: 'boolean' },
 };
 
 /**

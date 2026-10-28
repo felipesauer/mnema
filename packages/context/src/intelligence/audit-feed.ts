@@ -227,6 +227,7 @@ interface AuditMapping {
 export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
   'run.started': { activity: ACTIVITY.activate, entityTypeId: ENTITY_OTHER, entityType: 'run' },
   'run.ended': { activity: ACTIVITY.deactivate, entityTypeId: ENTITY_OTHER, entityType: 'run' },
+  'run.unannounced': { activity: ACTIVITY.update, entityTypeId: ENTITY_OTHER, entityType: 'run' },
   'task.created': { activity: ACTIVITY.create, entityTypeId: ENTITY_OTHER, entityType: 'task' },
   'task.transitioned': {
     activity: ACTIVITY.update,

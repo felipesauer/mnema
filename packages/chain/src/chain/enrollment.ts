@@ -84,6 +84,7 @@ import {
   enrollmentMessage,
 } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
+import { isUnannounced, unannouncedRuns } from '../events/unannounced.js';
 import { oneLine } from '../one-line.js';
 import { causalOrder } from './causal-order.js';
 import type { Entry } from './entry.js';
@@ -162,6 +163,13 @@ export interface AgentsNamed {
    * the fold met it: DECLARED; the key that signed stated it, and nothing in the record holds it.
    */
   readonly declared: readonly { readonly which: string; readonly events: number }[];
+  /**
+   * Every `which` an accepted fact of a run marked `run.unannounced` carries, signed by a key
+   * without the agent role, in the order the fold met it: no client announced it in a handshake;
+   * the writer put it in place of a name nobody gave (FORMAT.md section 6.9). Counted apart from
+   * {@link declared}, so a client that announced the same word reads as the one that did.
+   */
+  readonly unannounced: readonly { readonly which: string; readonly events: number }[];
 }
 
 /**
@@ -320,6 +328,11 @@ export function resolveIdentity(
   // What the census says of the agents accepted facts name: per agent key, per declared `which`.
   const attested = new Map<string, number>();
   const declared = new Map<string, number>();
+  const unannounced = new Map<string, number>();
+  // The runs a `run.unannounced` marks, each for the key that wrote the mark (section 6.9). Read
+  // off every event before the fold: a mark follows its run's birth, and the birth is one of the
+  // run's facts.
+  const marked = unannouncedRuns(order.map(({ entry }) => entry.event));
 
   for (const { tail, entry } of order) {
     const event = entry.event;
@@ -760,7 +773,8 @@ export function resolveIdentity(
     if (role !== undefined) {
       attested.set(event.signerFp, (attested.get(event.signerFp) ?? 0) + 1);
     } else if (event.which !== undefined) {
-      declared.set(event.which, (declared.get(event.which) ?? 0) + 1);
+      const named = isUnannounced(event, marked) ? unannounced : declared;
+      named.set(event.which, (named.get(event.which) ?? 0) + 1);
     }
   }
 
@@ -770,6 +784,7 @@ export function resolveIdentity(
       return role === undefined ? [] : [{ agentFp, anchor: role.anchor, name: role.name, events }];
     }),
     declared: [...declared].map(([which, events]) => ({ which, events })),
+    unannounced: [...unannounced].map(([which, events]) => ({ which, events })),
   };
   return {
     issues,

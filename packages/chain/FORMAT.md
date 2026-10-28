@@ -7,7 +7,7 @@ against their implementation, and get the same digests we do.
 
 **Somebody has.** [`verifier/`](./verifier/) beside this file is a second implementation, in
 Python, written from this document and importing nothing of the product it checks. It
-reproduces the 38 published vectors and the four aggregate digests, and checks the frozen
+reproduces the 39 published vectors and the four aggregate digests, and checks the frozen
 records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
@@ -1223,6 +1223,45 @@ there as here and is read there with the later text. This section tightened a ru
 and version that already existed, after the first publication: §7.1 says what that promise
 covers, and it does not cover this (a rule tightened is allowed; the two binaries read the same
 bytes two ways, and the earlier one refuses nothing).
+
+### 6.9 A run whose agent was announced by nobody
+
+`which` is a name the writer states (§6.2, "What a reader learns from it"). Over MCP this product's
+writer states the name the client announced in its handshake (`clientInfo.name`), and where the
+client announced no usable one it states a default, `unknown-agent`: a client that never sent
+`initialize`, as a revision of the protocol allows, and one whose handshake named nobody (no name,
+a blank one, or one §6 cannot compare). Before this section the record said nothing more, so the
+default read as a name a client had announced, and a client that announced the word
+`unknown-agent` read as one that announced nothing.
+
+`run.unannounced` (`payload.handshake`, a boolean) is the writer saying so. Its `subject` is a run,
+and so is its `run`; this product's writer appends it in the same append as that run's
+`run.started`, and only when the run's agent is that default: never for a name a client announced,
+whatever it is, and never where an agent key signs (§6.2), since its `which` is then the name the
+record enrolled it under. `handshake` is `true` when a handshake ran and named nobody, and `false`
+when none ran. Nothing about its bytes, its chaining or its signature differs from any other kind,
+and it is not part of the fold of §6.2: its signer is held to its `who` like any event's.
+
+**What it marks.** A `run.unannounced` marks the run its `subject` names, **for the key that signed
+it and for no other**. A fact belongs to a marked run when that same key signed it and its `run`
+is the run, or it is the run's own `run.started` or `run.unannounced` (whose `subject` is the run).
+Keyed by the signer, so a key cannot say of another key's facts that their agent was announced by
+nobody, and a mark naming a run that no `run.started` of its key opened marks nothing. A reader
+counts the facts of a marked run that a key without the agent role signed apart from the other
+declared names: this product's `verify` names them in its census as `unannounced-which`, one note
+per `which`, informational, the exit unchanged, and the second reader says the same counts under
+this section's number
+(`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`, "a run marked
+run.unannounced"). The product's other readings say it beside the name: `mnema show`, the opening
+document, `audit_accountability` and the record page
+(`packages/code/tests/a-client-that-never-initializes.test.ts`).
+
+**What it does not say.** It is the writer's statement, as `which` is: it proves nothing about
+which program connected, and a writer may leave it out. A run with no mark makes no claim either
+way, and every run written before this kind existed has none: an `unknown-agent` there may be the
+default or a name a client announced, and no reader can tell. **A binary from before this kind**
+refuses a record that holds one by naming the kind (§7.1), and reads every record that does not:
+a client that announces a usable name in its handshake writes no new bytes.
 
 ## 7. Versions, and why a proof is never recomputed over a reading
 

@@ -1206,6 +1206,14 @@ def _check_enrolment(
             f'{count} event(s) name the agent "{which}": declared by the key that signed, '
             "not attested",
         )
+    # Section 6.9: a `which` the writer put in place of a name no client announced, counted apart
+    # from the declared ones - the product's census says the same counts.
+    for which, count in resolution.unannounced:
+        report.note(
+            "6.9",
+            f'{count} event(s) name the agent "{which}": no name an MCP client announced in a '
+            "handshake, put in by the writer in place of one",
+        )
     # An agent key the record retired, after the facts it signed while it held the role: the same
     # count the product's census names, and for the same reason - "before" is the place the `at`
     # the key itself wrote gives a fact.

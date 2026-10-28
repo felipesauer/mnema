@@ -1136,6 +1136,31 @@ export interface AgentRetiredV1 extends Envelope {
 }
 
 /**
+ * A RUN'S AGENT NAMED NOTHING: the name its run carries, and every fact of the run carries as
+ * `which`, is not a name an MCP client announced in a handshake, but the default the writer put
+ * in its place.
+ *
+ * Written once per run, in the same append as the run's `run.started`, by a connection whose
+ * client either never sent `initialize` or announced in it a name that is no name (absent,
+ * blank, or one the chain cannot canonicalize). Its subject is the run, and so is its `run`. It
+ * marks the run for the key that signed it and for no other: a reader holds a fact of that run
+ * signed by that key as carrying a `which` nobody announced (FORMAT.md section 6.9). A run with
+ * no such fact makes no claim either way, which is every run written before this kind existed.
+ */
+export interface RunUnannouncedV1 extends Envelope {
+  readonly kind: 'run.unannounced';
+  readonly v: 1;
+  /** Subject is the run's own id. */
+  readonly payload: {
+    /**
+     * True when a handshake ran and the name it announced was no name; false when the client
+     * sent no `initialize` at all.
+     */
+    readonly handshake: boolean;
+  };
+}
+
+/**
  * A RULE'S CHECK PASSED at one commit: the command declared for it ran there and exited 0.
  *
  * Signed by a key enrolled as a checker (see {@link CheckerEnrolledV1}), under that key's own
@@ -1312,7 +1337,8 @@ export type CatalogEvent =
   | StackAdoptedV1
   | StackRemovedV1
   | AgentEnrolledV1
-  | AgentRetiredV1;
+  | AgentRetiredV1
+  | RunUnannouncedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -1356,4 +1382,5 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'stack.removed': 1,
   'agent.enrolled': 1,
   'agent.retired': 1,
+  'run.unannounced': 1,
 };
