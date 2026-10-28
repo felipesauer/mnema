@@ -136,6 +136,18 @@ with its own changelog.
 - **The Action judges a pull request by the rules of its base.** It asked which rules address each changed file in the checkout of the pull request's head, so a pull request that superseded the `asks-for-a-person` rule on a file and edited that file passed the approval check, while the same edit alone failed it. The rules now come from the record as the base commit holds it, read from a temporary copy of its `.mnema/` (removed at the end) with the same binary, together with the rules the pull request adds, since a pull request can add protection and not take it away; a base with no record has none to read. A file the pull request renames is asked about under both of its paths, the one it left and the one it took, and the comment names it as `src/auth2.ts (renamed from src/auth.ts)`; a file it removes is asked about under the path it removed. The comment says where the rules were read. The workflow does not change: the base commit is already required in the clone.
 - **The host contract holds the Copilot CLI 1.0.104.** The weekly run against the newest Copilot CLI failed on the weight of the 27 definitions: from 1.0.103 the host marks each one `defer_loading` (21 bytes each) and drops a `cache_control` from one, so they weigh 51,540 bytes and 11,942 tokens instead of 51,010 and 11,762. The pinned version is now 1.0.104 and the figure on the evidence page is the new one.
 - **The check of the links after a merge no longer accuses a page the server did not answer for.** An address that ended on HTTP 408, 502, 503 or 504 after three attempts was counted as broken, as five badges were once when the badge host timed out; it is now listed as unreachable and opens no issue, like a rate limit (429) or no answer at all. A 404, a 410 or a 500 still count as broken.
+- **A decision is the text its acceptance was made on, in every reader.** A second `decision.recorded` of an accepted
+  decision's id, signed by any key (one of another identity its writer had founded itself included), replaced the
+  decision's title, rationale, alternatives and author in `show`, `brief`, `search`, the rules a path is governed by, the
+  record page and the Action's comment, while the decision stayed accepted on the note its first text was accepted with,
+  and `mnema verify --require=signed` and the second reader passed and named nothing. The text of a decision is now the
+  first writing in the merged order that the writer of its first accept, rejection or supersede had read, by its own tail
+  and the tails it cites, and the first writing in the merged order while nothing has judged it (FORMAT.md §6.8): a
+  writing dated back on a tail the accept never cited does not become the accepted text. Every other writing is not
+  applied, whoever signed it, and both verifiers name it in the census (`decision-rewrite`), informational, exit
+  unchanged. The product mints a decision's id when it records it, so no record it wrote holds a second writing; a binary
+  from before this serves the last one, and an accept it made may have seen that last writing: if a writing dated back that
+  it read precedes the honest one, this version serves the dated back one and names the honest one.
 - **A note is the identity that wrote it first, in every reader.** The read and the write took a note's author from its LAST
   writing in the merged order, and `mnema verify` and the second reader from its last writing in the order of the tail ids. A
   key of another identity that wrote the same id again with a later clock took the note: its content and its author were

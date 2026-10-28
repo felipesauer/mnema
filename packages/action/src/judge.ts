@@ -18,7 +18,7 @@ import {
   isGoverned,
   rulesInForce,
 } from './governed.js';
-import { eventsAdded, readEvents, whatItDoes } from './record.js';
+import { decisionLabels, eventsAdded, readEvents, whatItDoes } from './record.js';
 
 /** The most changed files `mnema rules` is asked about, one process each. */
 export const MOST_ASKED = 200;
@@ -100,7 +100,7 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
   }
 
   const head = textsOf(headTexts);
-  const record = whatItDoes(eventsAdded(textsOf(baseTexts), head), head);
+  const record = whatItDoes(eventsAdded(textsOf(baseTexts), head), decisionLabels(headTexts));
 
   // A file renamed leaves one path and takes another; the rules of both judge it, so a rename
   // cannot carry a protected file out from under its rule.

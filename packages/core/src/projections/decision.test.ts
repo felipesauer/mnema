@@ -125,6 +125,71 @@ describe('projectDecisions: the fold', () => {
   });
 });
 
+describe('projectDecisions: a decision is the text its first judgment saw', () => {
+  const accepted = (id: string, n: number) =>
+    decisionTransitioned(env(id, n), {
+      from: 'proposed',
+      to: 'accepted',
+      action: 'accept',
+      fields: { note: 'Use SQLite, agreed' },
+    });
+
+  it('serves the first decision.recorded of an id, and not a later one by another identity', () => {
+    const events = [
+      ...birth('d-1', 'ADR-1', 0, 'Postgres: a server to run'),
+      accepted('d-1', 1),
+      decisionRecorded(
+        { at: at(2), who: 'mnid:intruder', signerFp: 'fp-9', subject: 'd-1' },
+        { title: 'Use MongoDB', rationale: 'Schemaless', adr: 'ADR-7' },
+      ),
+    ];
+    expect(projectDecisions(events).get('d-1')).toEqual({
+      id: 'd-1',
+      adr: 'ADR-1',
+      title: 'title d-1',
+      rationale: 'why d-1',
+      alternatives: 'Postgres: a server to run',
+      state: 'accepted',
+      createdAt: at(0),
+      updatedAt: at(1),
+      proof: [{ action: 'accept', at: at(1), said: 'note: Use SQLite, agreed' }],
+      recordedBy: { who: 'felipe' },
+      acceptedBy: { who: 'felipe' },
+    });
+  });
+
+  it('does not apply a later writing by the SAME identity either, nor take its alternatives', () => {
+    const events = [
+      ...birth('d-1', 'ADR-1'),
+      decisionRecorded(env('d-1', 3), {
+        title: 'Use MongoDB',
+        rationale: 'Schemaless',
+        adr: 'ADR-1',
+        alternatives: 'SQLite',
+      }),
+    ];
+    const d = projectDecisions(events).get('d-1');
+    expect(d?.title).toBe('title d-1');
+    expect(d?.rationale).toBe('why d-1');
+    expect(d?.createdAt).toBe(at(0));
+    expect(d !== undefined && 'alternatives' in d).toBe(false);
+  });
+
+  it('takes the first writing where it comes before the birth move in the order', () => {
+    // The order decides which writing is first, not which one the birth move sits beside.
+    const events = [
+      decisionRecorded(
+        { at: at(0), who: 'mnid:other', signerFp: 'fp-2', subject: 'd-1' },
+        { title: 'first in the order', rationale: 'r', adr: 'ADR-1' },
+      ),
+      ...birth('d-1', 'ADR-1', 1),
+    ];
+    const d = projectDecisions(events).get('d-1');
+    expect(d?.title).toBe('first in the order');
+    expect(d?.recordedBy).toEqual({ who: 'mnid:other' });
+  });
+});
+
 describe('projectDecisions: supersede updates both sides', () => {
   it('marks the subject superseded and links both directions', () => {
     const events = [

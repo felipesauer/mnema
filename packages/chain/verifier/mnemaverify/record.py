@@ -965,7 +965,8 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
 
     resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring, refused_first)
     _check_retractions(report, entries_by_tail)
-    _check_moves(report, entries_by_tail, declarations)
+    not_applied = _check_moves(report, entries_by_tail, declarations)
+    _check_rewrites(report, entries_by_tail, not_applied)
     _say_keys_without_tail(report, ring, tail_ids, resolution)
     _refuse_a_record_no_tail_holds(report, tails_dir, tail_ids, entries_by_tail)
     _check_requirement(report, require, entries_by_tail, covered_by_tail)
@@ -1009,11 +1010,21 @@ def _check_retractions(report: Report, entries_by_tail: dict[str, list[Entry]]) 
         report.note("6.4", f"{found.detail} (rule {found.rule})", f"{found.tail} seq {found.seq}")
 
 
+def _check_rewrites(
+    report: Report, entries_by_tail: dict[str, list[Entry]], not_applied: set[tuple[str, int]]
+) -> None:
+    """Section 6.8: every writing of a decision that is not its text - named, never refused, for
+    the reason a foreign retraction is not. `not_applied` is the (tail, seq) of every move section
+    6.7 does not apply; empty when the tables could not be read, and then every move judges."""
+    for found in retraction.decision_rewrites(entries_by_tail, not_applied):
+        report.note("6.8", f"{found.detail} (rule {found.rule})", f"{found.tail} seq {found.seq}")
+
+
 def _check_moves(
     report: Report,
     entries_by_tail: dict[str, list[Entry]],
     declarations: schema.Schema | None,
-) -> None:
+) -> set[tuple[str, int]]:
     """Section 6.7, over the merged order of every tail: the moves the workflows do not allow.
 
     Each is NAMED and none is refused - a move the workflow does not allow is intact, chained
@@ -1021,7 +1032,7 @@ def _check_moves(
     verifies, and its verdict says which move is not applied and by which rule.
     """
     if declarations is None:
-        return  # Section 4.1 has already said the declarations could not be read.
+        return set()  # Section 4.1 has already said the declarations could not be read.
     try:
         tables = workflow.load(declarations.workflows, declarations.path)
     except Refusal as refusal:
@@ -1030,7 +1041,7 @@ def _check_moves(
             f"{refusal.what}, so no move of a workflow was judged",
             declarations.path,
         )
-        return
+        return set()
     merged = enrolment.merged_order(entries_by_tail)
     moves = sum(
         1
@@ -1051,6 +1062,7 @@ def _check_moves(
             f"every one of the {moves} move(s) is one the workflows allow, judged at its point in "
             "the merged order against the tables event-schema.json publishes",
         )
+    return {(ruling.tail, ruling.seq) for ruling in rulings}
 
 
 def _holds_nothing(tail_dir: str) -> bool:

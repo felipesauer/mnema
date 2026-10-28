@@ -50,6 +50,7 @@ import {
   canonicalStringify,
   catalogUpcasters,
   decisionBirth,
+  decisionRecorded,
   decisionTransitioned,
   identityFounded,
   illegalMoves,
@@ -129,7 +130,9 @@ type Act =
     }
   | { readonly kind: 'move'; readonly decision: string; readonly to: 'accepted' | 'rejected' }
   /** `decision` is superseded BY `by`: the subject is the superseded one. */
-  | { readonly kind: 'supersede'; readonly decision: string; readonly by: string };
+  | { readonly kind: 'supersede'; readonly decision: string; readonly by: string }
+  /** A `decision.recorded` of a decision already recorded: what no honest writer appends. */
+  | { readonly kind: 'rewrite'; readonly decision: string };
 
 /** One thing one machine does, at the instant ITS clock gives, which may run backwards. */
 interface Op {
@@ -274,6 +277,15 @@ class Scribe {
       })) {
         this.put(op.slot, event);
       }
+    } else if (act.kind === 'rewrite') {
+      this.put(
+        op.slot,
+        decisionRecorded(env(act.decision), {
+          title: `rewrite ${index}`,
+          rationale: `rewritten by machine ${op.slot}`,
+          adr: `ADR-${index}`,
+        }),
+      );
     } else if (act.kind === 'supersede') {
       this.put(
         op.slot,
@@ -839,6 +851,130 @@ describe('P2: a cache brought forward is a replay', () => {
   );
 });
 
+describe('a decision is the text its first judgment saw, however the tails arrive', () => {
+  // X is born on machine 0; any machine, its own included, then records X again at a drawn
+  // clock, which may tie with or run before the birth, and up to one move of X per machine
+  // judges it, every machine citing what it read or none. FORMAT.md section 6.8: the text is
+  // the first writing in the merged order that the writer of X's first applied judgment had
+  // read, or the first writing when none judged it or its writer read none. A cache brought
+  // forward over all of it in any batches has to land where a replay does, on that writing.
+  const rewritesArb: fc.Arbitrary<Op[]> = fc
+    .tuple(
+      fc.array(fc.record({ slot: slotArb, at: atArb }), { minLength: 1, maxLength: 4 }),
+      movesArb,
+      fc.array(noiseArb, { maxLength: 4 }),
+    )
+    .chain(([rewrites, moves, noise]) => {
+      const ops = [
+        ...rewrites.map(
+          ({ slot, at }): Op => ({ slot, at, act: { kind: 'rewrite', decision: X } }),
+        ),
+        ...moves,
+        ...noise,
+      ];
+      return fc.shuffledSubarray(ops, { minLength: ops.length, maxLength: ops.length });
+    })
+    .map((rest): Op[] => [{ slot: 0, at: 0, act: { kind: 'birth', decision: X } }, ...rest]);
+
+  /** THE MODEL of the text of X: the sentence above, over the causal model's order. */
+  function textOfX(root: string): CatalogEvent {
+    const { out, citations } = causalPlaced(root);
+    const illegal = illegalMoves(out, citations);
+    const writings = out.filter(
+      ({ event }) => event.kind === 'decision.recorded' && event.subject === X,
+    );
+    const judgment = out.find(
+      ({ event }, index) =>
+        event.kind === 'decision.transitioned' &&
+        event.subject === X &&
+        event.payload.from !== null &&
+        !illegal.has(index),
+    );
+    const read = (writing: (typeof out)[number]): boolean =>
+      judgment !== undefined &&
+      (writing.tail === judgment.tail
+        ? writing.position < judgment.position
+        : citations.some(
+            (citation) =>
+              citation.tail === judgment.tail &&
+              citation.position <= judgment.position &&
+              citation.citedTail === writing.tail &&
+              citation.citedPosition >= writing.position,
+          ));
+    const text = writings.find(read) ?? writings[0];
+    if (text === undefined) throw new Error('X was never recorded');
+    return text.event;
+  }
+
+  it(
+    'after any arrivals, with the cache deleted at a drawn point, X reads as the writing its first judgment saw',
+    () => {
+      // How many draws put a text that is NOT the first writing in the order: the case the rule
+      // exists for, which the draw has to reach or the property says nothing about it.
+      let bound = 0;
+      holds(
+        fc.tuple(
+          rewritesArb,
+          fc.boolean(),
+          fc.array(fc.nat({ max: 4 }), { maxLength: 3 }),
+          fc.option(fc.nat({ max: 3 }), { nil: undefined }),
+        ),
+        ([history, cite, cuts, wipeAt]) => {
+          const root = freshDir('first-writing');
+          try {
+            const scribe = new Scribe(root, new Map(), cite);
+            let from = 0;
+            let round = 0;
+            for (const cut of [...cuts.map((c) => from + c), history.length]) {
+              const to = Math.min(history.length, Math.max(from, cut));
+              for (const op of history.slice(from, to)) scribe.apply(op);
+              from = to;
+              const cache = ProjectionCache.open(root, { upcasters, persist: true });
+              try {
+                cache.refresh();
+              } finally {
+                cache.close();
+              }
+              if (wipeAt === round) rmSync(projectionCachePath({ root }), { force: true });
+              round += 1;
+            }
+            const text = textOfX(root);
+            if (text.kind !== 'decision.recorded') throw new Error('the text is not a writing');
+            const first = causalPlaced(root).out.find(
+              ({ event }) => event.kind === 'decision.recorded' && event.subject === X,
+            );
+            if (first !== undefined && identity(first.event) !== identity(text)) bound += 1;
+            const live = ProjectionCache.open(root, { upcasters, persist: true });
+            const replay = ProjectionCache.open(root, { upcasters });
+            try {
+              live.refresh();
+              replay.rebuild();
+              expect(live.listDecisions()).toEqual(replay.listDecisions());
+              expect(projectDecisions(orderedEvents({ root }, upcasters)).get(X)).toEqual(
+                replay.getDecision(X),
+              );
+              const read = live.getDecision(X);
+              expect(read?.title).toBe(text.payload.title);
+              expect(read?.rationale).toBe(text.payload.rationale);
+              expect(read?.adr).toBe(text.payload.adr);
+              expect(read?.recordedBy?.who).toBe(text.who);
+              expect(read?.createdAt).toBe(text.at);
+            } finally {
+              live.close();
+              replay.close();
+            }
+          } finally {
+            cleanUp(root);
+          }
+        },
+        40,
+      );
+      expect(bound).toBeGreaterThan(0);
+    },
+    CASE_TIMEOUT,
+  );
+});
+
 describe('clocks that disagree, with nothing cited: fixed and not endorsed', () => {
   it(
     'uncited, a clock that runs behind sorts an honest task sequence out of its order, and the move is not applied',
@@ -981,6 +1117,12 @@ function tailsOnDisk(root: string) {
  * Quadratic, and it shares nothing with `causalOrder` but the sentence it restates.
  */
 function causalModel(root: string): string[] {
+  const { out, citations } = causalPlaced(root);
+  return applied(out, citations).map(identity);
+}
+
+/** The causal model's order, each event with its tail and position, and the citations it held. */
+function causalPlaced(root: string) {
   const tails = tailsOnDisk(root);
   const queues = tails.map((tail, index) => ({
     key: tail.key,
@@ -1016,7 +1158,7 @@ function causalModel(root: string): string[] {
   const out: { event: CatalogEvent; tail: number; position: number }[] = [];
   for (;;) {
     const live = queues.filter((queue) => queue.left.length > 0);
-    if (live.length === 0) return applied(out, citations).map(identity);
+    if (live.length === 0) return { out, citations };
     const ready = live.filter((queue) =>
       (queue.left[0] as (typeof queue.left)[number]).after.every(
         (hash) => !held.has(hash) || taken.has(hash),

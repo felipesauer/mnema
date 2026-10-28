@@ -990,6 +990,9 @@ function censusLocus(note: CensusNote): string {
     case 'foreign-retraction':
     case 'foreign-rewrite':
       return note.note;
+    // A decision recorded again names the decision: the id a person opens to see the text kept.
+    case 'decision-rewrite':
+      return note.decision;
     case 'foreign-link-retraction':
       return note.link.subject;
     // A move the workflow does not allow names what it moves: the id a person opens to see the

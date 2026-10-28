@@ -40,7 +40,8 @@
  * This only guarantees the replay is deterministic and faithful to each tail's
  * proven order.
  *
- * WHAT IT DOES LEAVE OUT: a move the workflow does not allow (FORMAT.md §6.7). Every reader
+ * WHAT IT DOES LEAVE OUT: a move the workflow does not allow (FORMAT.md §6.7), and a writing of a
+ * decision that comes before the text its first judgment saw (§6.8). Every reader
  * judges the moves of the merged order by the same tables ({@link illegalMoves}) and applies
  * none it refuses, so the order a projection folds is the record without them. A move left
  * out here is left out of every fold, the reference index and the divergences alike (which is
@@ -51,12 +52,14 @@ import {
   type CatalogEvent,
   type ChainLayout,
   causalOrder,
+  decisionTexts,
   type Entry,
   firstLinkBreakFrom,
   illegalMoves,
   type LinkBreak,
   listTails,
   orderedSegments,
+  precedesItsText,
   readTail,
   readTailSince,
   type TailBoundary,
@@ -668,8 +671,8 @@ function streamsOf(layout: ChainLayout, upcasters: UpcasterRegistry, tree: numbe
  * the order ignored. The streams are read and never consumed, so one reading serves several
  * merges.
  *
- * `judged` leaves out the moves the workflow does not allow ({@link illegalMoves}), and says
- * which in `left`. It is false only where the streams are of several trees, whose moves were
+ * `judged` leaves out the moves the workflow does not allow ({@link illegalMoves}) and the writings
+ * of a decision that come before its text ({@link decisionTexts}), and says which in `left`. It is false only where the streams are of several trees, whose moves were
  * judged tree by tree already.
  */
 function mergeStreams(
@@ -701,11 +704,14 @@ function mergeStreams(
     return { event: eventAt(tail, position), tail, position };
   });
   const illegal = judged ? illegalMoves(placed, merged.held) : new Map();
+  // A decision is the text its first judgment saw (FORMAT.md section 6.8): a writing before that
+  // text is left out, so the fold, which takes the first writing it meets, meets the text.
+  const texts = judged ? decisionTexts(placed, merged.held, illegal) : new Map<string, number>();
   const events: CatalogEvent[] = [];
   const left = new Set<CatalogEvent>();
-  placed.forEach(({ event }, index) => {
-    if (illegal.has(index)) left.add(event);
-    else events.push(event);
+  placed.forEach((at, index) => {
+    if (illegal.has(index) || precedesItsText(at, index, texts)) left.add(at.event);
+    else events.push(at.event);
   });
   return {
     events,
