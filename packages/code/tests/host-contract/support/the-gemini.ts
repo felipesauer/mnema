@@ -109,8 +109,6 @@ export interface TheGeminiSession {
   readonly everyRequest: readonly TheRequest[];
   /** What Gemini CLI printed, both streams: its answer and its errors. */
   readonly text: string;
-  /** Every request to `:streamGenerateContent` that the resumed run made; empty without `resume`. */
-  readonly resumedRequests: readonly TheRequest[];
   /** Every request the stand-in received during the resumed run; empty without `resume`. */
   readonly resumedEveryRequest: readonly TheRequest[];
   /** Every command line the session ran `mnema` with, in order. */
@@ -443,7 +441,6 @@ async function aGeminiSession(
     home: box.home,
     requests: generated,
     everyRequest: everyFirst,
-    resumedRequests: resumed,
     resumedEveryRequest: everyResumed,
     text,
     calls: spec.mnema === 'a stranger' ? lines(strangerLog) : box.calls(),
