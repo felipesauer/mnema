@@ -352,18 +352,26 @@ describe('the ceiling of the host, a whole rule at a time', () => {
 describe('what a session remembers of having been pushed to', () => {
   it('tells exactly one of two askers that it is the first, and the other that it is not', () => {
     const trees = resolveTrees(repo, env);
-    const first = takeTheFirstServing(trees, 'race', 'edit-rules-push');
-    const second = takeTheFirstServing(trees, 'race', 'edit-rules-push');
+    const first = takeTheFirstServing(trees, 'race', 'edit-rules-push', 'gemini');
+    const second = takeTheFirstServing(trees, 'race', 'edit-rules-push', 'gemini');
     expect(first).toBeDefined();
     expect(second).toBeUndefined();
     // Given back, the next asker is the first again: a fact that was not recorded is tried again.
     first?.release();
-    expect(takeTheFirstServing(trees, 'race', 'edit-rules-push')).toBeDefined();
+    expect(takeTheFirstServing(trees, 'race', 'edit-rules-push', 'gemini')).toBeDefined();
     // And another channel, or another session, is its own.
-    expect(takeTheFirstServing(trees, 'race', 'other-channel')).toBeDefined();
-    expect(takeTheFirstServing(trees, 'another', 'edit-rules-push')).toBeDefined();
+    expect(takeTheFirstServing(trees, 'race', 'other-channel', 'gemini')).toBeDefined();
+    expect(takeTheFirstServing(trees, 'another', 'edit-rules-push', 'gemini')).toBeDefined();
     const dir = journalsDir(trees) as string;
     expect(readdirSync(dir).every((name) => name.endsWith('.served'))).toBe(true);
+  });
+
+  it('keeps a marker per host: two hosts that hand the same session id are each the first', () => {
+    const trees = resolveTrees(repo, env);
+    expect(takeTheFirstServing(trees, 'shared', 'edit-rules-push', 'gemini')).toBeDefined();
+    expect(takeTheFirstServing(trees, 'shared', 'edit-rules-push', 'copilot')).toBeDefined();
+    expect(takeTheFirstServing(trees, 'shared', 'edit-rules-push', 'gemini')).toBeUndefined();
+    expect(takeTheFirstServing(trees, 'shared', 'edit-rules-push', 'copilot')).toBeUndefined();
   });
 
   it('never pushes without a fact when the directory of the markers is a file', () => {
