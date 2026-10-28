@@ -21,11 +21,13 @@
  * decision that carries it in the trees in view: two trees number their own, so one label can
  * be several decisions, and each is listed with its id.
  *
- * WHICH TREES ARE IN VIEW, and the rule is a privacy one ({@link readableFrom}): a decision
- * that lands in the PUBLIC tree sees only public trees, because its reply may be quoted into a
- * record that travels, and a title read out of a private tree must not be put in reach of one.
- * A private decision sees the public trees as well. The offer never names a rationale: the
- * label, the title, the state and the id, which is what `read_record` opens the rest by.
+ * WHICH TREES ARE IN VIEW ({@link readableFrom}): only the tree the new decision landed in. The
+ * offer is a call the product must execute, and a supersede looks for its successor in the tree
+ * of the decision it replaces, so a private decision offered a public one to replace would be
+ * refused (`UNKNOWN_BY`); and a public decision must not be put in reach of a title read out of a
+ * private tree, which its reply may carry to a record that travels. The offer never names a
+ * rationale: the label, the title, the state and the id, which is what `read_record` opens the
+ * rest by.
  *
  * WHICH STATES: only where a `supersede` is a legal move (`findDecisionTransition`, the table
  * the gate itself reads), so a rejected or already superseded decision is never offered, and
@@ -65,13 +67,11 @@ export interface DecisionText {
 const A_CITATION = /\b(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|ADR-\d+)\b/gi;
 
 /**
- * The trees a decision landing in `landing` may name another decision out of. Public sees public;
- * private sees both of the project's trees; global sees only global, which belongs to no project.
+ * The trees a decision landing in `landing` may be offered to replace a decision out of: its own,
+ * since the gate finds the successor in the tree of the decision replaced.
  */
 export function readableFrom(landing: Scope): readonly Scope[] {
-  if (landing === 'public') return ['public'];
-  if (landing === 'private') return ['public', 'private'];
-  return ['global'];
+  return [landing];
 }
 
 /** The decisions of the trees a decision landing in `landing` may read, from sources of any trees. */
@@ -121,7 +121,7 @@ export type OfferedBy = 'mcp' | 'cli';
 /** The call that would replace `replaced` with `by`, in the shape of the door that names it. */
 function replaceCall(door: OfferedBy, replaced: string, by: string): string {
   if (door === 'mcp') {
-    return `decision_transition with id "${replaced}", action "supersede", by "${by}", reason "<why>"`;
+    return `decision_transition with id ${JSON.stringify(replaced)}, action "supersede", by ${JSON.stringify(by)}, reason "<why>"`;
   }
   // Joined and not interpolated: the command-line guard reads a template's two adjacent holes as
   // one, and this verb takes two ids. The line is held whole where it is run, by the case that
@@ -171,6 +171,6 @@ export function addressOfferLines(
   const where = scope === 'public' ? '' : `, scope "${scope}"`;
   return [
     `Paths of this project this connection looked at, the latest first: ${named.map((path) => oneLine(path)).join(', ')}${left > 0 ? `, and ${left} more` : ''}. ${recorded.adr} is addressed at none of them; nothing was linked:`,
-    `  link_knowledge with subject "${recorded.id}", rel "governs", target "${oneLine(latest)}"${where}`,
+    `  link_knowledge with subject ${JSON.stringify(recorded.id)}, rel "governs", target ${JSON.stringify(latest)}${where}`,
   ];
 }

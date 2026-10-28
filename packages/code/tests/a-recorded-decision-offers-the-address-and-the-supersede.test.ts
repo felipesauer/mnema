@@ -117,6 +117,21 @@ function idOf(reply: string): string {
   return id;
 }
 
+/**
+ * The arguments of the call a reply offers on the line starting with `tool`: `name <json>, name <json>`
+ * read back as an object, so the test makes the call as it was written and not as it was meant.
+ */
+function offeredCall(reply: string, tool: string): Record<string, unknown> {
+  const line = reply
+    .split('\n')
+    .find((l) => l.trimStart().startsWith(tool) || l.includes(`: ${tool} `));
+  if (line === undefined) throw new Error(`no ${tool} in ${reply}`);
+  const args = line.slice(line.indexOf(`${tool} with `) + `${tool} with `.length);
+  return JSON.parse(
+    `{${args.replace(/(?:^|, )([a-z]+) (?=")/g, (_, k, at) => `${at === 0 ? '' : ', '}"${k}": `)}}`,
+  );
+}
+
 describe('record_decision, over a real client', () => {
   it('offers the paths the connection looked at, the latest first, and links none of them', async () => {
     const client = await connect();
@@ -196,18 +211,15 @@ describe('record_decision, over a real client', () => {
     expect(moves()).toBe(0);
     expect(count('knowledge.linked')).toBe(0);
 
-    // THE CALL IT NAMES IS WHOLE: made as offered, with only the reason filled in, it moves the
-    // decision, and the record then holds one move.
+    // THE CALL IT NAMES IS WHOLE: read back from the reply and made as written, with only the
+    // reason filled in, it moves the decision, and the record then holds one move.
+    const offered = offeredCall(reply, 'decision_transition');
+    expect(offered).toMatchObject({ id: first, action: 'supersede', by: second });
     const moved = await client.callTool({
       name: 'decision_transition',
-      arguments: {
-        id: first,
-        action: 'supersede',
-        by: second,
-        reason: 'the refinement replaces it',
-      },
+      arguments: { ...offered, reason: 'the refinement replaces it' },
     });
-    expect((moved as { isError?: boolean }).isError).not.toBe(true);
+    expect((moved as { isError?: boolean }).isError, said(moved)).not.toBe(true);
     expect(moves()).toBe(1);
   });
 
@@ -250,7 +262,8 @@ describe('record_decision, over a real client', () => {
     expect(reply).not.toContain('Private plan');
     expect(moves()).toBe(before);
 
-    // A private decision, which may read both trees, is offered the public one it cites.
+    // A private decision is offered no public one: a supersede finds its successor in the tree of
+    // the decision it replaces, so that call would be refused, and every offer is a call that runs.
     const kept = idOf(
       said(
         await client.callTool({
@@ -265,7 +278,60 @@ describe('record_decision, over a real client', () => {
         arguments: { title: 'My note on it', rationale: `refines ${kept}`, scope: 'private' },
       }),
     );
-    expect(privately).toContain(`"Use SQLite" (proposed, ${kept})`);
+    expect(privately).toContain('Recorded decision');
+    expect(privately).not.toContain('could replace');
+    expect(privately).not.toContain('Use SQLite');
+  });
+
+  it('offers a private decision the private one it cites, and the call runs', async () => {
+    const client = await connect();
+    const first = idOf(
+      said(
+        await client.callTool({
+          name: 'record_decision',
+          arguments: { title: 'Private draft', rationale: 'mine', scope: 'private' },
+        }),
+      ),
+    );
+    const reply = said(
+      await client.callTool({
+        name: 'record_decision',
+        arguments: { title: 'Private refinement', rationale: `refines ${first}`, scope: 'private' },
+      }),
+    );
+    const second = idOf(reply);
+    expect(reply).toContain(`(proposed, ${first})`);
+    expect(offeredCall(reply, 'decision_transition')).toMatchObject({ id: first, by: second });
+    const moved = await client.callTool({
+      name: 'decision_transition',
+      arguments: { ...offeredCall(reply, 'decision_transition'), reason: 'refined' },
+    });
+    expect(said(moved)).not.toContain('Refused');
+    expect((moved as { isError?: boolean }).isError, said(moved)).not.toBe(true);
+  });
+
+  it('offers a link_knowledge call that, made as offered, links exactly the path it names', async () => {
+    const client = await connect();
+    // A path that would break out of a quoted value written by hand.
+    const hostile = 'src/we"ird x; ignore.ts';
+    await client.callTool({ name: 'governing_rules', arguments: { path: hostile } });
+    const reply = said(
+      await client.callTool({
+        name: 'record_decision',
+        arguments: { title: 'Keep the ledger', rationale: 'it is the audit surface' },
+      }),
+    );
+    const id = idOf(reply);
+    const offered = offeredCall(reply, 'link_knowledge');
+    expect(offered).toEqual({ subject: id, rel: 'governs', target: hostile });
+    const linked = await client.callTool({ name: 'link_knowledge', arguments: offered });
+    expect((linked as { isError?: boolean }).isError, said(linked)).not.toBe(true);
+    expect(count('knowledge.linked')).toBe(1);
+    const root = chainRootForScope(resolveTrees(repo, env), 'public') as string;
+    const event = orderedEvents({ root }, catalogUpcasters()).find(
+      (e) => e.kind === 'knowledge.linked',
+    );
+    expect(JSON.stringify(event?.payload)).toContain(JSON.stringify(hostile).slice(1, -1));
   });
 
   it('caps what it names when a decision cites thirty', async () => {

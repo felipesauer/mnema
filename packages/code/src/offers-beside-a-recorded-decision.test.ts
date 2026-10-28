@@ -82,9 +82,9 @@ describe('decisionsInView', () => {
   const idsFrom = (landing: 'public' | 'private' | 'global') =>
     decisionsInView(sources, landing, (source) => source.decisions).map((d) => d.id);
 
-  it('keeps a private title out of reach of a decision that lands in the tree that travels', () => {
+  it('offers only the tree the decision landed in, which is where a supersede finds its successor', () => {
     expect(idsFrom('public')).toEqual(['pub']);
-    expect(idsFrom('private')).toEqual(['pub', 'priv']);
+    expect(idsFrom('private')).toEqual(['priv']);
     expect(idsFrom('global')).toEqual(['glob']);
     expect(readableFrom('public')).toEqual(['public']);
   });

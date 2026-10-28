@@ -947,9 +947,9 @@ export function runRecordDecision(
  *
  * THE ADDRESS comes from {@link Session.looked}, and only when the decision landed in the
  * session's OWN project: a path is relative to a root, and the paths this connection looked at
- * are relative to this one. THE REPLACEMENT is read over the trees the decision may name a
- * decision out of ({@link decisionsInView}): a decision landing in the public tree is offered no
- * title out of a private one. A read that cannot be made is no offer: the write already stands
+ * are relative to this one. THE REPLACEMENT is read over the tree the decision landed in
+ * ({@link decisionsInView}): the gate finds a successor in the tree of the decision replaced, and
+ * a public decision is offered no title out of a private one. A read that cannot be made is no offer: the write already stands
  * and this reply is not the place for it to fail.
  */
 function offersBesideADecision(

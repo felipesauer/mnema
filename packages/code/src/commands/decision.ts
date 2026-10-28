@@ -157,7 +157,7 @@ export function runDecision(
  * record a hundred more times to look for citations nobody asked about.
  *
  * THE SAME DETECTION THE MCP TOOL ASKS (`offers-beside-a-recorded-decision.ts`), read after the
- * write over the trees the decision may name a decision out of. There is no address offer here: a
+ * write over the tree the decision landed in. There is no address offer here: a
  * command has no session, so no path it looked at. A read that cannot be made is no offer, since
  * the write already stands.
  */
