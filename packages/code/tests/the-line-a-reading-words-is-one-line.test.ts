@@ -567,7 +567,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'the clause that names the decision this rule replaced: built by namedDecisionText below, every part of it collapsed, and placed LAST on the line so a free title has no field after it to forge',
   },
-  'brief.ts « · supersedes {}» namedDecisionText(supersedes) #1': {
+  'brief.ts « · supersedes {}» namedDecisionText(supersedes, NAMED_TITLE_LIMIT) #1': {
     verdict: 'composed',
     why: 'the replaced decision, worded by namedDecisionText: label, title and state, each collapsed there',
   },
@@ -1459,9 +1459,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the label frozen into the record at write time, collapsed because a line is this module’s',
   },
-  'named-decision.ts «{}: {} {}» oneLine(named.title) #1': {
-    verdict: 'collapsed',
-    why: 'the title an actor wrote: the value the whole module exists to keep on one line',
+  'named-decision.ts «{}: {} {}» titleLimit === undefined ? oneLine(named.title) : cutTitle(oneLine(named.title), titleLimit) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the title an actor wrote: the value the whole module exists to keep on one line, collapsed first and only then cut for a line fitted to a ceiling',
+    },
+  "named-decision.ts «{}…» chars.slice(0, limit).join('') #1": {
+    verdict: 'composed',
+    why: 'the first characters of a title already collapsed by oneLine, followed by the ellipsis that says it was cut',
   },
   'named-decision.ts asState(oneLine(named.state)) #1': {
     verdict: 'collapsed',
@@ -2629,8 +2634,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does; 485 with where an inherited rule came from, and the count of the inherited record's addresses; 497 with those addresses by relation, on the rules report and in the brief; 500 with the run of each tree that `mnema status` names; 497 once the host's ceiling in words lives with the ceiling (`ceilingInWords`), and the push of the rules at an edit words it too; 514 with the line a promotion answers when the global tree already held the decision; 516 with the clause beside an agent name no client announced, in the brief and in show.
-    expect(FOUND.sites.length).toBe(516);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does; 485 with where an inherited rule came from, and the count of the inherited record's addresses; 497 with those addresses by relation, on the rules report and in the brief; 500 with the run of each tree that `mnema status` names; 497 once the host's ceiling in words lives with the ceiling (`ceilingInWords`), and the push of the rules at an edit words it too; 514 with the line a promotion answers when the global tree already held the decision; 516 with the clause beside an agent name no client announced, in the brief and in show; 517 with the cut a replaced decision's title takes on a fitted line.
+    expect(FOUND.sites.length).toBe(517);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2653,7 +2658,7 @@ describe('every value this layer puts on a line is classified', () => {
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(136);
     expect(count('minted')).toBe(285);
-    expect(count('composed')).toBe(95);
+    expect(count('composed')).toBe(96);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(136);
   });
 
