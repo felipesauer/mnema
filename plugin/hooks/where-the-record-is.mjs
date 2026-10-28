@@ -153,9 +153,6 @@ const REACH_DEEPEST = 6;
 /** The relations that refuse a write or ask for a person at it, as a stored line spells them. */
 const GATING = ['refuses-a-write', 'asks-for-a-person'];
 
-/** Those, and the one that only governs: the links a rule handed beside a write can be addressed by. */
-export const ADDRESSED = [...GATING, 'governs'];
-
 /**
  * Whether a rule IN FORCE that refuses a write or asks for a person at it addresses a path this payload
  * is about to write, or may: `true` on every doubt. In force is what the verb counts: ruled `accepted`
@@ -165,7 +162,7 @@ export const ADDRESSED = [...GATING, 'governs'];
  * @param {Readonly<Record<string, string | undefined>>} env The host's environment.
  * @param {string} raw What the host handed the hook: JSON naming the tool and its input.
  * @param {readonly string[]} [relations] The relations whose links count: by default the two that gate
- *   a write; the rules handed beside one pass {@link ADDRESSED}, which adds `governs`.
+ *   a write; the rules handed beside one add `governs`.
  * @returns {boolean}
  */
 export function aRuleReaches(cwd, env, raw, relations = GATING) {

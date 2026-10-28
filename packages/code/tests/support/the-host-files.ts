@@ -873,6 +873,9 @@ export function geminiHookScript(): string {
 /** What \`mnema --identify\` starts its answer with: the package, then the version. */
 const THIS_PRODUCT = '@mnema/code ';
 
+/** The relations whose links a rule handed beside a write can be addressed by: the gating ones, and \`governs\`. */
+const ADDRESSED = [...GATING, 'governs'];
+
 /** The tools Gemini CLI writes a file through. */
 const WRITES = new Set(${JSON.stringify(tools).replaceAll('"', "'").replaceAll(',', ', ')});
 
