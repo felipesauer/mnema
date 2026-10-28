@@ -86,6 +86,9 @@ let seenInitialize = false;
 const firstMethods = [];
 
 const reportWhatWasHanded = () => {
+  // What the report says is the state NOW: an `initialize` that came after a first request makes
+  // the host one that still shakes hands, with what it tried first kept in `firstMethods`.
+  if (seenInitialize) withoutInitialize = false;
   writeFileSync(
     report,
     JSON.stringify({
@@ -116,10 +119,11 @@ transport.onmessage = (message, extra) => {
     if (message.method === 'initialize') {
       seenInitialize = true;
       asked = message.params?.protocolVersion;
-    } else if (message.id !== undefined) {
-      // A request before any `initialize`: the revision with no handshake begins like this.
+    } else if (message.id !== undefined && !withoutInitialize) {
+      // A request before any `initialize`: the revision with no handshake begins like this. If an
+      // `initialize` follows (a client that tries the new way and falls back), the report written
+      // when the handshake is done says so and replaces this one.
       withoutInitialize = true;
-      seenInitialize = true;
       reportWhatWasHanded();
     }
   }

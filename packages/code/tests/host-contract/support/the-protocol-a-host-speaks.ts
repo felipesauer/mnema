@@ -30,11 +30,15 @@ export function theRevisionWithoutInitialize(handed: WhatTheServerWasHanded): bo
  */
 export function theProtocolOf(host: string, handed: WhatTheServerWasHanded): string | undefined {
   const spoken = handed.withoutInitialize
-    ? `(no initialize first: ${handed.firstMethods.join(', ')})`
+    ? `(no initialize, after ${handed.firstMethods.join(', ')})`
     : (handed.protocol ?? '?');
+  const tried = handed.firstMethods.filter((method) => method !== 'initialize');
   const summary = process.env['GITHUB_STEP_SUMMARY'];
   if (summary !== undefined && summary !== '') {
-    appendFileSync(summary, `- ${host} speaks MCP ${spoken}\n`);
+    appendFileSync(
+      summary,
+      `- ${host} speaks MCP ${spoken}${tried.length > 0 ? `, after trying ${tried.join(', ')}` : ''}\n`,
+    );
   }
   if (!theRevisionWithoutInitialize(handed)) return undefined;
   return (

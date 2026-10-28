@@ -1,8 +1,10 @@
 /**
  * A CLIENT THAT NEVER SENDS `initialize`, the way the 2026-07-28 revision of the Model Context
  * Protocol begins: no handshake, no `notifications/roots/list_changed`, each request carrying what
- * it needs. No host measured speaks that revision yet; this holds what the server does the day one
- * does, so the day is not a surprise.
+ * it needs. The hosts measured (Claude Code and the Copilot CLI) already open with a
+ * `server/discover` request, and then, because the SDK answers it with an error, fall back to
+ * `initialize`; none drops the handshake yet. This holds what the server does the day one does,
+ * so the day is not a surprise.
  *
  * WHAT THE SERVER DOES TODAY, read off the transport by sending `tools/list` and `tools/call`
  * straight away, with nothing before them:
