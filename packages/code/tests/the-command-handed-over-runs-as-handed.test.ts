@@ -183,7 +183,12 @@ export function handedInSource(
       for (const shape of [AT_THE_HEAD, AFTER_A_COUNT]) {
         const found = shape.exec(line);
         if (found === null || !verbs.has(found[2] as string)) continue;
-        const command = (found[1] as string).split(/\s{2,}/)[0] as string;
+        // A column gap ends a command, and so does a comma outside a quote that a word follows: a
+        // title that runs on (`mnema why -- {}, read at {}`) is a sentence about the command, not
+        // the command. A comma followed by an option is not that, so the option is still read.
+        const command = (found[1] as string).split(
+          /\s{2,}|,\s(?!-)(?=(?:[^"]*"[^"]*")*[^"]*$)/,
+        )[0] as string;
         handed.push({ where: lineOf(at + line.indexOf(command)), from: 'source', text: command });
       }
       at += line.length + 1;
@@ -573,10 +578,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 2,
     why: 'the read named in the sentence a refusal ends with when several rules refuse, beside the id each rule line carries, once as the project reads it and once with where an inherited one opens; with one rule the same sentence hands `mnema show <id>` over whole',
   },
-  'packages/code/src/offers-beside-a-recorded-decision.ts: mnema decision supersede': {
-    times: 1,
-    why: 'the command the offer hands over, joined from its parts (`mnema decision supersede`, the two ids, `--reason`, `"<why>"`) because a template reads two adjacent holes as one; the whole line is typed back and run by `a-recorded-decision-offers-the-address-and-the-supersede.test.ts`',
-  },
   'packages/code/src/wiring/decision.ts: mnema decision record': {
     times: 1,
     why: 'names the verb a move’s `--alternatives` belongs to, and says the rest of the line in words',
@@ -783,7 +784,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/mcp/instructions.ts': { name: 1 },
   'packages/code/src/mcp/server.ts': { line: 1 },
   'packages/code/src/mcp/session.ts': { line: 2 },
-  'packages/code/src/offers-beside-a-recorded-decision.ts': { name: 1 },
+  'packages/code/src/offers-beside-a-recorded-decision.ts': { line: 1 },
   'packages/code/src/pinned-run.ts': { line: 1 },
   'packages/code/src/presentation/brief.ts': { line: 1, name: 10 },
   'packages/code/src/presentation/promoted.ts': { line: 4 },
@@ -1014,6 +1015,18 @@ describe('the reading FIRES', () => {
     expect(inSource('const a = `run \\`mnema show #{id}\\` here`;').handed).toEqual([
       'mnema show {}',
     ]);
+  });
+
+  it('two adjacent holes of a template are one line, and a column gap after a hole still ends it', () => {
+    const hole = (name: string): string => '$' + '{' + name + '}';
+    const template = (body: string): string => 'const a = `' + body + '`;';
+    expect(
+      inSource(template(`mnema decision supersede ${hole('a')} ${hole('b')} --reason "<why>"`))
+        .handed,
+    ).toEqual(['mnema decision supersede {} {} --reason "<why>"']);
+    expect(inSource(template(`  mnema brief ${hole('a')}   the record, in a file`)).handed).toEqual(
+      ['mnema brief {}'],
+    );
   });
 
   it('a comment hands nothing over', () => {

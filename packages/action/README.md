@@ -16,11 +16,11 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
   replaces that comment instead of adding another. It shows the events the pull request adds to
   the record, counted by kind, and the decisions it proposes, accepts, rejects or supersedes, by
   `ADR-<n>` and title.
-- **Which changed files a rule addresses.** For each changed file it runs `mnema rules`, and lists
+- **Which changed files a rule addresses.** For each changed file it asks what `mnema rules` answers, and lists
   the files addressed by a rule in force: an accepted decision linked to the path with `governs`,
   `asks-for-a-person` or `refuses-a-write`, with the rule's name and id. The rules that judge the
   files are the ones the base commit holds, read from a temporary copy of its `.mnema/` with the same
-  binary, plus those the pull request adds: a pull request that supersedes a rule and edits the file
+  reading, plus those the pull request adds: a pull request that supersedes a rule and edits the file
   it addressed is still judged by that rule. A renamed file is asked about under both paths, the old and the new, and the comment says which end is which. A base with no record has none to read, and the comment
   says which of the two it used.
 - **`verify --require=signed --since <base>` as the check.** The Action fails when
@@ -253,7 +253,8 @@ The part worth testing has no network in it. `record.ts` reads `.mnema/tails/*.j
 which events a pull request added; `governed.ts` reads the answer of `mnema rules <path> --json` and the
 pull request's reviews; `comment.ts` turns a report into text; `judge.ts` is one run, with the
 repository, `mnema` and GitHub handed in. GitHub is reached in `github.ts` over `fetch` with the
-token, and `fetch` is a parameter. `world.ts` is `git` and the `mnema` binary as child processes;
+token, and `fetch` is a parameter. `world.ts` is `git` and the `mnema` binary as child processes, and the rules of a path, read in
+its own process;
 `run.ts` is the entry `action.yml` runs.
 
 ## What it proves, and what it does not
@@ -276,7 +277,7 @@ token, and `fetch` is a parameter. `world.ts` is `git` and the `mnema` binary as
   commit it was given on, it does not read teams or code owners, and it cannot tell a person from a
   bot account. Nothing here makes a rule that asks for a person or refuses a write bind anybody else: that remains
   the host's `before-a-write` and the repository's own branch protection.
-- It asks `mnema rules` about at most 200 changed files, one process each, and the comment says
+- It asks `mnema rules` about at most 200 changed files, all in one process, and the comment says
   how many it left out. Files under `.mnema/` are never asked about.
 - Without `checker-key` it never writes to the record or signs an event. With it, it writes the
   results `mnema check run` signs to the working tree, and nothing else; it never commits or

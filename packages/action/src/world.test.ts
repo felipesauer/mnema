@@ -230,6 +230,26 @@ describe('a pull request that lifts the rule off the file it edits', () => {
     }
   }, 120_000);
 
+  it('reads, in this process, the very answer the command prints, at the head and at the base', () => {
+    const { repo, base } = theRepository();
+    const world = worldAt(repo, {} as never, { info() {}, warning() {} }, {});
+    const printed = (cwd: string, path: string): unknown =>
+      JSON.parse(mnemaAs(process.env.HOME as string, cwd, 'rules', '--json', '--', path));
+    const paths = ['src/auth.ts', 'src/auth2.ts', 'src', 'README.md', 'src/missing/deep.ts'];
+    const atBase = world.mnema.rulesAt(base);
+    try {
+      for (const path of paths) {
+        expect(world.mnema.rules(path), `head ${path}`).toEqual(printed(repo, path));
+      }
+      // The attack branch is checked out: its head says the rule was superseded, its base says not.
+      expect(atBase.rules('src/auth.ts')).not.toEqual(world.mnema.rules('src/auth.ts'));
+      const governed = atBase.rules('src/auth.ts') as { asks: { name?: string }[] };
+      expect(governed.asks.map((one) => one.name)).toEqual(['Auth needs a person']);
+    } finally {
+      atBase.close();
+    }
+  }, 120_000);
+
   it('leaves no copy of the base behind', async () => {
     const { repo, base } = theRepository();
     const runnerTemp = join(sandbox, 'runner-temp');
