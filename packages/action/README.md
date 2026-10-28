@@ -18,7 +18,11 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
   `ADR-<n>` and title.
 - **Which changed files a rule addresses.** For each changed file it runs `mnema rules`, and lists
   the files addressed by a rule in force: an accepted decision linked to the path with `governs`,
-  `asks-for-a-person` or `refuses-a-write`, with the rule's name and id.
+  `asks-for-a-person` or `refuses-a-write`, with the rule's name and id. The rules that judge the
+  files are the ones the base commit holds, read from a temporary copy of its `.mnema/` with the same
+  binary, plus those the pull request adds: a pull request that supersedes a rule and edits the file
+  it addressed is still judged by that rule. A base with no record has none to read, and the comment
+  says which of the two it used.
 - **`verify --require=signed --since <base>` as the check.** The Action fails when
   `mnema verify --require=signed --since <base>` exits non-zero, `<base>` being the pull request's
   base commit. Both are flags of `verify`; nothing is added to them here. `--since` is what catches

@@ -174,6 +174,7 @@ where it does, what the plugin hands over there is on the pages that describe th
 | The step the Action's page publishes for an agent in CI, run as written on a clone with an empty home, installs the key the record enrols as the agent and nothing else; a server given only the agent's name then writes facts that both readers read as attested, founds no identity, and is refused a write to a tree the runner cannot enrol it in. A host passing the job's environment to the server it starts is not measured | a test | [`the-agent-ci-step-installs-the-key-the-agent-signs-with.test.ts`](../packages/code/tests/the-agent-ci-step-installs-the-key-the-agent-signs-with.test.ts) |
 | The name of the agent, which is stamped on every event, is screened for secrets like any other free text | a test | [`every-door.test.ts`](../packages/core/src/content/every-door.test.ts) |
 | The Action fails a pull request whose record was cut back to an earlier state that is honest in every byte, by holding it to the base with `verify --since` | a test | [`run.test.ts`](../packages/action/src/run.test.ts) |
+| The Action fails a pull request that supersedes the rule asking for a person on a file and edits that file, as it fails the edit alone, by judging the files with the rules of the base and not of the head | a test | [`world.test.ts`](../packages/action/src/world.test.ts), [`judge.test.ts`](../packages/action/src/judge.test.ts) |
 
 ## Historical
 

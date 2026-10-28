@@ -118,6 +118,40 @@ export function worldAt(
         }
         return JSON.parse(ran.stdout) as unknown;
       },
+      rulesAt(base) {
+        // Only the record of the commit, taken out into a directory of its own with the same
+        // binary: the rules are read from what the base held, not from what the head checked out.
+        const runnerTemp = env.RUNNER_TEMP ?? process.env.RUNNER_TEMP;
+        const dir = mkdtempSync(join(runnerTemp ?? tmpdir(), 'mnema-base-'));
+        try {
+          const archive = execFileSync('git', ['archive', '--format=tar', base, '--', '.mnema'], {
+            cwd,
+            maxBuffer: MOST_OUTPUT,
+          });
+          execFileSync('tar', ['-x', '-C', dir], { input: archive, maxBuffer: MOST_OUTPUT });
+        } catch (error) {
+          rmSync(dir, { recursive: true, force: true });
+          throw error;
+        }
+        return {
+          rules(path) {
+            const ran = spawnSync(process.execPath, [binary, 'rules', '--json', '--', path], {
+              cwd: dir,
+              encoding: 'utf-8',
+              maxBuffer: MOST_OUTPUT,
+            });
+            if (ran.error !== undefined || ran.status !== 0) {
+              throw new Error(
+                `reading the rules at the base for ${path} failed: ${ran.error?.message ?? ran.stderr.trim()}`,
+              );
+            }
+            return JSON.parse(ran.stdout) as unknown;
+          },
+          close() {
+            rmSync(dir, { recursive: true, force: true });
+          },
+        };
+      },
     },
   };
 }

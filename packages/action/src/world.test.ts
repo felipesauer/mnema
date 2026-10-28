@@ -9,12 +9,13 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from '../../code/tests/support/git-without-maintenance.js';
 import { renderComment } from './comment.js';
+import { judge } from './judge.js';
 import { theMnemaBinary, worldAt } from './world.js';
 
 let sandbox: string;
@@ -93,4 +94,99 @@ describe('the comment over a record whose tails were all deleted', () => {
     },
     60_000,
   );
+});
+
+/** `git` whose output is read, with the same sandbox as `git` above. */
+const gitOut = (cwd: string, ...args: string[]): string =>
+  execFileSync('git', args, {
+    cwd,
+    encoding: 'utf-8',
+    env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
+  }).trim();
+
+describe('a pull request that lifts the rule off the file it edits', () => {
+  /**
+   * A base where accepted rule R asks for a person at src/auth.ts, a branch that supersedes R and
+   * edits the file ("attack"), and one that only edits it ("control").
+   */
+  function theRepository(): { repo: string; base: string } {
+    const repo = join(sandbox, 'repo-auth');
+    const home = join(sandbox, 'home-auth');
+    mkdirSync(join(repo, 'src'), { recursive: true });
+    mkdirSync(home);
+    git(repo, 'init', '-q', '-b', 'main');
+    mnemaAs(home, repo, 'init');
+    writeFileSync(join(repo, 'src', 'auth.ts'), 'export const secret = 1;\n');
+    const said = mnemaAs(home, repo, 'decision', 'record', 'Auth needs a person', 'Sensitive');
+    const old = /[0-9a-f]{8}-[0-9a-f-]{27}/.exec(said)?.[0] as string;
+    mnemaAs(
+      home,
+      repo,
+      'decision',
+      'move',
+      'accept',
+      old,
+      '--note',
+      'Maintainer: auth needs a person',
+    );
+    mnemaAs(home, repo, 'link', old, 'src/auth.ts', '--rel', 'asks-for-a-person');
+    git(repo, 'add', '.mnema', 'src');
+    git(repo, 'commit', '-q', '-m', 'base');
+    const base = gitOut(repo, 'rev-parse', 'HEAD');
+
+    git(repo, 'switch', '-q', '-c', 'control');
+    writeFileSync(join(repo, 'src', 'auth.ts'), 'export const secret = 2;\n');
+    git(repo, 'commit', '-q', '-am', 'edit auth');
+
+    git(repo, 'switch', '-q', 'main');
+    git(repo, 'switch', '-q', '-c', 'attack');
+    const relaxed = mnemaAs(home, repo, 'decision', 'record', 'Auth needs nobody', 'Relaxed');
+    const next = /[0-9a-f]{8}-[0-9a-f-]{27}/.exec(relaxed)?.[0] as string;
+    mnemaAs(home, repo, 'decision', 'move', 'accept', next, '--note', 'Maintainer: relax');
+    mnemaAs(home, repo, 'decision', 'supersede', old, next, '--reason', 'relax the auth rule');
+    writeFileSync(join(repo, 'src', 'auth.ts'), 'export const secret = 2;\n');
+    git(repo, 'add', '.mnema', 'src');
+    git(repo, 'commit', '-q', '-m', 'relax the rule and edit auth');
+    vi.stubEnv('HOME', home);
+    return { repo, base };
+  }
+
+  async function judged(repo: string, base: string, branch: string) {
+    git(repo, 'switch', '-q', branch);
+    let comment = '';
+    const github = {
+      changedFiles: async () => gitOut(repo, 'diff', '--name-only', `${base}..HEAD`).split('\n'),
+      reviews: async () => [],
+      upsertComment: async (body: string) => {
+        comment = body;
+        return 'created';
+      },
+    };
+    const world = worldAt(repo, github as never, { info() {}, warning() {} }, {});
+    const verdict = await judge(world, {
+      baseSha: base,
+      author: 'author',
+      requireApprovalForAsks: true,
+    });
+    return { verdict, comment };
+  }
+
+  it('fails the attack and the control alike, and says where the rules came from', async () => {
+    const { repo, base } = theRepository();
+    const attack = await judged(repo, base, 'attack');
+    expect(attack.verdict.failed, attack.comment).toBe(true);
+    expect(attack.comment).toContain('Rules read at the base');
+    expect(attack.comment).toContain('asks for a person: Auth needs a person');
+    const control = await judged(repo, base, 'control');
+    expect(control.verdict.failed, control.comment).toBe(true);
+  }, 120_000);
+
+  it('leaves no copy of the base behind', async () => {
+    const { repo, base } = theRepository();
+    const runnerTemp = join(sandbox, 'runner-temp');
+    mkdirSync(runnerTemp);
+    vi.stubEnv('RUNNER_TEMP', runnerTemp);
+    await judged(repo, base, 'attack');
+    expect(readdirSync(runnerTemp)).toEqual([]);
+  }, 120_000);
 });

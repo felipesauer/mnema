@@ -17,6 +17,8 @@ export interface Report {
   readonly verification: { readonly passed: boolean; readonly said: string };
   readonly record: WhatItDoes;
   readonly governed: readonly GovernedFile[];
+  /** The base commit the rules were also read at; absent when the base held no record. */
+  readonly rulesFromBase?: string | undefined;
   /** How many changed files were not asked about, when the pull request is larger than the cap. */
   readonly notAsked: number;
   /** Present only when the approval check was switched on. */
@@ -133,6 +135,12 @@ export function renderComment(report: Report): string {
   }
 
   out.push('', '**Changed files a rule in force addresses**', '');
+  out.push(
+    report.rulesFromBase === undefined
+      ? 'Rules read from this pull request: its base holds no record.'
+      : `Rules read at the base (\`${plain(report.rulesFromBase.slice(0, 7))}\`) and from this pull request: a rule the pull request supersedes still governs its files.`,
+    '',
+  );
   if (report.governed.length === 0) {
     out.push('None of the files asked about.');
   } else {
