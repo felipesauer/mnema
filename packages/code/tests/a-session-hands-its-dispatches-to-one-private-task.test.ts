@@ -435,10 +435,11 @@ describe('a swept session that comes back and ends', () => {
       const longAgo = new Date(Date.now() - STALE_AFTER_MS - 60_000);
       utimesSync(old, longAgo, longAgo);
       mirror(dispatch({ session: 'new-session' }));
-      expect(whatTheRecordHolds().tasks.map((task) => task.state).sort()).toEqual([
-        'BLOCKED',
-        'IN_PROGRESS',
-      ]);
+      expect(
+        whatTheRecordHolds()
+          .tasks.map((task) => task.state)
+          .sort(),
+      ).toEqual(['BLOCKED', 'IN_PROGRESS']);
       expect(readJournal(old)?.handedOver?.swept).toBe(true);
       const done = mirror(theEnd('old-session'));
       expect(done.notes).toEqual([]);
@@ -450,10 +451,11 @@ describe('a swept session that comes back and ends', () => {
       expect(readJournal(old)?.handedOver?.swept).toBeUndefined();
       // A second end finds nothing left to do.
       expect(mirror(theEnd('old-session')).notes).toEqual([]);
-      expect(whatTheRecordHolds().tasks.map((task) => task.state).sort()).toEqual([
-        'DONE',
-        'IN_PROGRESS',
-      ]);
+      expect(
+        whatTheRecordHolds()
+          .tasks.map((task) => task.state)
+          .sort(),
+      ).toEqual(['DONE', 'IN_PROGRESS']);
     },
     WAITS_ON_WRITES,
   );
