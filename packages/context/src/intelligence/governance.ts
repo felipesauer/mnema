@@ -116,7 +116,13 @@ import {
   type Scope,
   type SearchKind,
 } from '@mnema/core';
-import { type Acceptance, acceptances, decisionsInForce } from '../context/decisions.js';
+import {
+  type Acceptance,
+  acceptances,
+  decisionsInForce,
+  type NamedDecision,
+  replacements,
+} from '../context/decisions.js';
 import { originOf, type RecordBody, readRecord } from '../context/search.js';
 import { adoptedSkills } from '../context/skills.js';
 import type { InheritedFrom, ScopedCache } from '../sources.js';
@@ -177,6 +183,11 @@ export interface AddressedRule {
    * accepted.
    */
   readonly acceptance?: Acceptance;
+  /**
+   * The decision this rule replaced, named as every other door names it, when it replaced one.
+   * Absent for a rule that replaced nothing, and for every other kind.
+   */
+  readonly supersedes?: NamedDecision;
   /**
    * The repository and the commit whose record ASSERTS THIS ADDRESS, when it is the record this
    * project inherits rather than one of its own trees. Absent for every address the project's
@@ -439,10 +450,11 @@ function addressesUnder(
   const found: Addressed[] = [];
   // ONCE PER WALK, not once per edge: who accepted is read over every decision of the trees.
   const accepted = acceptances(sources.map((source) => source.cache));
+  const replaced = replacements(sources.map((source) => source.cache));
   for (const source of sources) {
     if (!governsThisProject(source, query.root)) continue;
     for (const edge of source.cache.linksByRelation(relation)) {
-      found.push(describe(sources, source, edge, query, accepted));
+      found.push(describe(sources, source, edge, query, accepted, replaced));
     }
   }
   // THREE DISJOINT CLASSES, and the disjointness is what keeps the numbers from double
@@ -579,6 +591,7 @@ function describe(
   edge: LinkEdge,
   query: GovernanceQuery,
   accepted: ReadonlyMap<string, Acceptance>,
+  replaced: ReadonlyMap<string, NamedDecision>,
 ): Addressed {
   const segments = relativeSegments(edge.target, query.root);
   const record = readRecord(sources, edge.subject);
@@ -599,6 +612,9 @@ function describe(
       ...nameAndState(record),
       ...(accepted.has(edge.subject)
         ? { acceptance: accepted.get(edge.subject) as Acceptance }
+        : {}),
+      ...(replaced.has(edge.subject)
+        ? { supersedes: replaced.get(edge.subject) as NamedDecision }
         : {}),
       // WHO WROTE THE ADDRESS, and not who holds the rule: see {@link AddressedRule.inherited}.
       ...(asserted.inherited !== undefined ? { inherited: asserted.inherited } : {}),
@@ -809,6 +825,8 @@ export interface PushedRule {
    * it as the opening document does, so a rule is not told in one voice here and another there.
    */
   readonly acceptance?: Acceptance;
+  /** The decision this rule replaced, named; absent when it replaced none. */
+  readonly supersedes?: NamedDecision;
   /**
    * Where the record says the rule CAME FROM: the target of every `derived-from` edge
    * the rule's own tree asserts about it. Absent when it asserts none, which is the
@@ -1039,6 +1057,7 @@ function inForceOf(
           address: rule.address ?? rule.recorded,
           travels: rule.scope === TRAVELS_TO_A_CLONE,
           ...(rule.acceptance !== undefined ? { acceptance: rule.acceptance } : {}),
+          ...(rule.supersedes !== undefined ? { supersedes: rule.supersedes } : {}),
           // Absent, never empty: a rule decided here has no provenance, and an empty
           // list would give the line a field with nothing in it.
           ...(origin.length > 0 ? { origin } : {}),

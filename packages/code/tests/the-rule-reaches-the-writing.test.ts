@@ -52,7 +52,7 @@ import { tellsWhatToDo } from '../src/record-framing.js';
 
 /** The clause that says who accepted a rule: held where the lines say it, ignored where they are not about it. */
 const bare = (line: string | undefined): string | undefined =>
-  line?.replace(/ · accepted by mnid:[0-9a-f]{8} \(a person\)$/, '');
+  line?.replace(/ · accepted by mnid:[0-9a-f]{8} \(a person\)( · supersedes .*)?$/, '');
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
