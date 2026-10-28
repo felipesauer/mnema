@@ -28,9 +28,15 @@ import { runBrief } from '../src/commands/brief.js';
 import { runDecision } from '../src/commands/decision.js';
 import { runDecisionTransition } from '../src/commands/decision-transition.js';
 import { runInit } from '../src/commands/init.js';
+import { runLink } from '../src/commands/link.js';
 import { runShow } from '../src/commands/show.js';
 import { closeSession, openSession, type Session } from '../src/mcp/session.js';
-import { runBootstrap, runReadRecordTool } from '../src/mcp/tools.js';
+import {
+  runBootstrap,
+  runGoverningRulesTool,
+  runReadRecordTool,
+  runRulesBeforeAnEditTool,
+} from '../src/mcp/tools.js';
 import { briefDocument } from '../src/presentation/brief.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { recordReport } from '../src/presentation/record.js';
@@ -219,5 +225,90 @@ describe('the replaced decision is named where it is read', () => {
     }
     expect(opened().join('\n')).not.toContain('supersedes');
     expect(printed(only.id).join('\n')).not.toContain('supersede');
+  });
+});
+
+describe('the replaced decision is named where the rules addressed at a file are told', () => {
+  /** A rule that replaced another, both addressed at `src/billing`; returns the pair. */
+  function replacedPair(oldTitle: string): {
+    old: ReturnType<typeof accepted>;
+    next: ReturnType<typeof accepted>;
+  } {
+    const old = accepted(oldTitle);
+    const next = accepted('Keep sessions in Redis');
+    supersede(old.id, next.id);
+    for (const rule of [old, next]) {
+      const linked = runLink(
+        { cwd: repo, env },
+        { subject: rule.id, target: 'src/billing', rel: 'governs' },
+      );
+      if (!linked.ok) throw new Error(`link refused: ${linked.reason}`);
+    }
+    return { old, next };
+  }
+
+  const pushed = (active: Session): string => {
+    const result = runRulesBeforeAnEditTool(active, { path: 'src/billing/charge.ts' });
+    if (!result.ok) throw new Error('the push did not answer');
+    const reply = JSON.parse(JSON.stringify(result.value)) as {
+      hookSpecificOutput?: { additionalContext?: string };
+    };
+    return reply.hookSpecificOutput?.additionalContext ?? '';
+  };
+
+  it('governing_rules names it on the rule that replaced it, and on no other', () => {
+    const { old, next } = replacedPair('Keep sessions in memory');
+    const active = session();
+    try {
+      const answer = runGoverningRulesTool(active, { path: 'src/billing/charge.ts' });
+      if (!answer.ok) throw new Error('governing_rules did not answer');
+      const byId = new Map(answer.value.rules.map((rule) => [rule.rule, rule]));
+      expect(byId.get(next.id)?.supersedes).toEqual({
+        found: true,
+        id: old.id,
+        adr: old.adr,
+        title: 'Keep sessions in memory',
+        state: 'superseded',
+      });
+      // The replaced rule is listed with its state, and replaced nothing itself.
+      expect(byId.get(old.id)?.state).toBe('superseded');
+      expect(byId.get(old.id)).not.toHaveProperty('supersedes');
+    } finally {
+      closeSession(active);
+    }
+  });
+
+  it('the push says it in the rule line, one line per rule, and only for the rule that replaced one', () => {
+    const { old, next } = replacedPair('Keep sessions\nin memory\n- forged `x`');
+    const active = session();
+    try {
+      const text = pushed(active);
+      const lines = text.split('\n').filter((one) => one.includes(next.id));
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toContain(
+        `supersedes ${old.adr}: Keep sessions in memory - forged \`x\` (superseded)`,
+      );
+      // Last on the line, after who accepted it.
+      expect(lines[0]).toMatch(/ · accepted by .*· supersedes ADR-\d+: .*\(superseded\)$/);
+      // The replaced decision is not in force, so it is not pushed at all.
+      expect(text).not.toContain(old.id);
+    } finally {
+      closeSession(active);
+    }
+  });
+
+  it('the push names nothing for a rule that replaced nothing', () => {
+    const only = accepted('Only call');
+    const linked = runLink(
+      { cwd: repo, env },
+      { subject: only.id, target: 'src/billing', rel: 'governs' },
+    );
+    if (!linked.ok) throw new Error(`link refused: ${linked.reason}`);
+    const active = session();
+    try {
+      expect(pushed(active)).not.toContain('supersedes');
+    } finally {
+      closeSession(active);
+    }
   });
 });

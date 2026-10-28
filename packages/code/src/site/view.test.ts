@@ -207,3 +207,33 @@ describe('the lists that are not cards', () => {
     );
   });
 });
+
+describe('a decision that replaced another, or was replaced', () => {
+  const old = decision({
+    id: 'd-0',
+    adr: 'ADR-0',
+    title: 'Keep money in floats\nwith rounding',
+    state: 'superseded',
+    inForce: false,
+    supersededBy: 'd-1',
+  });
+  const next = decision({ supersedes: 'd-0' });
+  const card = (id: string, decisions: PageDecision[]) =>
+    listViews(model(decisions)).decisions.find((one) => one.node.attrs.id === id)?.node;
+  const fields = (node: NonNullable<ReturnType<typeof card>>) =>
+    Object.fromEntries(fieldsOf(node).map((field) => [field.name, field.text]));
+
+  it('names the other end with its title and state, in the words the other doors use', () => {
+    const replacing = fields(card('d-1', [old, next]) as never);
+    expect(replacing.supersedes).toBe('ADR-0');
+    expect(replacing['supersedes-named']).toBe(': Keep money in floats with rounding (superseded)');
+    const replaced = fields(card('d-0', [old, next]) as never);
+    expect(replaced['superseded-by-named']).toBe(': Keep money in cents (accepted)');
+  });
+
+  it('says so when the page does not hold the other end', () => {
+    const alone = fields(card('d-1', [next]) as never);
+    expect(alone.supersedes).toBe('d-0');
+    expect(alone['supersedes-named']).toBe('(not in the trees read)');
+  });
+});

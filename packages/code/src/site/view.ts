@@ -152,11 +152,22 @@ function decisionView(
   known: ReadonlyMap<string, PageDecision>,
   shown: Set<string>,
 ): VNode {
-  const reference = (field: string, id: string): VNode => {
+  const reference = (field: string, id: string): VKid[] => {
     const other = known.get(id);
     return other === undefined
-      ? h('code', { 'data-field': field }, line(id))
-      : h('a', { href: `#${id}`, 'data-field': field }, line(other.adr));
+      ? [
+          h('code', { 'data-field': field }, line(id)),
+          ' ',
+          h('span', { 'data-field': `${field}-named` }, '(not in the trees read)'),
+        ]
+      : [
+          h('a', { href: `#${id}`, 'data-field': field }, line(other.adr)),
+          h(
+            'span',
+            { 'data-field': `${field}-named` },
+            `: ${line(other.title)} (${line(other.state)})`,
+          ),
+        ];
   };
   const { who, by } = actorsOf(d);
   return h(
