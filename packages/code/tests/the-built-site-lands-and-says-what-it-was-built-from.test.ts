@@ -503,7 +503,12 @@ when('the built site', () => {
       /<figure class="the-recording[^"]*"[^>]*>[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/.exec(
         landing,
       )?.[1] ?? '';
-    expect(readme, "the caption is the README's").toContain(
+    // The README's own caption has links in it, so what is compared is the words, with the tags out.
+    const cell = new RegExp(
+      `<img src="${RECORDING.replace(/[./]/g, '\\$&')}"[^>]*><br><sub>([\\s\\S]*?)</sub>`,
+    ).exec(readme)?.[1];
+    expect(cell, "the README has the recording's cell").toBeDefined();
+    expect(textOf(cell ?? ''), "the caption is the README's").toContain(
       textOf(caption).split(' Recorded')[0] ?? '?',
     );
     for (const other of ['404.html', 'docs/install/index.html']) {
