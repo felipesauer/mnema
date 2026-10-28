@@ -20,6 +20,8 @@ export interface RuleHit {
 /** A changed file and the rules in force that address it, by what the rule does. */
 export interface GovernedFile {
   readonly path: string;
+  /** Set when the file is one end of a rename: says which end it is and where the other is. */
+  readonly rename?: string;
   readonly governs: readonly RuleHit[];
   readonly asks: readonly RuleHit[];
   readonly refuses: readonly RuleHit[];
@@ -68,7 +70,7 @@ export function bothReadings(a: GovernedFile, b: GovernedFile): GovernedFile {
     ...y.filter((hit) => !x.some((seen) => seen.id === hit.id)),
   ];
   return {
-    path: a.path,
+    ...a,
     governs: once(a.governs, b.governs),
     asks: once(a.asks, b.asks),
     refuses: once(a.refuses, b.refuses),

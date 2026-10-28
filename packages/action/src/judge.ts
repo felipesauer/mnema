@@ -102,7 +102,18 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
   const head = textsOf(headTexts);
   const record = whatItDoes(eventsAdded(textsOf(baseTexts), head), head);
 
-  const changed = (await world.github.changedFiles()).filter((path) => !path.startsWith('.mnema/'));
+  // A file renamed leaves one path and takes another; the rules of both judge it, so a rename
+  // cannot carry a protected file out from under its rule.
+  const changed = (await world.github.changedFiles())
+    .flatMap(({ path, renamedFrom }) =>
+      renamedFrom === undefined
+        ? [{ path }]
+        : [
+            { path, rename: `renamed from ${renamedFrom}` },
+            { path: renamedFrom, rename: `renamed to ${path}` },
+          ],
+    )
+    .filter(({ path }) => !path.startsWith('.mnema/'));
   const asked = changed.slice(0, MOST_ASKED);
   // The rules that judge the files are the base's, so a pull request cannot lift a rule off the
   // very files it edits; a rule it adds counts as well, since it can only add protection. A base
@@ -111,11 +122,11 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
   let governed: GovernedFile[];
   try {
     governed = asked
-      .map((path) => {
+      .map(({ path, rename }) => {
         const here = rulesInForce(path, world.mnema.rules(path));
-        return atBase === undefined
-          ? here
-          : bothReadings(rulesInForce(path, atBase.rules(path)), here);
+        const both =
+          atBase === undefined ? here : bothReadings(rulesInForce(path, atBase.rules(path)), here);
+        return rename === undefined ? both : { ...both, rename };
       })
       .filter(isGoverned);
   } finally {

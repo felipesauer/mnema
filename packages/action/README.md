@@ -21,7 +21,7 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
   `asks-for-a-person` or `refuses-a-write`, with the rule's name and id. The rules that judge the
   files are the ones the base commit holds, read from a temporary copy of its `.mnema/` with the same
   binary, plus those the pull request adds: a pull request that supersedes a rule and edits the file
-  it addressed is still judged by that rule. A base with no record has none to read, and the comment
+  it addressed is still judged by that rule. A renamed file is asked about under both paths, the old and the new, and the comment says which end is which. A base with no record has none to read, and the comment
   says which of the two it used.
 - **`verify --require=signed --since <base>` as the check.** The Action fails when
   `mnema verify --require=signed --since <base>` exits non-zero, `<base>` being the pull request's

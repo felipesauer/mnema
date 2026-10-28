@@ -137,6 +137,24 @@ describe('a pull request that lifts the rule off the file it edits', () => {
     git(repo, 'switch', '-q', '-c', 'control');
     writeFileSync(join(repo, 'src', 'auth.ts'), 'export const secret = 2;\n');
     git(repo, 'commit', '-q', '-am', 'edit auth');
+    git(repo, 'switch', '-q', 'main');
+    git(repo, 'switch', '-q', '-c', 'moved');
+    git(repo, 'mv', 'src/auth.ts', 'src/auth2.ts');
+    git(repo, 'commit', '-q', '-m', 'move auth');
+    git(repo, 'switch', '-q', 'main');
+    git(repo, 'switch', '-q', '-c', 'moved-and-edited');
+    git(repo, 'mv', 'src/auth.ts', 'src/auth2.ts');
+    writeFileSync(
+      join(repo, 'src', 'auth2.ts'),
+      'export const secret = 1;\nexport const more = 2;\n',
+    );
+    git(repo, 'add', 'src');
+    git(repo, 'commit', '-q', '-m', 'move and edit auth');
+    git(repo, 'switch', '-q', 'main');
+    git(repo, 'switch', '-q', '-c', 'deleted');
+    git(repo, 'rm', '-q', 'src/auth.ts');
+    git(repo, 'commit', '-q', '-m', 'delete auth');
+    git(repo, 'switch', '-q', 'main');
 
     git(repo, 'switch', '-q', 'main');
     git(repo, 'switch', '-q', '-c', 'attack');
@@ -155,7 +173,15 @@ describe('a pull request that lifts the rule off the file it edits', () => {
     git(repo, 'switch', '-q', branch);
     let comment = '';
     const github = {
-      changedFiles: async () => gitOut(repo, 'diff', '--name-only', `${base}..HEAD`).split('\n'),
+      changedFiles: async () =>
+        gitOut(repo, 'diff', '-M', '--name-status', `${base}..HEAD`)
+          .split('\n')
+          .map((line) => line.split('\t'))
+          .map(([status, a, b]) =>
+            status?.startsWith('R')
+              ? { path: b as string, renamedFrom: a as string }
+              : { path: a as string },
+          ),
       reviews: async () => [],
       upsertComment: async (body: string) => {
         comment = body;
@@ -179,6 +205,17 @@ describe('a pull request that lifts the rule off the file it edits', () => {
     expect(attack.comment).toContain('asks for a person: Auth needs a person');
     const control = await judged(repo, base, 'control');
     expect(control.verdict.failed, control.comment).toBe(true);
+  }, 120_000);
+
+  it('fails a rename of the protected file, edited or not, and its removal', async () => {
+    const { repo, base } = theRepository();
+    for (const branch of ['moved', 'moved-and-edited', 'deleted']) {
+      const run = await judged(repo, base, branch);
+      expect(run.verdict.failed, `${branch}: ${run.comment}`).toBe(true);
+      expect(run.comment, branch).toContain('asks for a person: Auth needs a person');
+    }
+    const renamed = await judged(repo, base, 'moved-and-edited');
+    expect(renamed.comment).toContain('`src/auth.ts` (renamed to src/auth2.ts)');
   }, 120_000);
 
   it('leaves no copy of the base behind', async () => {

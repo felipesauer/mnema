@@ -29,7 +29,7 @@ interface Seen {
 function worldWith(
   over: {
     verify?: { passed: boolean; said: string };
-    files?: string[];
+    files?: (string | { path: string; renamedFrom?: string })[];
     reviews?: { user: string; state: string }[];
     rules?: Record<string, unknown>;
     /** What `mnema rules` answers over the base commit; nothing addresses any file by default. */
@@ -79,7 +79,8 @@ function worldWith(
       },
     },
     github: {
-      changedFiles: async () => over.files ?? [],
+      changedFiles: async () =>
+        (over.files ?? []).map((file) => (typeof file === 'string' ? { path: file } : file)),
       reviews: async () => over.reviews ?? [],
       upsertComment: async (body, onlyIfThere) => {
         if (over.commentFails) throw new Error('GitHub answered 403');
@@ -271,6 +272,40 @@ describe('judge', () => {
       expect(seen.readAt).toEqual([pr.baseSha]);
       expect(seen.comments[0]?.body).toContain('asks for a person: rule d1');
       expect(seen.comments[0]?.body).toContain('Rules read at the base (`abc`)');
+    });
+
+    it('fails a rename that carries the protected file to a new path', async () => {
+      const { world, seen } = worldWith({
+        files: [{ path: 'src/b.ts', renamedFrom: 'src/a.ts' }],
+        rules: {},
+        baseRules: asking,
+        reviews: [],
+      });
+      expect((await judge(world, on)).failed).toBe(true);
+      expect(seen.asked).toEqual(['src/b.ts', 'src/a.ts']);
+      expect(seen.comments[0]?.body).toContain(
+        '`src/a.ts` (renamed to src/b.ts): asks for a person: rule d1',
+      );
+    });
+
+    it('fails the removal of a protected file, and names the file a rename moves into one', async () => {
+      const removed = worldWith({
+        files: ['src/a.ts'],
+        rules: {},
+        baseRules: asking,
+        reviews: [],
+      });
+      expect((await judge(removed.world, on)).failed).toBe(true);
+
+      const into = worldWith({
+        files: [{ path: 'src/a.ts', renamedFrom: 'src/old.ts' }],
+        rules: {},
+        baseRules: asking,
+      });
+      expect((await judge(into.world, on)).failed).toBe(true);
+      expect(into.seen.comments[0]?.body).toContain(
+        '`src/a.ts` (renamed from src/old.ts): asks for a person: rule d1',
+      );
     });
 
     it('fails the control that only edits the file', async () => {

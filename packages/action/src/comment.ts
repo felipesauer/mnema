@@ -77,9 +77,13 @@ function decisionLine(decision: DecisionMoved): string {
     : `- ${label}: ${plain(decision.title)} (${moved})`;
 }
 
+/** A file's name for the reader; one end of a rename says where the other end is. */
+const named = (file: GovernedFile): string =>
+  `\`${plain(file.path)}\`${file.rename === undefined ? '' : ` (${plain(file.rename)})`}`;
+
 function governedLines(file: GovernedFile): string[] {
   const by = (verb: string, hits: readonly RuleHit[]): string[] =>
-    hits.map((hit) => `- \`${plain(file.path)}\`: ${verb} ${rule(hit)}`);
+    hits.map((hit) => `- ${named(file)}: ${verb} ${rule(hit)}`);
   return [
     ...by('governed by', file.governs),
     ...by('asks for a person:', file.asks),
@@ -163,7 +167,7 @@ export function renderComment(report: Report): string {
       out.push(
         'No reviewer other than the author has approved, and these files ask for a person:',
         '',
-        ...report.approval.asking.map((file) => `- \`${plain(file.path)}\``),
+        ...report.approval.asking.map((file) => `- ${named(file)}`),
       );
     }
   }
