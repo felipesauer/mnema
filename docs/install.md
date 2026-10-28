@@ -30,6 +30,42 @@ export PATH="$HOME/.local/bin:$PATH"     # add this line to your shell's startup
 To update, run the same install again. To run the `main` branch instead of the published version,
 see [Building it from source](build-from-source.md).
 
+## Check it
+
+```sh
+mnema --version
+mnema doctor
+```
+
+`doctor` says, one line to a finding and with what to do about it, whether the first `mnema` on
+your `PATH` is the one you meant and whether the `node` it uses takes it. It writes nothing.
+[Everything it checks](cli-reference.md#is-mnema-set-up-on-this-machine).
+
+## Pin a version
+
+```sh
+npm i -g @mnema/code@0.1.3
+```
+
+To update, run the unpinned install again.
+
+## Where the package came from
+
+Each release of the five packages since 0.1.1 is published from this repository's release workflow,
+with npm provenance (0.1.0 was published by hand and carries none). `npm audit signatures` reads the packages installed in a project, not a global
+install (it fails with `EAUDITGLOBAL`), so check the version you installed in an empty folder:
+
+```sh
+mkdir mnema-check && cd mnema-check && npm init -y > /dev/null
+npm i --ignore-scripts @mnema/code@0.1.3
+npm audit signatures
+```
+
+It prints how many packages have verified registry signatures and how many have verified
+attestations; `npm audit signatures --json --include-attestations` names each, and every
+`@mnema/*` package carries an SLSA provenance attestation. The registry serves one tarball per
+version, so this checks the same package a global install of that version fetches.
+
 ## What is run on Windows and macOS
 
 Every pull request runs one job on `windows-latest` and one on `macos-latest`, each on Node 24.15.0 (the floor)
@@ -115,7 +151,7 @@ waiting for a judgment is on the Visual Studio Marketplace and on Open VSX as `m
 In VS Code and Cursor, the server is the same `mnema mcp`, and the plugin is the same
 one. VS Code's agent reads the Claude Code plugin format, and Cursor's command-line agent
 picks up a plugin installed in Claude Code on the same machine; the per-host details (what
-each one runs, the rules at each edit that are Claude Code's alone, and the pause for a person
+each one runs, the rules at each edit (which Claude Code, Codex, Qwen Code and OpenCode get, and these two do not yet), and the pause for a person
 that reaches VS Code as well) are in the [plugin's page](../plugin/README.md#in-vs-code-and-cursor).
 
 VS Code's agent loads the plugin only from a folder listed in its `chat.pluginLocations` setting,
@@ -248,17 +284,3 @@ pauses one.
 
 Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
 addressed at a file or a directory in that host's own rules format, and says which rules it left out and why.
-
-## Checking an install
-
-`mnema doctor` says, one line to a finding and with what to do about it, whether a `mnema` is
-on the `PATH` and which one, whether the first `node` there takes it, whether the Claude Code plugin is installed and at what version,
-whether the mnema MCP server is declared more than once, and whether a second `mnema` or an npm
-package of that name is installed; whether VS Code's `settings.json` tells its agent where the
-plugin is; which projects of `~/.claude.json` (the one inside `$CLAUDE_CONFIG_DIR` when that is set) still declare the server, including ones whose
-directory no longer exists (`claude mcp remove` does not reach those, and `doctor` says what to
-delete); and, for each agent key this machine holds, in which of the project's committed tree, its private
-tree and the machine's global one the record enrols it, retired it or does not name it and, on a machine that holds an
-agent key already, which agents the files this plugin generates for each host ask for that no key is held under,
-whether `MNEMA_AGENT_KEY` in the environment of the `doctor` itself names one this machine does not hold, and whether
-your own key is still unprotected while an agent key exists. Asked alone it writes nothing and does not ask the registry.

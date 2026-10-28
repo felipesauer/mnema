@@ -8,6 +8,11 @@
 <h3>mnema is the decision record for AI coding agents.</h3>
 
 <p>
+Who decided this, and why? What was turned down? Has it changed since? When an agent settles a
+choice in a chat that ends, nothing answers. mnema keeps the answer in the repository.
+</p>
+
+<p>
 Your decisions, handed to your agents' sessions and held at the edits they govern: append-only and signed in the repository, and checkable by anyone.
 </p>
 
@@ -71,21 +76,27 @@ was not changed since it was signed. What is measured, and what is not, is on [t
 
 ```sh
 npm i -g @mnema/code                              # the binary
-claude plugin marketplace add felipesauer/mnema   # the plugin hands each session the record
-claude plugin install mnema@mnema
-cd your-repository && mnema init
+cd your-repository
+mnema init                                        # founds the record in .mnema/
 mnema decision record "Keep money as integer cents" "Float sums drift; cents are exact."
-mnema decision move accept <id> --note "Agreed in review."   # a decision enters proposed; accepting puts it in force
-mnema verify   # reads the signed record, whatever the decisions' states; one line saying it is intact is the green
+mnema decision move accept ADR-1 --note "Agreed in review."   # a decision enters proposed; accepting puts it in force
+mnema link ADR-1 src/billing --rel refuses-a-write             # the rule, addressed at a path
+mnema verify   # reads the signed record; one line saying it is intact is the green
 ```
 
-At a terminal, `mnema decision review` goes through what awaits a judgement one by one, with no id
-to copy. `mnema init` also leaves a `README.md` and an `.editorconfig` in `.mnema/`, adds `.mnema/`
-to the `.prettierignore` where the repository has one or declares prettier, and writes the mnema
+No agent has run yet: that is the record, a rule in force, and the proof. `ADR-1` names the first
+decision of a new record. To hand the record to an agent, install the plugin for your host; in
+Claude Code:
+
+```sh
+claude plugin marketplace add felipesauer/mnema
+claude plugin install mnema@mnema
+```
+
+Every other host is on [the install page](docs/install.md). `mnema init` also writes the mnema
 instructions into `AGENTS.md` and the other files agent hosts read, naming each
-(`mnema instructions --remove` takes them out). The whole install, the
-other hosts and the first record, line by line, are in [`docs/install.md`](docs/install.md) and
-[`docs/first-record.md`](docs/first-record.md).
+(`mnema instructions --remove` takes them out). The first record, step by step, is
+[Your first record](docs/first-record.md).
 
 ## How it works
 
@@ -116,14 +127,14 @@ of a session, (c) a refusal before a write, (d) a pause for a person.
 
 | | Host | Rung | What it gets | Install |
 | :---: | :--- | :---: | :--- | :--- |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/claudecode-color.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/claudecode-color.png" width="24" height="24" alt="Claude Code"></picture> | **Claude Code**<br><sub>Anthropic · terminal and editors</sub> | **(d)** | MCP server · rules file · opening · refusal · pause | [Plugin](docs/install.md#claude-code) |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/claudecode-color.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/claudecode-color.png" width="24" height="24" alt="Claude Code"></picture> | **Claude Code**<br><sub>Anthropic · terminal and editors</sub> | **(d)** | MCP server · rules file · opening · refusal · pause · rules at an edit | [Plugin](docs/install.md#claude-code) |
 | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/vscode/vscode-original.svg" width="24" height="24" alt="VS Code"> | **VS Code**<br><sub>Microsoft · the agent of the editor</sub> | **(d)** | rules file · refusal · pause<br><sub>MCP server · opening: read once</sub> | [Plugin](docs/install.md#vs-code-and-cursor) |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/cursor.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/cursor.png" width="24" height="24" alt="Cursor CLI"></picture> | **Cursor CLI**<br><sub>Cursor · command line</sub> | **(c)** | rules file<br><sub>MCP server · opening · refusal: read once</sub> | [Plugin](docs/install.md#vs-code-and-cursor) |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/codex-color.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/codex-color.png" width="24" height="24" alt="Codex"></picture> | **Codex**<br><sub>OpenAI · command line</sub> | **(c)** | MCP server · opening · refusal<br><sub>rules file: documented, not measured</sub> | [Plugin](docs/install.md#codex) |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/codex-color.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/codex-color.png" width="24" height="24" alt="Codex"></picture> | **Codex**<br><sub>OpenAI · command line</sub> | **(c)** | MCP server · opening · refusal · rules at an edit<br><sub>rules file: documented, not measured</sub> | [Plugin](docs/install.md#codex) |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/githubcopilot.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/githubcopilot.png" width="24" height="24" alt="Copilot CLI"></picture> | **Copilot CLI**<br><sub>GitHub · command line</sub> | **(d)** | MCP server · opening · refusal · pause<br><sub>rules file: documented, not measured</sub> | [Plugin](docs/install.md#github-copilot-cli) |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/opencode.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/opencode.png" width="24" height="24" alt="OpenCode"></picture> | **OpenCode**<br><sub>Anomaly · command line</sub> | **(c)** | MCP server · opening · refusal<br><sub>rules file: documented, not measured</sub> | [Plugin](docs/install.md#opencode) |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/opencode.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/opencode.png" width="24" height="24" alt="OpenCode"></picture> | **OpenCode**<br><sub>Anomaly · command line</sub> | **(c)** | MCP server · opening · refusal · rules at an edit<br><sub>rules file: documented, not measured</sub> | [Plugin](docs/install.md#opencode) |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/geminicli-color.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/geminicli-color.png" width="24" height="24" alt="Gemini CLI"></picture> | **Gemini CLI**<br><sub>Google · command line</sub> | **(c)** | MCP server · opening · refusal<br><sub>rules file: documented, not measured</sub> | [Plugin](docs/install.md#gemini-cli) |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/qwen-color.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/qwen-color.png" width="24" height="24" alt="Qwen Code"></picture> | **Qwen Code**<br><sub>Qwen · command line</sub> | **(c)** | MCP server · opening · refusal<br><sub>rules file: documented, not measured</sub> | [MCP server](docs/install.md#any-other-host-with-an-mcp-client) |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/qwen-color.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/qwen-color.png" width="24" height="24" alt="Qwen Code"></picture> | **Qwen Code**<br><sub>Qwen · command line</sub> | **(c)** | MCP server · opening · refusal · rules at an edit<br><sub>rules file: documented, not measured</sub> | [MCP server](docs/install.md#any-other-host-with-an-mcp-client) |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/cursor.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/cursor.png" width="24" height="24" alt="Cursor"></picture> | **Cursor**<br><sub>Cursor · editor</sub> | **(a)** | MCP server · rules file<br><sub>documented, not measured</sub> | [MCP server](docs/install.md#any-other-host-with-an-mcp-client) |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/dark/antigravity-color.png"><img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1/light/antigravity-color.png" width="24" height="24" alt="Antigravity CLI"></picture> | **Antigravity CLI**<br><sub>Google · command line (`agy`)</sub> | **(a)** | MCP server · rules file<br><sub>documented, not measured</sub> | [MCP server](docs/install.md#any-other-host-with-an-mcp-client) |
 | <img src="https://raw.githubusercontent.com/Factory-AI/factory/c6ea47082007a32a8a76bb99da42e387565f119a/docs/favicon.svg" width="24" height="24" alt="Factory Droid"> | **Factory Droid**<br><sub>Factory · command line</sub> | **(a)** | MCP server · rules file<br><sub>documented, not measured</sub> | [MCP server](docs/install.md#any-other-host-with-an-mcp-client) |

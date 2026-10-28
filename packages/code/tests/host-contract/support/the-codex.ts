@@ -439,6 +439,27 @@ export function theResultOfTheCall(session: TheCodexSession): string | undefined
 }
 
 /**
+ * What the host put in the conversation FROM the item of the call on, in the request after it: the
+ * output of the call and every item that follows the call item before it. Codex records what a
+ * `PreToolUse` hook said as an item of its own (a message of the developer) between the call and its
+ * output, so the output alone does not see it, and the request as a whole would see what the session
+ * opened with: this reads from the call on and nothing before it.
+ */
+export function whatCameAfterTheCall(session: TheCodexSession): string | undefined {
+  for (const request of session.requests) {
+    const input = Array.isArray(request.body['input']) ? (request.body['input'] as unknown[]) : [];
+    const call = input.findIndex(
+      (item) => (item as { type?: unknown } | null)?.type === 'custom_tool_call',
+    );
+    const answered = input.some(
+      (item) => (item as { type?: unknown } | null)?.type === 'custom_tool_call_output',
+    );
+    if (call >= 0 && answered) return JSON.stringify(input.slice(call + 1));
+  }
+  return undefined;
+}
+
+/**
  * What the first request's tool search says it can reach, where Codex lists the MCP servers it
  * connected, each with the instructions its handshake gave, and defers their tools behind the
  * search for a model of the catalog.

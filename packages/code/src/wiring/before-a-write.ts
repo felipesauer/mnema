@@ -4,7 +4,9 @@
  * `mnema before-a-write --host <host>` reads the payload a host hands a hook before a tool runs,
  * on stdin, and prints the reply that host reads, on stdout: `deny`, citing the rules, when a rule
  * of the record refuses a write at a path it touches; `ask` when one asks for a person and the
- * host holds a write for one (Cursor's agent does not); and `{}` otherwise. It is the
+ * host holds a write for one (Cursor's agent does not); and `{}` otherwise, but for the hosts that
+ * take the rules beside a write that goes through (Codex, Qwen Code, OpenCode), which get them as
+ * context. It is the
  * per-edit gate for a host whose hooks are processes; the command is `commands/before-a-write.ts`.
  *
  * A HOST RUNS IT, NOT A PERSON, and two things follow. It exits 0 on every outcome that is not a
@@ -54,6 +56,12 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
         '  printed. They can be',
         '  switched off with `mnema switch off edit-refuses-a-write` and',
         '  `mnema switch off edit-asks-a-person`.',
+        '',
+        '  For --host codex, qwen and opencode, a write that goes through also gets the rules',
+        '  addressed at the paths it touches, as `additionalContext` in the same reply, under the',
+        "  host's ceiling; `mnema switch off edit-rules-push` stops that. It needs the",
+        '  `session_id` of the payload: the first reply of a session records one',
+        '  `channel.served` and the others none, and a payload without one is handed no rules.',
         '',
         '  Where a line of the record is one this mnema cannot read, every write in',
         '  the project is answered `deny`, naming the tree and the line, and nothing',

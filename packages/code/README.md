@@ -58,7 +58,7 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
   one tree of the project retired is retired in the others it reads: what the key signed there
   after the retirement is refused, and not counted as attested.
 - **A brief and a plugin** that hand the decisions in force to an agent's session, and the rules
-  addressed at a file beside a write to it. In Claude Code the plugin also hands the brief to a
+  addressed at a file beside a write to it (in Claude Code, Codex, Qwen Code and OpenCode). In Claude Code the plugin also hands the brief to a
   subagent as it starts, and, after a question the agent asked the person is answered, names the
   tool that records the choice. After a write there, a note of Claude Code's own memory for this
   project is copied into this machine's private tree, once per content (never the index
@@ -113,6 +113,8 @@ long form of each row is in [the reference](https://github.com/felipesauer/mnema
 ```sh
 npm i -g @mnema/code
 ```
+
+Then `mnema doctor` says whether the `mnema` your shell runs is the one you meant. [Where the package came from](https://github.com/felipesauer/mnema/blob/main/docs/install.md#where-the-package-came-from) says how to check the published version against its npm provenance.
 
 [The install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md) has the steps for a Node installed by
 the system. Requires Node 24.15.0 or a later 24, or 26.0.0 or later; the package is

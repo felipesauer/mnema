@@ -1354,6 +1354,12 @@ $ mnema before-a-write --help
 |   switched off with `mnema switch off edit-refuses-a-write` and
 |   `mnema switch off edit-asks-a-person`.
 |
+|   For --host codex, qwen and opencode, a write that goes through also gets the rules
+|   addressed at the paths it touches, as `additionalContext` in the same reply, under the
+|   host's ceiling; `mnema switch off edit-rules-push` stops that. It needs the
+|   `session_id` of the payload: the first reply of a session records one
+|   `channel.served` and the others none, and a payload without one is handed no rules.
+|
 |   Where a line of the record is one this mnema cannot read, every write in
 |   the project is answered `deny`, naming the tree and the line, and nothing
 |   is recorded: the rules that apply cannot be known. A line of the global

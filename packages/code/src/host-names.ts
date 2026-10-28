@@ -6,7 +6,9 @@
  * not a ladder every host climbs in order. (a) the MCP server and a rules file, (b) the opening
  * of a session, (c) a refusal before a write, (d) a pause for a person, which only a host that
  * holds a write for an `ask` can give. Each is a {@link Cell} of its own, so a host that refuses
- * and does not open is a row that says exactly that.
+ * and does not open is a row that says exactly that. Beside the four, and not a fifth rung, is the
+ * capability `pushes`: the rules of the record handed to the model beside a write that goes
+ * through (a host can refuse and ask without it, and push without either).
  *
  * EVERY CELL SAYS HOW IT IS KNOWN, in the three words `docs/evidence.md` uses: held by a test of
  * this tree, read once against the real host and not held yet, or documented by the host and not
@@ -23,7 +25,7 @@
  */
 
 /** One capability of a host with this product, one column of the rung table. */
-export type Capability = 'server' | 'rulesFile' | 'opens' | 'refuses' | 'asks';
+export type Capability = 'server' | 'rulesFile' | 'opens' | 'refuses' | 'asks' | 'pushes';
 
 /**
  * What a host does with one {@link Capability}, and how that is known.
@@ -144,6 +146,9 @@ const HELD = {
   opencodeContract: 'packages/code/tests/host-contract/opencode-opens-and-refuses.opencode.test.ts',
   geminiContract: 'packages/code/tests/host-contract/gemini-opens-and-refuses.gemini.test.ts',
   qwenContract: 'packages/code/tests/host-contract/qwen-opens-and-refuses.qwen.test.ts',
+  codexArrives: 'packages/code/tests/host-contract/the-rule-arrives.codex.test.ts',
+  qwenArrives: 'packages/code/tests/host-contract/the-rule-arrives.qwen.test.ts',
+  opencodeArrives: 'packages/code/tests/host-contract/the-rule-arrives.opencode.test.ts',
   claudeHandback:
     'packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts',
   claudeSubagentStart:
@@ -233,6 +238,7 @@ export const HOSTS = {
       opens: { does: true, held: 'a test', by: HELD.claudeOpens },
       refuses: { does: true, held: 'a test', by: HELD.claudeGate },
       asks: { does: true, held: 'a test', by: HELD.claudeGate },
+      pushes: { does: true, held: 'a test', by: HELD.claudeServer },
     },
     places: {
       skills: claudeFolder('skills', 'https://code.claude.com/docs/en/skills.md'),
@@ -256,6 +262,7 @@ export const HOSTS = {
       },
       refuses: { does: true, held: 'a test', by: HELD.vscodeGate },
       asks: { does: true, held: 'a test', by: HELD.vscodeGate },
+      pushes: { held: 'not ported' },
     },
     places: {
       skills: claudeFolder(
@@ -278,6 +285,7 @@ export const HOSTS = {
       opens: { does: true, held: 'not yet', read: 'Cursor agent 2026.09.18, 23 September 2026' },
       refuses: { does: true, held: 'not yet', read: 'Cursor agent 2026.09.18, 2 October 2026' },
       asks: { does: false, held: 'not yet', read: 'Cursor agent 2026.09.18, 30 September 2026' },
+      pushes: { held: 'not ported' },
     },
     places: {
       skills: claudeFolder('skills', 'https://cursor.com/docs/context/skills'),
@@ -337,6 +345,7 @@ export const HOSTS = {
       opens: { does: true, held: 'a test', by: HELD.codexContract },
       refuses: { does: true, held: 'a test', by: HELD.codexContract },
       asks: { does: false, held: 'a test', by: HELD.codexContract },
+      pushes: { does: true, held: 'a test', by: HELD.codexArrives },
     },
     places: {
       // `.agents/skills` from the project's root down to the session's directory, and under the
@@ -405,6 +414,7 @@ export const HOSTS = {
       opens: { does: true, held: 'a test', by: HELD.copilotContract },
       refuses: { does: true, held: 'a test', by: HELD.copilotContract },
       asks: { does: true, held: 'a test', by: HELD.copilotContract },
+      pushes: { held: 'not ported' },
     },
     places: {
       // `.agents/skills` under the project and under the home are two of the folders in the loading
@@ -466,6 +476,7 @@ export const HOSTS = {
       opens: { does: true, held: 'a test', by: HELD.opencodeContract },
       refuses: { does: true, held: 'a test', by: HELD.opencodeContract },
       asks: { does: false, held: 'a test', by: HELD.opencodeContract },
+      pushes: { does: true, held: 'a test', by: HELD.opencodeArrives },
     },
     places: {
       // Its skills page lists `.claude/skills` and `.agents/skills`, in the project and under the
@@ -530,6 +541,7 @@ export const HOSTS = {
       opens: { does: true, held: 'a test', by: HELD.geminiContract },
       refuses: { does: true, held: 'a test', by: HELD.geminiContract },
       asks: { does: false, held: 'a test', by: HELD.geminiContract },
+      pushes: { held: 'not ported' },
     },
     places: {
       // `.agents/skills` under the project and under the home, beside `.gemini/skills`. Its agents
@@ -591,6 +603,7 @@ export const HOSTS = {
       opens: { does: true, held: 'a test', by: HELD.qwenContract },
       refuses: { does: true, held: 'a test', by: HELD.qwenContract },
       asks: { does: false, held: 'a test', by: HELD.qwenContract },
+      pushes: { does: true, held: 'a test', by: HELD.qwenArrives },
     },
     places: {
       skills: {
@@ -636,6 +649,7 @@ export const HOSTS = {
       opens: { held: 'not ported' },
       refuses: { held: 'not ported' },
       asks: { held: 'not ported' },
+      pushes: { held: 'not ported' },
     },
     places: {
       skills: claudeFolder('skills', 'https://cursor.com/docs/context/skills', CURSOR_READ_ON),
@@ -681,6 +695,7 @@ export const HOSTS = {
       opens: { held: 'not ported' },
       refuses: { held: 'not ported' },
       asks: { held: 'not ported' },
+      pushes: { held: 'not ported' },
     },
     places: {
       // Its own agents name its own tools (`view_file`, `run_command`) and its own model tiers, and
@@ -714,6 +729,7 @@ export const HOSTS = {
       opens: { held: 'not ported' },
       refuses: { held: 'not ported' },
       asks: { held: 'not ported' },
+      pushes: { held: 'not ported' },
     },
     places: {
       skills: {
@@ -745,6 +761,7 @@ export const HOSTS = {
       opens: { held: 'not ported' },
       refuses: { held: 'not ported' },
       asks: { held: 'not ported' },
+      pushes: { held: 'not ported' },
     },
     places: { skills: NOT_PORTED, agents: NOT_PORTED },
   },

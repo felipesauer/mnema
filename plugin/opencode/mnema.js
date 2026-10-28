@@ -1,7 +1,8 @@
 // Generated from packages/code/src/host-names.ts: change the table, not this file.
 //
 // Hands an OpenCode session the project's committed mnema record as it opens, refuses a write
-// where a rule of that record refuses it, and after a question to the person was answered says
+// where a rule of that record refuses it, puts the rules addressed at a file beside the result of a
+// write that goes through, and after a question to the person was answered says
 // which tool records a choice it settled. Copy this file into `.opencode/plugins/` of the
 // project, or into `~/.config/opencode/plugins/`. It runs `mnema` from the PATH, and every
 // outcome that is not an answer, such as no `mnema`, no project or a program of that name that
@@ -787,6 +788,8 @@ export const Mnema = async ({ directory }) => {
   };
   /** The opening of each session, asked of the verbs once. */
   const opened = new Map();
+  /** What the gate said to hand over beside a write, by the call it was said for. */
+  const beside = new Map();
   return {
     'experimental.chat.system.transform': async (input, output) => {
       const session = input.sessionID ?? '';
@@ -802,7 +805,11 @@ export const Mnema = async ({ directory }) => {
     },
     'tool.execute.before': async (input, output) => {
       if (!WRITES.has(input.tool)) return;
-      const payload = JSON.stringify({ tool_name: input.tool, tool_input: output.args });
+      const payload = JSON.stringify({
+        tool_name: input.tool,
+        tool_input: output.args,
+        session_id: input.sessionID,
+      });
       if (theRuntime().refusal !== null) closedWhere(theRuntime().refusal, directory, payload);
       const there = who();
       if (there === 'other') return;
@@ -823,8 +830,20 @@ export const Mnema = async ({ directory }) => {
           said.permissionDecisionReason ?? 'A rule of this project refuses this write.',
         );
       }
+      // THE RULES BESIDE A WRITE THAT GOES THROUGH: the gate's reply carries them as the context of
+      // the same answer, and they are kept for the call to hand over after it, when the result is
+      // there to put them beside. A call that was refused never reaches that hook.
+      if (typeof said?.additionalContext === 'string' && input.callID !== undefined) {
+        beside.set(input.callID, said.additionalContext);
+      }
     },
     'tool.execute.after': async (input, output) => {
+      const kept = beside.get(input.callID);
+      if (kept !== undefined) {
+        beside.delete(input.callID);
+        if (typeof output.output === 'string') output.output = [output.output, kept].join('\n\n');
+        return;
+      }
       if (input.tool !== ASKS || who() !== 'this') return;
       const ran = run(
         ['settled'],

@@ -665,6 +665,9 @@ describe('the floor is asked in one place, and every site that rules on room is 
       .map((file) => file.slice(SRC.length + 1))
       .sort();
     expect(ruling).toEqual([
+      // NOT A WINDOW either: whether the notice of one more path of a write fits in what is left of
+      // the host's ceiling for a hook's text, which is counted in characters or bytes, not rows
+      'edit-rules-push.ts',
       // the drawing of the name gives way to a smaller one, by width and by what the page needs
       'presentation/banner.ts',
       // where a line too wide is broken, and how many rows it then takes

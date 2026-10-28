@@ -464,7 +464,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'after-a-write.mjs:host-memory-mirror+decision-file-written',
       'choice-settled.mjs:choice-settled',
       'edit-asks-a-person.mjs:edit-asks-a-person+edit-refuses-a-write',
-      'edit-refuses-a-write.mjs:edit-refuses-a-write',
+      'edit-refuses-a-write.mjs:edit-refuses-a-write+edit-rules-push',
       'session-compacted.mjs:after-a-compaction',
       'session-corrections.mjs:user-corrections',
       'session-recall.mjs:recall-document',
