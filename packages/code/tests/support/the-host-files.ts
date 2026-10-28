@@ -55,6 +55,7 @@ export const GENERATED = [
   'plugin-server-only/.github/plugin/plugin.json',
   'README.md',
   'docs/evidence.md',
+  'docs/install.md',
 ] as const;
 
 /** The line width `biome.json` formats to. */
@@ -1552,32 +1553,16 @@ function logoOf(name: HostName): string {
   return `<picture><source media="(prefers-color-scheme: dark)" srcset="${shown.dark}">${img}</picture>`;
 }
 
-/** The heading of `docs/install.md` for a host this repository has no plugin for. */
+/** The heading of `docs/hosts.md` for a host this repository has no plugin for. */
 const ANY_HOST = 'any-other-host-with-an-mcp-client';
-
-/** The heading of `docs/install.md` that says how each host gets mnema. */
-const INSTALLED_AT: { readonly [H in HostName]: string } = {
-  claude: 'claude-code',
-  vscode: 'vs-code-and-cursor',
-  cursor: 'vs-code-and-cursor',
-  codex: 'codex',
-  copilot: 'github-copilot-cli',
-  opencode: 'opencode',
-  gemini: 'gemini-cli',
-  cursorIde: ANY_HOST,
-  antigravity: ANY_HOST,
-  droid: ANY_HOST,
-  qwen: ANY_HOST,
-  goose: ANY_HOST,
-};
 
 /** The summary: one row per host, with its rung and where its install is, for a page at `base`. */
 export function hostSummary(base: string): string {
   const rows = HOST_NAMES.map((name) => {
     const shown = SHOWN[name];
     const rung = rungOf(name).split(',')[0] ?? 'none';
-    const at = INSTALLED_AT[name];
-    const install = `[${at === ANY_HOST ? 'MCP server' : 'Plugin'}](${base}docs/install.md#${at})`;
+    const at = HOSTS[name].install.at;
+    const install = `[${at === ANY_HOST ? 'MCP server' : 'Plugin'}](${base}docs/hosts.md#${at})`;
     const host = `**${shown.name}**<br><sub>${shown.by}</sub>`;
     return `| ${logoOf(name)} | ${host} | **${rung}** | ${whatItGets(name)} | ${install} |`;
   });
@@ -1586,6 +1571,43 @@ export function hostSummary(base: string): string {
     '| :---: | :--- | :---: | :--- | :--- |',
     ...rows,
   ].join('\n');
+}
+
+/**
+ * What a host's row of the install page says to do: its command or commands, or the few words that
+ * say what it takes in their place.
+ */
+export function installLine(name: HostName): string {
+  const install = HOSTS[name].install;
+  return 'commands' in install
+    ? install.commands.map((command) => `\`${command}\``).join('<br>')
+    : install.words;
+}
+
+/** The install page's table: one row per host, the line that installs it and where the rest is. */
+export function installTable(): string {
+  const rows = HOST_NAMES.map((name) => {
+    const rung = rungOf(name).split(',')[0] ?? 'none';
+    return `| ${SHOWN[name].name} | **${rung}** | ${installLine(name)} | [Details](hosts.md#${HOSTS[name].install.at}) |`;
+  });
+  return ['| Host | Rung | Install | The rest |', '| :--- | :---: | :--- | :--- |', ...rows].join(
+    '\n',
+  );
+}
+
+/** The line that opens the generated table on the install page. */
+const INSTALL_BEGIN =
+  '<!-- The host table below is generated from packages/code/src/host-names.ts: edit the table there. -->';
+
+/** The line that closes it. */
+const INSTALL_END = '<!-- End of the generated host table. -->';
+
+/** `page` with its install table regenerated. */
+function withTheInstallTable(page: string, path: string): string {
+  const from = page.indexOf(INSTALL_BEGIN);
+  const to = page.indexOf(INSTALL_END);
+  if (from === -1 || to < from) throw new Error(`${path} has no generated install table`);
+  return `${page.slice(0, from)}${INSTALL_BEGIN}\n\n${installTable()}\n\n${page.slice(to)}`;
 }
 
 /** The line that opens the generated summary on a page. */
@@ -1636,6 +1658,8 @@ export function generated(path: (typeof GENERATED)[number], committed: string): 
       return serverOnlyPluginJson();
     case 'README.md':
       return withTheSummary(committed, '', path);
+    case 'docs/install.md':
+      return withTheInstallTable(committed, path);
     case 'docs/evidence.md':
       return withThePresenceMap(withTheTable(committed, '../', path), '../', path);
   }
