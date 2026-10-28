@@ -215,7 +215,7 @@ describe('the second reader can be run at all', () => {
     expect(said).toMatch(/the fold over an empty range reproduces/);
     expect(said).toMatch(/the entry hash of a genesis entry reproduces/);
     expect(said).toMatch(/the entry hash of a linked entry reproduces/);
-    expect(said).toMatch(/the content root over all 38 vectors reproduces/);
+    expect(said).toMatch(/the content root over all 39 vectors reproduces/);
   });
 });
 
