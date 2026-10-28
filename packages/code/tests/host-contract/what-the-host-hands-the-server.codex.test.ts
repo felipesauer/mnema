@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { theServerWasHanded } from './support/a-sandbox.js';
 import { aCodexForEachCase } from './support/the-codex.js';
+import { theProtocolOf } from './support/the-protocol-a-host-speaks.js';
 
 describe('what Codex hands the server it starts', () => {
   const start = aCodexForEachCase();
@@ -17,6 +18,7 @@ describe('what Codex hands the server it starts', () => {
     const handed = theServerWasHanded(session.project);
 
     expect(handed.client).toBe('codex-mcp-client');
+    expect(theProtocolOf('Codex', handed) ?? 'a handshake first').toBe('a handshake first');
     // The server is started directly by the host, as the manifest declares it. What follows is
     // the instrument.
     expect(handed.chain.slice(0, 1)).toEqual(['codex']);
