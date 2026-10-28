@@ -146,7 +146,8 @@ with its own changelog.
   writing dated back on a tail the accept never cited does not become the accepted text. Every other writing is not
   applied, whoever signed it, and both verifiers name it in the census (`decision-rewrite`), informational, exit
   unchanged. The product mints a decision's id when it records it, so no record it wrote holds a second writing; a binary
-  from before this serves the last one.
+  from before this serves the last one, and an accept it made may have seen that last writing: if a writing dated back that
+  it read precedes the honest one, this version serves the dated back one and names the honest one.
 - **A note is the identity that wrote it first, in every reader.** The read and the write took a note's author from its LAST
   writing in the merged order, and `mnema verify` and the second reader from its last writing in the order of the tail ids. A
   key of another identity that wrote the same id again with a later clock took the note: its content and its author were

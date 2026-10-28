@@ -1160,7 +1160,7 @@ other writing in its census, with the rule `decision-rewrite`, informational, th
 unchanged: like a stranger's writing of a note (§6.4) it is **not a break**, since the event is
 intact and its key speaks for its own `who`; what it lacks is a place in a decision that was
 already written
-(`packages/core/src/projections/a-decision-is-the-text-its-first-writer-recorded.test.ts`,
+(`packages/core/src/projections/a-decision-is-the-text-its-first-judgment-saw.test.ts`,
 `packages/chain/src/chain/decision-text.test.ts`).
 
 **Why the judgment binds the text.** An accept is a person's word on what they read, and what
@@ -1169,12 +1169,15 @@ writer cites at every append ("Reading many tails"). A writing dated back on a t
 never cited, appended after it or on a clone its writer had not pulled, is first in the merged
 order whatever it says, because `at` is the signer's to write; it is not what was accepted, and
 it is named, never served ("serves the text accepted, and names the writing dated back from an
-older tail after the accept"). A writing the judge had read IS what it was shown, since every
-reader serves the first writing in the order while nothing has judged the decision, so the
-judgment holds for it, and the later honest writing is the one named ("serves the text the accept
+older tail after the accept"). For a judgment made by this version, a writing the judge had read IS what it was shown, since every
+reader of this version serves the first writing in the order while nothing has judged the decision,
+so the judgment holds for it, and the later honest writing is the one named ("serves the text the accept
 was shown, when its writer had read the writing dated back"). The text is bound at the FIRST
 judgment and never moved after it: a later move, a supersede included, is made on a decision that
 already has a text, so nothing appended after the accept, by any key, changes what was accepted.
+An accept made by a binary from before this section may have been shown the LAST writing, which is
+what that binary served: if a writing dated back that it read precedes the honest one, this
+version serves the dated back writing and names the honest one.
 
 **Stricter than a note, and why.** A note served its author's later writing in place of the
 earlier one (§6.4). A decision does not, because no honest writer writes one twice: this
@@ -1213,7 +1216,9 @@ machines"). A reader that keeps a cache serves what a replay serves: a cache bro
 the first judgment of a decision written more than once reads the record again
 (`packages/core/src/projections/many-tails.properties.test.ts`, "X reads as the writing its
 first judgment saw"). **A binary from before this section** applies every writing in the merged
-order, so it serves the LAST one, and names none: a record holding a second writing verifies
+order, so it serves the LAST one, and names none (an accept made there may have seen the last
+writing: if a writing dated back that it read precedes the honest one, this version serves the
+dated back one and names the honest one): a record holding a second writing verifies
 there as here and is read there with the later text. This section tightened a rule inside a kind
 and version that already existed, after the first publication: §7.1 says what that promise
 covers, and it does not cover this (a rule tightened is allowed; the two binaries read the same

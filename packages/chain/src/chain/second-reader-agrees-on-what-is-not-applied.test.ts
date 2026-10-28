@@ -686,7 +686,7 @@ describe('a note or a link taken back (§6.4): both readers name the same retrac
 });
 
 describe('a decision recorded again (§6.8): both readers name every writing after the first', () => {
-  // A decision is the text its first writer recorded, whoever writes it again: the product
+  // A decision is the text its first judgment saw, whoever writes it again: the product
   // mints a decision's id when it records it, so no honest writer appends a second. The first is
   // the first in the merged order, whichever of the two tails sorts first by id.
   const birthOf = (env: Envelope) => [

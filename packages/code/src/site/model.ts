@@ -311,7 +311,7 @@ function timelineOf(
   for (const event of events) {
     const decision = projected.get(event.subject);
     if (event.kind === 'decision.recorded' && decision !== undefined) {
-      // A decision is the text its first writer recorded (FORMAT.md section 6.8): a later
+      // A decision is the text its first judgment saw (FORMAT.md section 6.8): a later
       // writing of its id is not applied, so it is no act of the timeline either.
       if (recorded.has(decision.id)) continue;
       recorded.add(decision.id);

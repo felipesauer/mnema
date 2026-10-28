@@ -1,5 +1,5 @@
 /**
- * A DECISION IS THE TEXT ITS FIRST WRITER RECORDED (FORMAT.md section 6.8).
+ * A DECISION IS THE TEXT ITS FIRST JUDGMENT SAW (FORMAT.md section 6.8).
  *
  * A second `decision.recorded` of an accepted decision's id, signed by a key of another identity
  * the writer founded itself, used to replace the decision's title and rationale in every reading,
@@ -95,7 +95,7 @@ function forgedRecord(): string {
   return tree;
 }
 
-describe('a decision is the text its first writer recorded', () => {
+describe('a decision is the text its first judgment saw', () => {
   it('is what the cache serves by id, in the list, and in the full-text index', () => {
     const tree = forgedRecord();
     const cache = ProjectionCache.open(tree, { upcasters });

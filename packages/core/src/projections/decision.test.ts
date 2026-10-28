@@ -125,7 +125,7 @@ describe('projectDecisions: the fold', () => {
   });
 });
 
-describe('projectDecisions: a decision is the text its first writer recorded', () => {
+describe('projectDecisions: a decision is the text its first judgment saw', () => {
   const accepted = (id: string, n: number) =>
     decisionTransitioned(env(id, n), {
       from: 'proposed',
