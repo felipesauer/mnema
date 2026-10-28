@@ -1042,9 +1042,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(84);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(85);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(76);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(84);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(85);
   });
 
   it('every reason says where the value comes from', () => {
