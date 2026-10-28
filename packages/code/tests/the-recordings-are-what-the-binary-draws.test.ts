@@ -15,7 +15,7 @@
  * TWO WAYS OF BEING MADE, ONE RULE.
  *
  *   - THE COMMAND LINE. Each script in {@link COMMAND_LINE_RECORDINGS} (`first-record.sh`,
- *     `a-write-refused.sh`, `a-decision-superseded.sh`) is typed at a terminal by `asciinema`, which
+ *     `a-write-refused.sh`, `a-tamper-caught.sh`, `a-decision-superseded.sh`) is typed at a terminal by `asciinema`, which
  *     keeps every byte and when it came in its `.cast`; `agg` renders that into the GIF.
  *     Here the same script runs with `PACE=0` (no pause and no per-character delay, the text
  *     unchanged) and what it prints is held to the text of the committed cast, line for line:
@@ -178,6 +178,8 @@ const COMMAND_LINE_RECORDINGS: readonly {
   readonly name: string;
   readonly typed: readonly string[];
   readonly lines: number;
+  /** Text that must be on the screen, in the script's run and in the cast: what the recording is FOR. */
+  readonly shows?: readonly string[];
 }[] = [
   {
     name: 'first-record',
@@ -201,6 +203,22 @@ const COMMAND_LINE_RECORDINGS: readonly {
       'mnema verify',
     ],
     lines: 25,
+  },
+  {
+    name: 'a-tamper-caught',
+    typed: [
+      'mnema init >',
+      'mnema decision record',
+      'mnema decision move',
+      'mnema verify',
+      "sed -i 's/sums",
+      'mnema verify',
+      'echo "exit $?"',
+    ],
+    lines: 24,
+    // NON-VACUITY, this recording's own: a `sed` that matched nothing would leave the record
+    // honest, `verify` green, and a green cast would agree with a green run above.
+    shows: ['local integrity FAILED', 'entry hash mismatch', 'exit 1'],
   },
   {
     name: 'a-decision-superseded',
@@ -258,6 +276,10 @@ for (const recording of COMMAND_LINE_RECORDINGS) {
         recording.typed,
       );
       expect(today.length).toBeGreaterThan(recording.lines);
+      for (const text of recording.shows ?? []) {
+        expect(today.join('\n'), `the run of ${recording.name}.sh shows ${text}`).toContain(text);
+        expect(shown.join('\n'), `the cast of ${recording.name} shows ${text}`).toContain(text);
+      }
       expect([cast.header.width, cast.header.height]).toEqual([96, 34]);
       // Typed at human speed, the commands arrive one character an event.
       expect(cast.events.length).toBeGreaterThan(200);
