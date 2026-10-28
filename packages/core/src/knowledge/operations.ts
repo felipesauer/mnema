@@ -218,6 +218,12 @@ export interface ObservationInput {
   readonly which?: string;
   /** The run this belongs to, if any. */
   readonly run?: string;
+  /**
+   * Writes the observation even where the same text, topic and `about` is already on the record.
+   * For the one that is a position in a history (the brief of a handoff: the newest brief is the
+   * one of the newest handoff, and an old text repeated after another must be newest again).
+   */
+  readonly keepRepeats?: true;
 }
 
 /**
@@ -274,13 +280,16 @@ export function recordObservation(
   return onTheRecordAsItStands(
     ctx,
     () =>
-      asTheChainIs(
-        ctx,
-        (cache) =>
-          cache
-            .listObservationsAbout(about)
-            .find((held) => held.topic === text.fields.topic && held.text === text.fields.text)?.id,
-      ),
+      input.keepRepeats === true
+        ? undefined
+        : asTheChainIs(
+            ctx,
+            (cache) =>
+              cache
+                .listObservationsAbout(about)
+                .find((held) => held.topic === text.fields.topic && held.text === text.fields.text)
+                ?.id,
+          ),
     (twin): Judged<ObservationOk | NoteRecordedAlready | FactError> =>
       twin !== undefined
         ? {
@@ -412,6 +421,8 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
           about: task,
           topic: BRIEF_TOPIC,
           text: input.brief,
+          keepRepeats: true,
+
           ...(which !== undefined ? { which } : {}),
           ...(agents.fields.run !== undefined ? { run: agents.fields.run } : {}),
         });

@@ -33,7 +33,7 @@ import {
   verify,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { captureMemory, recordObservation } from '../knowledge/operations.js';
+import { captureMemory, recordHandoff, recordObservation } from '../knowledge/operations.js';
 import { projectDecisions } from '../projections/decision.js';
 import { orderedEvents } from '../projections/order.js';
 import type { Clock } from './clock.js';
@@ -240,6 +240,23 @@ describe('a note recorded twice by two sessions at once', () => {
     expect(second.ok && second.id).toBe(first?.ok && first.id);
     expect(events().filter((e) => e.kind === 'observation.recorded')).toHaveLength(2);
     verifies(one, two);
+  });
+});
+
+describe('the brief of a handoff', () => {
+  it('is written for each handoff, even when its text is one already on the record', () => {
+    const one = session();
+    const brief = 'start from the ledger';
+    const handoff = (b: string) =>
+      ok(recordHandoff(one, { task: 'task-1', fromAgent: 'a', toAgent: 'b', brief: b }));
+    const first = handoff(brief);
+    handoff('then the cache');
+    const third = handoff(brief);
+
+    expect(third.briefId).not.toBe(first.briefId);
+    const briefs = events().filter((e) => e.kind === 'observation.recorded');
+    expect(briefs).toHaveLength(3);
+    verifies(one);
   });
 });
 
