@@ -125,7 +125,7 @@ describe('the first record the first-record page shows', () => {
         `${where}\n--- the page shows:\n${expected.join('\n')}\n--- the binary printed:\n${printed.join('\n')}`,
       ).toBe(true);
     }
-  });
+  }, 60_000);
 
   it('says how long the id it shortens runs, and it runs that long', () => {
     // THE ONE NUMBER THE BLOCK STATES OF ITSELF, held to the binary: the page's own comment says

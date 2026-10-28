@@ -181,7 +181,7 @@ with its own changelog.
   other hosts on the install page. A new test runs that block as written, through the built binary, in a sandbox.
 
 - **`docs/first-record.md` is five steps, and the third ties the rule to a path.** The page founds the record, records a decision and
-  accepts it, addresses it at `src/billing` with `mnema link` and asks `mnema why` about a file under it, hands the record to Claude
+  accepts it, addresses it at `src/billing` with `link` and asks `why` about a file under it, hands the record to Claude
   Code, and checks it with `mnema verify`; what `init` leaves in the repository follows. Under each `mnema` command is every line it
   prints, and the test that held the old block to the binary now runs the commands of all five steps in one repository, in order. The
   `mnema search` of the old block is gone, because `why` shows the rule as well.
