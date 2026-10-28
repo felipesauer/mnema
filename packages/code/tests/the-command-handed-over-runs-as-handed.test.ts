@@ -739,7 +739,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'docs/cli-reference.md': { line: 114, name: 143, flag: 2 },
+  'docs/cli-reference.md': { line: 115, name: 143, flag: 2 },
   'packages/code/README.md': { line: 8, name: 13 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
