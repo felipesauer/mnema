@@ -123,10 +123,9 @@ function replaceCall(door: OfferedBy, replaced: string, by: string): string {
   if (door === 'mcp') {
     return `decision_transition with id ${JSON.stringify(replaced)}, action "supersede", by ${JSON.stringify(by)}, reason "<why>"`;
   }
-  // Joined and not interpolated: the command-line guard reads a template's two adjacent holes as
-  // one, and this verb takes two ids. The line is held whole where it is run, by the case that
-  // types it back (`a-recorded-decision-offers-the-address-and-the-supersede.test.ts`).
-  return ['mnema decision supersede', replaced, by, '--reason', '"<why>"'].join(' ');
+  // The line is held whole where it is run, by the case that types it back
+  // (`a-recorded-decision-offers-the-address-and-the-supersede.test.ts`).
+  return `mnema decision supersede ${replaced} ${by} --reason "<why>"`;
 }
 
 /**
