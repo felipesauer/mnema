@@ -240,6 +240,20 @@ export function alreadyRecordedLine(
   return `Decision ${recorded.adr} (${recorded.id}) is already recorded in the ${scope} tree with this title, rationale and alternatives. Nothing was written.`;
 }
 
+/**
+ * The sentence a memory or an observation recorded a second time is answered with, by both doors:
+ * the note that is already on the record, named by its id, and that nothing was written. It does not
+ * begin with "Captured memory" or "Recorded observation", the lines a write that landed begins with.
+ */
+export function alreadyRecordedNoteLine(
+  note: { readonly id: string; readonly about?: string },
+  scope: Scope,
+): string {
+  return note.about === undefined
+    ? `Memory ${note.id} is already recorded in the ${scope} tree with this text. Nothing was written.`
+    : `Observation ${note.id} about ${oneLine(note.about)} is already recorded in the ${scope} tree with this topic and text. Nothing was written.`;
+}
+
 /** The half of a write result that reports what the content door replaced. */
 export interface Replacement {
   readonly replaced?: readonly ReplacedClass[];

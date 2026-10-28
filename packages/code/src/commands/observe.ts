@@ -51,6 +51,8 @@ export interface ObservationRecorded extends Replacement, Landed {
   readonly ok: true;
   /** The observation's OWN minted id (the event subject). */
   readonly id: string;
+  /** Set when the note was already on the record: nothing was written and `id` is the existing one's. */
+  readonly alreadyRecorded?: true;
 }
 
 /** The record was refused. */
@@ -114,13 +116,19 @@ export function runObserve(
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );
-    // Checkpoint so the new observation is signature-covered at once.
-    if (written.ok) writer.checkpoint();
+    // Checkpoint so the new observation is signature-covered at once. A repeat wrote nothing.
+    if (written.ok && !('already' in written)) writer.checkpoint();
     return written;
   });
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
   }
 
-  return { ok: true, id: recorded.id, scope, ...forwardReplacement(recorded) };
+  return {
+    ok: true,
+    id: recorded.id,
+    scope,
+    ...forwardReplacement(recorded),
+    ...('already' in recorded ? { alreadyRecorded: true as const } : {}),
+  };
 }

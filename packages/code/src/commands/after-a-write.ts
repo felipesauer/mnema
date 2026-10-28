@@ -187,6 +187,8 @@ function mirrored(
       `The note ${file} was not copied: ${done.reason === 'REFUSED' ? done.message : done.reason}`,
     ]);
   }
+  // A note the record already holds, word for word, was not copied again: there is nothing to say.
+  if (done.alreadyRecorded) return silent();
   const name = basename(file);
   return besideTheResult(
     `This note of the host’s memory, ${name}, was copied into this machine’s private tree of the project’s record as memory ${done.id}.`,

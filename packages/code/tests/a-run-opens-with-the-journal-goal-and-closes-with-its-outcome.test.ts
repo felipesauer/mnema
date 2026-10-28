@@ -163,7 +163,7 @@ describe('a run and the journal of its session', () => {
       const { client, end } = await connected(project, hostSession);
       await client.callTool({
         name: 'capture_memory',
-        arguments: { content: 'a fact worth a run' },
+        arguments: { content: `a fact worth a run (${hostSession ?? 'none'})` },
       });
       end();
       await client.close();

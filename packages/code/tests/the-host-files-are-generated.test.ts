@@ -87,9 +87,9 @@ describe('the rung table', () => {
     expect(rung("VS Code's agent")).toBe('(d)');
     // Cursor refuses and does not pause a write for a person.
     expect(rung("Cursor's command-line agent")).toBe('(c)');
-    // Codex refuses and does not pause a write; the rules file it reads is only documented.
-    expect(rung('Codex')).toBe('(c), with (a) documented, not measured');
-    expect(rung('Qwen Code')).toBe('(c), with (a) documented, not measured');
+    // Codex refuses and does not pause a write; its rules file is measured by the arrival cases.
+    expect(rung('Codex')).toBe('(c)');
+    expect(rung('Qwen Code')).toBe('(c)');
     // The editor was only read in Cursor's documentation; the plugin was not read running in it.
     expect(rung("Cursor's editor")).toBe('(a), documented, not measured');
   });
@@ -115,6 +115,13 @@ describe('the host summary', () => {
     expect(row('Goose')).toContain('documented, not measured');
     expect(row('Goose')).not.toContain('read once');
     expect(row('Claude Code')).not.toMatch(/read once|documented/);
+  });
+
+  it('does not call documented the rules file of a host the arrival cases measure', () => {
+    for (const host of ['Codex', 'Copilot CLI', 'OpenCode', 'Gemini CLI', 'Qwen Code']) {
+      expect(row(host)).toContain('rules file');
+      expect(row(host)).not.toMatch(/documented/);
+    }
   });
 });
 

@@ -166,13 +166,15 @@ function openRunsOf(reply: unknown): readonly Reported[] {
 }
 
 /** Records one fact, so the session has a run to close. */
+let somethings = 0;
 async function writeSomething(
   client: Client,
   args: Record<string, unknown> = {},
 ): Promise<unknown> {
+  somethings += 1;
   return client.callTool({
     name: 'capture_memory',
-    arguments: { content: 'a fact worth a run', ...args },
+    arguments: { content: `a fact worth a run (${somethings})`, ...args },
   });
 }
 

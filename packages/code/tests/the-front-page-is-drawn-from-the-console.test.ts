@@ -590,7 +590,7 @@ const FRONT_WORDS: Readonly<
     { text: 'mnema decision', said: [['mnema decision', 'README.md']] },
     { text: '2' },
     { text: 'Rule', said: [['Rule', 'README.md']] },
-    { text: 'Accepted by a person,' },
+    { text: 'Accepted,' },
     { text: 'then linked to the paths' },
     { text: 'it governs.' },
     { text: 'mnema link', said: [['mnema link', 'README.md']] },

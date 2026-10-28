@@ -49,6 +49,7 @@ import {
   KNOWN_BODIES,
   type Located,
   locateBlock,
+  sameInstructionsText,
 } from '../instructions-block.js';
 
 /** What a file holds of the block, read without writing. */
@@ -117,8 +118,14 @@ function stateOf(target: InstructionsTarget, text: string | undefined): Instruct
   if (target.own !== undefined) {
     const own = target.own;
     const held = lf(text);
-    if (held === ownText(own, INSTRUCTIONS_VERSION)) return { state: 'current' };
-    if (Object.keys(KNOWN_BODIES).some((version) => held === ownText(own, version))) {
+    if (sameInstructionsText(held, ownText(own, INSTRUCTIONS_VERSION) as string)) {
+      return { state: 'current' };
+    }
+    if (
+      Object.keys(KNOWN_BODIES).some((version) =>
+        sameInstructionsText(held, ownText(own, version) as string),
+      )
+    ) {
       return { state: 'outdated' };
     }
     return {
@@ -140,7 +147,7 @@ function stateOf(target: InstructionsTarget, text: string | undefined): Instruct
           why: `its block is version ${found.version}, which this version of mnema does not know`,
         };
       }
-      if (lf(found.inner) !== known) return { state: 'edited', why: EDITED };
+      if (!sameInstructionsText(found.inner, known)) return { state: 'edited', why: EDITED };
       return found.version === INSTRUCTIONS_VERSION ? { state: 'current' } : { state: 'outdated' };
     }
   }

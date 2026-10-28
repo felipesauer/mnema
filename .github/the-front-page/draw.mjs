@@ -448,7 +448,7 @@ const STEPS = [
   },
   {
     title: 'Rule',
-    lines: ['Accepted by a person,', 'then linked to the paths', 'it governs.'],
+    lines: ['Accepted,', 'then linked to the paths', 'it governs.'],
     chip: 'mnema link',
   },
   {

@@ -155,17 +155,18 @@ function scan(source: string): { code: string; literals: string } {
       } else if (char === '{') {
         frame.braces += 1;
         kept.push(char);
-        text.push(' ');
+        text.push(stack.length > 1 ? '' : ' ');
         i += 1;
       } else if (char === '}' && frame.braces === 0 && stack.length > 1) {
         stack.pop();
         kept.push(' ');
-        text.push(' ');
         i += 1;
       } else {
         if (char === '}') frame.braces -= 1;
         kept.push(char);
-        text.push(char === '\n' ? '\n' : ' ');
+        // The code inside a hole says nothing, and says nothing of its width either: padding it
+        // would put a run of spaces between two holes that sit apart by one.
+        text.push(char === '\n' ? '\n' : stack.length > 1 ? '' : ' ');
         i += 1;
       }
       continue;
@@ -238,7 +239,7 @@ function scan(source: string): { code: string; literals: string } {
     if (frame.mode === 'template' && char === '$' && next === '{') {
       stack.push({ mode: 'code', braces: 0 });
       kept.push('  ');
-      text.push(`${INTERPOLATED} `);
+      text.push(INTERPOLATED);
       i += 2;
       continue;
     }
