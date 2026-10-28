@@ -33,7 +33,7 @@ once. Whoever dispatched you records it. Then skip the rest of this skill.
    and, in `alternatives`, what was turned down and why. Record it here even when it is also kept
    elsewhere (a plan, a ledger, CLAUDE.md, the host's own memory): this is the signed copy, and the
    one later sessions read back.
-3. A decision is born `proposed`. A person accepts it; it is in force here once accepted, and not before.
+3. A decision is born `proposed`. A person accepts it, or an agent where `agent-accepts` is on (the default); an agent's acceptance is recorded as the agent's. It is in force here once accepted, and not before.
 4. Something learnt about this project that its code does not show, and that the next session
    would otherwise work out again, goes to `capture_memory`.
 5. A rule that governs a path is enforced at the host's editing tools, not at its shell. Writing
