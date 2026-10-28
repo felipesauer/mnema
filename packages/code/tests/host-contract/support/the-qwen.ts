@@ -32,7 +32,13 @@ import type { AddressInfo } from 'node:net';
 import { join } from 'node:path';
 import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
-import { aSandbox, PLUGIN, type TheProjectToWrite, type TheSandbox } from './a-sandbox.js';
+import {
+  aSandbox,
+  PLUGIN,
+  type TheFilesToPut,
+  type TheProjectToWrite,
+  type TheSandbox,
+} from './a-sandbox.js';
 import { destinationsOrRefuse, refuseUnlessLoopbackOnly } from './the-host.js';
 import type { TheCall, TheRequest } from './the-stand-in-api.js';
 
@@ -45,10 +51,34 @@ const MODEL = 'stand-in-model';
 /** What opens the text of a session that had to be killed. */
 const KILLED = '\u0000killed\u0000';
 
+/** What the stand-in answers one request with, for a session of several turns. */
+export type TheQwenReply =
+  | {
+      readonly call: TheCall;
+      /** The `prompt_tokens` the turn claims, for a host that compacts by the usage it is told. */
+      readonly promptTokens?: number;
+    }
+  | { readonly text: string; readonly promptTokens?: number };
+
+/** The decision of a stand-in for a session of several turns. */
+export type TheQwenScript = (
+  body: Readonly<Record<string, unknown>>,
+  before: readonly TheRequest[],
+) => TheQwenReply;
+
 /** What a case asks of one session. */
 export interface TheQwenSpec {
   /** Writes the record the session opens on. */
   readonly project?: (project: TheProjectToWrite) => void;
+  /** Files put in the project after its record is written; see {@link TheFilesToPut}. */
+  readonly files?: TheFilesToPut;
+  /**
+   * What the stand-in answers each request with, in place of the one `call`: a session of several
+   * turns. Made anew for each start of the host.
+   */
+  readonly script?: () => TheQwenScript;
+  /** Extra environment for the host. */
+  readonly env?: Readonly<Record<string, string>>;
   /** The call the stand-in makes, given the project; none: a session that only opens. */
   readonly call?: (project: string) => TheCall;
   /** Whether the plugin is installed: yes unless a case says otherwise. */
@@ -167,14 +197,27 @@ function carriesAResult(body: Readonly<Record<string, unknown>>): boolean {
 }
 
 /** One server-sent event, in the shape the host reads a streamed response in. */
-function chunk(delta: Record<string, unknown>, finish: string | null, usage = false): string {
+function chunk(
+  delta: Record<string, unknown>,
+  finish: string | null,
+  usage = false,
+  promptTokens = 1,
+): string {
   const event = {
     id: 'stand-in',
     object: 'chat.completion.chunk',
     created: 1,
     model: MODEL,
     choices: [{ index: 0, delta, finish_reason: finish }],
-    ...(usage ? { usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } } : {}),
+    ...(usage
+      ? {
+          usage: {
+            prompt_tokens: promptTokens,
+            completion_tokens: 1,
+            total_tokens: promptTokens + 1,
+          },
+        }
+      : {}),
   };
   return `data: ${JSON.stringify(event)}\n\n`;
 }
@@ -184,7 +227,10 @@ function chunk(delta: Record<string, unknown>, finish: string | null, usage = fa
  * and carries no result yet, and never by how many have arrived: a request that offers no such
  * tool (one the host makes for itself) is answered with the closing text.
  */
-async function startTheStandIn(call: TheCall | undefined): Promise<TheStandIn> {
+async function startTheStandIn(
+  call: TheCall | undefined,
+  script?: TheQwenScript,
+): Promise<TheStandIn> {
   const requests: TheRequest[] = [];
   const server: Server = createServer((req, res) => {
     const received = decodedWhole();
@@ -197,6 +243,7 @@ async function startTheStandIn(call: TheCall | undefined): Promise<TheStandIn> {
         body = {};
       }
       const url = req.url ?? '';
+      const before = [...requests];
       requests.push({ url, body, userAgent: String(req.headers['user-agent'] ?? '') });
       if (!url.includes('/chat/completions')) {
         res.writeHead(404, { 'content-type': 'application/json' }).end('{}');
@@ -204,24 +251,27 @@ async function startTheStandIn(call: TheCall | undefined): Promise<TheStandIn> {
       }
       const offered = theToolsOf({ url, body, userAgent: '' });
       const wanted = call !== undefined && offered.includes(call.tool) && !carriesAResult(body);
-      const delta: Record<string, unknown> = wanted
-        ? {
-            role: 'assistant',
-            tool_calls: [
-              {
-                index: 0,
-                id: 'call_1',
-                type: 'function',
-                function: { name: call.tool, arguments: JSON.stringify(call.input) },
-              },
-            ],
-          }
-        : { role: 'assistant', content: 'done' };
-      const finish = wanted ? 'tool_calls' : 'stop';
+      const reply: TheQwenReply =
+        script !== undefined ? script(body, before) : wanted ? { call } : { text: 'done' };
+      const delta: Record<string, unknown> =
+        'call' in reply
+          ? {
+              role: 'assistant',
+              tool_calls: [
+                {
+                  index: 0,
+                  id: script === undefined ? 'call_1' : `call_${before.length + 1}`,
+                  type: 'function',
+                  function: { name: reply.call.tool, arguments: JSON.stringify(reply.call.input) },
+                },
+              ],
+            }
+          : { role: 'assistant', content: reply.text };
+      const finish = 'call' in reply ? 'tool_calls' : 'stop';
       if (body['stream'] === true) {
         res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
         res.write(chunk(delta, null));
-        res.write(chunk({}, finish, true));
+        res.write(chunk({}, finish, true, reply.promptTokens));
         res.end('data: [DONE]\n\n');
         return;
       }
@@ -233,7 +283,11 @@ async function startTheStandIn(call: TheCall | undefined): Promise<TheStandIn> {
           created: 1,
           model: MODEL,
           choices: [{ index: 0, message: delta, finish_reason: finish }],
-          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+          usage: {
+            prompt_tokens: reply.promptTokens ?? 1,
+            completion_tokens: 1,
+            total_tokens: (reply.promptTokens ?? 1) + 1,
+          },
         }),
       );
     });
@@ -262,9 +316,9 @@ async function aQwenSession(
     throw new Error('strace is needed to read where the host connects, and it is not on the PATH');
   }
   const qwen = theQwenUnderTest();
-  const box = aSandbox('mnema-qwen-', spec.project);
+  const box = aSandbox('mnema-qwen-', spec.project, spec.files);
   keep(box);
-  const standIn = await startTheStandIn(spec.call?.(box.project));
+  const standIn = await startTheStandIn(spec.call?.(box.project), spec.script?.());
 
   // The user's settings, as a person writes them: the OpenAI kind of authentication, which a run
   // without a person needs, and the host's own network chatter off.
@@ -301,6 +355,7 @@ async function aQwenSession(
     OPENAI_MODEL: MODEL,
     GIT_CONFIG_NOSYSTEM: '1',
     ...spec.inherited,
+    ...spec.env,
   };
 
   const reported = spawnSync(qwen.binary, ['--version'], {
@@ -427,4 +482,50 @@ export function replacing(relative: string, oldString: string, newString: string
       new_string: newString,
     },
   });
+}
+
+/** How a session of several turns goes, for {@link aScriptOfCalls}. */
+export interface TheQwenTurns {
+  /** The calls the model makes, one to a turn, each when the result of the one before came back. */
+  readonly calls: readonly TheCall[];
+  /** The call after whose answer the stand-in claims a full window, counted from 1; none: never. */
+  readonly fillsTheWindowAfter?: number;
+  /** How a request is told to be the one that asks for the summary of a compaction. */
+  readonly isTheSummaryRequest?: (body: Readonly<Record<string, unknown>>) => boolean;
+  /** What that request is answered with: a text the case chose, without the rule. */
+  readonly summary?: string;
+}
+
+/** The tokens a turn claims when it says the window is full. */
+const A_FULL_WINDOW = 170_000;
+
+/**
+ * The decision of a stand-in that makes `calls` in order and then closes, and that answers the
+ * request for a summary with the text it was given. A call is made when the request carries as
+ * many results as calls were made, and not by how many requests came: a conversation that was
+ * compacted carries fewer, and the stand-in closes instead of starting its calls over.
+ */
+export function aScriptOfCalls(turns: TheQwenTurns): TheQwenScript {
+  let made = 0;
+  return (body) => {
+    if (turns.isTheSummaryRequest?.(body) === true) {
+      return { text: turns.summary ?? 'Nothing is known about the work.' };
+    }
+    const call = turns.calls[made];
+    const results = messagesOf({ url: '', body, userAgent: '' }).filter(
+      ({ role }) => role === 'tool',
+    ).length;
+    if (
+      call !== undefined &&
+      theToolsOf({ url: '', body, userAgent: '' }).includes(call.tool) &&
+      results === made
+    ) {
+      made += 1;
+      return {
+        call,
+        ...(turns.fillsTheWindowAfter === made ? { promptTokens: A_FULL_WINDOW } : {}),
+      };
+    }
+    return { text: 'done' };
+  };
 }

@@ -87,8 +87,33 @@ export interface TheSandbox {
   remove(): void;
 }
 
-/** Makes a sandbox and writes the record the case stands on. */
-export function aSandbox(prefix: string, write?: (project: TheProjectToWrite) => void): TheSandbox {
+/**
+ * Files a case puts in the project after its record is written, by path from the project's root.
+ * A file that is already there (`mnema init` writes `AGENTS.md`) keeps what it holds and gets the
+ * text after a blank line, as a person adding a rule to a file the project already had; any other
+ * is created whole.
+ */
+export type TheFilesToPut = Readonly<Record<string, string>>;
+
+/** Puts the files a case asked for in `project`. */
+function putTheFiles(project: string, files: TheFilesToPut): void {
+  for (const [relative, text] of Object.entries(files)) {
+    const target = join(project, relative);
+    mkdirSync(dirname(target), { recursive: true });
+    if (existsSync(target)) {
+      writeFileSync(target, `${readFileSync(target, 'utf-8').trimEnd()}\n\n${text}`);
+    } else {
+      writeFileSync(target, text);
+    }
+  }
+}
+
+/** Makes a sandbox and writes the record, and then the files, the case stands on. */
+export function aSandbox(
+  prefix: string,
+  write?: (project: TheProjectToWrite) => void,
+  files?: TheFilesToPut,
+): TheSandbox {
   const root = mkdtempSync(join(tmpdir(), prefix));
   const home = join(root, 'home');
   const project = join(root, 'project');
@@ -144,6 +169,7 @@ export function aSandbox(prefix: string, write?: (project: TheProjectToWrite) =>
       measureTheServer: () => writeFileSync(measuring, ''),
       keepThePayloads: () => writeFileSync(keeping, ''),
     });
+    if (files !== undefined) putTheFiles(project, files);
   } catch (error) {
     sandbox.remove();
     throw error;

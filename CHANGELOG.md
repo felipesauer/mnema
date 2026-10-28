@@ -12,6 +12,18 @@ with its own changelog.
 
 ### Added
 
+- **The host contract measures whether a rule reaches the model, by where it is kept and by moment.** One rule carries a
+  sentinel, and each of the six hosts the contract starts without an account (Claude Code, Codex, OpenCode, the Copilot CLI,
+  Gemini CLI and Qwen Code) is asked whether the sentinel is in a request it sends its model, with the rule kept in `AGENTS.md`,
+  in the host's own instructions file, behind an `@` import, behind a mention in prose, and in the mnema record, and with a
+  control that keeps it nowhere. The moments are the start, late in a session of three calls (each host's own history is read,
+  not supposed), after a compaction the stand-in provokes and answers with a summary that does not hold the rule, and at a
+  permitted edit. A cell that could not be measured says why: the Copilot CLI ends its run at the summary and Gemini CLI asks
+  for none in a one-prompt run. The cases take `files` in each host's spec to build the arms, and a script of several turns in
+  the stand-in of each protocol. The result is `docs/rule-arrival.md`, generated from the table the cases hold and held to it by
+  a test of the main suite; the control must never arrive. The cases run in each host's job, on the pinned version on every
+  pull request and on the newest every week.
+
 - **The VS Code extension has a "What To Do" pick, a "Why Is This File Like This?" command and a mark on the `.mnema` folder.**
   `mnema: What To Do` (the Command Palette, the `...` menu of the awaiting view, a link in the status bar's tooltip) is a quick pick
   made of one `mnema status --json` read when it opens: a line per decision awaiting a judgment, in the order `mnema` gave, each
