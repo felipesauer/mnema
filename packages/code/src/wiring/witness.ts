@@ -207,7 +207,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
   const sigstore = witness
     .command('sigstore')
     .description(
-      "countersign each tail's last checkpoint with a Sigstore certificate: who signed in, and when Rekor logged it",
+      "countersign each tail's last checkpoint with a Sigstore certificate: who signed in, and when it was logged",
     )
     .addHelpText(
       'after',
@@ -222,7 +222,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
         'It refuses a tree that is not fully signed, as `stamp` does, and appends no event: the',
         'bundle is a file beside the checkpoint, `witness/<checkpoint>.sigstore.json`.',
         '',
-        'The bundle dates the checkpoint on Rekor’s clock and names who signed in. It speaks for',
+        'The bundle dates the checkpoint, by Rekor’s time or a timestamp authority’s, and names who signed in. It speaks for',
         'an identity of this record only once that identity names the same e-mail or workflow:',
         '`mnema key sigstore <identity>`. It is not a witness level: `verify` reads it only with',
         '`--against-sigstore`, as notes.',

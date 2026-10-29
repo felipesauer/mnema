@@ -25,6 +25,10 @@ with its own changelog.
   reads as it did before; what changes is what "in force" means for these decisions. Two accepts, or two retirements, are a
   divergence and are still in or out of force by their state (FORMAT.md section 6.7; `docs/convergence.md`).
 
+### Fixed
+
+- `mnema verify --against-sigstore` and the signature line of a stack being added no longer print `1970-01-01` as the time a Rekor v2 entry was logged. A v2 entry carries no `integratedTime`, so the time now comes from the timestamp authority the Sigstore library verified, and says so; a bundle with no verified time says "time not carried", never a date made up. In `verify --json`, `sigstore.findings[].reading.loggedAt` can now be absent (it always came, even as 1970) and `loggedAtBy` (`"rekor"` or `"timestamp-authority"`) is new; the text line reads `logged in Rekor, timestamped by the timestamp authority at <time>` for a timestamp authority's time.
+
 ## [0.1.4] - 2026-10-29
 
 ### Added

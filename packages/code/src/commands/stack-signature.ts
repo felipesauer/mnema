@@ -30,8 +30,10 @@ export type StackSignature =
       readonly identity: string;
       /** The OpenID issuer that vouched for it. */
       readonly issuer: string;
-      /** When Rekor logged the signature, on Rekor's clock. */
-      readonly loggedAt: string;
+      /** When the signature was logged, as verified; absent when the bundle carries no time. */
+      readonly loggedAt?: string;
+      /** Whose clock `loggedAt` is. */
+      readonly loggedAtBy?: 'rekor' | 'timestamp-authority';
       readonly logIndex: string;
     }
   /** There is a `stack.sigstore.json`, and it does not hold, for this reason. */
