@@ -688,7 +688,7 @@ describe('brief: everything that governs the work here', () => {
     expect(composed.disputed.map((one) => one.id)).toEqual(['dec-lost', 'dec-won']);
     for (const one of composed.disputed) {
       expect(one.divergence).toMatch(/^divergence between the (accept|rejection) by mnid:/);
-      expect(one.divergence).toContain('record it as a new decision, which a person accepts');
+      expect(one.divergence).toContain('record it as a new decision, which a person, or an agent where agent-accepts is on, accepts');
     }
   });
 

@@ -139,7 +139,7 @@ describe('divergentMoves', () => {
     );
     expect(line).toContain('accept');
     expect(line).toContain('rejection');
-    expect(line).toContain('record it as a new decision, which a person accepts');
+    expect(line).toContain('record it as a new decision, which a person, or an agent where agent-accepts is on, accepts');
   });
 
   it('does not call two accepts, or a task, an accept against a retirement', () => {

@@ -65,7 +65,7 @@ stream, ahead of the record, and the state it prints below is the last move's, a
 
 ```sh
 mnema show ADR-1
-#> this decision: divergence between the rejection by mnid:8072d8bf at 2026-10-16T… and the accept by mnid:79aa1e6b at 2026-10-16T…, made on machines that had not seen each other; not in force until it is decided again: record it as a new decision, which a person accepts.
+#> this decision: divergence between the rejection by mnid:8072d8bf at 2026-10-16T… and the accept by mnid:79aa1e6b at 2026-10-16T…, made on machines that had not seen each other; not in force until it is decided again: record it as a new decision, which a person, or an agent where agent-accepts is on, accepts.
 #> decision 01a14265-a017-7000-a83b-c9516d78ff90  ·  public
 #>   ADR-1: Use SQLite for the cache (accepted)
 #>   recorded by mnid:8072d8bf (a person)
@@ -92,7 +92,7 @@ mnema brief
 #> …
 #> Not in force, and not counted above: an accept and a retirement of each of these crossed.
 #>
-#> - `01a14265-a017-7000-a83b-c9516d78ff90` (ADR-1, Use SQLite for the cache): divergence between the rejection by mnid:8072d8bf at 2026-10-16T… and the accept by mnid:79aa1e6b at 2026-10-16T…, made on machines that had not seen each other; not in force until it is decided again: record it as a new decision, which a person accepts
+#> - `01a14265-a017-7000-a83b-c9516d78ff90` (ADR-1, Use SQLite for the cache): divergence between the rejection by mnid:8072d8bf at 2026-10-16T… and the accept by mnid:79aa1e6b at 2026-10-16T…, made on machines that had not seen each other; not in force until it is decided again: record it as a new decision, which a person, or an agent where agent-accepts is on, accepts
 #> …
 ```
 
@@ -102,7 +102,9 @@ they do hand over, `bootstrap` leaves it out of the decisions in force, the `sit
 Action does not judge a pull request by it. A rule that refuses a write, or asks for a person, does neither
 while it is in this state.
 
-The way out is a decision a person accepts: record the call again as a new decision. The record keeps both
+The way out is a new decision: record the call again, with the same words if they still hold, which makes a new
+decision whichever move was last (the disputed one is not taken for a decision already recorded), and a person,
+or an agent where `agent-accepts` is on, accepts it. The record keeps both
 moves, so the divergence stays named and the old decision stays out of force; nothing here picks one of the
 two machines.
 

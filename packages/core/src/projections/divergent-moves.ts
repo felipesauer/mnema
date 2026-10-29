@@ -221,5 +221,5 @@ export function divergenceSentence(move: DivergentMove): string {
     crossed.length > 1
       ? `${crossed.slice(0, -1).join(', ')} and ${crossed.at(-1)}`
       : crossed.join('');
-  return `divergence between ${between}, made on machines that had not seen each other; not in force until it is decided again: record it as a new decision, which a person accepts`;
+  return `divergence between ${between}, made on machines that had not seen each other; not in force until it is decided again: record it as a new decision, which a person, or an agent where agent-accepts is on, accepts`;
 }

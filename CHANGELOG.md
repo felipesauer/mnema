@@ -19,7 +19,8 @@ with its own changelog.
   `governing_rules` and the `rules` reading (the entry carries a `divergence` field with the line), the rules pushed before an edit, the
   opening context (`bootstrap`), the Action and the extension (neither judges a pull request by it), the `site` page and
   `show` leave it out of force and say, in one line, between which moves, by whom and when, and that it takes a new decision
-  a person accepts to put the call back. A rule that refuses a write or asks for a person does neither while it is in this state.
+  to put the call back (the same words recorded again make one, whichever move was last), which a person, or an agent where
+  agent-accepts is on, accepts. A rule that refuses a write or asks for a person does neither while it is in this state.
   `verify` (TypeScript and the Python reader) names it in its census as `decision-divergence`, informational: the verdict, the
   level and the exit are what they were. The fold is unchanged, so `show` still prints the state of the last move and a record
   reads as it did before; what changes is what "in force" means for these decisions. Two accepts, or two retirements, are a

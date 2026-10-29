@@ -170,7 +170,8 @@ afterEach(() => {
 });
 
 const WHY = /divergence between the (accept|rejection|supersede) by mnid:[0-9a-f]{8} at \S+/;
-const WAY_OUT = 'record it as a new decision, which a person accepts';
+const WAY_OUT =
+  'record it as a new decision, which a person, or an agent where agent-accepts is on, accepts';
 
 describe.each(CASES)('when %s', (_name, acceptAt, retireAt, retire) => {
   it('the brief does not print it as in force, and says why and the way out', async () => {
@@ -333,6 +334,27 @@ describe.each(CASES)('the way out, when %s', (_name, acceptAt, retireAt, retire)
     expect(text).not.toMatch(/already recorded|Nothing was written/);
     expect(text).not.toContain(id);
     await client.close();
+  });
+});
+
+describe.each([
+  ['the accept is last', 200, 100],
+  ['the supersede is last', 100, 200],
+] as const)('a decision that replaced the disputed one, when %s', (_name, acceptAt, retireAt) => {
+  it('the brief names the disputed one as not in force, not as accepted', async () => {
+    const id = await crossed('governs', acceptAt, retireAt, 'supersede');
+    const found = JSON.parse(await did('search', 'hosted queue', '--json')) as {
+      results?: { id: string; title?: string }[];
+      hits?: { id: string; title?: string }[];
+    };
+    const successor = (found.results ?? found.hits ?? [])[0]?.id;
+    expect(successor, JSON.stringify(found)).toBeDefined();
+    await did('decision', 'move', 'accept', successor as string, '--note', 'agreed');
+    const document = await did('brief');
+    expect(document).toContain('supersedes ADR-1: Use SQLite for the queue');
+    expect(document).not.toMatch(/supersedes ADR-1: Use SQLite for the queue \(accepted\)/);
+    expect(document).toMatch(/supersedes ADR-1: Use SQLite for the queue \(not in force/);
+    expect(id).not.toBe(successor);
   });
 });
 

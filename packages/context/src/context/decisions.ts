@@ -210,6 +210,12 @@ export type NamedDecision =
       readonly adr: string;
       readonly title: string;
       readonly state: string;
+      /**
+       * Present when an accept and a retirement of this decision crossed (ADR-121): the `state`
+       * is what the fold kept, and the decision is in force nowhere, which a line that names it
+       * says instead of the state.
+       */
+      readonly divergence?: true;
     }
   | { readonly found: false; readonly id: string };
 
@@ -244,7 +250,17 @@ export function nameDecision(caches: readonly ProjectionCache[], id: string): Na
   for (const cache of caches) {
     const held = cache.getDecision(id);
     if (held !== null) {
-      return { found: true, id, adr: held.adr, title: held.title, state: held.state };
+      const apart = cache
+        .divergentMoves()
+        .some((move) => move.entityId === id && acceptedAgainstRetired(move));
+      return {
+        found: true,
+        id,
+        adr: held.adr,
+        title: held.title,
+        state: held.state,
+        ...(apart ? { divergence: true as const } : {}),
+      };
     }
   }
   return { found: false, id };

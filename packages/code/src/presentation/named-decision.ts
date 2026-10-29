@@ -34,6 +34,8 @@ function cutTitle(title: string, limit: number): string {
 export function namedDecisionText(named: NamedDecision, titleLimit?: number): string {
   if (!named.found) return `${oneLine(named.id)} (not in the trees read)`;
   // The state is parenthesized in the ONE place that composes a state into a part, `asState`.
-  const state = asState(oneLine(named.state)).text;
+  const state = asState(
+    named.divergence === true ? 'not in force, divergence' : oneLine(named.state),
+  ).text;
   return `${oneLine(named.adr)}: ${titleLimit === undefined ? oneLine(named.title) : cutTitle(oneLine(named.title), titleLimit)} ${state}`;
 }

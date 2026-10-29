@@ -1729,8 +1729,9 @@ same fact cannot be read from its `from` alone: tasks are read by their position
 task leaves a state again, so tasks are read by their order"). An accept and a retirement (a rejection, or a supersede) of one decision out of
 the same state, by moves that did not see each other, are more than that, because the fold would let
 the later `at` decide whether the decision governs: a reader that says what is in force leaves such
-a decision out and says why, whichever move is last, and a person puts the call back in force with a
-new decision. The census names it as `decision-divergence`, informational, the exit unchanged, at the
+a decision out and says why, whichever move is last, and the call is put back in force by a
+new decision, which a person, or an agent where agent-accepts is on, accepts (the same words
+recorded again make one, whichever move was last). The census names it as `decision-divergence`, informational, the exit unchanged, at the
 tail and `seq` of the first of the moves in the merged order, in both readers (the second reader
 names it as a §6.7 note with the same rule and place:
 `packages/chain/src/chain/second-reader-agrees-on-what-is-not-applied.test.ts`, "without
