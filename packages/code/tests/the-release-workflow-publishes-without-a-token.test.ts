@@ -8,7 +8,7 @@
  * - the job that publishes asks for the `npm` environment (so a person approves it), holds `id-token: write`
  *   (the OIDC the trusted publisher trusts) and nothing wider than `contents: read`;
  * - nothing in it that publishes a package reads a secret: no `secrets.` outside the one job that publishes the
- *   extension to the stores (which reads two, and only those), no `NODE_AUTH_TOKEN`, no `NPM_TOKEN`;
+ *   extension to Open VSX (which reads one, and only that), no `NODE_AUTH_TOKEN`, no `NPM_TOKEN`;
  * - it publishes the tarball of each package with `--provenance --access public`, in the order chain, core,
  *   context, stacks, code;
  * - the tag and the release belong to a job that needs the publish, and no step before the publish creates one;
@@ -16,7 +16,9 @@
  * - the two jobs that write outside (the publish and the tag and release) ask for the `npm` environment, in
  *   both ways to reach the tag, so nothing is tagged or released without a person's approval;
  * - no job that installs or builds can ask for the OIDC token, and the job that can publishes without
- *   installing or building anything (not even a newer npm: it only reads the one it has);
+ *   installing or building anything (not even a newer npm: it only reads the one it has); the one other job
+ *   that can ask, the extension's to the Marketplace, installs no package script and holds no secret, and the
+ *   Open VSX job, which runs the code of a third party with a token, cannot ask;
  * - the publish checks the tarballs it downloaded against the SHA-256 the pack job exposes as outputs, not
  *   against a file that travels in the same artifact;
  * - the publish needs the packed install and does not run when it failed (no `always()` in its `if`).
@@ -85,7 +87,8 @@ describe('the release workflow publishes without a token', () => {
       'release',
       'vsix',
       'attach-vsix',
-      'publish-vsix',
+      'publish-marketplace',
+      'publish-open-vsx',
     ]);
     for (const name of names) {
       const text = job(name);
@@ -93,6 +96,9 @@ describe('the release workflow publishes without a token', () => {
         expect(text, `${name} installs or builds`).not.toMatch(/id-token/);
       }
     }
+    const asking = names.filter((name) => /^ {6}id-token: write$/m.test(job(name)));
+    expect(asking).toEqual(['publish', 'publish-marketplace']);
+    expect(job('publish-open-vsx')).not.toMatch(/id-token|--oidc/);
     expect(job('pack')).toMatch(/^ {6}contents: read$/m);
     expect(job('pack')).toContain('pnpm install --frozen-lockfile');
     expect(job('pack')).toContain('sha256sum');
@@ -129,15 +135,16 @@ describe('the release workflow publishes without a token', () => {
     expect(condition).not.toMatch(/always\(\)|cancelled\(\)|failure\(\)|success\(\)/);
   });
 
-  it('holds no secret for the packages, and the only secrets are the two store tokens of the extension job', () => {
-    const stores = job('publish-vsix');
+  it('holds no secret for the packages, and the only secret is the Open VSX token of the extension job', () => {
+    const market = job('publish-marketplace');
+    const stores = job('publish-open-vsx');
     expect(CODE.replace(stores, '')).not.toMatch(/\bsecrets\./);
-    expect([...stores.matchAll(/\bsecrets\.(\w+)/g)].map((m) => m[1])).toEqual([
-      'VSCE_PAT',
-      'OVSX_PAT',
-    ]);
+    expect([...stores.matchAll(/\bsecrets\.(\w+)/g)].map((m) => m[1])).toEqual(['OVSX_PAT']);
+    expect(CODE).not.toMatch(/VSCE_PAT/);
+    expect(market).toMatch(/vsce" publish --oidc --skip-duplicate /);
     expect(stores).toMatch(/^ {4}environment: extension-stores$/m);
-    expect(CODE.replace(stores, '')).not.toMatch(/extension-stores/);
+    expect(market).toMatch(/^ {4}environment: extension-stores$/m);
+    expect(CODE.replace(stores, '').replace(market, '')).not.toMatch(/extension-stores/);
     expect(CODE).not.toMatch(/NODE_AUTH_TOKEN|NPM_TOKEN|_authToken|npm login|npm adduser/);
     expect(CODE).not.toMatch(/registry-url:/);
   });

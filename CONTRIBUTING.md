@@ -224,6 +224,22 @@ so before running again check that the commits since are not changes to the pack
 A push to `main` whose root version is the one npm already serves publishes nothing and ends green.
 The workflow has published versions since 0.1.1 (the first one, 0.1.0, was published by hand).
 
+### The extension in the stores
+
+The VS Code extension is published by two jobs of `release.yml`, both asking for your approval in the
+`extension-stores` environment (required reviewer yourself, "Deployment branches" limited to `main`):
+
+- **The Visual Studio Marketplace** by trusted publishing: the job holds `id-token: write` and no secret, and runs
+  `vsce publish --oidc`. For that the publisher `mnema` needs a Trusted Publishing policy (on the publisher's page of
+  the Marketplace management portal): Repository owner `felipesauer`, Repository `mnema`, Workflow `release.yml`,
+  Environment `extension-stores`. Make the policy before the release is merged. Once a publish by this path has
+  worked, delete the `VSCE_PAT` secret from the `extension-stores` environment: nothing reads it any more.
+- **Open VSX** with the environment's one secret, `OVSX_PAT`, in a job of its own that cannot ask for the OIDC token,
+  so the code of a third party (`ovsx`) never runs in the job that can.
+
+Both install their command line from `.github/release-tools` with `npm ci --ignore-scripts`, check the file against
+the SHA-256 the packing job exposes, and publish with `--skip-duplicate`, so a run that stopped halfway runs again.
+
 ## A pull request
 
 - **One change per pull request.** If the work has two parts, it is two pull requests.
