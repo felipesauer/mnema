@@ -18,7 +18,7 @@
   palette.
 - `mnema: What To Do` lists the decisions awaiting a judgment, and each one opens whole.
 - `mnema: Why Is This File Like This?` (on a file in the Explorer or in the editor, and in the
-  palette) shows what `mnema why` printed for it.
+  palette) shows what the command line's `why` printed for it.
 - The `.mnema` folder wears an `M` in the Explorer.
 - It starts far fewer `mnema` processes, and none in a folder without a `.mnema`.
 - A file whose name starts with a dash now gets its rules.
