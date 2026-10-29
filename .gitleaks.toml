@@ -26,3 +26,7 @@ paths = [
 description = "The fingerprint of the vendor's published release signing key, which a workflow compares against."
 regexTarget = "match"
 regexes = ['''SIGNING_KEY: [0-9A-F]{40}''']
+
+[[allowlists]]
+description = "RFC 8032 section 7.1 TEST 1's secret key, which the RFC publishes: the published signed-message vectors are signed by it so anyone can reproduce them (FORMAT.md, The published vectors). This value and no other."
+regexes = ['''^9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60$''']
