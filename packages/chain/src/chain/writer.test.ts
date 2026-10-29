@@ -786,6 +786,8 @@ describe('a tail is born at its first append, not when its writer opens', () => 
       [
         `keys/${w.signerFingerprint}.inst`,
         `keys/${w.signerFingerprint}.pub`,
+        // The note of the last entry written (`kept-head.ts`), in `locks/`, out of the record.
+        `locks/${w.tail}.head`,
         `tails/${w.tail}/000001.jsonl`,
         `tails/${w.tail}/tailproof.json`,
       ].sort(),

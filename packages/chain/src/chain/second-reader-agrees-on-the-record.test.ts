@@ -844,6 +844,17 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // ADR-123: a second, different line at a seq the tail already holds, following the same
+    // line: one tail written from one head in two places and joined. A fork, in both readers.
+    name: 'forked-tail',
+    refusals: 1,
+    section: '3',
+    says: 'a fork in the sequence',
+    productSays: 'fork: two different entries hold seq 3',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
     name: 'tail-proof-removed',
     refusals: 1,
     section: '6.1',

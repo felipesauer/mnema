@@ -184,6 +184,22 @@ meets a gap reports it and names where
 always been"), and both readers refuse it, naming the `seq`
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`, `reordered-lines`).
 
+**A fork is a break of its own, and both readers name it.** Two different entries
+that hold one `seq` and name the same `prev` (or both open the tail, at `seq` 0) are
+one tail written from one head in two places and then joined: a checkout copied
+whole, a backup restored, each side appending, and a merge that kept both sides. A
+reader that meets an entry whose `seq` an earlier entry of the tail already holds,
+from the same parent and with another entry hash, reports a **fork** at that `seq`
+rather than a gap; a line repeated byte for byte holds no second fact, and is still a
+gap. It is refused like every other break, and it changes no byte of this format
+(`packages/chain/src/chain/a-tail-is-not-forked.test.ts`; the second reader agrees,
+`forked-tail` in `second-reader-agrees-on-the-record.test.ts`). This product's writer
+avoids the common way to make one: it keeps, outside the record, the last entry it
+wrote to its tail, and when the tail no longer ends there (one checkout switched to
+another branch, an installation id copied into another checkout) it writes to a new
+tail instead of appending. A copy that carries that note with it cannot be seen by
+its writer, which is why the readers name what it leaves.
+
 **A cut has one account in the format, and it is for a WHOLE tail: the waiver.** A
 `tail.pruned` (`payload.tail`, `payload.throughHash`, `payload.eventCount`,
 `payload.reason`; its `subject` is the anchor the named tail served) is written on
@@ -223,7 +239,7 @@ if they were events. The layout, which only ever appeared here incidentally in ย
 <record>/.editorconfig                          `unset` for every property an outer EditorConfig could impose on these bytes; written by `init`; not part of the proof
 <record>/README.md                              written by `init`, for a person or an agent who opens the folder; not part of the proof
 <record>/site/                                  the page `mnema site` writes by default; ignored by the tree's .gitignore; not part of the proof
-<record>/locks/                                 the lock of each tail while a write holds it (`<tailId>.lock`), the note of which heads a tail last cited (`<tailId>.cited`) and the projection a reader keeps (`projection.db`, and the files SQLite keeps beside it); ignored by the tree's .gitignore; never read by a reader; deleting it costs a rebuild or one repeated citation, never a verdict; not part of the proof
+<record>/locks/                                 the lock of each tail while a write holds it (`<tailId>.lock`), the note of which heads a tail last cited (`<tailId>.cited`), the note of the last entry this installation wrote to its tail (`<tailId>.head`) and the projection a reader keeps (`projection.db`, and the files SQLite keeps beside it); ignored by the tree's .gitignore; never read by a reader; deleting it costs a rebuild, one repeated citation or one new tail, never a verdict; not part of the proof
 <record>/inherit.json                           the record this one inherits, by its location and one commit (`mnema inherit`); committed; not part of the proof
 <record>/keys/<fingerprint>.pub                 the public keys (ยง6)
 <record>/tails/<tailId>/NNNNNN.jsonl            the segments, six digits, in name order

@@ -28,6 +28,16 @@ with its own changelog.
 
 ### Fixed
 
+- **A tail is not forked by a branch switch, and a fork that still happens is called one.** One checkout written on two
+  branches, or a checkout whose installation id was copied from another, wrote one tail on two lines of history with exit 0:
+  git then conflicted on the segment and on the checkpoints, and a merge that kept both sides was refused by both readers as a
+  `seq gap`. The writer now keeps, in the record's `locks/` (ignored by git, never read by a reader), the last entry it wrote to
+  its tail; when the tail no longer ends there, or holds entries it has no note of writing, it writes to a new tail and leaves the
+  old one as it is, and says so on standard error (`mnema: wrote to a new tail, ...`). The two branches then merge clean and
+  verify. The first write of an installation made before this version opens one new tail, for the same reason. A copy that
+  carries the note with it (a `cp -a` of the checkout, a backup restored whole) is still written from one head in two places;
+  `verify` and the Python reader refuse what it leaves as before, and now name it: `fork: two different entries hold seq N and
+  follow the same entry`, and `a fork in the sequence` under section 3. No byte of the format changes (`FORMAT.md` section 3).
 - `mnema verify --against-sigstore` and the signature line of a stack being added no longer print `1970-01-01` as the time a Rekor v2 entry was logged. A v2 entry carries no `integratedTime`, so the time now comes from the timestamp authority the Sigstore library verified, and says so; a bundle with no verified time says "time not carried", never a date made up. In `verify --json`, `sigstore.findings[].reading.loggedAt` can now be absent (it always came, even as 1970) and `loggedAtBy` (`"rekor"` or `"timestamp-authority"`) is new; the text line reads `logged in Rekor, timestamped by the timestamp authority at <time>` for a timestamp authority's time.
 
 ## [0.1.4] - 2026-10-29

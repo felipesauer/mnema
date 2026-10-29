@@ -20,7 +20,15 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -99,7 +107,12 @@ function foundedRepository(repo: string): string {
   const w = openChainForWriting(root, { keyRoot });
   w.append(
     identityFounded(
-      { at: new Date().toISOString(), who: w.anchor, signerFp: w.signerFingerprint, subject: w.anchor },
+      {
+        at: new Date().toISOString(),
+        who: w.anchor,
+        signerFp: w.signerFingerprint,
+        subject: w.anchor,
+      },
       { foundingFp: w.signerFingerprint },
     ),
   );
@@ -116,7 +129,12 @@ function write(repo: string, content: string): string {
   });
   w.append(
     memoryCaptured(
-      { at: new Date().toISOString(), who: w.anchor, signerFp: w.signerFingerprint, subject: content },
+      {
+        at: new Date().toISOString(),
+        who: w.anchor,
+        signerFp: w.signerFingerprint,
+        subject: content,
+      },
       { content },
     ),
   );
@@ -148,7 +166,9 @@ function secondReading(record: string) {
 
 /** Resolves every conflicted file by keeping both sides: the marker lines go, the lines stay. */
 function resolveByUnion(repo: string): void {
-  const conflicted = must(repo, 'diff', '--name-only', '--diff-filter=U').split('\n').filter(Boolean);
+  const conflicted = must(repo, 'diff', '--name-only', '--diff-filter=U')
+    .split('\n')
+    .filter(Boolean);
   expect(conflicted.length).toBeGreaterThan(0);
   for (const file of conflicted) {
     const path = join(repo, file);
@@ -174,7 +194,12 @@ describe('one checkout written on two branches', () => {
     const second = write(a, 'from y');
     expect(second).not.toBe(tail);
     expect(told).toEqual([
-      { from: tail, to: second, kept: { seq: 1, hash: expect.any(String) }, found: { seq: 0, hash: expect.any(String) } },
+      {
+        from: tail,
+        to: second,
+        kept: { seq: 1, hash: expect.any(String) },
+        found: { seq: 0, hash: expect.any(String) },
+      },
     ]);
     commit(a, 'y');
 

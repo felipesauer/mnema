@@ -389,6 +389,23 @@ const AGREEMENTS: readonly Agreement[] = [
       refusals: 6,
     },
   },
+  {
+    // ADR-123: one tail written from one head in two places and joined. Both readers used to
+    // call it a gap in the sequence, which says nothing of what happened; both name it a fork,
+    // at the second line that holds the seq, and say it once.
+    name: 'forked-tail',
+    verdict: 'refused',
+    product: {
+      layer: 'T1',
+      says: 'fork: two different entries hold seq 3 and follow the same entry',
+    },
+    second: {
+      section: '3',
+      says: 'a fork in the sequence: two different lines hold seq 3 and follow the same line',
+      where: '000001.jsonl:5',
+      refusals: 1,
+    },
+  },
   ...(
     [
       ['whitespace-in-a-signed-line', 3],

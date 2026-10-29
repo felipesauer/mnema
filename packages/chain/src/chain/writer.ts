@@ -635,10 +635,19 @@ export class ChainWriter {
     const last = tip.at(-1);
     const kept = readKeptHead(this.layout, this.tailId);
     const found = last === undefined ? undefined : { seq: last.link.seq, hash: last.link.hash };
+    // The one end that is not the noted entry and is still this installation's: the noted entry
+    // itself, torn by a crash into the fragment the cut below removes (whole but for its
+    // newline, it parses and is that entry; cut shorter, it sits at the seq after the end).
+    const tornOwnWrite =
+      fragment !== undefined &&
+      kept !== undefined &&
+      kept.seq === (found?.seq ?? -1) + 1 &&
+      (!fragment.parses || walked.at(-1)?.link.hash === kept.hash);
     const endsWhereLeft =
-      kept === undefined
+      tornOwnWrite ||
+      (kept === undefined
         ? found === undefined
-        : found !== undefined && found.seq === kept.seq && found.hash === kept.hash;
+        : found !== undefined && found.seq === kept.seq && found.hash === kept.hash);
     if (!endsWhereLeft) {
       this.movedOn = { from: this.tailId, to: this.tailId, kept, found };
       return;
