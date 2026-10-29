@@ -43,11 +43,13 @@ import {
   catalogUpcasters,
   chainExtent,
   committedPublicKey,
+  describeNewTail,
   ensureTree,
   isProtected,
   KeyIsProtectedError,
   listPrivateKeyFiles,
   localKeyFingerprint,
+  type NewTail,
   openChainForWriting,
   passphraseFromEnvironment,
   signerAt,
@@ -273,6 +275,18 @@ export function chainRootForScope(trees: ResolvedTrees, scope: Scope): string | 
 export interface OpenTreeOptions {
   readonly maxSegmentBytes?: number;
   readonly maxUnsignedEvents?: number;
+  /**
+   * Told when the write goes to a new tail because the installation's own no longer ends where
+   * it left it (`NewTail`, in the chain). Unset, the sentence goes to standard error, which is
+   * the person's terminal on the command line and the host's log under the MCP server: the one
+   * channel every surface has that no answer is parsed from.
+   */
+  readonly onNewTail?: (opened: NewTail) => void;
+}
+
+/** Where a write that opened a new tail says so when its caller did not ask to be told. */
+function sayNewTail(opened: NewTail): void {
+  process.stderr.write(`${describeNewTail(opened)}\n`);
 }
 
 /**
@@ -325,6 +339,7 @@ export function openTreeForWriting(
   return openChainForWriting(chainRoot, {
     keyRoot,
     citeHeads: true,
+    onNewTail: sayNewTail,
     ...(installationRoot === undefined ? {} : { installationRoot }),
     ...options,
   });

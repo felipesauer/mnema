@@ -213,7 +213,9 @@ function parseLink(raw: object): EntryLink {
  *
  * `expectedPrev` is null for the first entry of a tail, and `expectedSeq` counts from 0:
  * seqs run contiguously from the tail's birth, which is what makes a duplicate one
- * detectable at all.
+ * detectable at all. `heldAt` answers for the seqs already walked, so a seq used a second
+ * time by a DIFFERENT entry of the same parent is told apart from a line repeated: the first
+ * is a {@link LinkBreakKind} `fork`, the second a `seq-gap`.
  */
 export type LinkBreakKind =
   /**
@@ -224,18 +226,39 @@ export type LinkBreakKind =
    */
   | { readonly kind: 'foreign-tail'; readonly named: string; readonly storedUnder: string }
   | { readonly kind: 'seq-gap'; readonly expected: number; readonly found: number }
+  /**
+   * Two different entries hold one seq and follow the same entry: the tail was appended to
+   * from one head in two places (a copied checkout, a restored backup, one checkout written
+   * on two branches by a writer from before it kept its head) and the two were joined, by a
+   * merge or by hand. It is a break like the others, and it is named because the shape it
+   * leaves (the second line's seq already used) used to be reported as a `seq gap`, which
+   * says nothing of what happened. A line repeated byte for byte is not this: it holds no
+   * second fact, and it stays a gap.
+   */
+  | { readonly kind: 'fork'; readonly seq: number }
   | { readonly kind: 'prev-break' };
+
+/**
+ * What a reader already holds at a seq it walked past: the link of the entry that took it.
+ * Asked only for a seq below the one expected, which is the one question a fork needs.
+ */
+export type HeldLinkAt = (seq: number) => Pick<EntryLink, 'hash' | 'prev'> | undefined;
 
 export function linkBreakAt(
   tail: string,
   entry: Entry,
   expectedSeq: number,
   expectedPrev: string | null,
+  heldAt: HeldLinkAt,
 ): LinkBreakKind | undefined {
   if (entry.link.tail !== tail) {
     return { kind: 'foreign-tail', named: entry.link.tail, storedUnder: tail };
   }
   if (entry.link.seq !== expectedSeq) {
+    const held = entry.link.seq < expectedSeq ? heldAt(entry.link.seq) : undefined;
+    if (held !== undefined && held.hash !== entry.link.hash && held.prev === entry.link.prev) {
+      return { kind: 'fork', seq: entry.link.seq };
+    }
     return { kind: 'seq-gap', expected: expectedSeq, found: entry.link.seq };
   }
   if (entry.link.prev !== expectedPrev) return { kind: 'prev-break' };
@@ -255,6 +278,12 @@ export function describeLinkBreak(broke: LinkBreakKind): string {
       return `entry names tail ${oneLine(broke.named)}, stored under ${oneLine(broke.storedUnder)}`;
     case 'seq-gap':
       return `seq gap: expected ${broke.expected}, found ${broke.found}`;
+    case 'fork':
+      return (
+        `fork: two different entries hold seq ${broke.seq} and follow the same entry: the tail ` +
+        'was written from one head in two places (a copied checkout, a restored backup) and the ' +
+        'two were joined'
+      );
     case 'prev-break':
       return 'prev-hash break: does not chain to the previous entry';
   }

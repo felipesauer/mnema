@@ -432,11 +432,20 @@ export function chainArrivals(
     // {@link TailReach.boundary}). What is still outside this question is a break BELOW
     // the boundary, bytes a previous reading already accepted, and that is the full
     // reading's to find, not this one's.
+    // A seq below the boundary is asked about only when an arrival takes one again, which is
+    // the question that tells a fork from a gap: the whole tail is read then, and only then, so
+    // the arrivals name it in the words a full reading of the same bytes does.
+    let whole: readonly Entry[] | undefined;
     const broke = firstLinkBreakFrom(
       tail,
       entries,
       (covered?.lastSeq ?? -1) + 1,
       covered?.lastHash ?? null,
+      (seq) => {
+        whole ??= readTail(layout, tail, upcasters).entries;
+        const held = whole[seq];
+        return held?.link.seq === seq ? held.link : undefined;
+      },
     );
     if (broke !== undefined) {
       broken.push(broke);

@@ -67,6 +67,7 @@ import { CodedError } from './coded-error.js';
 import { appendDurably } from './durable.js';
 import { type Entry, parseEntry, sealEntry, serializeEntry } from './entry.js';
 import type { WrittenEvent } from './hash.js';
+import { type KeptHead, keepHead, readKeptHead } from './kept-head.js';
 import type { KeyPair } from './keys.js';
 import { materializePublicKey, signerOf, writeAnchor } from './keystore.js';
 import {
@@ -120,6 +121,52 @@ export interface WriterOptions {
    * left out, the writer writes exactly the event it was handed.
    */
   readonly citeHeads?: boolean;
+  /**
+   * Told when this writer opens a new tail rather than append to its own, because that tail no
+   * longer ends at the entry this installation last wrote to it: see {@link NewTail}. The
+   * writer says nothing anywhere else; a surface that has a person or an agent to tell passes
+   * this.
+   */
+  readonly onNewTail?: (opened: NewTail) => void;
+}
+
+/**
+ * A new tail opened in place of one that no longer ends where this installation left it
+ * (ADR-123: a tail is not forked).
+ *
+ * The installation's tail files are committed and its id is not: a branch switch, a merge that
+ * took another side, a backup restored, or the id copied into another checkout leaves the id
+ * naming a tail whose end is not the entry this installation wrote last ({@link KeptHead}).
+ * Appending there is what forks a tail, so the writer takes a new installation id and writes a
+ * new tail instead: the old one is left exactly as it is, and both verify.
+ */
+export interface NewTail {
+  /** The tail this installation wrote to until now. */
+  readonly from: string;
+  /** The tail it writes to from this act on. */
+  readonly to: string;
+  /** The last entry this installation wrote to `from`, when it kept a note of one. */
+  readonly kept: KeptHead | undefined;
+  /** The entry `from` ends with on disk, or undefined when it holds none. */
+  readonly found: KeptHead | undefined;
+}
+
+/** The sentence a {@link NewTail} is told in: one wording for every surface that tells it. */
+export function describeNewTail(opened: NewTail): string {
+  const held = (opened.found?.seq ?? -1) + 1;
+  const why =
+    opened.kept === undefined
+      ? `this installation has no note of writing it here, and it holds ${held} entries (an ` +
+        'installation id copied from another checkout, or a write from before this note was kept)'
+      : opened.found === undefined
+        ? `the last entry this installation wrote to it (seq ${opened.kept.seq}) is gone from it`
+        : `it ends at seq ${opened.found.seq}, not at the entry this installation wrote last ` +
+          `(seq ${opened.kept.seq})`;
+  return (
+    `mnema: wrote to a new tail, ${opened.to}, and left tail ${opened.from} as it is: ${why}. ` +
+    'A branch switch, a merge, a restored backup or a copied checkout does that, and appending ' +
+    'there would fork the tail.'
+  );
 }
 
 /**
@@ -219,9 +266,18 @@ export class ChainWriter {
   private readonly maxSegmentBytes: number;
   private readonly maxUnsignedEvents: number;
   /** What an append cites, when this writer cites at all. */
-  private readonly heads: HeadsToCite | undefined;
+  private heads: HeadsToCite | undefined;
 
-  private readonly tailId: string;
+  private tailId: string;
+  private readonly citeHeads: boolean;
+  private readonly onNewTail: ((opened: NewTail) => void) | undefined;
+  /**
+   * Set by {@link recover} when the tail does not end at the entry this installation last
+   * wrote to it: the act does not run there, and {@link underTailLock} moves to a new tail.
+   */
+  private movedOn: NewTail | undefined;
+  /** The head last kept in the note ({@link keepHead}), so an act that wrote nothing writes no note. */
+  private keptHash: string | null = null;
 
   constructor(
     private readonly layout: ChainLayout,
@@ -234,11 +290,20 @@ export class ChainWriter {
      * first key, made in memory and kept here (`keyToSignWith`). Run once, at birth.
      */
     private readonly keepBeforeBirth?: () => void,
+    /**
+     * The installation id to write under once the current one names a tail that no longer
+     * ends where this installation left it ({@link NewTail}): another process's, when it moved
+     * on first, or a new one. Absent for an installation whose id is not kept yet, whose tail
+     * nobody else can have written.
+     */
+    private readonly nextInstallationId?: (current: string) => string,
   ) {
     this.maxSegmentBytes = options.maxSegmentBytes ?? DEFAULT_MAX_SEGMENT_BYTES;
     this.maxUnsignedEvents = options.maxUnsignedEvents ?? DEFAULT_MAX_UNSIGNED_EVENTS;
     this.tailId = `${keyPair.fingerprint}-${installationId}`;
-    this.heads = options.citeHeads ? new HeadsToCite(layout, this.tailId, upcasters) : undefined;
+    this.citeHeads = options.citeHeads === true;
+    this.onNewTail = options.onNewTail;
+    this.heads = this.citeHeads ? new HeadsToCite(layout, this.tailId, upcasters) : undefined;
     // NOTHING IS WRITTEN HERE. Both the recovery and the birth happen in the first act,
     // under the tail's lock.
     //
@@ -326,17 +391,81 @@ export class ChainWriter {
     // class forwards, because nothing in the product would have a reason to differ
     // from them, and an option no caller sets is the defect this workspace already
     // has a name for.
-    return withTailLock(tailLockPath(this.layout, this.tailId), () => {
-      this.holding = true;
-      try {
-        this.resyncIfMoved();
-        const result = act();
-        this.mark = this.readMark();
-        return result;
-      } finally {
-        this.holding = false;
-      }
-    });
+    //
+    // A TAIL THAT NO LONGER ENDS WHERE THIS INSTALLATION LEFT IT is not written to: the resync
+    // finds it ({@link recover}), the act does not run, and the next installation id is chosen
+    // while this tail's lock is still held, so a second process of this installation that
+    // meets the same end after it adopts the id it chose instead of choosing another. The act
+    // then runs under the new tail's lock. Two rounds at most: a new id names a tail nobody
+    // has written, and one another process chose ends where that process left it.
+    for (;;) {
+      const held = withTailLock(tailLockPath(this.layout, this.tailId), () => {
+        this.holding = true;
+        try {
+          this.resyncIfMoved();
+          const movedOn = this.movedOn;
+          if (movedOn !== undefined) {
+            return { movedOn, next: this.chooseNextInstallation() };
+          }
+          const result = act();
+          this.mark = this.readMark();
+          return { result };
+        } finally {
+          this.keepHeadIfWritten();
+          this.holding = false;
+        }
+      });
+      if ('result' in held) return held.result;
+      this.moveTo(held.movedOn, held.next);
+    }
+  }
+
+  /** The installation id the next tail is written under: see {@link nextInstallationId}. */
+  private chooseNextInstallation(): string {
+    const current = this.tailId.slice(this.keyPair.fingerprint.length + 1);
+    if (this.nextInstallationId === undefined) {
+      throw new Error(
+        `chain: tail ${this.tailId} does not end where this installation left it, and this ` +
+          'writer was given no way to choose another installation id',
+      );
+    }
+    return this.nextInstallationId(current);
+  }
+
+  /** Points this writer at the tail of `installationId` and tells whoever asked to be told. */
+  private moveTo(movedOn: NewTail, installationId: string): void {
+    this.tailId = `${this.keyPair.fingerprint}-${installationId}`;
+    this.heads = this.citeHeads
+      ? new HeadsToCite(this.layout, this.tailId, this.upcasters)
+      : undefined;
+    this.resetForTail();
+    this.onNewTail?.({ ...movedOn, to: this.tailId });
+  }
+
+  /** Everything this writer believed about the tail it left, back to a tail it has not read. */
+  private resetForTail(): void {
+    this.head = null;
+    this.nextSeq = 0;
+    this.segment = 1;
+    this.segmentBytes = 0;
+    this.lastCheckpointedSeq = -1;
+    this.lastCheckpointHash = null;
+    this.pending = [];
+    this.damage = undefined;
+    this.movedOn = undefined;
+    this.keptHash = null;
+    this.born = false;
+    this.mark = { segmentBytes: -2, nextSegment: false, checkpointBytes: -2 };
+  }
+
+  /**
+   * Keeps the last entry this writer wrote ({@link keepHead}), on the way out of every hold and
+   * only when it moved: a note per act that appended, none for one that did not.
+   */
+  private keepHeadIfWritten(): void {
+    if (this.movedOn !== undefined || this.head === null || this.head === this.keptHash) return;
+    keepHead(this.layout, this.tailId, { seq: this.nextSeq - 1, hash: this.head });
+    this.keptHash = this.head;
   }
 
   /**
@@ -494,6 +623,28 @@ export class ChainWriter {
       return;
     }
     this.damage = undefined;
+    // THE END IS THE ENTRY THIS INSTALLATION WROTE LAST, OR THIS TAIL IS NOT WRITTEN TO. This
+    // recovery used to refuse only an end below the coverage (above), and appended to any other
+    // end: one checkout switched to another branch, or an id copied into another checkout, went
+    // on writing one tail on two lines of history with exit 0, and the merge that joined them
+    // was refused by both readers. What it holds now is the note of the last entry this
+    // installation wrote here ({@link readKeptHead}): an end that is not that entry (shorter,
+    // longer, or another entry at that seq), or a tail that holds entries and no note at all,
+    // is left exactly as it is, fragment included, and the act goes to a new tail
+    // ({@link NewTail}). A tail that holds nothing has nothing to fork.
+    const last = tip.at(-1);
+    const kept = readKeptHead(this.layout, this.tailId);
+    const found = last === undefined ? undefined : { seq: last.link.seq, hash: last.link.hash };
+    const endsWhereLeft =
+      kept === undefined
+        ? found === undefined
+        : found !== undefined && found.seq === kept.seq && found.hash === kept.hash;
+    if (!endsWhereLeft) {
+      this.movedOn = { from: this.tailId, to: this.tailId, kept, found };
+      return;
+    }
+    this.movedOn = undefined;
+    this.keptHash = kept?.hash ?? null;
     // Truncates back to the end of the last COMPLETE line, so the next append
     // continues a clean tail instead of landing after the fragment, which
     // would turn a once-benign torn line into a mid-file malformed line that
@@ -501,7 +652,6 @@ export class ChainWriter {
     // ends in a newline, so this only ever removes a genuine crash fragment.
     if (lastSegment !== undefined && fragment !== undefined)
       truncateSync(lastSegment, fragment.start);
-    const last = tip.at(-1);
     if (last !== undefined) {
       this.head = last.link.hash;
       this.nextSeq = last.link.seq + 1;

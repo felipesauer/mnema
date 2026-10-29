@@ -215,6 +215,8 @@ export {
   ChainWriter,
   DEFAULT_MAX_SEGMENT_BYTES,
   DEFAULT_MAX_UNSIGNED_EVENTS,
+  describeNewTail,
+  type NewTail,
   TailDamagedError,
   type WriterOptions,
 } from './chain/writer.js';
