@@ -466,6 +466,7 @@ with its own changelog.
 
 ### Security
 
+- **The extension reaches the Visual Studio Marketplace by trusted publishing, with no token.** The release workflow's Marketplace job holds `id-token: write` and no secret and runs `vsce publish --oidc` (`@vscode/vsce` 4.1.0, the first version the Marketplace accepts it with; the `@azure/msal-node` override stays), after a Trusted Publishing policy on the publisher names this repository, `release.yml` and the `extension-stores` environment. Open VSX moves to a job of its own that keeps `OVSX_PAT` and cannot ask for the OIDC token, so no code of a third party runs in a job that can. The workflow no longer names `VSCE_PAT`; the guards refuse it back, an OIDC token in the Open VSX job, `--oidc` anywhere but the one job, and the two jobs joined (ADR-100).
 - **`@azure/msal-node` is lifted to 7.1 by an override, closing GHSA-xcx6-jx8p-x3h5.** It reached the tree only through the VS Code extension's packing tool (`@vscode/vsce` -> `@azure/identity`, which still asks for 6.x), a development dependency that no published package ships. The workspace and the release job's own tool folder now resolve it to 7.1.1, the extension still packs the same twelve files, and the advisory scan no longer ignores the advisory.
 
 - **`qs` resolves to 6.16.1 everywhere, closing GHSA-6pq8-jhm2-2vcw.** The advisory is a denial of service: `qs.stringify` with `arrayFormat: 'comma'` throws an uncaught `TypeError` on an array element that carries a non-callable own `toString`. The published package already received the fixed version through `body-parser` (the `body-parser` override and the 6.16.1 entry for `express`), and mnema's MCP server speaks stdio and never starts express, so the path was not reachable from `@mnema/code`. The one copy left at 6.16.0 came from the VS Code extension's packing tool (`@vscode/vsce` -> `typed-rest-client`), a development dependency that no published package ships; the lockfile now points it at 6.16.1, a version its range already accepts.
@@ -478,7 +479,7 @@ with its own changelog.
   packs the `.vsix` once in a job that holds no secret, checks that the manifest inside is one a store takes (publisher
   `mnema`, not `private`, an icon, a category, keywords, a banner, marked preview, a changelog and a one-line description that
   promises nothing the command line does not print), installs that very file into a real VS Code to see the extension start,
-  attaches it to the GitHub release and publishes the same file to both stores from one job that asks for the
+  attaches it to the GitHub release and publishes the same file to both stores, each from a job that asks for the
   `extension-stores` environment, so a person approves it. The two store command lines are installed from a committed
   lockfile with `npm ci --ignore-scripts` in a step that holds no token, and each store is published to with `--skip-duplicate`
   so a run that stopped halfway runs again. The icon is drawn by the build from the
