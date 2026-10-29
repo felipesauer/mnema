@@ -12,7 +12,8 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -164,4 +165,43 @@ describe('a record written before records were named, to both readers', () => {
       ]);
     },
   );
+});
+
+/**
+ * `__fixtures__/named-by-its-genesis`, written once by the signing code of the second schemes and
+ * never again (its private keys were thrown away): a genesis tail born under the first schemes and
+ * bound to the record by its owner's first `/2` checkpoint, whose `prev` is the hash of the `/1`
+ * one, and a second tail born under the record's name.
+ */
+describe('a record named by its genesis tail, frozen', () => {
+  const GENESIS = `8d6995a429f1ab61489f0b8391e9ae3ced5ff165eac004ee4572d56e1cad0616-${'0a'.repeat(16)}`;
+  const NAME = '56eec5ae4b56a9fdf558ae394e62838f4574c424b096e16f1eb59ac91656925e';
+
+  it('is fully signed and named in both readers, the name being its genesis tail', () => {
+    const record = copyOf('named-by-its-genesis');
+    const here = verify(record, catalogUpcasters());
+    expect(here.issues).toEqual([]);
+    expect(here.level).toBe('fully-signed');
+    expect(here.record).toEqual({ state: 'named', name: NAME, genesis: GENESIS, unnamed: [] });
+    expect(recordName(GENESIS)).toBe(NAME);
+    const there = secondSaid(record);
+    expect(there.verdict).toBe('VERIFIED');
+    expect(there.findings.map((f) => f.what)).toEqual([
+      `every named tail names record ${NAME.slice(0, 12)}..., the name of genesis tail ${GENESIS}`,
+    ]);
+  });
+
+  it('links the first /2 checkpoint of a tail born before to its last /1 one', () => {
+    const lines = readFileSync(
+      join(FIXTURES, 'named-by-its-genesis', 'tails', GENESIS, 'checkpoints.jsonl'),
+      'utf-8',
+    )
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    expect(lines.map((line) => line.scheme)).toEqual(['mnema-checkpoint/1', 'mnema-checkpoint/2']);
+    const { sig: _sig, ...signed } = lines[0] ?? {};
+    const message = JSON.stringify(Object.fromEntries(Object.entries(signed).sort()));
+    expect(lines[1]?.prev).toBe(createHash('sha256').update(message).digest('hex'));
+  });
 });

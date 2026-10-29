@@ -216,6 +216,30 @@ describe('the second reader can be run at all', () => {
     expect(said).toMatch(/the entry hash of a genesis entry reproduces/);
     expect(said).toMatch(/the entry hash of a linked entry reproduces/);
     expect(said).toMatch(/the content root over all 39 vectors reproduces/);
+    // The signed messages (sections 6, 6.1 and 6.10), counted so a shrinking set cannot pass.
+    expect(said).toMatch(/5 of 5 published signed messages reproduce, and their signatures verify/);
+    expect(said).toMatch(/the record's name reproduces from its genesis tail/);
+  });
+
+  it('refuses a published signed message whose signature was changed by one character', () => {
+    const vectors = join(root, 'canonical-vectors.json');
+    const text = readFileSync(
+      fileURLToPath(new URL('../../canonical-vectors.json', import.meta.url)),
+      'utf-8',
+    );
+    const document = JSON.parse(text) as {
+      signedMessages: { vectors: { stored: { sig: string } }[] };
+    };
+    const last = document.signedMessages.vectors.at(-1);
+    if (last === undefined) throw new Error('no signed message is published');
+    last.stored.sig = `${last.stored.sig.slice(0, -1)}${last.stored.sig.endsWith('0') ? '1' : '0'}`;
+    writeFileSync(vectors, JSON.stringify(document));
+    const run = python([VERIFIER, '--json', 'vectors', vectors]);
+    const report = JSON.parse(run.stdout) as SecondReading;
+    expect(report.verdict).toBe('REFUSED');
+    expect(refusals(report).map((f) => f.what)).toEqual([
+      "the signed message 'tail proof, second scheme' does not reproduce",
+    ]);
   });
 });
 

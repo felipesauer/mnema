@@ -33,7 +33,11 @@ import json
 
 from . import schema as declarations
 from .canonical import canonical_bytes, strict_loads
+from .checkpoint import CHECKPOINT_SCHEMES, TAILPROOF_SCHEMES, signed_message
+from .ed25519 import verify as ed25519_verify
 from .entry import entry_hash
+from .keys import parse_pem
+from .record_name import record_name
 from .root import content_root, empty_root, which_reading_closes
 from .verdict import Refusal, Report
 
@@ -132,6 +136,7 @@ def verify_vectors(path: str, report: Report) -> None:
                 report.fail("5", "both readings of the accumulator agree, which cannot happen", path)
 
     _check_against_the_declarations(rows, path, report)
+    _check_signed_messages(document.get("signedMessages"), path, report)
 
     kinds = {row["kind"] for row in rows}
     report.note(
@@ -197,3 +202,56 @@ def _check_against_the_declarations(rows: list, path: str, report: Report) -> No
             path,
             "G08",
         )
+
+
+def _check_signed_messages(published: object, path: str, report: Report) -> None:
+    """Sections 6, 6.1 and 6.10: the signed messages, rebuilt and verified from the rules.
+
+    Each vector's message is rebuilt from its stored object by the keys its scheme signs, and its
+    SHA-256 recomputed; the signature is verified under the published key, whose fingerprint is
+    recomputed from its material; a checkpoint's `prev` is the SHA-256 of the message of the one
+    before it in its tail; and the record's name is recomputed from its genesis tail.
+    """
+    if not isinstance(published, dict):
+        report.unchecked("6", "the vectors carry no signed messages", path)
+        return
+    key = parse_pem(str(published["key"]["publicKey"]))
+    if key.fingerprint != published["key"]["fingerprint"]:
+        report.fail("6", "the published key's fingerprint is not the SHA-256 of its material", path)
+    named = published["record"]
+    if record_name(named["genesisTail"]) != named["name"]:
+        report.fail("6.10", "the record's name does not reproduce from its genesis tail", path)
+    vectors = published["vectors"]
+    matched = 0
+    previous: str | None = None
+    for vector in vectors:
+        stored = vector["stored"]
+        scheme = stored.get("scheme")
+        keys = CHECKPOINT_SCHEMES.get(scheme) or TAILPROOF_SCHEMES.get(scheme)
+        if keys is None:
+            report.fail("6", f"a signed message under a scheme this reader does not know: {scheme!r}", path)
+            continue
+        message = signed_message(stored, keys)
+        held = (
+            message == vector["message"].encode("utf-8")
+            and hashlib.sha256(message).hexdigest() == vector["sha256"]
+            and ed25519_verify(key.raw, bytes.fromhex(stored["sig"]), message)
+            and stored.get("record", named["name"]) == named["name"]
+        )
+        if scheme in CHECKPOINT_SCHEMES:
+            if stored["fromSeq"] == 0:
+                previous = None
+            held = held and stored["prev"] == previous
+            previous = vector["sha256"]
+        if held:
+            matched += 1
+        else:
+            report.fail("6", f"the signed message {vector['name']!r} does not reproduce", path)
+    if vectors and matched == len(vectors):
+        report.ok(
+            "6",
+            f"{matched} of {len(vectors)} published signed messages reproduce, and their "
+            "signatures verify, under both schemes of the checkpoint and the tail proof",
+            path,
+        )
+        report.ok("6.10", "the record's name reproduces from its genesis tail", path)
