@@ -1293,6 +1293,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-name-in-full-blocks.test.ts': 10,
   'packages/code/tests/the-node-below-the-floor-is-refused.test.ts': 8,
   'packages/code/tests/the-older-swept-tasks-are-one-line.test.ts': 3,
+  'packages/code/tests/the-only-assistant-state-committed-is-the-instructions-rule.test.ts': 4,
   'packages/code/tests/the-opening-and-the-doctor-say-no-more-than-they-prove.test.ts': 10,
   'packages/code/tests/the-opening-fits-the-height.test.ts': 17,
   'packages/code/tests/the-opening-fits-the-screen.test.ts': 17,

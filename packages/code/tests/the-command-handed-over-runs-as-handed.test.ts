@@ -729,6 +729,9 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
+  '.claude/rules/mnema-instructions.md': { line: 2 },
+  '.github/instructions/mnema-instructions.instructions.md': { line: 2 },
+  'AGENTS.md': { line: 2, name: 1 },
   'CHANGELOG.md': { line: 77, name: 146, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },

@@ -243,6 +243,8 @@ the SHA-256 the packing job exposes, and publish with `--skip-duplicate`, so a r
 ## A pull request
 
 - **One change per pull request.** If the work has two parts, it is two pull requests.
+- **A decision made in the work is recorded in `.mnema/` in the same pull request**, signed by
+  your own key; [`AGENTS.md`](AGENTS.md) says how, and what never to commit.
 - **A title in English that says what changes**, as a sentence, the way the history already
   reads: `git log --oneline` shows the form.
 - **When two ways of doing something pull apart, the one that keeps the record checkable wins
