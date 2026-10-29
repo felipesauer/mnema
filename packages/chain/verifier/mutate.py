@@ -41,6 +41,10 @@ from mnemaverify.canonical import canonical_bytes, strict_loads  # noqa: E402
 from mnemaverify.checkpoint import (  # noqa: E402
     CHECKPOINT_KEYS,
     CHECKPOINT_SCHEME,
+    NAMED_CHECKPOINT_KEYS,
+    NAMED_CHECKPOINT_SCHEME,
+    NAMED_TAILPROOF_KEYS,
+    NAMED_TAILPROOF_SCHEME,
     TAILPROOF_KEYS,
     TAILPROOF_SCHEME,
     signed_message,
@@ -53,6 +57,7 @@ from mnemaverify.enrolment import (  # noqa: E402
     enrolment_message,
 )
 from mnemaverify.entry import entry_hash  # noqa: E402
+from mnemaverify.record_name import record_name  # noqa: E402
 from mnemaverify.root import content_root  # noqa: E402
 
 OTHER_KEY = "6bc98177967e959aefddb48f3e757e4358c6fb30910f44d5aa75247e05cdbc10"
@@ -1025,13 +1030,39 @@ def refounded_record(root: str) -> tuple[bool, str]:
     return True, f"the record erased and a new identity {anchor[:16]}... founded in its place"
 
 
-def _refound(root: str, content: str) -> str:
-    """Erase the record and found a new one under RFC 8032's key; return its anchor."""
-    fingerprint, pem = _unenrolled_public()
-    anchor = "mnid:" + hashlib.sha256(fingerprint.encode("ascii")).hexdigest()
-    tail = f"{fingerprint}-{'ab' * 16}"
+def _refound(root: str, content: str, scheme: int = 1) -> str:
+    """Erase the record and found a new one under RFC 8032's key; return its anchor.
+
+    `scheme` is the one its checkpoint and tail proof are signed under: 1, as every writer
+    before section 6.10 signed them, or 2, naming the record whose genesis is this tail.
+    """
     template = _last_event(root)
-    at = template["at"]
+    for name in ("tails", "keys"):
+        shutil.rmtree(os.path.join(root, name), ignore_errors=True)
+    tail = _tail_name(UNENROLLED_SECRET, "ab")
+    name = record_name(tail) if scheme == 2 else None
+    return _found_tail(root, UNENROLLED_SECRET, tail, template["at"], content, name, name)
+
+
+# The note a second tail writes: its own, so no reader names a rewrite of the first tail's.
+ANOTHER_NOTE = "01a02d24-730d-7000-988d-ac7784b4a4a4"
+
+
+def _tail_name(secret: bytes, suffix: str) -> str:
+    fingerprint, _ = _unenrolled_public(secret)
+    return f"{fingerprint}-{suffix * 16}"
+
+
+def _found_tail(
+    root: str, secret: bytes, tail: str, at: str, content: str,
+    proof_names: str | None, checkpoint_names: str | None,
+    note: str = "01a02d24-730d-7000-988d-ac7784b4a4a3",
+) -> str:
+    """Write one tail of two events (an identity founded by `secret`'s key, and a note), one
+    checkpoint over both and the tail proof, all genuinely signed. A name given makes that
+    artifact `/2`, naming it; None leaves it `/1`. Returns the anchor founded."""
+    fingerprint = _commit_the_unenrolled_key(root, secret)
+    anchor = "mnid:" + hashlib.sha256(fingerprint.encode("ascii")).hexdigest()
 
     def event(kind: str, subject: str, payload: dict) -> dict:
         return {
@@ -1046,11 +1077,7 @@ def _refound(root: str, content: str) -> str:
 
     events = [
         event("identity.founded", anchor, {"foundingFp": fingerprint}),
-        event(
-            "memory.captured",
-            "01a02d24-730d-7000-988d-ac7784b4a4a3",
-            {"content": content},
-        ),
+        event("memory.captured", note, {"content": content}),
     ]
     lines: list[bytes] = []
     previous: str | None = None
@@ -1063,24 +1090,114 @@ def _refound(root: str, content: str) -> str:
         "contentRoot": content_root([canonical_bytes(body) for body in events]),
         "fromSeq": 0,
         "prev": None,
-        "scheme": CHECKPOINT_SCHEME,
         "signerFp": fingerprint,
         "tail": tail,
         "toSeq": len(events) - 1,
     }
-    signature = sign(UNENROLLED_SECRET, signed_message(stored, CHECKPOINT_KEYS)).hex()
-
-    for name in ("tails", "keys"):
-        shutil.rmtree(os.path.join(root, name), ignore_errors=True)
-    _commit_the_unenrolled_key(root)
     tail_dir = os.path.join(root, "tails", tail)
     os.makedirs(tail_dir)
     _write_lines(os.path.join(tail_dir, "000001.jsonl"), lines)
-    _write_lines(os.path.join(tail_dir, "checkpoints.jsonl"), [canonical_bytes({**stored, "sig": signature})])
-    proof = {"scheme": TAILPROOF_SCHEME, "signerFp": fingerprint, "tail": tail}
-    proof["sig"] = sign(UNENROLLED_SECRET, signed_message(proof, TAILPROOF_KEYS)).hex()
-    _write_lines(os.path.join(tail_dir, "tailproof.json"), [canonical_bytes(proof)])
+    _write_lines(
+        os.path.join(tail_dir, "checkpoints.jsonl"),
+        [_signed_checkpoint(stored, secret, checkpoint_names)],
+    )
+    _write_lines(
+        os.path.join(tail_dir, "tailproof.json"),
+        [_signed_proof(tail, fingerprint, secret, proof_names)],
+    )
     return anchor
+
+
+def _signed_checkpoint(stored: dict, secret: bytes, names: str | None) -> bytes:
+    """A checkpoint's line over `stored` (its keys but `scheme` and `sig`), signed by `secret`:
+    `/1`, or `/2` naming `names`."""
+    if names is None:
+        fields = {**stored, "scheme": CHECKPOINT_SCHEME}
+        keys = CHECKPOINT_KEYS
+    else:
+        fields = {**stored, "record": names, "scheme": NAMED_CHECKPOINT_SCHEME}
+        keys = NAMED_CHECKPOINT_KEYS
+    return canonical_bytes({**fields, "sig": sign(secret, signed_message(fields, keys)).hex()})
+
+
+def _signed_proof(tail: str, signer: str, secret: bytes, names: str | None) -> bytes:
+    """A tail proof over `tail`, signed by `secret`: `/1`, or `/2` naming `names`."""
+    if names is None:
+        fields = {"scheme": TAILPROOF_SCHEME, "signerFp": signer, "tail": tail}
+        keys = TAILPROOF_KEYS
+    else:
+        fields = {"record": names, "scheme": NAMED_TAILPROOF_SCHEME, "signerFp": signer, "tail": tail}
+        keys = NAMED_TAILPROOF_KEYS
+    return canonical_bytes({**fields, "sig": sign(secret, signed_message(fields, keys)).hex()})
+
+
+def named_record(root: str) -> tuple[bool, str]:
+    """A record founded afresh under the second schemes (section 6.10): its one tail's proof and
+    checkpoint name the record whose genesis that tail is. Honest; both readers verify it and
+    name its genesis tail."""
+    _refound(root, "a record that names itself", scheme=2)
+    tail = os.path.basename(_tail_dir(root))
+    return True, f"a record named {record_name(tail)[:12]}..., its genesis tail {tail[:12]}..."
+
+
+def tail_of_another_record(root: str) -> tuple[bool, str]:
+    """A tail of another record, grafted with its key into a named record (section 6.10).
+
+    The record is founded under the second schemes, and a second tail is written beside it by
+    RFC 8032's second key, whose own proof and checkpoint name the record that tail is the
+    genesis of: everything verifies on its own, signatures included, which is what a graft
+    copied whole with its public key is. Both readers refuse the directory as another-record,
+    naming both groups.
+    """
+    _refound(root, "the record a tail is grafted into", scheme=2)
+    template = _last_event(root)
+    graft = _tail_name(CHECKER_SECRET, "cd")
+    _found_tail(
+        root, CHECKER_SECRET, graft, template["at"], "a note of another record",
+        record_name(graft), record_name(graft), ANOTHER_NOTE,
+    )
+    return True, f"tail {graft[:12]}... of record {record_name(graft)[:12]}... grafted in"
+
+
+def tail_names_two_records(root: str) -> tuple[bool, str]:
+    """A tail whose proof names its record and whose checkpoint, signed by the same key, names
+    another (section 6.10): both readers refuse it as record-mismatch."""
+    template = _last_event(root)
+    for name in ("tails", "keys"):
+        shutil.rmtree(os.path.join(root, name), ignore_errors=True)
+    tail = _tail_name(UNENROLLED_SECRET, "ab")
+    _found_tail(
+        root, UNENROLLED_SECRET, tail, template["at"], "a tail that names two records",
+        record_name(tail), record_name("another-genesis"),
+    )
+    return True, "the proof names the tail's record and its checkpoint another"
+
+
+def checkpoint_signed_under_the_first_scheme_after_a_named_proof(root: str) -> tuple[bool, str]:
+    """A tail whose proof names its record and whose checkpoint is signed under `/1`, naming
+    none (section 6.10): both readers refuse it as scheme-downgrade."""
+    template = _last_event(root)
+    for name in ("tails", "keys"):
+        shutil.rmtree(os.path.join(root, name), ignore_errors=True)
+    tail = _tail_name(UNENROLLED_SECRET, "ab")
+    _found_tail(
+        root, UNENROLLED_SECRET, tail, template["at"], "a tail that went back to /1",
+        record_name(tail), None,
+    )
+    return True, "the proof names the tail's record and its checkpoint is /1"
+
+
+def unnamed_tail_beside_named_ones(root: str) -> tuple[bool, str]:
+    """A named record, and a second tail beside it written under the first schemes, naming no
+    record: what a colleague's tail written before 0.1.5 looks like. Both readers verify it and
+    say the tail names no record (section 6.10)."""
+    _refound(root, "a named record with an unnamed tail beside it", scheme=2)
+    template = _last_event(root)
+    other = _tail_name(CHECKER_SECRET, "cd")
+    _found_tail(
+        root, CHECKER_SECRET, other, template["at"], "a note written before", None, None, ANOTHER_NOTE
+    )
+    return True, f"tail {other[:12]}... beside the named record, naming none"
 
 
 def tail_proof_removed(root: str) -> tuple[bool, str]:
@@ -1526,6 +1643,13 @@ MUTATIONS = {
     "aligned-cut": aligned_cut,
     "reordered-lines": reordered_lines,
     "forked-tail": forked_tail,
+    "named-record": named_record,
+    "tail-of-another-record": tail_of_another_record,
+    "tail-names-two-records": tail_names_two_records,
+    "checkpoint-signed-under-the-first-scheme-after-a-named-proof": (
+        checkpoint_signed_under_the_first_scheme_after_a_named_proof
+    ),
+    "unnamed-tail-beside-named-ones": unnamed_tail_beside_named_ones,
     "refounded-record": refounded_record,
     "tail-proof-removed": tail_proof_removed,
     "tail-proof-signed-by-another-project-key": tail_proof_signed_by_another_project_key,
