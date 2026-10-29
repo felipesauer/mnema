@@ -232,6 +232,15 @@ describe.each(CASES)('when %s', (_name, acceptAt, retireAt, retire) => {
     expect(context).toMatch(WHY);
   });
 
+  it('the text of the rules prints the line and does not count it as in force', async () => {
+    const id = await crossed('refuses-a-write', acceptAt, retireAt, retire);
+    const text = await did('rules', `${PATH}/a.ts`);
+    expect(text).toMatch(WHY);
+    expect(text).toContain(id);
+    expect(text).toContain('0 refuse a write here');
+    expect(text).not.toMatch(/refusing a write here, most specific first/);
+  });
+
   it('a rule that refuses a write does not refuse while it is out of force', async () => {
     await crossed('refuses-a-write', acceptAt, retireAt, retire);
     const met = withScopedCaches(resolveTrees(repo, env), (sources) =>
