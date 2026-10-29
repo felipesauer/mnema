@@ -2307,29 +2307,30 @@ function verifyTailNaming(
     issues.push({
       tail,
       layer: 'T2/T4',
-      detail: `tail ${oneLine(tail)} names record ${shortName(first.record)} in ${first.where} and ${shortName(other.record)} in ${other.where} (${RECORD_MISMATCH})`,
+      detail: `tail ${oneLine(tail)} names record ${oneLine(first.record.slice(0, 12))}... in ${first.where} and ${oneLine(other.record.slice(0, 12))}... in ${other.where} (${RECORD_MISMATCH})`,
     });
   }
   return proofNames ?? named.at(-1)?.record;
 }
 
-/** A record's name as a sentence shows it: its first twelve characters. */
-function shortName(name: string): string {
-  return `${oneLine(name.slice(0, 12))}...`;
-}
-
 /** The refusal of a directory whose named tails name two records or more. */
 function anotherRecord(groups: Extract<RecordNaming, { state: 'several' }>['groups']): TailIssue {
+  // Each record by the head of its name, with its tails; the whole collapsed once, below.
   const said = groups
     .map(
       ({ name, tails }) =>
-        `${shortName(name)} (${tails.length === 1 ? 'tail' : 'tails'} ${tails.map(oneLine).join(', ')})`,
+        `${name.slice(0, 12)}... (${tailsWord(tails.length)} ${tails.join(', ')})`,
     )
     .join(' and ');
   return {
     layer: 'T2/T4',
-    detail: `this directory holds tails of ${groups.length} records: ${said}: a tail grafted from another record, or two records merged (${ANOTHER_RECORD})`,
+    detail: `this directory holds tails of ${groups.length} records: ${oneLine(said)}: a tail grafted from another record, or two records merged (${ANOTHER_RECORD})`,
   };
+}
+
+/** "tail" or "tails", as many as a group holds. */
+function tailsWord(count: number): string {
+  return count === 1 ? 'tail' : 'tails';
 }
 
 /** The census note of a tail that names no record beside tails that name one. */

@@ -56,7 +56,14 @@ export interface SignedMessageVectors {
 }
 
 function messageVector(name: string, artifact: Checkpoint | TailProof, line: string) {
-  const stored = JSON.parse(line) as Record<string, unknown>;
+  // The stored line as an object, its keys in the order of the canonical form.
+  const stored = Object.fromEntries(
+    Object.entries(artifact)
+      .filter(([, value]) => value !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : 1)),
+  ) as Parameters<typeof canonicalStringify>[0] & Record<string, unknown>;
+  // What the serializer writes is that object, canonical, and nothing else.
+  if (canonicalStringify(stored) !== line) throw new Error(`${name} is not stored as built`);
   const { sig: _sig, ...signed } = stored;
   const message = canonicalStringify(signed as Parameters<typeof canonicalStringify>[0]);
   return {

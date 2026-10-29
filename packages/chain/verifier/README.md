@@ -225,10 +225,12 @@ Only §6.2 refuses it, which is the whole difference between *the signature veri
 **What this buys.** A verdict on a real record, reached from the document and the bytes, by
 a program that has never seen the implementation. Twenty-seven places where the document was
 not enough for that, each one written down. **A refusal for every mutation in `mutate.py`
-but five, and none of the five is accepted by this reader alone.** Three are accepted by
-both readers, because neither can see them: the newest events cut together with the
-checkpoints that covered them (`aligned-cut`), a record erased and founded again, and a move
-the workflow does not allow, which is named and is not a break. The other two are reported
+but eight, and none of the eight is accepted by this reader alone.** Six are accepted by
+both readers: two because neither can see them, the newest events cut together with the
+checkpoints that covered them (`aligned-cut`) and a record erased and founded again; and four
+because they are no break: a move the workflow does not allow, which is named; the metadata
+macOS writes beside a key; a record that names itself (section 6.10); and a tail beside it
+that names no record, which is named. The other two are reported
 INCOMPLETE rather than refused, and they are the two places below. This used to say there
 was a refusal for every mutation, with no acceptance left. **One disagreement with the
 product is pinned.** This paragraph used to say there was none, and a case in

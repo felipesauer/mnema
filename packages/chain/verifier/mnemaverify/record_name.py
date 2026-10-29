@@ -38,7 +38,7 @@ def genesis_tail(firsts: Iterable[tuple[str, str]]) -> Optional[str]:
 def record_of(named: dict[str, Optional[str]]) -> dict[str, object]:
     """What the named tails say: {"state": "unnamed"}, one name, or several groups by name.
 
-    The same three answers, with the same keys, as `recordOf` in the product's record-name.ts.
+    Three answers, by the keys `state`, `name`, `genesis`, `unnamed` and `groups`.
     """
     groups: dict[str, list[str]] = {}
     unnamed: list[str] = []

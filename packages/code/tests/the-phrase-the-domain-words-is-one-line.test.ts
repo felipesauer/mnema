@@ -1193,6 +1193,76 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'a whole number the catalog requires of a checkpoint’s range',
     },
+  '@mnema/chain chain/verify.ts «checkpoint cp[{}..{}] names no record, and {} names one ({})» SCHEME_DOWNGRADE #1':
+    {
+      verdict: 'minted',
+      why: 'the name a first-scheme checkpoint where the tail had named its record is refused by, a constant of the module',
+    },
+  '@mnema/chain chain/verify.ts «checkpoint cp[{}..{}] names no record, and {} names one ({})» downgrade.fromSeq #1':
+    {
+      verdict: 'minted',
+      why: 'a whole number the catalog requires of a checkpoint’s range',
+    },
+  '@mnema/chain chain/verify.ts «checkpoint cp[{}..{}] names no record, and {} names one ({})» downgrade.toSeq #1':
+    {
+      verdict: 'minted',
+      why: 'a whole number the catalog requires of a checkpoint’s range',
+    },
+  '@mnema/chain chain/verify.ts «checkpoint cp[{}..{}] names no record, and {} names one ({})» where #1':
+    {
+      verdict: 'composed',
+      why: 'one of two phrases typed in this function: the tail’s proof, or an earlier checkpoint',
+    },
+  '@mnema/chain chain/verify.ts «tail {} names no record: born before records were named, and no » oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the directory name again, in the census note of a tail that names no record',
+    },
+  '@mnema/chain chain/verify.ts «tail {} names record {}... in {} and {}... in {} ({})» RECORD_MISMATCH #1':
+    {
+      verdict: 'minted',
+      why: 'the name a tail whose artifacts name two records is refused by, a constant of the module',
+    },
+  '@mnema/chain chain/verify.ts «tail {} names record {}... in {} and {}... in {} ({})» first.where #1':
+    {
+      verdict: 'composed',
+      why: 'a phrase typed in this function, or one around a whole number the catalog requires of a checkpoint',
+    },
+  '@mnema/chain chain/verify.ts «tail {} names record {}... in {} and {}... in {} ({})» other.where #1':
+    {
+      verdict: 'composed',
+      why: 'the same phrase for the artifact that names the other record',
+    },
+  '@mnema/chain chain/verify.ts «tail {} names record {}... in {} and {}... in {} ({})» oneLine(first.record.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of a record name a stored artifact carries: a string whoever signed it chose',
+    },
+  '@mnema/chain chain/verify.ts «tail {} names record {}... in {} and {}... in {} ({})» oneLine(other.record.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the other record name, from the same kind of stored artifact',
+    },
+  '@mnema/chain chain/verify.ts «tail {} names record {}... in {} and {}... in {} ({})» oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the directory name again, in the refusal of a tail that names two records',
+    },
+  '@mnema/chain chain/verify.ts «this directory holds tails of {} records: {}: a tail grafted from another record, or two records merged ({})» ANOTHER_RECORD #1':
+    {
+      verdict: 'minted',
+      why: 'the name a directory holding tails of two records is refused by, a constant of the module',
+    },
+  '@mnema/chain chain/verify.ts «this directory holds tails of {} records: {}: a tail grafted from another record, or two records merged ({})» groups.length #1':
+    {
+      verdict: 'minted',
+      why: 'a count of the names the record’s tails carry, two or more',
+    },
+  '@mnema/chain chain/verify.ts «this directory holds tails of {} records: {}: a tail grafted from another record, or two records merged ({})» oneLine(said) #1':
+    {
+      verdict: 'collapsed',
+      why: 'every group, its name’s head and its tail ids, read off stored artifacts and directory names',
+    },
   '@mnema/chain chain/verify.ts «checkpoint cp[{}..{}] is signed by {}..., and a tail is written only by the key its id begins with, {}... ({})» TAIL_SIGNER_MISMATCH #1':
     {
       verdict: 'minted',
@@ -2276,6 +2346,18 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} agent name(s) no MCP client announced in a handshake (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} tail(s) that name no record, written before 0.1.5 (see census: informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «the checkpoint at seq {}» cp.fromSeq':
+    'a phrase a refusal of two records in one tail is worded around: a whole number the catalog ' +
+    'requires of a checkpoint, and the refusal carries it as one value',
+  '@mnema/chain chain/verify.ts «{}... ({} {})» name.slice(0, 12)':
+    'one group of the refusal of two records, built in a list that is collapsed whole where the ' +
+    'refusal interpolates it: the head of a name a signed artifact carries',
+  '@mnema/chain chain/verify.ts «{}... ({} {})» tailsWord(tails.length)':
+    'the word "tail" or "tails", typed in this module, in that same group',
+  "@mnema/chain chain/verify.ts «{}... ({} {})» tails.join(', ')":
+    'the tail ids of that group, directory names, collapsed with the whole list where it is printed',
   '@mnema/chain chain/verify.ts «{}/» layout.root':
     'the prefix `withinChain` STRIPS: what makes the locus a path inside the chain rather ' +
     'than wherever this clone sits. It is never printed.',
@@ -2308,8 +2390,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(341);
-    expect(FOUND[0]?.sites.length).toBe(143);
+    expect(SITES.length).toBe(355);
+    expect(FOUND[0]?.sites.length).toBe(157);
     expect(FOUND[1]?.sites.length).toBe(198);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2360,11 +2442,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(233);
-    expect(count('minted')).toBe(83);
-    expect(count('composed')).toBe(25);
+    expect(count('collapsed')).toBe(238);
+    expect(count('minted')).toBe(89);
+    expect(count('composed')).toBe(28);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      233,
+      238,
     );
   });
 
