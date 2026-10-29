@@ -5,8 +5,8 @@
 - A side bar of its own. The two views, Awaiting Judgment and Stacks, left the Explorer for an
   mnema container in the activity bar, with the M as its icon and a badge with the number of
   decisions awaiting a judgment. The extension's icon in the store is now the same M.
-- A short status bar item. It shows the level `mnema verify` reports and, when decisions wait,
-  how many. The detail (what `mnema verify` printed, the channels that are off, when it was read)
+- A short status bar item. It shows the level that verify reports and, when decisions wait,
+  how many. The detail (what verify printed, the channels that are off, when it was read)
   is in its tooltip, and the M is the icon it wears. The new setting `mnema.statusBar.enabled`
   hides it. A message no longer pops up when a decision is proposed: the badge and the count
   carry the notice.
