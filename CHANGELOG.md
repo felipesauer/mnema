@@ -307,7 +307,7 @@ with its own changelog.
 - **`FORMAT.md` says that a move repeated byte for byte is not a divergence**, which is what this product's reading already did: it is a duplicated entry, which both readers refuse at the repeated `seq`.
 - **`FORMAT.md` says that a published vector for an old `v` is an intention.** The table of vectors is held total by kind, not by `(kind, v)`, so nothing yet makes a new `v` bring its vector with it.
 - **The second reader's page says what it does with the rest of a tail whose line it refused.** It folds every line it read, so the causes it lists can differ from the product's, which leaves the whole tail out of the folds; both refuse the record.
-- **The counts the format pages spell are held to the artifacts.** The 38 vectors, the four aggregate digests and the twenty-seven points the second reader's writing found, as `FORMAT.md`, the verifier's page, `@mnema/chain`'s page and `docs/verify-without-installing.md` spell them, are read off `canonical-vectors.json` and the second reader's `gaps` by a test, so a vector or a gap added reddens the sentence that counts them.
+- **The counts the format pages spell are held to the artifacts.** The 39 vectors, the four aggregate digests and the twenty-seven points the second reader's writing found, as `FORMAT.md`, the verifier's page, `@mnema/chain`'s page and `docs/verify-without-installing.md` spell them, are read off `canonical-vectors.json` and the second reader's `gaps` by a test, so a vector or a gap added reddens the sentence that counts them.
 
 ### Changed
 
@@ -332,8 +332,8 @@ with its own changelog.
   written, with `--alternatives` (a test runs it against the built binary and reads the decision back), and the block now says
   that a decision is not edited once recorded: a new one that replaces it is recorded and the earlier one superseded
   (`decision_transition` with `action` `supersede`, or `mnema decision supersede <old-id> <new-id> --reason "<why>"`), and the new one is then read as replacing the earlier one, which it names. `mnema
-  instructions` replaces a `v2` block by this one in every file, and still refuses a block whose text you edited (a formatter
-  that re-wraps prose, `proseWrap: "always"`, counts as an edit). The text is 2,390 characters, 570 tokens, against 1,721 and 409:
+  instructions` replaces a `v2` block by this one in every file, and still refuses a block whose words you edited (a formatter
+  that only re-wraps it is not an edit, as Fixed says). The text is 2,390 characters, 570 tokens, against 1,721 and 409:
   every host file that carries it carries 669 characters more. The Gemini extension's context file is generated from it.
 - **The top `ok` of `mnema verify --json` is the verdict on the record.** It said that the command ran and found a project, and it was
   `true` over a record that was tampered with, so a script that read the first field took a broken record for a sound one. It is now the same
