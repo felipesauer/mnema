@@ -103,7 +103,11 @@ export function verifiedTime(
   entries: ReturnType<typeof bundleFromJSON>['verificationMaterial']['tlogEntries'],
 ): { readonly loggedAt: string; readonly loggedAtBy: 'rekor' | 'timestamp-authority' } | undefined {
   for (const entry of entries) {
-    if (entry.inclusionPromise !== undefined && entry.integratedTime && entry.integratedTime !== '0') {
+    if (
+      entry.inclusionPromise !== undefined &&
+      entry.integratedTime &&
+      entry.integratedTime !== '0'
+    ) {
       return {
         loggedAt: new Date(Number(entry.integratedTime) * 1000).toISOString(),
         loggedAtBy: 'rekor',
