@@ -12,7 +12,13 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { decodeStoredBytes, StoredJsonError } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { type Checkpoint, parseCheckpoint } from './checkpoint.js';
-import { describeLinkBreak, type Entry, linkBreakAt, parseEntry } from './entry.js';
+import {
+  describeLinkBreak,
+  type Entry,
+  type HeldLinkAt,
+  linkBreakAt,
+  parseEntry,
+} from './entry.js';
 import {
   fingerprintOf,
   type KeyObject,
@@ -478,7 +484,9 @@ export function readTail(
  * `from` and `after` are where the run is expected to pick up: a seq, and the hash the
  * first of these entries has to name as its `prev`. {@link readTail} passes `0` and
  * `null`, which is a tail read from its birth; a reading RESUMED from a boundary passes
- * what the previous reading ended on.
+ * what the previous reading ended on. `below` answers for a seq under `from`, which a run
+ * of arrivals cannot: it is asked only when an arrival takes such a seq again, to tell a
+ * fork from a gap, and a resumed reading that leaves it out names a fork there as a gap.
  *
  * IT TAKES THEM RATHER THAN ASSUMING A WHOLE TAIL because the incremental reading is the
  * caller that was getting this wrong. `@mnema/core`'s {@link chainArrivals} asked a rule
@@ -497,11 +505,16 @@ export function firstLinkBreakFrom(
   entries: readonly Entry[],
   from: number,
   after: string | null,
+  below?: HeldLinkAt,
 ): LinkBreak | undefined {
   let expectedSeq = from;
   let expectedPrev = after;
+  // A seq of this run is held by the entry at its place in it (every one before a break took
+  // the seq it holds); a seq below the run is the caller's to answer, and unanswered it is a gap.
+  const heldAt: HeldLinkAt = (seq) =>
+    seq >= from ? entries[seq - from]?.link : below === undefined ? undefined : below(seq);
   for (const entry of entries) {
-    const broke = linkBreakAt(tailId, entry, expectedSeq, expectedPrev);
+    const broke = linkBreakAt(tailId, entry, expectedSeq, expectedPrev, heldAt);
     if (broke !== undefined) {
       return { tail: tailId, seq: entry.link.seq, detail: describeLinkBreak(broke) };
     }

@@ -510,6 +510,28 @@ export function loadOrCreateInstallationId(layout: ChainLayout, fingerprint: str
   }
 }
 
+/**
+ * The installation id a writer moves to once `current` names a tail that no longer ends where
+ * this installation left it (`NewTail`, in the writer): the id on disk when another process
+ * already moved on from `current`, or a new one in its place.
+ *
+ * The writer asks it while it still holds the lock of `current`'s tail, so of two processes of
+ * this installation that meet the same end, the second finds the id the first chose. The new
+ * one is minted by the same exclusive create as the first ({@link loadOrCreateInstallationId}):
+ * a process that reads in the moment the old file is gone mints too, and of the two creates the
+ * kernel keeps one, which both then read.
+ */
+export function nextInstallationId(
+  layout: ChainLayout,
+  fingerprint: string,
+  current: string,
+): string {
+  const there = loadOrCreateInstallationId(layout, fingerprint);
+  if (there !== current) return there;
+  rmSync(installationIdPath(layout, fingerprint), { force: true });
+  return loadOrCreateInstallationId(layout, fingerprint);
+}
+
 /** The installation ids chosen in this process for a key not kept yet: by the id's path. */
 const unkeptIds = new Map<string, string>();
 

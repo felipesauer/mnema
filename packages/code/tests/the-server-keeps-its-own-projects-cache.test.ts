@@ -296,9 +296,15 @@ describe('a branch checked out over the live segment', () => {
     cli(own, 'decision', 'record', 'Base', 'shared by both branches');
     const tails = join(own, PROJECT_DIR, 'tails');
     const base = snapshot(tails);
+    // The writer's note of the last entry it wrote (`locks/<tailId>.head`, out of git) goes back
+    // with the base, as a checkout copied whole would carry it: without it the branch goes to a
+    // tail of its own (ADR-123), and the live segment this case replaces is never written twice.
+    const locks = join(own, PROJECT_DIR, 'locks');
+    const notes = snapshot(locks);
     cli(own, 'decision', 'record', 'OnMain', 'x');
     const main = snapshot(tails);
     checkout(base);
+    for (const [path, text] of notes) if (path.endsWith('.head')) writeFileSync(path, text);
     cli(own, 'decision', 'record', 'OnTheBranchWithALongerTitle', 'a longer reason than the other');
     cli(own, 'decision', 'record', 'AndMore', 'y');
     return { main, branch: snapshot(tails) };

@@ -265,10 +265,22 @@ function whatTheCallDid(
   // file in another project's tree or in the global tree is still accused.
   const ownCache = (at: string): boolean =>
     ownProject !== undefined && at.startsWith(`${ownProject}${sep}`) && isTheDerivedCache(at);
+  // THE WRITER'S NOTE OF THE LAST ENTRY IT WROTE TO ITS TAIL (`locks/<tailId>.head`, ADR-123) is
+  // replaced by every write that appends, so its earlier bytes go: it is machinery beside the
+  // tail's lock, never read by a reader, and losing it costs the next write a new tail, never a
+  // fact. It is excused from `destroyed` by its shape and nothing else, and only for a call that
+  // appends anyway: a read that touched it is still in `changed`.
   return {
     changed: changed.filter((at) => at !== counted && !ownCache(at)).sort(),
-    destroyed: destroyed.filter((at) => !isTheDerivedCache(at) && at !== counted).sort(),
+    destroyed: destroyed
+      .filter((at) => !isTheDerivedCache(at) && !isTheKeptHead(at) && at !== counted)
+      .sort(),
   };
+}
+
+/** The writer's note of the last entry it wrote to a tail: `locks/<tailId>.head`. */
+function isTheKeptHead(path: string): boolean {
+  return /(?:^|[\\/])locks[\\/][0-9a-f]+-[0-9a-f]+\.head$/.test(path);
 }
 
 /** The path, relative to the sandbox, of the count the code keeps for a project. */

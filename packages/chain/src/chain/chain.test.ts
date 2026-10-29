@@ -25,6 +25,7 @@ import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, signerAt, verify } from './chain.js';
 import { checkpointHash, serializeCheckpoint, signCheckpoint } from './checkpoint.js';
 import { entryHash, writtenAsBuilt, writtenAsStored } from './hash.js';
+import { keepHead } from './kept-head.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
 import { loadOrCreateKeyPair } from './keystore.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailProofPath } from './layout.js';
@@ -488,6 +489,10 @@ describe('chain: T4 (anonymous verify with only committed material)', () => {
       seg,
       `${entries.map((e) => canonicalStringify(e as unknown as CanonicalValue)).join('\n')}\n`,
     );
+    // The forger holds the key and this machine's local state with it, so the writer's note of
+    // the last entry it wrote (`kept-head.ts`) is rewritten too: without it the writer would
+    // leave a tail that does not end where it left it, and sign nothing.
+    keepHead({ root }, tail, { seq: entries.length - 1, hash: String(prev) });
     openChain(root).checkpoint(); // honest key re-signs the forged range
 
     const result = verify(root);

@@ -1338,7 +1338,8 @@ folder in the Claude Code marketplace to `chat.pluginLocations` and drops an ent
 a versioned folder of the plugin cache, keeps the file's comments and the rest of its text, and a
 second run changes nothing. A file it cannot edit safely it refuses, with the reason, and leaves
 untouched. `mnema doctor --fix private-tree` is the other: it moves each of those tails, as it is,
-into the repository's private tree (`--dry-run` says what it would move), drops the writers'
+into the repository's private tree (`--dry-run` says what it would move), carries each
+tail's head note (the writer's note of the last entry it wrote) along with it, drops the rest of the writers'
 `locks/`, and leaves where it was anything whose name there already holds other bytes. A worktree
 that had written again since keeps the tail it writes now, and its old tail is moved as a closed
 one. The exit status is 0 whatever it found: a script that wants to act on a

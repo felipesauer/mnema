@@ -1860,7 +1860,9 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
     // every read of `@mnema/code` that serves the record asks it now, on both
     // surfaces, and the MCP carries it to the agent in the same reply. The sentence
     // above is history, kept because it names the defect this function exists for.
-    const broke = linkBreakAt(tail, entry, expectedSeq, expectedPrev);
+    // Every entry walked so far took the seq it holds as its index, so the one holding a seq
+    // below the expected one is found by position.
+    const broke = linkBreakAt(tail, entry, expectedSeq, expectedPrev, (seq) => entries[seq]?.link);
     if (broke !== undefined) {
       // A break makes everything after it unanchored; stop here.
       issues.push({

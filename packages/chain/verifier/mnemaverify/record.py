@@ -257,11 +257,29 @@ def _check_chain(
         return
     previous: str | None = None
     expected = 0
+    held: dict[int, Entry] = {}
     for entry in entries:
         where = entry.source
         if entry.tail != tail_id:
             report.fail("3", f"link.tail is {entry.tail!r}, not the directory it is in", where)
-        if entry.seq != expected:
+        first = held.get(entry.seq) if entry.seq < expected else None
+        forked = (
+            first is not None
+            and first.stored_hash != entry.stored_hash
+            and first.prev == entry.prev
+        )
+        if forked:
+            # Section 3: two different lines hold one seq and follow the same line. The line
+            # does not chain to the one before it either, and that is what the fork already
+            # says, so it is said once.
+            report.fail(
+                "3",
+                f"a fork in the sequence: two different lines hold seq {entry.seq} and follow "
+                "the same line, so the tail was written from one head in two places and the two "
+                "were joined",
+                where,
+            )
+        elif entry.seq != expected:
             report.fail(
                 "3",
                 f"a gap in the sequence: seq {entry.seq} where {expected} was due. This reader "
@@ -271,8 +289,9 @@ def _check_chain(
                 "G09",
             )
             expected = entry.seq
-        if entry.prev != previous:
+        if entry.prev != previous and not forked:
             report.fail("3", f"prev does not chain: {entry.prev} after {previous}", where)
+        held.setdefault(entry.seq, entry)
         recomputed = entry_hash(entry.event_bytes, tail_id, entry.seq, entry.prev)
         if recomputed != entry.stored_hash:
             report.fail(

@@ -19,6 +19,7 @@ import {
   keyToSignWith,
   loadOrCreateInstallationId,
   localKeyFingerprint,
+  nextInstallationId,
   signerOf,
 } from './keystore.js';
 import type { ChainLayout } from './layout.js';
@@ -78,8 +79,17 @@ export function openChainForWriting(chainRoot: string, options: OpenOptions): Ch
   const upcasters = options.upcasters ?? catalogUpcasters();
   const keepKey = key.keep;
   if (keepKey === undefined) {
-    const installationId = loadOrCreateInstallationId(installationLayout, key.keyPair.fingerprint);
-    return new ChainWriter(chainLayout, key.keyPair, installationId, upcasters, options);
+    const fingerprint = key.keyPair.fingerprint;
+    const installationId = loadOrCreateInstallationId(installationLayout, fingerprint);
+    return new ChainWriter(
+      chainLayout,
+      key.keyPair,
+      installationId,
+      upcasters,
+      options,
+      undefined,
+      (current) => nextInstallationId(installationLayout, fingerprint, current),
+    );
   }
   // A machine with no key yet: the key, and its installation id here, are kept at the writer's
   // first append, so a write refused before it leaves the machine and the tree as they were.

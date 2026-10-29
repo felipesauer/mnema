@@ -330,12 +330,23 @@ describe('the index of the other projects', () => {
     await seed.close();
     vcs('add', '-A');
     vcs('commit', '-qm', 'base');
+    // The writer's note of the last entry it wrote (`locks/<tailId>.head`, which git does not
+    // see) is put back as it was at the base before each branch writes, as a checkout copied
+    // whole would carry it: without it the second branch goes to a tail of its own (ADR-123),
+    // and the same-size live segment this case is about is never made.
+    const locks = join(second, PROJECT_DIR, 'locks');
+    const notes = new Map(
+      readdirSync(locks)
+        .filter((name) => name.endsWith('.head'))
+        .map((name) => [join(locks, name), readFileSync(join(locks, name))] as const),
+    );
     for (const [branch, title] of [
       ['x', 'goal-AAAA'],
       ['y', 'goal-BBBB'],
     ] as const) {
       vcs('checkout', '-q', 'main');
       vcs('checkout', '-q', '-b', branch);
+      for (const [path, bytes] of notes) writeFileSync(path, bytes);
       const writing = await connect();
       const wrote = await writing.callTool({
         name: 'create_task',

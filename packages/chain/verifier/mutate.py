@@ -985,6 +985,31 @@ def reordered_lines(root: str) -> tuple[bool, str]:
     return _rewrite(path, lines), "the lines of seq 2 and seq 3 swapped"
 
 
+def forked_tail(root: str) -> tuple[bool, str]:
+    """A second, different line at the last seq, following the same line the first one follows.
+
+    What one tail written from one head in two places leaves once the two are joined: a
+    checkout copied whole (its installation id and the writer's note of its last entry with
+    it), each copy appending one event on its own branch, and a merge that kept both sides.
+    Keyless, like every line above the checkpoint. Both readers refuse it and name it a fork
+    (section 3), not a gap in the sequence.
+    """
+    path = _segment(root)
+    lines = _read_lines(path)
+    last = strict_loads(lines[-1].decode("utf-8"))
+    event = dict(last["event"])
+    event["payload"] = _flip_payload(event.get("payload"))
+    tail, seq, previous = last["link"]["tail"], last["link"]["seq"], last["link"]["prev"]
+    link = {
+        "hash": entry_hash(canonical_bytes(event), tail, seq, previous),
+        "prev": previous,
+        "seq": seq,
+        "tail": tail,
+    }
+    lines.append(canonical_bytes({"event": event, "link": link}))
+    return _rewrite(path, lines), f"a second line at seq {seq}, following the line the first follows"
+
+
 def refounded_record(root: str) -> tuple[bool, str]:
     """The record erased and begun again by whoever holds a key: a different, honest record.
 
@@ -1500,6 +1525,7 @@ MUTATIONS = {
     "duplicate-key-in-a-signed-line": duplicate_key_in_a_signed_line,
     "aligned-cut": aligned_cut,
     "reordered-lines": reordered_lines,
+    "forked-tail": forked_tail,
     "refounded-record": refounded_record,
     "tail-proof-removed": tail_proof_removed,
     "tail-proof-signed-by-another-project-key": tail_proof_signed_by_another_project_key,
