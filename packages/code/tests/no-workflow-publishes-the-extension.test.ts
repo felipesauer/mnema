@@ -291,7 +291,7 @@ describe('two jobs publish the extension, behind an approval', () => {
   it('refuses the Marketplace token back, the OIDC token in the Open VSX job, and the two jobs joined', () => {
     const pat = RELEASE.replace(
       /^( {10}VERSION: \$\{\{ needs\.plan\.outputs\.version \}\}\n)(?= {8}run: \|\n {10}set -euo pipefail\n {10}served=)/m,
-      '$1          VSCE_PAT: ${{ secrets.VSCE_PAT }}\n',
+      '$1          VSCE_PAT: $' + '{{ secrets.VSCE_PAT }}\n',
     );
     expect(pat).not.toBe(RELEASE);
     expect(offences(PLACE.workflow, pat)).not.toEqual([]);
