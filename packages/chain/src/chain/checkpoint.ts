@@ -50,13 +50,13 @@ import type { KeyPair } from './keys.js';
 import { type KeyObject, sign, verify } from './keys.js';
 
 /**
- * The scheme tag a checkpoint declares and a verifier refuses to read past.
+ * The first scheme tag a checkpoint declares, the one the writer signs under today; a verifier
+ * reads it and {@link NAMED_SCHEME} and refuses to read past either.
  *
  * Exported off the package's public surface (this module, not `index.ts`) for
  * the reason the hash domains are: `FORMAT.md` NAMES it, and a version typed into
- * prose goes stale silently. The doc's guard reads it from here, so bumping this
- * to `/2` reddens the document instead of leaving it describing a scheme nobody
- * writes any more.
+ * prose goes stale silently. The doc's guard reads both from here, so a third scheme
+ * reddens the document instead of leaving it describing schemes nobody reads.
  */
 export const SCHEME = 'mnema-checkpoint/1';
 
@@ -230,7 +230,7 @@ const NAMED_CHECKPOINT_LINE_KEYS = [...CHECKPOINT_LINE_KEYS, 'record'] as const;
 /**
  * The line's shape, checked before its bytes, in the second reader's order and words
  * (`read_checkpoint` in `mnemaverify/checkpoint.py`): an object, a scheme this reader knows,
- * then exactly the eight keys (`FORMAT.md` section 4 fixes that order). A key beside them is
+ * then exactly the keys of its scheme (`FORMAT.md` section 4 fixes that order). A key beside them is
  * outside the signed message, so the signature still verifies with it there, and it is refused.
  * The scheme comes first because a reader refuses one it does not know rather than guessing at
  * the fields, and a scheme it does not know is all a line under a later scheme is wrong in.

@@ -12,6 +12,19 @@ with its own changelog.
 
 ### Changed
 
+- **Both readers read a checkpoint and a tail proof that name the record they belong to, and refuse a tail of another record.**
+  One key signs in every record its person writes in, and public keys travel with the record, so a tail copied from one
+  record with its key verified in another as that person's acts. `mnema-checkpoint/2` and `mnema-tail/2` sign one key more,
+  `record`: the SHA-256 of a framed tag and the id of the record's genesis tail (FORMAT.md section 6.10). `verify` and the
+  Python reader read them beside `/1` (a `/2` checkpoint's `prev` is the hash of the `/1` one before it) and refuse, by the
+  same names, `another-record` (the tails name two records, every group named), `record-mismatch` (one tail names two) and
+  `scheme-downgrade` (a `/1` checkpoint where the tail had named its record). A tail that names no record beside named ones
+  is a census note, `unnamed-tail`; a record that names none, every record written so far, reads as it did, and the Python
+  reader says it is unnamed. A scheme of the family neither reads names the mnema that refuses it, as a kind it does not
+  read does. `canonical-vectors.json` publishes five signed messages (each scheme of each artifact, signed by RFC 8032's
+  published key), and a new frozen record is named by its genesis tail. The writer still writes `/1`: this release's
+  reading of a record changes nothing until a record is written under `/2`.
+
 - **A decision one machine accepted and another rejected or superseded, out of the same state, is in force in no reading, and each
   reading says why.** Two clones that had not seen each other, once their tails meet, leave two signed moves out of `proposed`,
   and the fold kept the state of whichever had the later `at`: a decision governed, or stopped governing, because of a clock. The
