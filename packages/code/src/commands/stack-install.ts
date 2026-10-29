@@ -68,6 +68,7 @@ import {
 } from '@mnema/stacks';
 import { HOST_NAMES, HOSTS, type Place } from '../host-names.js';
 import { oneLine } from '../one-line.js';
+import { whenLogged } from '../sigstore/when-logged.js';
 import { readStackSignature, type StackSignature } from './stack-signature.js';
 import type { SourceRead } from './stack-source.js';
 import {
@@ -620,7 +621,7 @@ function signedLines(signature: StackPlan['signature']): string[] {
   return [
     `  signed   by ${oneLine(signature.identity)}`,
     more(`issuer ${oneLine(signature.issuer)}`),
-    more(`logged in Rekor at ${oneLine(signature.loggedAt)}, index ${oneLine(signature.logIndex)}`),
+    more(`logged in Rekor ${whenLogged(signature)}, index ${oneLine(signature.logIndex)}`),
     more('a signature proves who signed these bytes, not that they are safe to run'),
   ];
 }

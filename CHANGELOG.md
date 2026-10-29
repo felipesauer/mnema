@@ -10,6 +10,10 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- `mnema verify --against-sigstore` and `mnema stack install` no longer print `1970-01-01` as the time a Rekor v2 entry was logged. A v2 entry carries no `integratedTime`, so the time now comes from the timestamp authority the Sigstore library verified, and says so; a bundle with no verified time says "time not carried", never a date made up.
+
 ## [0.1.4] - 2026-10-29
 
 ### Added

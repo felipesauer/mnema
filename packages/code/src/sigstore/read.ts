@@ -27,8 +27,14 @@ export type SigstoreReading =
       readonly identity: string;
       /** The OpenID issuer that vouched for it. */
       readonly issuer: string;
-      /** When Rekor logged the signature, on Rekor's clock. */
-      readonly loggedAt: string;
+      /**
+       * When the signature was logged, and only a time the library verified: Rekor's clock when its
+       * signed promise carries one, else the timestamp authority's (a Rekor v2 entry carries no
+       * time of its own). Absent when the bundle carries none: never a date made up.
+       */
+      readonly loggedAt?: string;
+      /** Whose clock `loggedAt` is; absent when `loggedAt` is. */
+      readonly loggedAtBy?: 'rekor' | 'timestamp-authority';
       readonly logIndex: string;
       /**
        * The run the certificate names, when it names any: the repository, the workflow, the commit
@@ -91,6 +97,34 @@ function runOf(
   return Object.keys(found).length === 0 ? undefined : found;
 }
 
+/** The time the library verified for this entity: Rekor's promised one, else the timestamp authority's. */
+function verifiedTime(
+  entity: ReturnType<typeof toSignedEntity>,
+  entry:
+    | ReturnType<typeof bundleFromJSON>['verificationMaterial']['tlogEntries'][number]
+    | undefined,
+): { readonly loggedAt: string; readonly loggedAtBy: 'rekor' | 'timestamp-authority' } | undefined {
+  if (
+    entry?.inclusionPromise !== undefined &&
+    entry.integratedTime &&
+    entry.integratedTime !== '0'
+  ) {
+    return {
+      loggedAt: new Date(Number(entry.integratedTime) * 1000).toISOString(),
+      loggedAtBy: 'rekor',
+    };
+  }
+  for (const stamp of entity.timestamps) {
+    if (stamp.$case === 'timestamp-authority') {
+      return {
+        loggedAt: stamp.timestamp.signingTime.toISOString(),
+        loggedAtBy: 'timestamp-authority',
+      };
+    }
+  }
+  return undefined;
+}
+
 /**
  * Reads the bundle `text` as a Sigstore signature over `message`, whose SHA-256 is `digest`.
  * Never throws: a bundle that does not hold is a reading.
@@ -119,14 +153,15 @@ export function readSigstoreBundle(
       ctlogThreshold: 1,
       timestampThreshold: 1,
     });
-    const signer = verifier.verify(toSignedEntity(bundle, Buffer.from(checkpoint.message)));
+    const entity = toSignedEntity(bundle, Buffer.from(checkpoint.message));
+    const signer = verifier.verify(entity);
     const entry = bundle.verificationMaterial.tlogEntries[0];
     const ran = runOf(signer.identity?.oids ?? []);
     return {
       kind: 'signed',
       identity: signer.identity?.subjectAlternativeName ?? '',
       issuer: signer.identity?.extensions?.issuer ?? '',
-      loggedAt: new Date(Number(entry?.integratedTime ?? 0) * 1000).toISOString(),
+      ...verifiedTime(entity, entry),
       logIndex: entry?.logIndex ?? '',
       ...(ran === undefined ? {} : { ran }),
     };

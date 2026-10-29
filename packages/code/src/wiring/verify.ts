@@ -62,6 +62,7 @@ import { fact } from '../presentation/detail.js';
 import type { Line, Severity } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import { type Clause, clauseStatement, statement } from '../presentation/verdict.js';
+import { whenLogged } from '../sigstore/when-logged.js';
 import { globalTreeGloss } from '../vocabulary.js';
 import { here } from './context.js';
 import { enumeratedOption, glossedList, LEVEL_REQUIREMENTS, listed } from './enumerated.js';
@@ -696,7 +697,7 @@ export function sigstoreLine(finding: SigstoreFinding): string {
     names.length === 0
       ? ''
       : onOneLine`; its certificate names ${names.join(', ')}: a run, not the agent inside it`;
-  const signed = onOneLine`${at}: signed by ${reading.identity} (${reading.issuer}), logged by Rekor at ${reading.loggedAt} (entry ${reading.logIndex})${certificate}`;
+  const signed = onOneLine`${at}: signed by ${reading.identity} (${reading.issuer}), logged by Rekor ${whenLogged(reading)} (entry ${reading.logIndex})${certificate}`;
   if (finding.namedBy !== undefined) {
     return onOneLine`${signed}; ${finding.namedBy} names this identity as its own`;
   }

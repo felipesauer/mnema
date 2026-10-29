@@ -516,7 +516,7 @@ GitHub Actions the act refuses a private repository. `mnema key sigstore <e-mail
 workflow>` records the signed claim that this identity is that one (an e-mail as its
 SHA-256, never the address, which protects the record and not the bundle or the log) and `mnema verify
 --against-sigstore` reads every bundle **offline**, against the trust root the binary
-carries, and says who signed in, when Rekor logged it and, from a GitHub Actions job, the
+carries, and says who signed in, when it was logged (Rekor's clock, or the timestamp authority's for a Rekor v2 entry, which carries no time of its own; a bundle with no verified time says "time not carried", never a date) and, from a GitHub Actions job, the
 repository, the workflow, the commit and the run the certificate names, and whether an
 identity of the record names that signer. **What it proves** is that whoever could sign in as that e-mail (or run
 that workflow) countersigned the checkpoint by then, on Rekor's clock. **What it does not
