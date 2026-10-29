@@ -43,7 +43,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import NamedTuple
+from typing import Any, NamedTuple, cast
 
 from . import bitcoin, enrolment, gaps, ots, retraction, schema, workflow
 from .canonical import CRLF, ends_in_crlf_only, utf16_order
@@ -694,15 +694,15 @@ def _check_record(report: Report, named_by_tail: dict[str, str | None]) -> None:
             )
         return
     if found["state"] == "several":
-        groups = found["groups"]
+        groups = cast("list[dict[str, Any]]", found["groups"])
         said = " and ".join(
             f"{group['name'][:12]}... ({'tail' if len(group['tails']) == 1 else 'tails'} "
             f"{', '.join(group['tails'])})"
-            for group in groups  # type: ignore[union-attr]
+            for group in groups
         )
         report.fail(
             "6.10",
-            f"this directory holds tails of {len(groups)} records: {said}: a tail grafted from "  # type: ignore[arg-type]
+            f"this directory holds tails of {len(groups)} records: {said}: a tail grafted from "
             f"another record, or two records merged ({ANOTHER_RECORD})",
             "tails/",
         )
@@ -715,7 +715,7 @@ def _check_record(report: Report, named_by_tail: dict[str, str | None]) -> None:
         + (f", the name of genesis tail {genesis}" if genesis is not None else ""),
         "tails/",
     )
-    for tail_id in found["unnamed"]:  # type: ignore[union-attr]
+    for tail_id in cast("list[str]", found["unnamed"]):
         report.note(
             "6.10",
             f"tail {tail_id} names no record: born before records were named, and no checkpoint "

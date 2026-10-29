@@ -1040,8 +1040,8 @@ def _refound(root: str, content: str, scheme: int = 1) -> str:
     for name in ("tails", "keys"):
         shutil.rmtree(os.path.join(root, name), ignore_errors=True)
     tail = _tail_name(UNENROLLED_SECRET, "ab")
-    name = record_name(tail) if scheme == 2 else None
-    return _found_tail(root, UNENROLLED_SECRET, tail, template["at"], content, name, name)
+    names = record_name(tail) if scheme == 2 else None
+    return _found_tail(root, UNENROLLED_SECRET, tail, template["at"], content, names, names)
 
 
 # The note a second tail writes: its own, so no reader names a rewrite of the first tail's.
@@ -1111,6 +1111,7 @@ def _found_tail(
 def _signed_checkpoint(stored: dict, secret: bytes, names: str | None) -> bytes:
     """A checkpoint's line over `stored` (its keys but `scheme` and `sig`), signed by `secret`:
     `/1`, or `/2` naming `names`."""
+    keys: tuple[str, ...]
     if names is None:
         fields = {**stored, "scheme": CHECKPOINT_SCHEME}
         keys = CHECKPOINT_KEYS
@@ -1122,6 +1123,7 @@ def _signed_checkpoint(stored: dict, secret: bytes, names: str | None) -> bytes:
 
 def _signed_proof(tail: str, signer: str, secret: bytes, names: str | None) -> bytes:
     """A tail proof over `tail`, signed by `secret`: `/1`, or `/2` naming `names`."""
+    keys: tuple[str, ...]
     if names is None:
         fields = {"scheme": TAILPROOF_SCHEME, "signerFp": signer, "tail": tail}
         keys = TAILPROOF_KEYS
