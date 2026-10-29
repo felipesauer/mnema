@@ -674,7 +674,15 @@ describe('reading a bundle, offline', () => {
           },
         }),
       );
-      const proof = sigstore.tlog.calculateInclusionProof({
+      // The double has the method at runtime and does not type it.
+      const proof = (
+        sigstore.tlog as unknown as {
+          calculateInclusionProof(entry: { body: Buffer; timestamp: number; logID: Buffer }): {
+            rootHash: string;
+            checkpoint: string;
+          };
+        }
+      ).calculateInclusionProof({
         body,
         timestamp: Number(entry.integratedTime),
         logID: createHash('sha256').update(sigstore.tlog.publicKey).digest(),
