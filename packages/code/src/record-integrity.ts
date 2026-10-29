@@ -76,7 +76,12 @@
  * on the record is a verb of its own.
  */
 
-import type { DivergentMove, Scope } from '@mnema/core';
+import {
+  acceptedAgainstRetired,
+  type DivergentMove,
+  divergenceSentence,
+  type Scope,
+} from '@mnema/core';
 import { oneLine } from './one-line.js';
 
 /**
@@ -384,5 +389,8 @@ export const TOOLS_SERVING_NO_RECORD_CONTENT: { readonly [tool: string]: string 
  * the workflow does not allow, which no reader applies and `verify` names (FORMAT.md section 6.7).
  */
 export function movedApartSentence(move: DivergentMove): string {
+  // An accept against a retirement is not "the last one wins": the decision is in force under
+  // neither, and says so in the one line every reading of the rules gives (ADR-121).
+  if (acceptedAgainstRetired(move)) return `this decision: ${divergenceSentence(move)}.`;
   return `this ${move.kind} left ${oneLine(move.from)} more than once: to ${oneLine(move.to.join(', then '))}, by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.`;
 }

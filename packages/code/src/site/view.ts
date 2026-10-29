@@ -228,6 +228,15 @@ function decisionView(
           actor('accepted', d.acceptedBy.who, d.acceptedBy.which, d.acceptedBy.unannounced),
           '.',
         ),
+    d.divergence === undefined
+      ? []
+      : h(
+          'p',
+          { class: 'meta', 'data-field': 'divergence' },
+          'Not in force: ',
+          line(d.divergence),
+          '.',
+        ),
     d.supersedes === undefined
       ? []
       : h('p', { class: 'meta' }, 'Supersedes ', reference('supersedes', d.supersedes), '.'),

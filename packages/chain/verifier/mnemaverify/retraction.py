@@ -202,3 +202,49 @@ def decision_rewrites(
                 )
             )
     return found
+
+
+def decision_divergences(
+    entries_by_tail: dict[str, list[Entry]], not_applied: set[tuple[str, int]]
+) -> list[Foreign]:
+    """Section 6.7: every decision that one machine ACCEPTED and another RETIRED (rejected or
+    superseded) out of the same state, by moves that did not see each other - the moves a reader
+    applies, in the merged order. Named, never refused: both moves are intact, chained and signed,
+    and the verdict does not change. A move repeated byte for byte is one move read twice."""
+    seen: dict[tuple[str, str], list[tuple[str, Entry]]] = {}
+    read: set[str] = set()
+    for tail, entry in merged_order(entries_by_tail).order:
+        event = entry.event
+        payload = event.get("payload")
+        if event.get("kind") != "decision.transitioned" or not isinstance(payload, dict):
+            continue
+        if (tail, entry.seq) in not_applied or payload.get("from") is None:
+            continue
+        bytes_ = json.dumps(event, sort_keys=True, ensure_ascii=True)
+        if bytes_ in read:
+            continue
+        read.add(bytes_)
+        seen.setdefault((str(event.get("subject")), str(payload.get("from"))), []).append(
+            (tail, entry)
+        )
+    found: list[Foreign] = []
+    for (subject, left), moves in seen.items():
+        to = [str(entry.event["payload"].get("to")) for _tail, entry in moves]
+        if "accepted" not in to or all(one == "accepted" for one in to):
+            continue
+        by = " and ".join(
+            f"{_shown(one)} ({_shown(entry.event.get('who'))} at {_shown(entry.event.get('at'))})"
+            for one, (_tail, entry) in zip(to, moves)
+        )
+        tail, first = moves[0]
+        found.append(
+            Foreign(
+                tail,
+                first.seq,
+                "decision-divergence",
+                f"{_shown(subject)} left {_shown(left)} by {by}, moves on machines that had not "
+                "seen each other: the decision is in force under neither, and a person decides "
+                "it again",
+            )
+        )
+    return found

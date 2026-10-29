@@ -24,7 +24,7 @@ import { createTask, transitionTask } from '../workflow/operations.js';
 import { SKILL_TRANSITIONS } from '../workflow/skill-transitions.js';
 import { TRANSITIONS } from '../workflow/transitions.js';
 import { projectDecisions } from './decision.js';
-import { divergentMoves } from './divergent-moves.js';
+import { acceptedAgainstRetired, divergenceSentence, divergentMoves } from './divergent-moves.js';
 import { orderedEvents } from './order.js';
 import { projectTasks } from './task.js';
 
@@ -126,6 +126,30 @@ describe('divergentMoves', () => {
     // keeps one state; the reading says there were two moves, it does not pick one.
     expect(verify(tree, upcasters)).toMatchObject({ ok: true });
     expect(['accepted', 'rejected']).toContain(projectDecisions(eventsOf(tree)).get(id)?.state);
+  });
+
+  it('says an accept against a retirement is a divergence a reader leaves out of force, in one line that names both moves and the way out', () => {
+    const { tree, id } = twoMachinesMovedOneDecision();
+    const [move] = divergentMoves(eventsOf(tree));
+    expect(move?.entityId).toBe(id);
+    expect(acceptedAgainstRetired(move as NonNullable<typeof move>)).toBe(true);
+    const line = divergenceSentence(move as NonNullable<typeof move>);
+    expect(line).toMatch(
+      /^divergence between the (accept|rejection) by mnid:[0-9a-f]{8} at 2026-10-01T\S+ and the (accept|rejection) by mnid:[0-9a-f]{8} at 2026-10-01T\S+, made on machines/,
+    );
+    expect(line).toContain('accept');
+    expect(line).toContain('rejection');
+    expect(line).toContain('record it as a new decision, which a person accepts');
+  });
+
+  it('does not call two accepts, or a task, an accept against a retirement', () => {
+    const base = { kind: 'decision', entityId: 'd', from: 'proposed', evidence: [] } as const;
+    expect(acceptedAgainstRetired({ ...base, to: ['accepted', 'accepted'] })).toBe(false);
+    expect(acceptedAgainstRetired({ ...base, to: ['rejected', 'superseded'] })).toBe(false);
+    expect(acceptedAgainstRetired({ ...base, to: ['accepted', 'superseded'] })).toBe(true);
+    expect(acceptedAgainstRetired({ ...base, kind: 'skill', to: ['accepted', 'rejected'] })).toBe(
+      false,
+    );
   });
 
   it('reads a move repeated byte for byte as one move: a duplicated entry, not a divergence', () => {

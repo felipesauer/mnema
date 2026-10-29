@@ -28,6 +28,8 @@ import { DEFAULT_WAIT_MS, TailBusyError, UnreadableLineError } from '@mnema/chai
 import { channelIsOn, type PushedRule, type RulesAtPath, type ScopedCache } from '@mnema/context';
 import {
   ASKS_FOR_A_PERSON_RELATION,
+  acceptedAgainstRetired,
+  divergenceSentence,
   GOVERNS_RELATION,
   REFUSES_A_WRITE_RELATION,
   type Scope,
@@ -120,17 +122,26 @@ export function movedApartLine(
   const named = new Set(rules.map((rule) => rule.id));
   if (named.size === 0) return undefined;
   const apart = new Set<string>();
+  const out = new Map<string, string>();
   for (const source of sources) {
     for (const move of source.cache.divergentMoves()) {
-      if (named.has(move.entityId)) apart.add(move.entityId);
+      if (!named.has(move.entityId)) continue;
+      // An accept against a retirement is not "the last of them stands": the decision is in force
+      // under neither, and its line is the one every reading of the rules gives (ADR-121).
+      if (acceptedAgainstRetired(move)) out.set(move.entityId, divergenceSentence(move));
+      else apart.add(move.entityId);
     }
   }
-  if (apart.size === 0) return undefined;
-  const ids = [...apart].map((id) => `\`${oneLine(id)}\``).join(', ');
-  return (
-    `Moved apart: ${ids} left one state more than once, by moves on machines that had not seen each other; ` +
-    'the rule stands as the last of them in the record leaves it, and `mnema show <id>` names the moves.'
-  );
+  const lines = [
+    ...(apart.size === 0
+      ? []
+      : [
+          `Moved apart: ${[...apart].map((id) => `\`${oneLine(id)}\``).join(', ')} left one state more than once, by moves on machines that had not seen each other; ` +
+            'the rule stands as the last of them in the record leaves it, and `mnema show <id>` names the moves.',
+        ]),
+    ...[...out].map(([id, why]) => `Not in force: \`${oneLine(id)}\`: ${why}.`),
+  ];
+  return lines.length === 0 ? undefined : lines.join('\n');
 }
 
 /** One write, as a hook sees it: every path it touches, and where they are read from. */

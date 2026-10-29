@@ -992,6 +992,7 @@ function censusLocus(note: CensusNote): string {
       return note.note;
     // A decision recorded again names the decision: the id a person opens to see the text kept.
     case 'decision-rewrite':
+    case 'decision-divergence':
       return note.decision;
     case 'foreign-link-retraction':
       return note.link.subject;

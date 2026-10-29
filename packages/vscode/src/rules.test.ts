@@ -44,6 +44,16 @@ describe('the rules over a file, as `mnema rules --json` says them', () => {
     expect(readRules(json).map((r) => r.id)).toEqual(['d']);
   });
 
+  it('drops a decision the record says a divergence keeps out of force, though its state is accepted', () => {
+    const json = JSON.stringify({
+      rules: [
+        rule({ rule: 'id-1', divergence: 'divergence between the accept and the rejection' }),
+        rule({ rule: 'id-2' }),
+      ],
+    });
+    expect(readRules(json).map((one) => one.id)).toEqual(['id-2']);
+  });
+
   it('says it was not confirmed when the record says nobody else has looked', () => {
     const json = JSON.stringify({
       rules: [rule({ acceptance: { by: 'mnid:x', unconfirmed: true } })],

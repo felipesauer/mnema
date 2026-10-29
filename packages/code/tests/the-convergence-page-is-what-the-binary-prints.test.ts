@@ -197,7 +197,7 @@ describe('the two machines the convergence page shows', () => {
       );
     const first = ask(ana, join(sandbox, 'two-machines', 'ana-home'));
     const second = ask(bob, join(sandbox, 'two-machines', 'bob-home'));
-    expect(first[0]).toContain('left proposed more than once: to rejected, then accepted');
+    expect(first[0]).toContain('divergence between the rejection by mnid:');
     expect(second).toEqual(first);
   });
 

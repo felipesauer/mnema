@@ -2,8 +2,9 @@
  * A GATE, A PUSH AND AN ASKED READING SAY WHEN THE RULE THEY STAND ON WAS MOVED APART.
  *
  * Two machines that moved one decision out of `proposed` without seeing each other leave two
- * signed moves (`reject` on one, `accept` on the other); the brief, `show` and `read_record` say
- * so. The write gate refused, and `governing_rules` and the per-edit push listed, the rule in the
+ * signed moves (here an `accept` on each); the brief, `show` and `read_record` say so. (An accept
+ * against a retirement is another case: the decision is in force under neither, and
+ * `an-accept-and-a-retirement-that-crossed-are-in-force-nowhere.test.ts` holds it.) The write gate refused, and `governing_rules` and the per-edit push listed, the rule in the
  * state the last move leaves, and said nothing of the dispute. Each now owes one line, from the
  * same `divergentMoves`, and none of them changes: the refusal, the asking and the push are what
  * they were. A rule moved in one line adds no byte.
@@ -17,7 +18,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { catalogUpcasters, openChainForWriting } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { acceptDecision, openTreeForWriting, rejectDecision } from '@mnema/core/write';
+import { acceptDecision, openTreeForWriting } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -79,7 +80,7 @@ async function ruleAt(title: string, path: string, rel: string): Promise<string>
   return id;
 }
 
-/** A decision two clones moved out of `proposed` (one rejected, one accepted, the accept last), linked. */
+/** A decision two clones moved out of `proposed` (each accepted it, the clone's last), linked. */
 async function ruleMovedApartAt(title: string, path: string, rel: string): Promise<string> {
   // Each pair of moves is later than the one before, so the order of the record is the order made.
   laterEach += 1000;
@@ -102,8 +103,8 @@ async function ruleMovedApartAt(title: string, path: string, rel: string): Promi
     upcasters,
     clock: ticking(epoch + 100),
   };
-  ok(rejectDecision(here, { id, fields: { note: 'not this way' } }));
-  ok(acceptDecision(clone, { id, fields: { note: 'this way' } }));
+  ok(acceptDecision(here, { id, fields: { note: 'this way, here' } }));
+  ok(acceptDecision(clone, { id, fields: { note: 'this way, there' } }));
   here.writer.checkpoint();
   clone.writer.checkpoint();
   cpSync(join(cloneRoot, 'tails', clone.writer.tail), join(root, 'tails', clone.writer.tail), {

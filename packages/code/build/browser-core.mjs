@@ -24,3 +24,8 @@ export {
 export { isUnannounced } from '../../chain/dist/events/unannounced.js';
 export { orderedEvents } from '../../core/dist/projections/order.js';
 export { DECISION_STATES } from '../../core/dist/workflow/decision-states.js';
+export {
+  acceptedAgainstRetired,
+  divergenceSentence,
+  divergentMoves,
+} from '../../core/dist/projections/divergent-moves.js';

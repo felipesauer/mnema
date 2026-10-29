@@ -59,8 +59,10 @@ export function readRules(stdout: string): RuleView[] {
     if (!Array.isArray(list)) continue;
     for (const item of list as unknown[]) {
       if (typeof item !== 'object' || item === null) continue;
-      const { rule, name, kind, state, acceptance } = item as Record<string, unknown>;
+      const { rule, name, kind, state, acceptance, divergence } = item as Record<string, unknown>;
       if (typeof rule !== 'string' || kind !== 'decision') continue;
+      // An accept and a retirement of it crossed (ADR-121): the state says `accepted`, nothing governs.
+      if (typeof divergence === 'string') continue;
       if (
         typeof state !== 'string' ||
         !isDecisionState(state) ||

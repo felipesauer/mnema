@@ -74,6 +74,7 @@ export {
 export {
   type Acceptance,
   type DecisionRef,
+  type DisputedDecision,
   decisionDisposition,
   type NamedDecision,
   ruleIdsInForce,
@@ -238,6 +239,7 @@ export {
   type AddressReach,
   addressReach,
   asksForAPersonAt,
+  disputedAt,
   type GovernanceCounts,
   type GovernanceQuery,
   type GoverningRules,

@@ -60,12 +60,12 @@ export MNEMA_HOME="$PWD/../ana-home"
 git pull --no-rebase --no-edit ../bob
 ```
 
-`show` names the two moves and says it prints the last of them. The line goes to the error stream,
-ahead of the record:
+`show` names the two moves and says the decision is in force under neither. The line goes to the error
+stream, ahead of the record, and the state it prints below is the last move's, as the record folds it:
 
 ```sh
 mnema show ADR-1
-#> this decision left proposed more than once: to rejected, then accepted, by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.
+#> this decision: divergence between the rejection by mnid:8072d8bf at 2026-10-16T… and the accept by mnid:79aa1e6b at 2026-10-16T…, made on machines that had not seen each other; not in force until it is decided again: record it as a new decision, which a person accepts.
 #> decision 01a14265-a017-7000-a83b-c9516d78ff90  ·  public
 #>   ADR-1: Use SQLite for the cache (accepted)
 #>   recorded by mnid:8072d8bf (a person)
@@ -80,36 +80,40 @@ mnema show ADR-1
 #> note: agreed
 ```
 
-`brief`, which is what an agent is handed, says it under the rules in force, and prints the state the last
-move left:
+An accept that crossed a retirement (a rejection, or a supersede) is out of force in every reading that
+says what governs, whichever move the clock puts last: nobody wins by a clock, and the call is not in force
+until it is decided again. `brief`, which is what an agent is handed, does not print it as a rule, and says
+why, in a paragraph of its own:
 
 ```sh
 mnema brief
 #> …
-#> ## Decisions in force (1)
+#> ## Decisions in force (0)
 #> …
-#> One of the rules below was moved out of one state more than once, by moves on machines
-#> that had not seen each other. Each move is a signed fact, and nothing re-judges either:
-#> this file prints the state the last of them in the record leaves. Read both before
-#> relying on it:
+#> Not in force, and not counted above: an accept and a retirement of each of these crossed.
 #>
-#> - `01a14265-a017-7000-a83b-c9516d78ff90` left proposed to rejected, then accepted
-#> …
-#> - **ADR-1: Use SQLite for the cache** · `01a14265-a017-7000-a83b-c9516d78ff90` · accepted by mnid:79aa1e6b (a person)
+#> - `01a14265-a017-7000-a83b-c9516d78ff90` (ADR-1, Use SQLite for the cache): divergence between the rejection by mnid:8072d8bf at 2026-10-16T… and the accept by mnid:79aa1e6b at 2026-10-16T…, made on machines that had not seen each other; not in force until it is decided again: record it as a new decision, which a person accepts
 #> …
 ```
 
-The write gate says it too, in one line under the refusal or the request that cites such a rule, and so do
-`governing_rules` and the rules pushed before an edit; the verdict of the gate is the one the last move leaves,
-unchanged.
+The other readings leave it out the same way and say the same line: `governing_rules` and `mnema rules` list the
+decision at its address with a `divergence` field, the rules pushed before an edit name it beside the rules
+they do hand over, `bootstrap` leaves it out of the decisions in force, `mnema site` marks it as not in force, and the
+Action does not judge a pull request by it. A rule that refuses a write, or asks for a person, does neither
+while it is in this state.
 
-`verify` says nothing of it. Neither move is a break: both are well-formed, signed, and in their
-tail's chain, and the verdict is what it would be without the disagreement. The line differs from a
-single machine's in one count, the second tail:
+The way out is a decision a person accepts: record the call again as a new decision. The record keeps both
+moves, so the divergence stays named and the old decision stays out of force; nothing here picks one of the
+two machines.
+
+`verify` names it in its census and its verdict does not change. Neither move is a break: both are
+well-formed, signed, and in their tail's chain, and the exit is what it would be without the disagreement.
+The line differs from a single machine's in one count, the second tail, and one clause:
 
 ```sh
 mnema verify
-#> public: local integrity verified (T1/T2/T4); 2 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered, nothing outside this machine attests this record
+#> public: local integrity verified (T1/T2/T4); 2 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); 1 decision(s) accepted and retired out of one state by moves that had not seen each other, in force under neither (see census: informational, not a break); external witness (T3): not covered, nothing outside this machine attests this record
+#>   census [decision-divergence] public 01a14265-a017-7000-a83b-c9516d78ff90: 01a14265-a017-7000-a83b-c9516d78ff90 left proposed by rejected (mnid:8072d8bf… at 2026-10-16T…) and accepted (mnid:79aa1e6b… at 2026-10-16T…), moves on machines that had not seen each other: the decision is in force under neither, and a person decides it again
 ```
 
 Bob's machine, which pulled Ana's, prints the same `show`, `brief` and `verify` (the page's example
@@ -128,14 +132,11 @@ cites; the second reader beside the format reads the same order and the same mov
 That is the whole of what converges: the sequence, and so the state it ends in.
 
 It does not converge on a judgment. The format does not decide which of two concurrent moves wins,
-and nothing corrects a clock: `at` stays the wall clock its writer stamped, so the last move is the
-one a machine's clock put last. Had Ana's clock run ahead of Bob's, the page above would end in
-`rejected`, on every machine ("What is not resolved", in "Reading many tails"). The record keeps
-both moves so that a person can read both and decide; a decision that settles it is a later move,
-or a decision that supersedes this one.
-
-In that case `show` still names both moves, on both machines. `brief` says nothing of them: a
-rejected decision is not in force, so it prints no rule to carry the line.
+and nothing corrects a clock: `at` stays the wall clock its writer stamped, so the state the record
+folds to is the one a machine's clock put last. Had Ana's clock run ahead of Bob's, `show` would print
+`rejected`, on every machine ("What is not resolved", in "Reading many tails"). The readers do not let
+that state govern: for an accept against a retirement, which move is last changes nothing in what is in
+force, and both moves are named. The record keeps both moves so that a person can read both and decide.
 
 ## A divergence is not an illegal move
 
@@ -143,7 +144,8 @@ Two things look alike and are not the same.
 
 - **A divergence** is two moves out of one state, written by machines that had not read each other.
   Each was legal where it was written. The readers apply both, in order; `show` says it, and `brief`
-  says it of a rule it prints, one left in force ([`divergent-moves.test.ts`](../packages/core/src/projections/divergent-moves.test.ts),
+  says it of a rule it prints. An accept against a retirement of one decision is out of force
+  in every reading, and each says why ([`divergent-moves.test.ts`](../packages/core/src/projections/divergent-moves.test.ts),
   "says the decision two machines moved out of `proposed`, with both moves as evidence").
 - **An illegal move** is one the workflow does not allow at its point in the merged order: a
   rejected decision accepted, a state that does not exist, a second birth, or a second move out of

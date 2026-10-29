@@ -40,6 +40,7 @@ import {
   type AddressReach,
   addressReach,
   asksForAPersonAt,
+  disputedAt,
   type GovernanceQuery,
   type GoverningRules,
   governingRules,
@@ -226,6 +227,22 @@ export function readAsksForAPersonAt(
   read: GovernedRead,
 ): RulesAtPath {
   return asksForAPersonAt(sources, asked(read));
+}
+
+/**
+ * The decisions addressed at a path, at every place it is read, that a divergence keeps out of
+ * force (ADR-121), each once: what the push says beside the rules it does hand over. The same
+ * {@link asked} as the reads above, so the path is the one `mnema rules` reports.
+ */
+export function readDisputedWhereItLands(
+  sources: readonly ScopedCache[],
+  read: GovernedRead,
+): ReturnType<typeof disputedAt> {
+  const seen = new Map<string, ReturnType<typeof disputedAt>[number]>();
+  for (const path of placesOfAPath(read)) {
+    for (const one of disputedAt(sources, asked({ ...read, path }))) seen.set(one.id, one);
+  }
+  return [...seen.values()];
 }
 
 /**

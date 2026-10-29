@@ -88,6 +88,9 @@ function governedLines(file: GovernedFile): string[] {
     ...by('governed by', file.governs),
     ...by('asks for a person:', file.asks),
     ...by('a write is refused by', file.refuses),
+    ...file.apart.map(
+      (hit) => `- ${named(file)}: ${rule(hit)} is not in force: ${plain(hit.divergence)}`,
+    ),
   ];
 }
 

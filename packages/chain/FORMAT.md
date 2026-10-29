@@ -1726,7 +1726,18 @@ the second had seen the first are not that: the second is a move the workflow do
 "takes a second move out of one state, on the tail that saw the first, for no divergence"). A task has a state machine with cycles, so the
 same fact cannot be read from its `from` alone: tasks are read by their position in the sequence
 (`packages/core/src/projections/divergent-moves.test.ts`, "the task table has one, a reopened
-task leaves a state again, so tasks are read by their order"). Two decisions of one record that
+task leaves a state again, so tasks are read by their order"). An accept and a retirement (a rejection, or a supersede) of one decision out of
+the same state, by moves that did not see each other, are more than that, because the fold would let
+the later `at` decide whether the decision governs: a reader that says what is in force leaves such
+a decision out and says why, whichever move is last, and a person puts the call back in force with a
+new decision. The census names it as `decision-divergence`, informational, the exit unchanged, at the
+tail and `seq` of the first of the moves in the merged order, in both readers (the second reader
+names it as a §6.7 note with the same rule and place:
+`packages/chain/src/chain/second-reader-agrees-on-what-is-not-applied.test.ts`, "without
+citations, the reject on A and the accept on B are a divergence, named by both at the accept"; the
+readings of the product: `packages/code/tests/an-accept-and-a-retirement-that-crossed-are-in-force-nowhere.test.ts`).
+Two accepts, or two retirements, are a divergence and nothing more: both say one thing about what
+governs. Two decisions of one record that
 carry the same `ADR-<n>` label are reported as a collision, and neither label is changed
 (`packages/core/src/projections/decision.test.ts`, "adrCollisions: the label collision
 detector").
@@ -1734,7 +1745,7 @@ detector").
 **What is not resolved.** The sequence does not decide which of two concurrent moves wins: two
 moves neither of which cites the other. The state a projection shows is the one the last move in
 the sequence leaves, so it is whichever move the selection puts last, and the divergence is named
-beside it (MR4: "what is read of X is what the model reads of X"). Nothing here corrects a clock:
+beside it (for an accept against a retirement of a decision, the state does not decide what is in force) (MR4: "what is read of X is what the model reads of X"). Nothing here corrects a clock:
 `at` stays the wall clock its writer stamped. Where nothing is cited, a machine whose clock is
 behind still sorts its events earlier than events it had already read; that is what a record
 written before citations reads as, fixed and not endorsed. A writer that cited nothing is judged

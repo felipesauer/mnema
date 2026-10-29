@@ -103,7 +103,8 @@ function bothReaders(record: string) {
         note.kind === 'foreign-retraction' ||
         note.kind === 'foreign-rewrite' ||
         note.kind === 'foreign-link-retraction' ||
-        note.kind === 'decision-rewrite'
+        note.kind === 'decision-rewrite' ||
+        note.kind === 'decision-divergence'
       ) {
         return [{ tail: note.tail, seq: note.seq, rule: note.kind }];
       }
@@ -304,14 +305,15 @@ describe('two machines on one record: what each had read decides', () => {
     );
     a.writer.checkpoint();
     b.writer.checkpoint();
-    return { record, a: a.writer.tail };
+    return { record, a: a.writer.tail, b: b.writer.tail };
   }
 
   it(
-    'without citations, the reject on A is a divergence, named by neither',
+    'without citations, the reject on A and the accept on B are a divergence, named by both at the accept',
     () => {
-      const said = bothReaders(twoMachines(false).record);
-      expect(said.product).toEqual([]);
+      const { record, b } = twoMachines(false);
+      const said = bothReaders(record);
+      expect(said.product).toEqual([{ tail: b, seq: 1, rule: 'decision-divergence' }]);
       expect(said.second).toEqual(said.product);
       expect(said.secondVerdict).toBe('VERIFIED');
     },

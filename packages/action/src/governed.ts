@@ -17,6 +17,12 @@ export interface RuleHit {
   readonly name: string | undefined;
 }
 
+/** A rule that addresses a file and is NOT in force: an accept and a retirement of it crossed. */
+export interface ApartRule extends RuleHit {
+  /** The record's own line: which moves crossed, and the way out. */
+  readonly divergence: string;
+}
+
 /** A changed file and the rules in force that address it, by what the rule does. */
 export interface GovernedFile {
   readonly path: string;
@@ -25,6 +31,8 @@ export interface GovernedFile {
   readonly governs: readonly RuleHit[];
   readonly asks: readonly RuleHit[];
   readonly refuses: readonly RuleHit[];
+  /** The rules that address it and are out of force for a divergence, each with why. */
+  readonly apart: readonly ApartRule[];
 }
 
 /** The reading of `mnema rules --json` for one file, with only the rules in force kept. */
@@ -38,7 +46,22 @@ export function rulesInForce(path: string, reading: unknown): GovernedFile {
     governs: inForce(answer.rules),
     asks: inForce(answer.asks),
     refuses: inForce(answer.refuses),
+    apart: apartFrom([answer.rules, answer.asks, answer.refuses].flat()),
   };
+}
+
+function apartFrom(list: unknown): ApartRule[] {
+  if (!Array.isArray(list)) return [];
+  const found = new Map<string, ApartRule>();
+  for (const item of list as unknown[]) {
+    if (typeof item !== 'object' || item === null) continue;
+    const { rule, name, kind, divergence } = item as Record<string, unknown>;
+    if (typeof rule !== 'string' || kind !== 'decision' || typeof divergence !== 'string') {
+      continue;
+    }
+    found.set(rule, { id: rule, name: typeof name === 'string' ? name : undefined, divergence });
+  }
+  return [...found.values()];
 }
 
 function inForce(list: unknown): RuleHit[] {
@@ -46,8 +69,11 @@ function inForce(list: unknown): RuleHit[] {
   const hits: RuleHit[] = [];
   for (const item of list as unknown[]) {
     if (typeof item !== 'object' || item === null) continue;
-    const { rule, name, kind, state } = item as Record<string, unknown>;
+    const { rule, name, kind, state, divergence } = item as Record<string, unknown>;
     if (typeof rule !== 'string' || kind !== 'decision') continue;
+    // An accept and a retirement of the decision crossed: the fold says `accepted` and nothing
+    // governs (ADR-121). The reading says so in `divergence`, and the state alone would not.
+    if (typeof divergence === 'string') continue;
     if (
       typeof state !== 'string' ||
       !isDecisionState(state) ||
@@ -74,12 +100,13 @@ export function bothReadings(a: GovernedFile, b: GovernedFile): GovernedFile {
     governs: once(a.governs, b.governs),
     asks: once(a.asks, b.asks),
     refuses: once(a.refuses, b.refuses),
+    apart: [...a.apart, ...b.apart.filter((hit) => !a.apart.some((seen) => seen.id === hit.id))],
   };
 }
 
 /** Whether a file is addressed by anything in force at all. */
 export const isGoverned = (file: GovernedFile): boolean =>
-  file.governs.length + file.asks.length + file.refuses.length > 0;
+  file.governs.length + file.asks.length + file.refuses.length + file.apart.length > 0;
 
 /** One review of a pull request, as the API reports it. */
 export interface Review {
