@@ -14,6 +14,7 @@
  * them (see `show-says-a-move-made-apart.test.ts`); each has its own key, so each is an identity.
  */
 
+import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -241,6 +242,17 @@ describe.each(CASES)('when %s', (_name, acceptAt, retireAt, retire) => {
     expect(text).not.toMatch(/refusing a write here, most specific first/);
   });
 
+  it('aging does not list it as an accepted decision', async () => {
+    await crossed('governs', acceptAt, retireAt, retire);
+    execFileSync('git', ['init', '-q'], { cwd: repo });
+    const reading = JSON.parse(await did('aging', '--min-commits', '1', '--json')) as {
+      looked: number;
+      aged: { id: string }[];
+    };
+    expect(reading.looked).toBe(0);
+    expect(reading.aged).toEqual([]);
+  });
+
   it('a rule that refuses a write does not refuse while it is out of force', async () => {
     await crossed('refuses-a-write', acceptAt, retireAt, retire);
     const met = withScopedCaches(resolveTrees(repo, env), (sources) =>
@@ -329,6 +341,13 @@ describe('a decision nobody crossed', () => {
     const told = await did('decision', 'record', TITLE, 'one file');
     const id = told.match(/\(([0-9a-f-]{20,})\)/)?.[1] as string;
     await did('decision', 'move', 'accept', id, '--note', 'agreed');
+    // the control of the aging case above: an accepted decision with an address IS looked at
+    await did('link', id, PATH, '--rel', 'governs');
+    execFileSync('git', ['init', '-q'], { cwd: repo });
+    const aging = JSON.parse(await did('aging', '--min-commits', '1', '--json')) as {
+      looked: number;
+    };
+    expect(aging.looked).toBe(1);
     const document = await did('brief');
     expect(document).toContain('## Decisions in force (1)');
     expect(document).not.toContain('Not in force');
