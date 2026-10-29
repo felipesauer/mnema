@@ -1,6 +1,6 @@
 # When two machines disagree
 
-A record holds one tail per machine ([`FORMAT.md`](../packages/chain/FORMAT.md) §4). Two machines
+A record holds one tail per installation, plus one each time a writer finds a tail it holds no note of (the first write after upgrading to 0.1.5, a branch switch followed by a write, a deleted `locks/`) ([`FORMAT.md`](../packages/chain/FORMAT.md) §4). Two machines
 that have not pulled each other's tail can each write a move on the same decision: one accepts it,
 the other rejects it. Both moves are signed, both are in the record once the tails meet, and
 nothing in the record says which one was meant. This page shows what `show`, `brief` and `verify`

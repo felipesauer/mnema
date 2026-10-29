@@ -34,7 +34,9 @@ with its own changelog.
   `seq gap`. The writer now keeps, in the record's `locks/` (ignored by git, never read by a reader), the last entry it wrote to
   its tail; when the tail no longer ends there, or holds entries it has no note of writing, it writes to a new tail and leaves the
   old one as it is, and says so on standard error (`mnema: wrote to a new tail, ...`). The two branches then merge clean and
-  verify. The first write of an installation made before this version opens one new tail, for the same reason. A copy that
+  verify. The first write of an installation made before this version opens one new tail, for the same reason, and the tails written
+  before 0.1.5 are never appended to again. Each branch switch followed by a write, and each deleted `locks/` (`git clean -X`),
+  opens one more tail. A copy that
   carries the note with it (a `cp -a` of the checkout, a backup restored whole) is still written from one head in two places;
   `verify` and the Python reader refuse what it leaves as before, and now name it: `fork: two different entries hold seq N and
   follow the same entry`, and `a fork in the sequence` under section 3. No byte of the format changes (`FORMAT.md` section 3).
