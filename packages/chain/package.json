@@ -1,6 +1,6 @@
 {
   "name": "@mnema/chain",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "The mnema proof engine: typed event catalog, per-tail hash chain, Ed25519 checkpoints, and verification. Zero runtime dependencies.",
   "keywords": [
     "append-only",
