@@ -1484,10 +1484,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'the first characters of a title already collapsed by oneLine, followed by the ellipsis that says it was cut',
   },
-  'named-decision.ts asState(oneLine(named.state)) #1': {
-    verdict: 'collapsed',
-    why: 'the state the projection holds, a word of a closed table and collapsed anyway, then parenthesized by asState, the one place a state is composed into a part',
-  },
+  "named-decision.ts asState(named.divergence === true ? 'not in force, divergence' : oneLine(named.state)) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the state the projection holds, a word of a closed table and collapsed anyway (or this surface’s own words for a decision in divergence), then parenthesized by asState, the one place a state is composed into a part',
+    },
   'named-decision.ts «{}: {} {}» state #1': {
     verdict: 'composed',
     why: 'the state above, already collapsed and parenthesized by state.ts',
@@ -1722,6 +1723,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'rules.ts «{} name a rule not here» counts.refuses.unresolved #1': {
     verdict: 'minted',
     why: 'how many refusing addresses name a rule no tree here holds: a refusal counted from an address nobody can read would say a write is refused by a rule a reader cannot open',
+  },
+  'rules.ts «not in force here, a divergence ({})» disputed.length #1': {
+    verdict: 'composed',
+    why: 'a count of the decisions the group lists, a number',
+  },
+  "rules.ts «{}.» oneLine(rule.divergence ?? '') #1": {
+    verdict: 'collapsed',
+    why: 'the sentence the product wrote about a divergence, which carries an instant and a short identity the record holds, collapsed because a line is this module’s',
   },
   'rules.ts «{} ({})» heading #1': {
     verdict: 'minted',
@@ -2652,8 +2661,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does; 485 with where an inherited rule came from, and the count of the inherited record's addresses; 497 with those addresses by relation, on the rules report and in the brief; 500 with the run of each tree that `mnema status` names; 497 once the host's ceiling in words lives with the ceiling (`ceilingInWords`), and the push of the rules at an edit words it too; 514 with the line a promotion answers when the global tree already held the decision; 516 with the clause beside an agent name no client announced, in the brief and in show; 517 with the cut a replaced decision's title takes on a fitted line; 518 with the line that counts the swept tasks the opening leaves out; 522 with the paragraph that names a decision an accept and a retirement crossed on.
-    expect(FOUND.sites.length).toBe(522);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted; 447 with the lines `decision review` shows; 452 with the summary of the bare name and the commands that turn a channel on; 466 with a task's notes, its last handoff, who has it, and the file behind a path; 467 with the outcome a run closed with; 474 with where the last session stopped; 475 with the sentence for a session that wrote nothing to the record; 476 with the channel a switch needs, said on its line; 477 with the word a rule's row says it does; 485 with where an inherited rule came from, and the count of the inherited record's addresses; 497 with those addresses by relation, on the rules report and in the brief; 500 with the run of each tree that `mnema status` names; 497 once the host's ceiling in words lives with the ceiling (`ceilingInWords`), and the push of the rules at an edit words it too; 514 with the line a promotion answers when the global tree already held the decision; 516 with the clause beside an agent name no client announced, in the brief and in show; 517 with the cut a replaced decision's title takes on a fitted line; 518 with the line that counts the swept tasks the opening leaves out; 522 with the paragraph that names a decision an accept and a retirement crossed on; 524 with the group of the rules reading that lists it and the words a line names it by.
+    expect(FOUND.sites.length).toBe(524);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2674,10 +2683,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(139);
+    expect(count('collapsed')).toBe(140);
     expect(count('minted')).toBe(286);
-    expect(count('composed')).toBe(97);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(139);
+    expect(count('composed')).toBe(98);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(140);
   });
 
   it('every reason says where the value comes from', () => {
