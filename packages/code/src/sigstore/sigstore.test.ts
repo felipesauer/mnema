@@ -39,7 +39,8 @@ import {
 } from '@mnema/chain';
 import type { DiscoveryEnv } from '@mnema/core';
 import { fulcioHandler, initializeCA, initializeCTLog } from '@sigstore/mock/dist/fulcio/index.js';
-import { initializeTLog, rekorHandler } from '@sigstore/mock/dist/rekor/index.js';
+import { initializeTLog, rekorHandler, rekorV2Handler } from '@sigstore/mock/dist/rekor/index.js';
+import { initializeTSA, tsaHandler } from '@sigstore/mock/dist/timestamp/index.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runInit } from '../commands/init.js';
 import { runKeySigstore } from '../commands/key-sigstore.js';
@@ -49,7 +50,7 @@ import { readSigstoreReceipts } from '../commands/verify-sigstore.js';
 import { runWitnessSigstore } from '../commands/witness.js';
 import { type CliIo, run } from '../program.js';
 import { sigstoreLine } from '../wiring/verify.js';
-import { readSigstoreBundle } from './read.js';
+import { readSigstoreBundle, verifiedTime } from './read.js';
 import {
   type Fetch,
   type HttpAnswer,
@@ -180,7 +181,7 @@ async function aSigstore(subjectClaim = 'email', rekorBehindMs = 0) {
     ],
     timestampAuthorities: [],
   };
-  return { fetch, asked, trustedRoot, answers };
+  return { fetch, asked, trustedRoot, answers, tlog, clock };
 }
 
 /** A checkpoint's signed message, as `checkpoints.jsonl` would give it. */
@@ -620,6 +621,149 @@ describe('reading a bundle, offline', () => {
       kind: 'signed',
       identity: EMAIL,
       issuer: 'https://oauth2.sigstore.dev/auth',
+      loggedAtBy: 'rekor',
+    });
+    expect(reading.kind === 'signed' && reading.loggedAt).toMatch(/^20[2-9]\d-\d\d-\d\dT/);
+  });
+
+  it('reads the time from a later entry that holds the promise, not only the first', () => {
+    const none = { timestamps: [] } as unknown as Parameters<typeof verifiedTime>[0];
+    const bare = { integratedTime: '0' };
+    const promised = { integratedTime: '1761751414', inclusionPromise: {} };
+    const entries = [bare, promised] as unknown as Parameters<typeof verifiedTime>[1];
+    expect(verifiedTime(none, entries)).toEqual({
+      loggedAt: '2025-10-29T15:23:34.000Z',
+      loggedAtBy: 'rekor',
+    });
+    expect(verifiedTime(none, [] as unknown as Parameters<typeof verifiedTime>[1])).toBeUndefined();
+  });
+
+  describe('a Rekor v2 entry, which carries no time of its own', () => {
+    const textOf = async (answer: { response: unknown }): Promise<string> =>
+      typeof answer.response === 'string'
+        ? answer.response
+        : Buffer.from((answer.response as { buffer: ArrayBuffer }).buffer).toString('utf8');
+
+    /** The bundle the product signs, rewritten in the Rekor v2 shape: no integratedTime, no promise. */
+    async function aV2Bundle(timestamped: boolean) {
+      const sigstore = await aSigstore();
+      const signed = await signWithSigstore([{ digest: DIGEST, message: MESSAGE }], {
+        fetch: sigstore.fetch,
+        token: async () => aToken(LOCAL_CLAIMS),
+      });
+      if (!signed.ok || !signed.checkpoints[0]?.ok) throw new Error('setup: not signed');
+      const v1 = signed.checkpoints[0].bundle as unknown as {
+        verificationMaterial: {
+          certificate: { rawBytes: string };
+          tlogEntries: Record<string, unknown>[];
+        };
+        messageSignature: { signature: string };
+      };
+      const cert = v1.verificationMaterial.certificate.rawBytes;
+      const sig = v1.messageSignature.signature;
+      const verifier = {
+        x509Certificate: { rawBytes: cert },
+        keyDetails: 'PKIX_ECDSA_P256_SHA_256',
+      };
+      const digest = Buffer.from(DIGEST, 'hex').toString('base64');
+      const logged = await rekorV2Handler(sigstore.tlog).fn(
+        JSON.stringify({
+          hashedRekordRequestV002: { digest, signature: { content: sig, verifier } },
+        }),
+      );
+      const entry = JSON.parse(await textOf(logged)) as Record<string, unknown>;
+      // The double draws a random index and proves a tree of one: make them agree, a flaw of the double.
+      entry.logIndex = '0';
+      const body = Buffer.from(
+        JSON.stringify({
+          kind: 'hashedrekord',
+          apiVersion: '0.0.2',
+          spec: {
+            hashedRekordV002: {
+              data: { algorithm: 'SHA2_256', digest },
+              signature: { content: sig, verifier },
+            },
+          },
+        }),
+      );
+      // The double has the method at runtime and does not type it.
+      const proof = (
+        sigstore.tlog as unknown as {
+          calculateInclusionProof(entry: { body: Buffer; timestamp: number; logID: Buffer }): {
+            rootHash: string;
+            checkpoint: string;
+          };
+        }
+      ).calculateInclusionProof({
+        body,
+        timestamp: Number(entry.integratedTime),
+        logID: createHash('sha256').update(sigstore.tlog.publicKey).digest(),
+      });
+      entry.canonicalizedBody = body.toString('base64');
+      entry.inclusionProof = {
+        logIndex: '0',
+        treeSize: '1',
+        rootHash: Buffer.from(proof.rootHash, 'hex').toString('base64'),
+        hashes: [],
+        checkpoint: { envelope: proof.checkpoint },
+      };
+      delete entry.integratedTime;
+      delete entry.inclusionPromise;
+      const tsa = await initializeTSA(P256(), sigstore.clock);
+      const stamped = await tsaHandler(tsa).fn(
+        JSON.stringify({
+          artifactHash: createHash('sha256').update(Buffer.from(sig, 'base64')).digest('base64'),
+          hashAlgorithm: 'sha256',
+          certificates: true,
+        }),
+      );
+      const root = {
+        ...sigstore.trustedRoot,
+        timestampAuthorities: [
+          {
+            subject: { organization: 'sigstore.mock', commonName: 'tsa' },
+            uri: 'https://timestamp.test/api/v1/timestamp',
+            certChain: {
+              certificates: [
+                { rawBytes: b64(tsa.intCertificate) },
+                { rawBytes: b64(tsa.rootCertificate) },
+              ],
+            },
+            validFor: { start: '2000-01-01T00:00:00.000Z' },
+          },
+        ],
+      };
+      const stamps = timestamped
+        ? {
+            timestampVerificationData: {
+              rfc3161Timestamps: [
+                { signedTimestamp: Buffer.from(stamped.response as Uint8Array).toString('base64') },
+              ],
+            },
+          }
+        : {};
+      const bundle = {
+        ...v1,
+        verificationMaterial: { ...v1.verificationMaterial, tlogEntries: [entry], ...stamps },
+      };
+      return { text: JSON.stringify(bundle), root, clock: sigstore.clock };
+    }
+
+    it('is dated by the timestamp authority the library verified, and says so', async () => {
+      const { text, root, clock } = await aV2Bundle(true);
+      const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
+      expect(reading, JSON.stringify(reading)).toMatchObject({
+        kind: 'signed',
+        loggedAt: clock.toISOString(),
+        loggedAtBy: 'timestamp-authority',
+      });
+      expect(JSON.stringify(reading)).not.toContain('1970');
+    });
+
+    it('is refused without a timestamp, as Sigstore refuses it, never read as 1970', async () => {
+      const { text, root } = await aV2Bundle(false);
+      const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
+      expect(reading.kind, JSON.stringify(reading)).toBe('not-covered');
     });
   });
 

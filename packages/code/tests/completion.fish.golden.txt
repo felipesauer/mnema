@@ -543,7 +543,7 @@ complete -c mnema -f -n '__mnema_at "verify"' -l color -x -a 'auto always never'
 # mnema witness
 complete -c mnema -f -n '__mnema_at "witness"' -a 'stamp' -d 'ask an outside witness to date each tail\'s last checkpoint (T3)'
 complete -c mnema -f -n '__mnema_at "witness"' -a 'upgrade' -d 'go back for every attestation this record is waiting on (T3)'
-complete -c mnema -f -n '__mnema_at "witness"' -a 'sigstore' -d 'countersign each tail\'s last checkpoint with a Sigstore certificate: who signed in, and when Rekor logged it'
+complete -c mnema -f -n '__mnema_at "witness"' -a 'sigstore' -d 'countersign each tail\'s last checkpoint with a Sigstore certificate: who signed in, and when it was logged'
 complete -c mnema -f -n '__mnema_at "witness"' -l global
 complete -c mnema -f -n '__mnema_at "witness"' -l json
 complete -c mnema -f -n '__mnema_at "witness"' -s h -l help

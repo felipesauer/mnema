@@ -791,13 +791,13 @@ $ mnema verify --help
 |                          identity and never moves the verdict or the exit
 |   --against-sigstore     also read the Sigstore bundles `mnema witness sigstore`
 |                          filed beside the checkpoints: who signed in to Sigstore
-|                          to countersign each one, and when Rekor logged it.
-|                          Reads no network: it checks against the Sigstore trust
-|                          root this binary carries. A bundle speaks for an
-|                          identity of this record only where that identity named
-|                          the same e-mail or workflow (`mnema key sigstore`).
-|                          Noted per bundle; never moves the verdict, the level,
-|                          `--require witnessed` or the exit
+|                          to countersign each one, and when it was logged. Reads
+|                          no network: it checks against the Sigstore trust root
+|                          this binary carries. A bundle speaks for an identity of
+|                          this record only where that identity named the same
+|                          e-mail or workflow (`mnema key sigstore`). Noted per
+|                          bundle; never moves the verdict, the level, `--require
+|                          witnessed` or the exit
 |   --verbose              also print what is informational and nothing else: the
 |                          census notes about a backup key and about an agent
 |                          named only by the key that signed, and the line for the
@@ -836,7 +836,7 @@ $ mnema witness --help
 |   upgrade [options]   go back for every attestation this record is waiting on
 |                       (T3)
 |   sigstore [options]  countersign each tail's last checkpoint with a Sigstore
-|                       certificate: who signed in, and when Rekor logged it
+|                       certificate: who signed in, and when it was logged
 
 ### mnema check --help
 $ mnema check --help
@@ -2365,7 +2365,7 @@ $ mnema witness sigstore --help
 | Usage: mnema witness sigstore [options]
 |
 | countersign each tail's last checkpoint with a Sigstore certificate: who signed
-| in, and when Rekor logged it
+| in, and when it was logged
 |
 | Options:
 |   --global    also cover this machine's global tree (left out by default): it
@@ -2388,7 +2388,7 @@ $ mnema witness sigstore --help
 | It refuses a tree that is not fully signed, as `stamp` does, and appends no event: the
 | bundle is a file beside the checkpoint, `witness/<checkpoint>.sigstore.json`.
 |
-| The bundle dates the checkpoint on Rekor’s clock and names who signed in. It speaks for
+| The bundle dates the checkpoint, by Rekor’s time or a timestamp authority’s, and names who signed in. It speaks for
 | an identity of this record only once that identity names the same e-mail or workflow:
 | `mnema key sigstore <identity>`. It is not a witness level: `verify` reads it only with
 | `--against-sigstore`, as notes.

@@ -432,6 +432,7 @@ const FLOOR_MODULES: readonly string[] = [
   'recorded-content.ts',
   'reference-directions.ts',
   'session-words.ts',
+  'sigstore/when-logged.ts',
   'version.ts',
   'vocabulary.ts',
   // The host table the lists a `--host` enumerates are read off: data, and no imports.
