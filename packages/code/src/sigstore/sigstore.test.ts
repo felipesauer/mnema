@@ -50,7 +50,7 @@ import { readSigstoreReceipts } from '../commands/verify-sigstore.js';
 import { runWitnessSigstore } from '../commands/witness.js';
 import { type CliIo, run } from '../program.js';
 import { sigstoreLine } from '../wiring/verify.js';
-import { readSigstoreBundle } from './read.js';
+import { readSigstoreBundle, verifiedTime } from './read.js';
 import {
   type Fetch,
   type HttpAnswer,
@@ -624,6 +624,18 @@ describe('reading a bundle, offline', () => {
       loggedAtBy: 'rekor',
     });
     expect(reading.kind === 'signed' && reading.loggedAt).toMatch(/^20[2-9]\d-\d\d-\d\dT/);
+  });
+
+  it('reads the time from a later entry that holds the promise, not only the first', () => {
+    const none = { timestamps: [] } as unknown as Parameters<typeof verifiedTime>[0];
+    const bare = { integratedTime: '0' };
+    const promised = { integratedTime: '1761751414', inclusionPromise: {} };
+    const entries = [bare, promised] as unknown as Parameters<typeof verifiedTime>[1];
+    expect(verifiedTime(none, entries)).toEqual({
+      loggedAt: '2025-10-29T15:23:34.000Z',
+      loggedAtBy: 'rekor',
+    });
+    expect(verifiedTime(none, [] as unknown as Parameters<typeof verifiedTime>[1])).toBeUndefined();
   });
 
   describe('a Rekor v2 entry, which carries no time of its own', () => {

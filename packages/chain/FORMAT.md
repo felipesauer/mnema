@@ -1584,7 +1584,7 @@ reader in `verifier/` names each one as not checked (gap G26).
 **What it says, and what it does not.** The certificate names an e-mail address, or a GitHub
 Actions workflow of a repository, not a person, not a GitHub login, and not a mnema
 identity. Anybody can countersign the digest of any checkpoint they can read, so a bundle on
-its own dates the checkpoint, on Rekor's clock and Rekor's key, and says nothing about who
+its own dates the checkpoint, at Rekor's time or a timestamp authority's (on a Rekor v2 entry), and says nothing about who
 wrote it. It speaks for an identity of the record only where that identity named the same
 e-mail or workflow in a signature-covered `account.linked` with `service: "sigstore"` (§6.3)
 (`packages/code/src/sigstore/sigstore.test.ts`): for an e-mail, the hash of the one the

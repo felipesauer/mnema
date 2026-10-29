@@ -4,14 +4,14 @@
  *
  * WHAT IT ADDS. A bundle in `witness/` is a second signature over a checkpoint, made with a
  * certificate that names an e-mail (or a GitHub Actions workflow) and logged in Rekor at a time
- * Rekor signed. So it says who signed in to Sigstore to countersign that checkpoint, and when
- * Rekor logged it.
+ * Rekor or a timestamp authority signed. So it says who signed in to Sigstore to countersign that
+ * checkpoint, and when it was logged.
  *
  * WHAT IT DOES NOT PROVE, said wherever the answer is printed: who wrote the record. Anybody can
  * countersign a digest they can compute, which is any checkpoint of a public repository; a
  * bundle speaks for an identity of this record only where that identity named the same e-mail
  * or workflow in a signed, covered fact (`mnema key sigstore`), and the line says whether it did.
- * The time is Rekor's clock, signed with Rekor's key, not the Bitcoin work behind `witness stamp`.
+ * The time is Rekor's, or a timestamp authority's for a Rekor v2 entry, not the Bitcoin work behind `witness stamp`.
  *
  * IT CHANGES NOTHING ABOUT THE VERDICT. It runs only when asked, after the verification, over the
  * trees that verified, and it answers in notes: never the level, never `--require witnessed`,

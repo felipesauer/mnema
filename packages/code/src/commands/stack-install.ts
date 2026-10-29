@@ -621,7 +621,7 @@ function signedLines(signature: StackPlan['signature']): string[] {
   return [
     `  signed   by ${oneLine(signature.identity)}`,
     more(`issuer ${oneLine(signature.issuer)}`),
-    more(`logged in Rekor ${whenLogged(signature)}, index ${oneLine(signature.logIndex)}`),
+    more(`logged ${whenLogged(signature)}, index ${oneLine(signature.logIndex)}`),
     more('a signature proves who signed these bytes, not that they are safe to run'),
   ];
 }

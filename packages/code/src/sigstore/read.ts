@@ -28,8 +28,8 @@ export type SigstoreReading =
       /** The OpenID issuer that vouched for it. */
       readonly issuer: string;
       /**
-       * When the signature was logged, and only a time the library verified: Rekor's clock when its
-       * signed promise carries one, else the timestamp authority's (a Rekor v2 entry carries no
+       * When the signature was logged, and only a time the library verified: the time a Rekor entry's
+       * signed promise carries, else the timestamp authority's (a Rekor v2 entry carries no
        * time of its own). Absent when the bundle carries none: never a date made up.
        */
       readonly loggedAt?: string;
@@ -97,22 +97,18 @@ function runOf(
   return Object.keys(found).length === 0 ? undefined : found;
 }
 
-/** The time the library verified for this entity: Rekor's promised one, else the timestamp authority's. */
-function verifiedTime(
+/** The time the library verified for this entity: the one a Rekor entry promised, else the timestamp authority's. */
+export function verifiedTime(
   entity: ReturnType<typeof toSignedEntity>,
-  entry:
-    | ReturnType<typeof bundleFromJSON>['verificationMaterial']['tlogEntries'][number]
-    | undefined,
+  entries: ReturnType<typeof bundleFromJSON>['verificationMaterial']['tlogEntries'],
 ): { readonly loggedAt: string; readonly loggedAtBy: 'rekor' | 'timestamp-authority' } | undefined {
-  if (
-    entry?.inclusionPromise !== undefined &&
-    entry.integratedTime &&
-    entry.integratedTime !== '0'
-  ) {
-    return {
-      loggedAt: new Date(Number(entry.integratedTime) * 1000).toISOString(),
-      loggedAtBy: 'rekor',
-    };
+  for (const entry of entries) {
+    if (entry.inclusionPromise !== undefined && entry.integratedTime && entry.integratedTime !== '0') {
+      return {
+        loggedAt: new Date(Number(entry.integratedTime) * 1000).toISOString(),
+        loggedAtBy: 'rekor',
+      };
+    }
   }
   for (const stamp of entity.timestamps) {
     if (stamp.$case === 'timestamp-authority') {
@@ -161,7 +157,7 @@ export function readSigstoreBundle(
       kind: 'signed',
       identity: signer.identity?.subjectAlternativeName ?? '',
       issuer: signer.identity?.extensions?.issuer ?? '',
-      ...verifiedTime(entity, entry),
+      ...verifiedTime(entity, bundle.verificationMaterial.tlogEntries),
       logIndex: entry?.logIndex ?? '',
       ...(ran === undefined ? {} : { ran }),
     };

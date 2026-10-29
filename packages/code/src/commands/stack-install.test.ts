@@ -574,7 +574,7 @@ describe('the plan says who signed, and that a signature is not safety', () => {
       '  signed   by https://github.com/example/hello-stack/.github/workflows/sign.yml@refs/heads/main',
     );
     expect(lines[at + 2]).toBe('           issuer https://token.actions.githubusercontent.com');
-    expect(lines[at + 3]).toMatch(/^ {11}logged in Rekor at \d{4}-\d\d-\d\dT.*, index \d+$/);
+    expect(lines[at + 3]).toMatch(/^ {11}logged by Rekor at \d{4}-\d\d-\d\dT.*, index \d+$/);
     expect(lines[at + 4]).toBe(
       '           a signature proves who signed these bytes, not that they are safe to run',
     );

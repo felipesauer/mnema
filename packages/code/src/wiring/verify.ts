@@ -425,7 +425,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
     .option(
       AGAINST_SIGSTORE,
       'also read the Sigstore bundles `mnema witness sigstore` filed beside the checkpoints: ' +
-        'who signed in to Sigstore to countersign each one, and when Rekor logged it. Reads no ' +
+        'who signed in to Sigstore to countersign each one, and when it was logged. Reads no ' +
         'network: it checks against the Sigstore trust root this binary carries. A bundle ' +
         'speaks for an identity of this record only where that identity named the same e-mail ' +
         'or workflow (`mnema key sigstore`). Noted per bundle; never moves the verdict, the ' +
@@ -672,7 +672,7 @@ function reportSigstore(io: CliIo, render: Render, receipts: SigstoreReceipts): 
     render(
       fact(
         'sigstore: this says who signed in to Sigstore to countersign a checkpoint, and when ' +
-          'Rekor logged it, on Sigstore’s word; not who wrote the record, and it is no witness level',
+          'it was logged in Rekor, on Sigstore’s word; not who wrote the record, and it is no witness level',
       ),
     ),
   );
@@ -697,7 +697,7 @@ export function sigstoreLine(finding: SigstoreFinding): string {
     names.length === 0
       ? ''
       : onOneLine`; its certificate names ${names.join(', ')}: a run, not the agent inside it`;
-  const signed = onOneLine`${at}: signed by ${reading.identity} (${reading.issuer}), logged by Rekor ${whenLogged(reading)} (entry ${reading.logIndex})${certificate}`;
+  const signed = onOneLine`${at}: signed by ${reading.identity} (${reading.issuer}), logged ${whenLogged(reading)} (entry ${reading.logIndex})${certificate}`;
   if (finding.namedBy !== undefined) {
     return onOneLine`${signed}; ${finding.namedBy} names this identity as its own`;
   }
