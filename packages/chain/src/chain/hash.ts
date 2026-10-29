@@ -155,6 +155,16 @@ export function contentRoot(events: readonly WrittenEvent[]): string {
 }
 
 /**
+ * A framed digest (section 2) over text fields alone, in lower-case hex: what a name derived from
+ * other names is, such as the record's (record-name.ts).
+ */
+export function framedTextDigest(domain: string, ...texts: readonly string[]): string {
+  const h = new FramedHash(domain);
+  for (const text of texts) h.text(text);
+  return h.hex();
+}
+
+/**
  * A SHA-256 over a length-framed, domain-tagged byte stream. Each `field` is
  * written as a 4-byte big-endian length followed by its bytes, so the reader of
  * the digest input can never confuse where one field ends and the next begins.

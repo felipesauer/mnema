@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { canonicalBytes } from '../events/canonical.js';
 import { generateKeyPair, type KeyPair, sign } from './keys.js';
 import {
+  NAMED_TAILPROOF_SCHEME,
   parseTailProof,
   serializeTailProof,
   signTailProof,
@@ -84,11 +85,33 @@ describe('tail proof', () => {
   it('rejects an unknown scheme', () => {
     const kp = generateKeyPair();
     const tail = `${kp.fingerprint}-i1`;
-    const proof = { ...signTailProof(tail, kp), scheme: 'mnema-tail/2' };
+    const proof = { ...signTailProof(tail, kp), scheme: 'mnema-tail/3' };
     expect(verifyTailProof({ proof, tail, publicKey: kp.publicKey })).toEqual({
       ok: false,
       reason: 'unknown-scheme',
     });
+  });
+
+  it('signs, round-trips and verifies a proof that names its record', () => {
+    const kp = generateKeyPair();
+    const tail = `${kp.fingerprint}-i1`;
+    const record = 'ab'.repeat(32);
+    const proof = signTailProof(tail, kp, record);
+    expect(proof.scheme).toBe(NAMED_TAILPROOF_SCHEME);
+    const parsed = parseTailProof(serializeTailProof(proof));
+    expect(parsed).toEqual(proof);
+    expect(verifyTailProof({ proof: parsed, tail, publicKey: kp.publicKey }).ok).toBe(true);
+    // The name is signed: the same signature over another name fails.
+    expect(
+      verifyTailProof({
+        proof: { ...parsed, record: 'cd'.repeat(32) },
+        tail,
+        publicKey: kp.publicKey,
+      }),
+    ).toEqual({ ok: false, reason: 'bad-signature' });
+    expect(() =>
+      parseTailProof(serializeTailProof(proof).replace(NAMED_TAILPROOF_SCHEME, 'mnema-tail/1')),
+    ).toThrow("tail-proof keys are ['record', 'scheme', 'sig', 'signerFp', 'tail']");
   });
 
   it('round-trips through serialize/parse', () => {

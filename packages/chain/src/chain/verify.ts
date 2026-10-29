@@ -115,6 +115,7 @@ import {
   type Checkpoint,
   checkpointHash,
   checkpointSignatureHolds,
+  NAMED_SCHEME,
   verifyCheckpoint,
 } from './checkpoint.js';
 import { decisionTexts } from './decision-text.js';
@@ -138,6 +139,7 @@ import {
 import type { UnreadableLineError } from './lines.js';
 import { illegalMoves } from './moves.js';
 import { entriesBetween } from './range.js';
+import { type RecordNaming, recordOf } from './record-name.js';
 import {
   type CommittedKeys,
   committedKeys,
@@ -149,7 +151,12 @@ import {
   readTailCheckpoints,
   relaying,
 } from './store.js';
-import { parseTailProof, verifyTailProof } from './tailproof.js';
+import {
+  NAMED_TAILPROOF_SCHEME,
+  parseTailProof,
+  type TailProof,
+  verifyTailProof,
+} from './tailproof.js';
 import { type TailWaiver, tailWaiversIn, waiversForKey } from './waiver.js';
 import {
   type ChainWitness,
@@ -163,9 +170,10 @@ export type { WitnessStatus } from './level.js';
 /**
  * A problem found while verifying one tail, or the record as a whole.
  *
- * `tail` is absent on exactly one issue: the record in which no tail holds an event or a
- * checkpoint ({@link NO_TAIL_HELD}). That record has no tail to blame, and naming a tail
- * there would send a reader to a directory that is not on the disk.
+ * `tail` is absent on exactly two issues, both about the record as a whole: the record in which
+ * no tail holds an event or a checkpoint ({@link NO_TAIL_HELD}), which has no tail to blame, and
+ * the record whose tails name two records ({@link ANOTHER_RECORD}), where blaming one group would
+ * choose a side the directory cannot choose.
  */
 export interface TailIssue {
   readonly tail?: string;
@@ -212,7 +220,22 @@ export type CensusNote =
   | ClockBehindNote
   | AttestedWhichNote
   | DeclaredWhichNote
-  | UnannouncedWhichNote;
+  | UnannouncedWhichNote
+  | UnnamedTailNote;
+
+/**
+ * A tail that names no record, in a record whose other tails name one (FORMAT.md section 6.10).
+ *
+ * Innocent: a tail born before records were named, on a machine that has written nothing since
+ * (a departed contributor, an old laptop), and no tail written before 0.1.5 is ever named. The
+ * guilty reading: a tail of another record written before, which nothing here tells from this
+ * record's own. Said, never refused.
+ */
+export interface UnnamedTailNote {
+  readonly kind: 'unnamed-tail';
+  readonly tail: string;
+  readonly detail: string;
+}
 
 /**
  * A committed public key with no tail on disk.
@@ -730,6 +753,12 @@ export interface VerifyResult {
    * tail can be a machine that has not written yet. See {@link CensusNote}.
    */
   readonly census: readonly CensusNote[];
+  /**
+   * The record the counted tails belong to, as their signed artifacts name it (FORMAT.md section
+   * 6.10): `unnamed` when none names one (every record written before 0.1.5), one name, or the
+   * several the record holds, which is an issue ({@link ANOTHER_RECORD}).
+   */
+  readonly record: RecordNaming;
   /** Events proven only by the hash chain, not yet by a signature. */
   readonly uncheckpointedEvents: number;
   readonly witness: WitnessStatus;
@@ -937,6 +966,8 @@ function verifyReading(
   const notes: PartialFinalLineNote[] = [];
   // The tails that hold no event and no checkpoint ({@link isEmptyTail}).
   const empty = new Set<string>();
+  // The record each counted tail names, by its signed artifacts (section 6.10); undefined for none.
+  const namedByTail = new Map<string, string | undefined>();
   let unreadable = false;
 
   for (const tail of tails) {
@@ -975,6 +1006,7 @@ function verifyReading(
       });
     }
 
+    let proof: TailProof | undefined;
     if (!tailFingerprintIsCommitted(tail, committedFingerprints)) {
       issues.push({
         tail,
@@ -987,7 +1019,7 @@ function verifyReading(
       // locally chosen: require the key to have signed THIS tail id at birth, so
       // a keyless party cannot fabricate a sibling tail under a real fingerprint
       // and have its residual events counted. See tailproof.ts.
-      verifyTailOwnership(layout, keys, tail, issues, relaid);
+      proof = verifyTailOwnership(layout, keys, tail, issues, relaid);
     }
     if (lineRefused) {
       // A tail with a line the verifier could not read is refused at that line, and the level
@@ -1003,6 +1035,7 @@ function verifyReading(
       if (!holed) verifyHashChain(tail, entries, issues);
       verifyCheckpoints(keys, tail, holed ? undefined : entries, checkpoints, issues);
       verifyTailSigner(tail, entries, checkpoints, issues);
+      namedByTail.set(tail, verifyTailNaming(tail, proof, checkpoints, [], issues));
       entriesByTail.set(tail, []);
       checkpointedByTail.set(tail, -1);
       provenTails.set(tail, { checkpoints: [], events: 0 });
@@ -1018,6 +1051,7 @@ function verifyReading(
     verifyHashChain(tail, entries, issues);
     const coverage = verifyCheckpoints(keys, tail, entries, checkpoints, issues);
     verifyTailSigner(tail, entries, checkpoints, issues);
+    namedByTail.set(tail, verifyTailNaming(tail, proof, checkpoints, coverage.named, issues));
     checkpointedByTail.set(tail, coverage.covered);
     provenTails.set(tail, { checkpoints: coverage.proven, events: entries.length });
     uncheckpointed += entries.length - (coverage.covered + 1);
@@ -1058,10 +1092,13 @@ function verifyReading(
   // Every tail's issues, the uncounted ones included: an empty tail whose ownership proof
   // fails is a refusal like any other, and leaving it out of the count must not hide it.
   // And, when no tail is counted at all, the one issue about the record as a whole.
+  // Which record the counted tails belong to (section 6.10), once every tail was read.
+  const record = recordOf(namedByTail);
   const allIssues: TailIssue[] = [
     ...keyFilesWithoutAKey(committedFingerprints, keys),
     ...misnamedKeys(committedFingerprints, keys),
     ...(counted.length === 0 ? [noTailHeld(layout, tails)] : []),
+    ...(record.state === 'several' ? [anotherRecord(record.groups)] : []),
     ...tails.flatMap((tail) => issuesByTail.get(tail) ?? []),
   ];
 
@@ -1094,6 +1131,7 @@ function verifyReading(
     ...citationsNotHeld(identity.citations),
     ...clocksBehind(identity.citations),
     ...agentsNamed(identity.agents),
+    ...(record.state === 'named' ? record.unnamed.map(unnamedTail) : []),
   ];
 
   const ok = allIssues.length === 0;
@@ -1134,6 +1172,7 @@ function verifyReading(
     tails: tailResults,
     issues: allIssues,
     census,
+    record,
     uncheckpointedEvents: uncheckpointed,
     witness,
     clauses,
@@ -1923,6 +1962,14 @@ interface CheckpointCoverage {
   readonly covered: number;
   /** Every checkpoint that verified, oldest first: empty if none did. */
   readonly proven: readonly ProvenCheckpoint[];
+  /** Every `/2` checkpoint that verified, oldest first, with the record it names. */
+  readonly named: readonly NamedCheckpoint[];
+}
+
+/** A verified checkpoint naming a record (FORMAT.md section 6.10). */
+interface NamedCheckpoint {
+  readonly fromSeq: number;
+  readonly record: string;
 }
 
 function verifyCheckpoints(
@@ -1934,6 +1981,7 @@ function verifyCheckpoints(
 ): CheckpointCoverage {
   const checkpoints = [...stored].sort((a, b) => a.fromSeq - b.fromSeq);
   const proven: ProvenCheckpoint[] = [];
+  const named: NamedCheckpoint[] = [];
   let covered = -1;
   let expectedPrev: string | null = null;
   // Asked once per checkpoint, answered without walking the tail (range.ts). It used to BE
@@ -2070,11 +2118,14 @@ function verifyCheckpoints(
     covered = checkpoint.toSeq;
     expectedPrev = checkpointHash(checkpoint);
     proven.push({ hash: expectedPrev, toSeq: checkpoint.toSeq });
+    if (checkpoint.record !== undefined) {
+      named.push({ fromSeq: checkpoint.fromSeq, record: checkpoint.record });
+    }
   }
   // `proven` is APPENDED TO at the bottom of the loop and only there, so a checkpoint
   // that took any of the refusals above never becomes one a witness is looked for
   // under: the property the single hash carried before, over the whole run of them.
-  return { covered, proven };
+  return { covered, proven, named };
 }
 
 /**
@@ -2154,12 +2205,14 @@ function verifyTailOwnership(
   tail: string,
   issues: TailIssue[],
   relaid: RelaidLine | undefined,
-): void {
-  const push = (detail: string) => issues.push({ tail, layer: 'T2/T4', seq: 0, detail });
+): TailProof | undefined {
+  const push = (detail: string): undefined => {
+    issues.push({ tail, layer: 'T2/T4', seq: 0, detail });
+    return undefined;
+  };
   const path = tailProofPath(layout, tail);
   if (!existsSync(path)) {
-    push(`tail ${oneLine(tail)} has no ownership proof (fabricated or relocated tail)`);
-    return;
+    return push(`tail ${oneLine(tail)} has no ownership proof (fabricated or relocated tail)`);
   }
   let proof: ReturnType<typeof parseTailProof>;
   try {
@@ -2172,30 +2225,123 @@ function verifyTailOwnership(
       path,
     )(decodeStoredBytes(readFileSync(path)).replace(/\n+$/, ''));
   } catch (error) {
-    push(
+    return push(
       `tail ${oneLine(tail)} has a malformed ownership proof: ${oneLine((error as Error).message)}`,
     );
-    return;
   }
   const owner = tailFingerprint(tail);
   const committed = keys(owner);
   if (committed === null) {
-    push(`tail ${oneLine(tail)} ownership proof cannot be checked: no committed public key`);
-    return;
+    return push(`tail ${oneLine(tail)} ownership proof cannot be checked: no committed public key`);
   }
   // The same fingerprint binding a checkpoint's key gets: the file named for the tail's key
   // has to hold that key. Without it, a tail with no checkpoint yet had its proof checked
   // under whatever the file held, and a proof the swapped-in key signed verified.
   if (committed.fingerprint() !== owner) {
-    push(
+    return push(
       `tail ${oneLine(tail)} ownership proof cannot be checked: public key for ${oneLine(owner)} does not match its fingerprint (key was swapped)`,
     );
-    return;
   }
   const verdict = verifyTailProof({ proof, tail, publicKey: committed.key });
   if (!verdict.ok) {
-    push(`tail ${oneLine(tail)} ownership proof is invalid (${verdict.reason})`);
+    return push(`tail ${oneLine(tail)} ownership proof is invalid (${verdict.reason})`);
   }
+  return proof;
+}
+
+/** The name both readers refuse a tail by when two of its signed artifacts name two records. */
+export const RECORD_MISMATCH = 'record-mismatch';
+
+/** The name both readers refuse a `/1` checkpoint by where its tail had named a record. */
+export const SCHEME_DOWNGRADE = 'scheme-downgrade';
+
+/** The name both readers refuse a record by whose tails name two records. */
+export const ANOTHER_RECORD = 'another-record';
+
+/**
+ * WHICH RECORD ONE TAIL NAMES, and the two refusals within one tail (FORMAT.md section 6.10).
+ *
+ * A tail is named by its `/2` tail proof when that proof verified (`proof`, as
+ * {@link verifyTailOwnership} hands it back), else by the latest `/2` checkpoint that verified
+ * (`named`). A checkpoint that failed names nothing.
+ *
+ * - `scheme-downgrade`: a `/1` checkpoint under a `/2` tail proof, or after a `/2` checkpoint in
+ *   the tail's order. The writer never goes back, so a `/1` line there is a signature made for no
+ *   record where the tail had named its own. Read over every checkpoint line, verified or not:
+ *   the scheme is in the bytes.
+ * - `record-mismatch`: two verified artifacts of the tail name two records.
+ *
+ * Each is said once per tail, at the first that breaks.
+ */
+function verifyTailNaming(
+  tail: string,
+  proof: TailProof | undefined,
+  checkpoints: readonly Checkpoint[],
+  named: readonly NamedCheckpoint[],
+  issues: TailIssue[],
+): string | undefined {
+  const ordered = [...checkpoints].sort((a, b) => a.fromSeq - b.fromSeq);
+  const proofNames = proof?.scheme === NAMED_TAILPROOF_SCHEME ? proof.record : undefined;
+  const firstNamed = ordered.findIndex((cp) => cp.scheme === NAMED_SCHEME);
+  const downgrade = ordered.find(
+    (cp, i) =>
+      cp.scheme !== NAMED_SCHEME &&
+      (proofNames !== undefined || (firstNamed !== -1 && i > firstNamed)),
+  );
+  if (downgrade !== undefined) {
+    const where = proofNames !== undefined ? "the tail's proof" : 'an earlier checkpoint';
+    issues.push({
+      tail,
+      layer: 'T2/T4',
+      seq: downgrade.fromSeq,
+      detail: `checkpoint cp[${downgrade.fromSeq}..${downgrade.toSeq}] names no record, and ${where} names one (${SCHEME_DOWNGRADE})`,
+    });
+  }
+  const said = [
+    ...(proofNames !== undefined ? [{ where: 'its tail proof', record: proofNames }] : []),
+    ...named.map((cp) => ({ where: `the checkpoint at seq ${cp.fromSeq}`, record: cp.record })),
+  ];
+  const first = said[0];
+  const other = said.find((one) => one.record !== first?.record);
+  if (first !== undefined && other !== undefined) {
+    issues.push({
+      tail,
+      layer: 'T2/T4',
+      detail: `tail ${oneLine(tail)} names record ${shortName(first.record)} in ${first.where} and ${shortName(other.record)} in ${other.where} (${RECORD_MISMATCH})`,
+    });
+  }
+  return proofNames ?? named.at(-1)?.record;
+}
+
+/** A record's name as a sentence shows it: its first twelve characters. */
+function shortName(name: string): string {
+  return `${oneLine(name.slice(0, 12))}...`;
+}
+
+/** The refusal of a directory whose named tails name two records or more. */
+function anotherRecord(groups: Extract<RecordNaming, { state: 'several' }>['groups']): TailIssue {
+  const said = groups
+    .map(
+      ({ name, tails }) =>
+        `${shortName(name)} (${tails.length === 1 ? 'tail' : 'tails'} ${tails.map(oneLine).join(', ')})`,
+    )
+    .join(' and ');
+  return {
+    layer: 'T2/T4',
+    detail: `this directory holds tails of ${groups.length} records: ${said}: a tail grafted from another record, or two records merged (${ANOTHER_RECORD})`,
+  };
+}
+
+/** The census note of a tail that names no record beside tails that name one. */
+function unnamedTail(tail: string): UnnamedTailNote {
+  return {
+    kind: 'unnamed-tail',
+    tail,
+    detail:
+      `tail ${oneLine(tail)} names no record: born before records were named, and no ` +
+      'checkpoint since names one; a tail of another record written before could not be told ' +
+      'from it',
+  };
 }
 
 /** What every clause of the verdict is worded from: one set of facts. */
@@ -2379,6 +2525,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => str
   'declared-which': null,
   'unannounced-which': (count) =>
     `${count} agent name(s) no MCP client announced in a handshake (see census: informational, not a break)`,
+  'unnamed-tail': (count) =>
+    `${count} tail(s) that name no record, written before 0.1.5 (see census: informational, not a break)`,
 };
 
 /** One clause per kind of note present, in the order the kinds are declared in. */

@@ -47,10 +47,18 @@ from typing import NamedTuple
 
 from . import bitcoin, enrolment, gaps, ots, retraction, schema, workflow
 from .canonical import CRLF, ends_in_crlf_only, utf16_order
-from .checkpoint import Checkpoint, binding_break, read_checkpoint, read_tailproof
+from .checkpoint import (
+    NAMED_CHECKPOINT_SCHEME,
+    Checkpoint,
+    TailProof,
+    binding_break,
+    read_checkpoint,
+    read_tailproof,
+)
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry, entry_hash, read_line
 from .keys import HOLDS_NO_KEY, PublicKey, load_keyring
+from .record_name import record_of
 from .root import which_reading_closes
 from .verdict import Refusal, Report
 
@@ -388,6 +396,8 @@ class Checkpoints(NamedTuple):
 
     checkpoints: list[Checkpoint]
     covered_through: int
+    # Section 6.10: every `/2` checkpoint that verified, in the file's order, as (fromSeq, record).
+    named: list[tuple[int, str]]
 
 
 def _check_checkpoints(
@@ -397,7 +407,7 @@ def _check_checkpoints(
     path = os.path.join(tail_dir, CHECKPOINTS_FILE)
     if not os.path.exists(path):
         report.note("6", "no checkpoints file, so nothing is signed here", tail_id, "G13")
-        return Checkpoints([], -1)
+        return Checkpoints([], -1, [])
 
     event_bytes = [entry.event_bytes for entry in entries]
     checkpoints: list[Checkpoint] = []
@@ -547,12 +557,15 @@ def _check_checkpoints(
             tail_id,
             "G02",
         )
-    return Checkpoints(checkpoints, covered_through)
+    named = [(cp.from_seq, cp.record) for cp in verified if cp.record is not None]
+    return Checkpoints(checkpoints, covered_through, named)
 
 
 def _check_tailproof(
     report: Report, tail_dir: str, tail_id: str, ring: dict[str, PublicKey]
-) -> None:
+) -> TailProof | None:
+    """Section 6.1. Hands back the proof when its signature verified, which is what names a tail
+    under section 6.10, and None otherwise."""
     path = os.path.join(tail_dir, TAILPROOF_FILE)
     if not os.path.exists(path):
         # Section 6.1: the proof sits beside the segments of EVERY tail, and it is the only
@@ -566,14 +579,14 @@ def _check_tailproof(
             "ever signed that id",
             tail_id,
         )
-        return
+        return None
     with open(path, "rb") as handle:
         raw = handle.read().rstrip(b"\n")
     try:
         proof = read_tailproof(raw)
     except Refusal as refusal:
         report.fail(refusal.section, refusal.what, f"{tail_id}/{TAILPROOF_FILE}")
-        return
+        return None
     report.note(
         "-",
         "there is a signed tailproof.json here, with a scheme the document never mentions",
@@ -603,11 +616,112 @@ def _check_tailproof(
             f"the one the tail id begins with, {owner[:12]}... (signer-mismatch)",
             f"{tail_id}/{TAILPROOF_FILE}",
         )
-        return
-    _check_signature(
+        return None
+    signed = _check_signature(
         report, ring, owner, proof.stored["sig"], proof.message,
         "-", f"{tail_id}/{TAILPROOF_FILE}",
     )
+    held = signed and proof.file_is_canonical and proof.stored["tail"] == tail_id
+    return proof if held else None
+
+
+RECORD_MISMATCH = "record-mismatch"
+SCHEME_DOWNGRADE = "scheme-downgrade"
+ANOTHER_RECORD = "another-record"
+
+
+def _check_tail_naming(
+    report: Report, tail_id: str, proof: TailProof | None, checkpoints: list[Checkpoint],
+    named: list[tuple[int, str]],
+) -> str | None:
+    """Section 6.10: which record one tail names, and the two refusals within one tail.
+
+    A tail is named by its `/2` tail proof when that proof verified, else by the latest `/2`
+    checkpoint that verified. `scheme-downgrade` is a `/1` checkpoint under a `/2` proof or after a
+    `/2` checkpoint, read over every checkpoint line since the scheme is in the bytes;
+    `record-mismatch` is two verified artifacts naming two records. Each is said once per tail,
+    at the first that breaks, in the product's words.
+    """
+    ordered = sorted(checkpoints, key=lambda cp: cp.from_seq)
+    proof_names = proof.record if proof is not None else None
+    first_named = next(
+        (i for i, cp in enumerate(ordered) if cp.stored["scheme"] == NAMED_CHECKPOINT_SCHEME), None
+    )
+    for i, cp in enumerate(ordered):
+        if cp.stored["scheme"] == NAMED_CHECKPOINT_SCHEME:
+            continue
+        if proof_names is not None or (first_named is not None and i > first_named):
+            where = "the tail's proof" if proof_names is not None else "an earlier checkpoint"
+            report.fail(
+                "6.10",
+                f"checkpoint {cp.label} names no record, and {where} names one ({SCHEME_DOWNGRADE})",
+                tail_id,
+            )
+            break
+    said = ([("its tail proof", proof_names)] if proof_names is not None else []) + [
+        (f"the checkpoint at seq {seq}", record) for seq, record in sorted(named)
+    ]
+    if said:
+        first_where, first_record = said[0]
+        other = next(((w, r) for w, r in said if r != first_record), None)
+        if other is not None:
+            report.fail(
+                "6.10",
+                f"tail {tail_id} names record {first_record[:12]}... in {first_where} and "
+                f"{other[1][:12]}... in {other[0]} ({RECORD_MISMATCH})",
+                tail_id,
+            )
+    if proof_names is not None:
+        return proof_names
+    return sorted(named)[-1][1] if named else None
+
+
+def _check_record(report: Report, named_by_tail: dict[str, str | None]) -> None:
+    """Section 6.10: every named tail of the directory names one record.
+
+    Symmetric on purpose: a reader of a directory alone cannot tell which group is the record, so
+    the refusal names every group. A tail that names no record beside tails that name one is said,
+    never refused, and so is a record none of whose tails names one.
+    """
+    found = record_of(named_by_tail)
+    if found["state"] == "unnamed":
+        if named_by_tail:
+            report.note(
+                "6.10",
+                "record: unnamed (written before 0.1.5): a tail of another record could not be "
+                "told from this record's own",
+                "tails/",
+            )
+        return
+    if found["state"] == "several":
+        groups = found["groups"]
+        said = " and ".join(
+            f"{group['name'][:12]}... ({'tail' if len(group['tails']) == 1 else 'tails'} "
+            f"{', '.join(group['tails'])})"
+            for group in groups  # type: ignore[union-attr]
+        )
+        report.fail(
+            "6.10",
+            f"this directory holds tails of {len(groups)} records: {said}: a tail grafted from "  # type: ignore[arg-type]
+            f"another record, or two records merged ({ANOTHER_RECORD})",
+            "tails/",
+        )
+        return
+    name = str(found["name"])
+    genesis = found.get("genesis")
+    report.ok(
+        "6.10",
+        f"every named tail names record {name[:12]}..."
+        + (f", the name of genesis tail {genesis}" if genesis is not None else ""),
+        "tails/",
+    )
+    for tail_id in found["unnamed"]:  # type: ignore[union-attr]
+        report.note(
+            "6.10",
+            f"tail {tail_id} names no record: born before records were named, and no checkpoint "
+            "since names one; a tail of another record written before could not be told from it",
+            tail_id,
+        )
 
 
 TAIL_SIGNER_MISMATCH = "tail-signer-mismatch"
@@ -962,6 +1076,7 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
 
     entries_by_tail: dict[str, list[Entry]] = {}
     covered_by_tail: dict[str, int] = {}
+    named_by_tail: dict[str, str | None] = {}
     # The tails whose FIRST line this reader refused, before any entry of theirs: where it was.
     refused_first: dict[str, str] = {}
     for tail_id in tail_ids:
@@ -974,7 +1089,10 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         _check_chain(report, entries, tail_id, refused)
         found = _check_checkpoints(report, tail_dir, tail_id, entries, ring, refused)
         _check_tail_signer(report, tail_id, entries, found.checkpoints)
-        _check_tailproof(report, tail_dir, tail_id, ring)
+        proof = _check_tailproof(report, tail_dir, tail_id, ring)
+        named_by_tail[tail_id] = _check_tail_naming(
+            report, tail_id, proof, found.checkpoints, found.named
+        )
         last_seq = entries[-1].seq if entries else -1
         _check_witness(report, tail_dir, tail_id, found.checkpoints, last_seq)
         entries_by_tail[tail_id] = entries
@@ -982,6 +1100,7 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         if refused and before_refused == 0:
             refused_first[tail_id] = refused[0]
 
+    _check_record(report, named_by_tail)
     resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring, refused_first)
     _check_retractions(report, entries_by_tail)
     not_applied = _check_moves(report, entries_by_tail, declarations)

@@ -44,7 +44,7 @@
 import { createHash } from 'node:crypto';
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
-import { keyList, parseCanonicalLine, schemeNamed } from '../events/stored-json.js';
+import { keyList, parseCanonicalLine, schemeNotRead } from '../events/stored-json.js';
 import { contentRoot, type WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
 import { type KeyObject, sign, verify } from './keys.js';
@@ -60,6 +60,16 @@ import { type KeyObject, sign, verify } from './keys.js';
  */
 export const SCHEME = 'mnema-checkpoint/1';
 
+/**
+ * The scheme of a checkpoint that names the record its tail belongs to (FORMAT.md section 6.10):
+ * the seven keys of {@link SCHEME} and `record`. Read beside the first, which stays readable for
+ * ever; `prev` links across the two, each checkpoint hashed under its own scheme.
+ */
+export const NAMED_SCHEME = 'mnema-checkpoint/2';
+
+/** The schemes this reader reads, in the order a refusal names them. */
+const SCHEMES_READ = [SCHEME, NAMED_SCHEME] as const;
+
 /** A signed checkpoint over a contiguous range of one tail. */
 export interface Checkpoint {
   readonly scheme: string;
@@ -74,13 +84,18 @@ export interface Checkpoint {
   readonly prev: string | null;
   /** Full fingerprint of the signing key. */
   readonly signerFp: string;
+  /**
+   * The name of the record the tail belongs to (record-name.ts): present exactly when `scheme` is
+   * {@link NAMED_SCHEME}, and signed with the rest.
+   */
+  readonly record?: string;
   /** Hex Ed25519 signature over the canonical signed message. */
   readonly sig: string;
 }
 
-/** The canonical bytes that are signed: everything but the signature. */
-function signedMessage(fields: Omit<Checkpoint, 'sig'>): Uint8Array {
-  return canonicalBytes({
+/** The fields a checkpoint stores, by its scheme, `sig` aside. */
+function storedFields(fields: Omit<Checkpoint, 'sig'>): Record<string, string | number | null> {
+  const signed: Record<string, string | number | null> = {
     scheme: fields.scheme,
     tail: fields.tail,
     fromSeq: fields.fromSeq,
@@ -88,7 +103,14 @@ function signedMessage(fields: Omit<Checkpoint, 'sig'>): Uint8Array {
     contentRoot: fields.contentRoot,
     prev: fields.prev,
     signerFp: fields.signerFp,
-  });
+  };
+  if (fields.scheme === NAMED_SCHEME) signed.record = fields.record ?? null;
+  return signed;
+}
+
+/** The canonical bytes that are signed: everything but the signature. */
+function signedMessage(fields: Omit<Checkpoint, 'sig'>): Uint8Array {
+  return canonicalBytes(storedFields(fields));
 }
 
 /** The hash of a checkpoint (over its signed message): what the next one links to. */
@@ -118,16 +140,19 @@ export function signCheckpoint(input: {
   events: readonly WrittenEvent[];
   prev: string | null;
   keyPair: KeyPair;
+  /** The record the tail belongs to: given, the checkpoint is signed under {@link NAMED_SCHEME}. */
+  record?: string;
 }): Checkpoint {
-  const { tail, fromSeq, events, prev, keyPair } = input;
+  const { tail, fromSeq, events, prev, keyPair, record } = input;
   const fields: Omit<Checkpoint, 'sig'> = {
-    scheme: SCHEME,
+    scheme: record === undefined ? SCHEME : NAMED_SCHEME,
     tail,
     fromSeq,
     toSeq: fromSeq + events.length - 1,
     contentRoot: contentRoot(events),
     prev,
     signerFp: keyPair.fingerprint,
+    ...(record === undefined ? {} : { record }),
   };
   const sig = Buffer.from(sign(signedMessage(fields), keyPair.privateKey)).toString('hex');
   return { ...fields, sig };
@@ -183,19 +208,11 @@ export type CheckpointVerdict =
 
 /** Serializes a checkpoint to its stored line (canonical). */
 export function serializeCheckpoint(checkpoint: Checkpoint): string {
-  return canonicalStringify({
-    scheme: checkpoint.scheme,
-    tail: checkpoint.tail,
-    fromSeq: checkpoint.fromSeq,
-    toSeq: checkpoint.toSeq,
-    contentRoot: checkpoint.contentRoot,
-    prev: checkpoint.prev,
-    signerFp: checkpoint.signerFp,
-    sig: checkpoint.sig,
-  });
+  const { sig, ...fields } = checkpoint;
+  return canonicalStringify({ ...storedFields(fields), sig });
 }
 
-/** The keys of a stored checkpoint line: the seven signed ones and `sig`, and nothing else. */
+/** The keys of a stored `/1` checkpoint line: the seven signed ones and `sig`, and nothing else. */
 const CHECKPOINT_LINE_KEYS = [
   'contentRoot',
   'fromSeq',
@@ -206,6 +223,9 @@ const CHECKPOINT_LINE_KEYS = [
   'tail',
   'toSeq',
 ] as const;
+
+/** The keys of a stored `/2` checkpoint line: the eight signed ones and `sig`. */
+const NAMED_CHECKPOINT_LINE_KEYS = [...CHECKPOINT_LINE_KEYS, 'record'] as const;
 
 /**
  * The line's shape, checked before its bytes, in the second reader's order and words
@@ -220,16 +240,16 @@ function checkpointShape(raw: unknown): void {
     throw new CheckpointParseError('a checkpoint line that is not a JSON object');
   }
   const { scheme } = raw as { scheme?: unknown };
-  if (scheme !== SCHEME) {
+  if (scheme !== SCHEME && scheme !== NAMED_SCHEME) {
     throw new CheckpointParseError(
-      `a checkpoint scheme this reader does not know: ${schemeNamed(scheme)}`,
+      schemeNotRead('checkpoint', scheme, 'mnema-checkpoint/', SCHEMES_READ),
     );
   }
+  const keys: readonly string[] =
+    scheme === NAMED_SCHEME ? NAMED_CHECKPOINT_LINE_KEYS : CHECKPOINT_LINE_KEYS;
   const held = Object.keys(raw);
-  const missing = CHECKPOINT_LINE_KEYS.filter((key) => !held.includes(key));
-  const unexpected = held.filter(
-    (key) => !(CHECKPOINT_LINE_KEYS as readonly string[]).includes(key),
-  );
+  const missing = keys.filter((key) => !held.includes(key));
+  const unexpected = held.filter((key) => !keys.includes(key));
   if (missing.length > 0 || unexpected.length > 0) {
     throw new CheckpointParseError(
       `checkpoint keys: missing ${keyList(missing)}, unexpected ${keyList(unexpected)}`,
@@ -255,7 +275,7 @@ export function parseCheckpoint(line: string): Checkpoint {
     return value;
   };
   // The shape above refused any other scheme, before the bytes.
-  const scheme = SCHEME;
+  const scheme = raw.scheme === NAMED_SCHEME ? NAMED_SCHEME : SCHEME;
   const prev = raw.prev;
   if (prev !== null && (typeof prev !== 'string' || prev.length === 0)) {
     throw new CheckpointParseError('checkpoint prev must be a hash or null');
@@ -268,6 +288,7 @@ export function parseCheckpoint(line: string): Checkpoint {
     contentRoot: requireString('contentRoot'),
     prev,
     signerFp: requireString('signerFp'),
+    ...(scheme === NAMED_SCHEME ? { record: requireString('record') } : {}),
     sig: requireString('sig'),
   };
 }
