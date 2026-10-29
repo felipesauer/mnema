@@ -144,8 +144,10 @@ export {
   listDecisionsByState,
 } from './projections/decision-store.js';
 export {
+  acceptedAgainstRetired,
   type DivergentKind,
   type DivergentMove,
+  divergenceSentence,
   divergentMoves,
 } from './projections/divergent-moves.js';
 export {

@@ -242,7 +242,8 @@ function whatAPathMeets(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWri
           : [];
       return { gate, pushed };
     });
-    const spoken = read.pushed.filter((one) => one.at.rules.length > 0);
+    // A push with no rule in force still speaks when it carries the line of a rule moved apart.
+    const spoken = read.pushed.filter((one) => one.at.rules.length > 0 || one.apart !== undefined);
     // WHO ELSE WAS CHARGED AT THE PATH is read only where the hook is going to speak, so the
     // ordinary case, a write nothing charges, pays nothing for it.
     const place = read.gate?.at[0] ?? spoken[0]?.at;

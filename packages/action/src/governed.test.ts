@@ -21,6 +21,26 @@ describe('rulesInForce', () => {
     expect(isGoverned(file)).toBe(true);
   });
 
+  it('leaves out a decision the record says a divergence keeps out of force, whatever its state, and keeps the reason', () => {
+    const why = 'divergence between the accept by mnid:aaaaaaaa and the rejection by mnid:bbbbbbbb';
+    const file = rulesInForce('src/a.ts', {
+      rules: [{ ...hit('d1', 'accepted'), divergence: why }, hit('d2', 'accepted')],
+      asks: [{ ...hit('d3', 'accepted'), divergence: why }],
+      refuses: [{ ...hit('d4', 'rejected'), divergence: why }],
+    });
+    expect(file.governs).toEqual([{ id: 'd2', name: 'name of d2' }]);
+    expect(file.asks).toEqual([]);
+    expect(file.refuses).toEqual([]);
+    expect(file.apart.map((one) => one.id)).toEqual(['d1', 'd3', 'd4']);
+    expect(file.apart[0]?.divergence).toBe(why);
+    expect(needingAPerson([file])).toEqual([]);
+    expect(
+      isGoverned(
+        rulesInForce('src/a.ts', { rules: [{ ...hit('d1', 'accepted'), divergence: why }] }),
+      ),
+    ).toBe(true);
+  });
+
   it('reads an answer it does not understand as addressing nothing', () => {
     expect(isGoverned(rulesInForce('x', null))).toBe(false);
     expect(isGoverned(rulesInForce('x', { rules: 'no' }))).toBe(false);

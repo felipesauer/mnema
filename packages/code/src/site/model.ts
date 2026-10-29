@@ -36,8 +36,11 @@ import {
 } from '@mnema/chain';
 import { decisionDisposition } from '@mnema/context';
 import {
+  acceptedAgainstRetired,
   adrCollisions,
   type DecisionState,
+  divergenceSentence,
+  divergentMoves,
   type LinkEdge,
   projectDecisions,
   projectKnowledge,
@@ -111,6 +114,11 @@ export interface PageDecision {
   readonly state: string;
   /** Whether the record says it governs now (never decided here). */
   readonly inForce: boolean;
+  /**
+   * Why a decision the fold calls accepted is NOT in force: an accept and a retirement of it
+   * crossed (ADR-121), in the line every reading gives. Absent for every other decision.
+   */
+  readonly divergence?: string;
   readonly supersedes?: string;
   readonly supersededBy?: string;
   readonly createdAt: string;
@@ -257,6 +265,11 @@ export function pageModel(events: readonly CatalogEvent[]): PageModel {
   const projected = projectDecisions(events);
   const whichOf = actsOf(events);
   const collided = new Set(adrCollisions(projected.values()).map((collision) => collision.adr));
+  const disputed = new Map(
+    divergentMoves(events)
+      .filter(acceptedAgainstRetired)
+      .map((move) => [move.entityId, divergenceSentence(move)] as const),
+  );
   const links = projectLinks(events);
   const notes = notesOf(events, whichOf);
   const noteIds = new Set(notes.map((note) => note.id));
@@ -307,7 +320,8 @@ export function pageModel(events: readonly CatalogEvent[]): PageModel {
       rationale: d.rationale,
       ...(d.alternatives !== undefined ? { alternatives: d.alternatives } : {}),
       state: d.state,
-      inForce: decisionDisposition(d.state as DecisionState) === 'in-force',
+      inForce: decisionDisposition(d.state as DecisionState) === 'in-force' && !disputed.has(d.id),
+      ...(disputed.has(d.id) ? { divergence: disputed.get(d.id) as string } : {}),
       ...(d.supersedes !== undefined ? { supersedes: d.supersedes } : {}),
       ...(d.supersededBy !== undefined ? { supersededBy: d.supersededBy } : {}),
       createdAt: d.createdAt,

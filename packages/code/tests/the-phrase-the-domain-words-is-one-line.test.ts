@@ -1412,6 +1412,20 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the identity the stored writing that is the text of the decision names as its signer',
     },
+  // --- @mnema/chain: an accept and a retirement that crossed (FORMAT.md §6.7) ----------
+  '@mnema/chain chain/verify.ts «{} left {} by » oneLine(decision) #1': {
+    verdict: 'collapsed',
+    why: 'the id of a decision two machines moved apart, read out of the record',
+  },
+  '@mnema/chain chain/verify.ts «{} left {} by » oneLine(from) #1': {
+    verdict: 'collapsed',
+    why: 'the state both moves left: a transition’s `from`, read out of the record',
+  },
+  "@mnema/chain chain/verify.ts «{}» moves.map((move) => `${oneLine((move.payload as { to: string }).to)} (${oneLine(move.who)} at ${oneLine(move.at)})`).join(' and ') #1":
+    {
+      verdict: 'collapsed',
+      why: 'each move’s `to`, signer and instant, read out of the record, every one collapsed inside the expression',
+    },
   // --- @mnema/chain: a move the workflow does not allow (FORMAT.md §6.7) ----------
   '@mnema/chain chain/verify.ts «a {} of {}: {}: » event.kind #1': {
     verdict: 'minted',
@@ -2239,6 +2253,8 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} writing(s) of a decision other than its text, not applied (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} decision(s) accepted and retired out of one state by moves that had not seen each other, in force under neither (see census: informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} retraction(s) by an identity that did not write the note, not applied (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} move(s) the workflow does not allow, not applied (see census: informational, not a break)» count':
@@ -2287,8 +2303,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(337);
-    expect(FOUND[0]?.sites.length).toBe(139);
+    expect(SITES.length).toBe(340);
+    expect(FOUND[0]?.sites.length).toBe(142);
     expect(FOUND[1]?.sites.length).toBe(198);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2339,11 +2355,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(230);
+    expect(count('collapsed')).toBe(233);
     expect(count('minted')).toBe(82);
     expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      230,
+      233,
     );
   });
 
@@ -2457,7 +2473,17 @@ describe('the rule has one door and it is below both packages', () => {
     // stores rather than a line anybody prints. It is here rather than holding a
     // `replace` of its own for the reason this case exists (two collapses would be two
     // rules) and it is named so the day it stops importing the door this goes red.
-    expect(importing).toEqual([...collapsing, '@mnema/core projections/search-store.ts'].sort());
+    //
+    // `divergent-moves.ts` is the other: `divergenceSentence` words a sentence out of a record's
+    // `who`, `at` and `to`, and it is a function the readings CALL, not a `detail:` or a sink this
+    // walk follows, so each value goes through the door there and no site here holds it.
+    expect(importing).toEqual(
+      [
+        ...collapsing,
+        '@mnema/core projections/search-store.ts',
+        '@mnema/core projections/divergent-moves.ts',
+      ].sort(),
+    );
   });
 
   it('accounts for every collapse these packages perform', () => {
@@ -2487,6 +2513,7 @@ describe('the rule has one door and it is below both packages', () => {
     }
     // The same one, from the other direction: one collapse in the source, none at a site.
     expect(unaccounted).toEqual([
+      '@mnema/core projections/divergent-moves.ts: 3 in source, 0 classified',
       '@mnema/core projections/search-store.ts: 1 in source, 0 classified',
     ]);
   });

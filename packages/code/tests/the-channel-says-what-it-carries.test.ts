@@ -243,6 +243,7 @@ describe('one declaration, and one place that decides it', () => {
       skills: [],
       collisions: [],
       divergent: [],
+      disputed: [],
       addressed: 0,
       asking: 0,
       refusing: 0,

@@ -25,6 +25,7 @@ const busy: Report = {
       governs: [{ id: 'd1', name: 'Keep money as integer cents' }],
       asks: [],
       refuses: [],
+      apart: [],
     },
   ],
 };
@@ -44,6 +45,7 @@ describe('renderComment checks', () => {
       governs: [{ id: 'd1', name: 'n' }],
       asks: [],
       refuses: [],
+      apart: [],
     }));
     const text = renderComment({ ...busy, governed });
     expect(text.length).toBeLessThanOrEqual(65536);
@@ -65,6 +67,31 @@ describe('renderComment', () => {
       '- `src/billing/invoice.ts`: governed by Keep money as integer cents (`d1`)',
     );
     expect(text).toContain('`verify --require=signed --since <base>`): passed');
+  });
+
+  it('says a rule addressing a file is not in force, with the record\u2019s own line, instead of listing it as governing', () => {
+    const text = renderComment({
+      ...busy,
+      governed: [
+        {
+          path: 'src/queue/a.ts',
+          governs: [],
+          asks: [],
+          refuses: [],
+          apart: [
+            {
+              id: 'd9',
+              name: 'Use SQLite',
+              divergence: 'divergence between the accept and the rejection',
+            },
+          ],
+        },
+      ],
+    });
+    expect(text).toContain(
+      '- `src/queue/a.ts`: Use SQLite (`d9`) is not in force: divergence between the accept and the rejection',
+    );
+    expect(text).not.toContain('governed by Use SQLite');
   });
 
   it('lists a decision whose title the record does not hold by its label and the states it moved to', () => {
@@ -154,6 +181,7 @@ describe('plain', () => {
           governs: [{ id: '[x](javascript:alert(1))', name: undefined }],
           asks: [],
           refuses: [],
+          apart: [],
         },
       ],
     });

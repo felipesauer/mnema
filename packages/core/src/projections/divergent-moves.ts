@@ -35,6 +35,7 @@
  */
 
 import type { CatalogEvent } from '@mnema/chain';
+import { oneLine } from '../one-line.js';
 
 /** The machines this reading covers: the two whose tables have no cycle, and tasks by their order. */
 export type DivergentKind = 'decision' | 'skill' | 'task';
@@ -179,4 +180,46 @@ function movedTo(event: CatalogEvent): string {
     event.kind === 'task.transitioned'
     ? event.payload.to
     : event.kind;
+}
+
+/**
+ * A decision one machine ACCEPTED and another RETIRED (rejected, or superseded) out of the same
+ * state, by moves that did not see each other. The fold keeps the state of whichever move the
+ * merged order puts last, and a clock decides nothing here: the call is neither in force nor
+ * retired, and it is said so, in every reading that says what governs (ADR-121).
+ *
+ * It is ONE predicate over {@link divergentMoves}, so no reader decides the case a second time.
+ * Two accepts out of one state do not satisfy it (both say the same thing), and neither do two
+ * retirements (nothing governs either way).
+ */
+export function acceptedAgainstRetired(move: DivergentMove): boolean {
+  return (
+    move.kind === 'decision' &&
+    move.to.includes('accepted') &&
+    move.to.some((to) => to !== 'accepted')
+  );
+}
+
+const MOVE_WORD: Readonly<Record<string, string>> = {
+  accepted: 'accept',
+  rejected: 'rejection',
+  superseded: 'supersede',
+};
+
+/**
+ * The one line every reading of the rules gives for a decision {@link acceptedAgainstRetired}:
+ * which moves crossed, by whom and when, and the way out. Said here once so the brief, the
+ * answer of `governing_rules`, the push, the opening context, the Action and the site tell it in
+ * the same words.
+ */
+export function divergenceSentence(move: DivergentMove): string {
+  const crossed = move.evidence.map(
+    (event, index) =>
+      `the ${MOVE_WORD[move.to[index] ?? ''] ?? oneLine(move.to[index] ?? event.kind)} by ${oneLine(event.who.slice(0, 13))} at ${oneLine(event.at)}`,
+  );
+  const between =
+    crossed.length > 1
+      ? `${crossed.slice(0, -1).join(', ')} and ${crossed.at(-1)}`
+      : crossed.join('');
+  return `divergence between ${between}, made on machines that had not seen each other; not in force until it is decided again: record it as a new decision, which a person, or an agent where agent-accepts is on, accepts`;
 }

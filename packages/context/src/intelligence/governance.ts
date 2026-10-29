@@ -120,6 +120,7 @@ import {
   type Acceptance,
   acceptances,
   decisionsInForce,
+  disputedDecisionIds,
   type NamedDecision,
   replacements,
 } from '../context/decisions.js';
@@ -174,6 +175,13 @@ export interface AddressedRule {
   readonly name?: string;
   /** Its state, when its kind has one, never interpreted here. */
   readonly state?: string;
+  /**
+   * Why a decision is NOT in force though the fold says `accepted`: an accept and a retirement of
+   * it crossed (`acceptedAgainstRetired`, ADR-121), in one line. Absent for every other rule. A
+   * reader that decides what governs must leave an entry that has it out: the state alone does
+   * not say so, because the fold keeps the state of the move that came last.
+   */
+  readonly divergence?: string;
   /** The tree that holds the rule itself, absent when no tree here holds it. */
   readonly scope?: Scope;
   /**
@@ -451,10 +459,11 @@ function addressesUnder(
   // ONCE PER WALK, not once per edge: who accepted is read over every decision of the trees.
   const accepted = acceptances(sources.map((source) => source.cache));
   const replaced = replacements(sources.map((source) => source.cache));
+  const disputed = disputedDecisionIds(sources.map((source) => source.cache));
   for (const source of sources) {
     if (!governsThisProject(source, query.root)) continue;
     for (const edge of source.cache.linksByRelation(relation)) {
-      found.push(describe(sources, source, edge, query, accepted, replaced));
+      found.push(describe(sources, source, edge, query, accepted, replaced, disputed));
     }
   }
   // THREE DISJOINT CLASSES, and the disjointness is what keeps the numbers from double
@@ -592,6 +601,7 @@ function describe(
   query: GovernanceQuery,
   accepted: ReadonlyMap<string, Acceptance>,
   replaced: ReadonlyMap<string, NamedDecision>,
+  disputed: ReadonlyMap<string, string>,
 ): Addressed {
   const segments = relativeSegments(edge.target, query.root);
   const record = readRecord(sources, edge.subject);
@@ -616,6 +626,7 @@ function describe(
       ...(replaced.has(edge.subject)
         ? { supersedes: replaced.get(edge.subject) as NamedDecision }
         : {}),
+      ...(disputed.has(edge.subject) ? { divergence: disputed.get(edge.subject) as string } : {}),
       // WHO WROTE THE ADDRESS, and not who holds the rule: see {@link AddressedRule.inherited}.
       ...(asserted.inherited !== undefined ? { inherited: asserted.inherited } : {}),
       ...(heldIn !== undefined ? { heldIn } : {}),
@@ -915,6 +926,31 @@ export function rulesInForceAt(
   query: GovernanceQuery,
 ): RulesAtPath {
   return inForceUnder(sources, query, GOVERNS_RELATION);
+}
+
+/**
+ * The decisions that address `query.path` (under `governs`, `asks-for-a-person` or `refuses-a-write`) and are NOT in force because an accept and
+ * a retirement of each crossed (ADR-121), with the line that says why: what a channel that pushes
+ * rules owes beside them, since it is silent about a rule that is not in force and a decision
+ * missing from it would otherwise read as one nobody wrote. Empty in the ordinary case.
+ */
+export function disputedAt(
+  sources: readonly ScopedCache[],
+  query: GovernanceQuery,
+): readonly { readonly id: string; readonly name: string; readonly divergence: string }[] {
+  const asked = relativeSegments(query.path, query.root);
+  const seen = new Map<string, { id: string; name: string; divergence: string }>();
+  for (const relation of [GOVERNS_RELATION, ASKS_FOR_A_PERSON_RELATION, REFUSES_A_WRITE_RELATION]) {
+    for (const rule of ordered(addressesUnder(sources, query, relation, asked).matching)) {
+      if (rule.divergence === undefined || seen.has(rule.rule)) continue;
+      seen.set(rule.rule, {
+        id: rule.rule,
+        name: rule.name ?? rule.rule,
+        divergence: rule.divergence,
+      });
+    }
+  }
+  return [...seen.values()];
 }
 
 /**

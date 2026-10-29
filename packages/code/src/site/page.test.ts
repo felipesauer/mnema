@@ -123,6 +123,7 @@ const full: Required<PageDecision> = {
   alternatives: 'floats, with rounding',
   state: 'accepted',
   inForce: true,
+  divergence: 'divergence between the accept and the rejection',
   supersedes: 'd-0',
   supersededBy: 'd-2',
   createdAt: '2026-01-01T00:00:00.000Z',

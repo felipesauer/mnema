@@ -42,7 +42,30 @@ import { asState } from './state.js';
 
 /** The lines a governance reading prints for a person. */
 export function rulesReport(render: Render, governed: GoverningRules): string[] {
-  const { counts } = governed;
+  // A decision an accept and a retirement crossed on (ADR-121) is in force nowhere: it is not
+  // counted among the rules that govern, ask or refuse here, and is listed on its own with the
+  // line that says why, instead of under a heading that would read it as in force.
+  const apart = (rules: readonly AddressedRule[]) =>
+    rules.filter((rule) => rule.divergence !== undefined);
+  const inForce = (rules: readonly AddressedRule[]) =>
+    rules.filter((rule) => rule.divergence === undefined);
+  const disputed = [
+    ...apart(governed.rules),
+    ...apart(governed.asks),
+    ...apart(governed.refuses),
+  ].filter((rule, index, all) => all.findIndex((one) => one.rule === rule.rule) === index);
+  const counts = {
+    ...governed.counts,
+    matching: governed.counts.matching - apart(governed.rules).length,
+    asks: {
+      ...governed.counts.asks,
+      matching: governed.counts.asks.matching - apart(governed.asks).length,
+    },
+    refuses: {
+      ...governed.counts.refuses,
+      matching: governed.counts.refuses.matching - apart(governed.refuses).length,
+    },
+  };
   const lines = [
     render(
       subjectLine(
@@ -143,9 +166,17 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
     lines.push(`${heading} (${rules.length})`);
     lines.push(...rules.map(row));
   };
-  group('governing this path, most specific first', governed.rules);
-  group('asking for a person here, most specific first', governed.asks);
-  group('refusing a write here, most specific first', governed.refuses);
+  group('governing this path, most specific first', inForce(governed.rules));
+  group('asking for a person here, most specific first', inForce(governed.asks));
+  group('refusing a write here, most specific first', inForce(governed.refuses));
+  if (disputed.length > 0) {
+    lines.push('');
+    lines.push(`not in force here, a divergence (${disputed.length})`);
+    for (const rule of disputed) {
+      lines.push(row(rule));
+      lines.push(render(fact(`${oneLine(rule.divergence ?? '')}.`)));
+    }
+  }
   group('addressing nothing in the working tree', governed.stale);
   group('asking about nothing in the working tree', governed.asksStale);
   group('refusing nothing in the working tree', governed.refusesStale);

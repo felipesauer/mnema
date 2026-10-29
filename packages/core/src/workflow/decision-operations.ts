@@ -45,6 +45,7 @@ import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
 import { projectDecisions } from '../projections/decision.js';
+import { acceptedAgainstRetired } from '../projections/divergent-moves.js';
 import { type AppendRefusal, appendFact, appendFacts } from './append.js';
 import {
   type Judged,
@@ -248,17 +249,29 @@ export function recordDecision(
   return onTheRecordAsItStands(
     ctx,
     () =>
-      asTheChainIs(ctx, (cache) => ({
-        size: cache.countDecisions(),
-        twin: cache
-          .decisionsTitled(text.fields.title)
-          .find(
-            (held) =>
-              isInForceOrProposed(held.state) &&
-              held.rationale === text.fields.rationale &&
-              held.alternatives === text.fields.alternatives,
-          ),
-      })),
+      asTheChainIs(ctx, (cache) => {
+        // A decision an accept and a retirement crossed on is in force nowhere (ADR-121) and
+        // the way out is to record the call again, so it is no twin of the same words, in
+        // whichever order the fold left its state.
+        const disputed = new Set(
+          cache
+            .divergentMoves()
+            .filter(acceptedAgainstRetired)
+            .map((move) => move.entityId),
+        );
+        return {
+          size: cache.countDecisions(),
+          twin: cache
+            .decisionsTitled(text.fields.title)
+            .find(
+              (held) =>
+                !disputed.has(held.id) &&
+                isInForceOrProposed(held.state) &&
+                held.rationale === text.fields.rationale &&
+                held.alternatives === text.fields.alternatives,
+            ),
+        };
+      }),
     (decisions) =>
       decisions.twin !== undefined
         ? {

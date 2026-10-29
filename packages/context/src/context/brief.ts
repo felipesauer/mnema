@@ -119,7 +119,13 @@ import {
   type Scope,
 } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
-import { type DecisionRef, decisionsAwaitingJudgement, decisionsInForce } from './decisions.js';
+import {
+  type DecisionRef,
+  type DisputedDecision,
+  decisionsAwaitingJudgement,
+  decisionsDisputed,
+  decisionsInForce,
+} from './decisions.js';
 import { originOf } from './search.js';
 import { adoptedSkills, type SkillRef, skillsAwaitingJudgement } from './skills.js';
 import { type ChannelState, channelStates } from './switches.js';
@@ -196,6 +202,13 @@ export interface Brief {
    * task's divergence is not here, because no task is: this answer carries no work list.
    */
   readonly divergent: readonly DivergentMove[];
+  /**
+   * The decisions one machine accepted and another retired out of the same state, which this
+   * document does NOT print as in force and says why (ADR-121): empty in the ordinary case, which
+   * keeps the document's bytes what they were. They are not in {@link Brief.decisions}, so the
+   * count under the heading is the rules that govern and these are a paragraph of their own.
+   */
+  readonly disputed: readonly DisputedDecision[];
   /**
    * How many of the rules above have an ADDRESS: a path they were linked to with
    * `rel: "governs"` in a tree that travels.
@@ -396,6 +409,7 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
     skills: skills.map(({ id, name }) => withOrigin(travels, { id, name })),
     collisions: printedCollisions(travels, decisions),
     divergent: printedDivergences(travels, [...decisions, ...skills]),
+    disputed: decisionsDisputed(travels),
     addressed: countAddressed(travels, [...decisions, ...skills]),
     // Asked of the COMMITTED sources alone, for the reason the whole answer is: a switch
     // this file could not carry would make the document claim a mechanism is on when the

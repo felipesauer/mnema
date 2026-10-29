@@ -113,7 +113,14 @@
  * argument, and it is in it now.
  */
 
-import type { Acceptance, AdrCollision, Brief, ChannelState, NamedDecision } from '@mnema/context';
+import type {
+  Acceptance,
+  AdrCollision,
+  Brief,
+  ChannelState,
+  DisputedDecision,
+  NamedDecision,
+} from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import { isStackName, isStackVersion } from '@mnema/core';
 import type { BriefDone } from '../commands/brief.js';
@@ -1018,14 +1025,17 @@ function composed(
     ...section(
       'Decisions in force',
       decisions.length,
-      governance.decisions.length === 0
-        ? NO_DECISIONS
-        : [
-            ...WHERE_THE_RATIONALE_IS,
-            ...whoRuled(governance.decisions),
-            ...ambiguousLabels(governance.collisions),
-            ...movedApart(governance.divergent, 'decision'),
-          ],
+      [
+        ...(governance.decisions.length === 0
+          ? NO_DECISIONS
+          : [
+              ...WHERE_THE_RATIONALE_IS,
+              ...whoRuled(governance.decisions),
+              ...ambiguousLabels(governance.collisions),
+              ...movedApart(governance.divergent, 'decision'),
+            ]),
+        ...notInForceForADivergence(governance.disputed),
+      ],
       whatAwaitsAJudgement(governance.decisionsAwaiting, DECISIONS_WAITING),
       decisions.map((decision) =>
         rule(
@@ -1178,6 +1188,24 @@ function movedApart(divergent: readonly DivergentMove[], kind: 'decision' | 'ski
   const these = divergent.filter((move) => move.kind === kind);
   if (these.length === 0) return [];
   return ['', ...MOVED_APART, '', ...these.map(apart)];
+}
+
+/**
+ * The decisions an accept and a retirement crossed on, and so are not printed above: said, with
+ * why and the way out (ADR-121). Nothing at all when none, like {@link movedApart}. Not a bullet
+ * that opens with `- **`: those are the rules in force, counted by the heading.
+ */
+function notInForceForADivergence(disputed: readonly DisputedDecision[]): string[] {
+  if (disputed.length === 0) return [];
+  return [
+    '',
+    'Not in force, and not counted above: an accept and a retirement of each of these crossed.',
+    '',
+    ...disputed.map(
+      (one) =>
+        `- \`${oneLine(one.id)}\` (${oneLine(one.adr)}, ${oneLine(one.title)}): ${one.divergence}`,
+    ),
+  ];
 }
 
 /** One rule moved apart, as a bullet: its id, the state it left, and every move out of it. */

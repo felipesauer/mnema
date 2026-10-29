@@ -334,6 +334,7 @@ describe('mnema brief (what governs the work here)', () => {
         skills: [],
         collisions: [],
         divergent: [],
+        disputed: [],
         addressed: 0,
         asking: 0,
         refusing: 0,

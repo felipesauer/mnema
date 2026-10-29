@@ -10,6 +10,22 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Changed
+
+- **A decision one machine accepted and another rejected or superseded, out of the same state, is in force in no reading, and each
+  reading says why.** Two clones that had not seen each other, once their tails meet, leave two signed moves out of `proposed`,
+  and the fold kept the state of whichever had the later `at`: a decision governed, or stopped governing, because of a clock. The
+  brief (`brief` prints it in a paragraph of its own, under "Decisions in force", that says it is not counted above),
+  `governing_rules` and the `rules` reading (the entry carries a `divergence` field with the line), the rules pushed before an edit, the
+  opening context (`bootstrap`), the Action and the extension (neither judges a pull request by it), the `site` page and
+  `show` leave it out of force and say, in one line, between which moves, by whom and when, and that it takes a new decision
+  to put the call back (the same words recorded again make one, whichever move was last), which a person, or an agent where
+  agent-accepts is on, accepts. A rule that refuses a write or asks for a person does neither while it is in this state.
+  `verify` (TypeScript and the Python reader) names it in its census as `decision-divergence`, informational: the verdict, the
+  level and the exit are what they were. The fold is unchanged, so `show` still prints the state of the last move and a record
+  reads as it did before; what changes is what "in force" means for these decisions. Two accepts, or two retirements, are a
+  divergence and are still in or out of force by their state (FORMAT.md section 6.7; `docs/convergence.md`).
+
 ### Fixed
 
 - `mnema verify --against-sigstore` and the signature line of a stack being added no longer print `1970-01-01` as the time a Rekor v2 entry was logged. A v2 entry carries no `integratedTime`, so the time now comes from the timestamp authority the Sigstore library verified, and says so; a bundle with no verified time says "time not carried", never a date made up. In `verify --json`, `sigstore.findings[].reading.loggedAt` can now be absent (it always came, even as 1970) and `loggedAtBy` (`"rekor"` or `"timestamp-authority"`) is new; the text line reads `logged in Rekor, timestamped by the timestamp authority at <time>` for a timestamp authority's time.

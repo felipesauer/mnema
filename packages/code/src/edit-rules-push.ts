@@ -129,7 +129,12 @@
  */
 
 import type { PushedRule, RulesAtPath, ScopedCache } from '@mnema/context';
-import { type GovernedRead, readRulesInForceWhereItLands } from './governed-tree.js';
+import { acceptedAgainstRetired } from '@mnema/core';
+import {
+  type GovernedRead,
+  readDisputedWhereItLands,
+  readRulesInForceWhereItLands,
+} from './governed-tree.js';
 import { inheritedFromText } from './inherited-record.js';
 import { oneLine } from './one-line.js';
 import { acceptedBy } from './presentation/accepted-by.js';
@@ -255,7 +260,17 @@ export function readThePush(
   saysApart: boolean,
 ): ThePush {
   const at = readRulesInForceWhereItLands(addressed, read);
-  return { at, apart: saysApart ? movedApartLine(own, at.rules) : undefined };
+  if (!saysApart) return { at, apart: undefined };
+  // A decision a divergence keeps out of force is not in `at`, so it is said here, in the line
+  // the push already owes about a rule moved apart (ADR-121). Read only when a record holds one.
+  const out = addressed.some((source) => source.cache.divergentMoves().some(acceptedAgainstRetired))
+    ? readDisputedWhereItLands(addressed, read).map(
+        (one) =>
+          `Not in force: \`${oneLine(one.id)}\` (${oneLine(one.name)}) addresses this path: ${one.divergence}.`,
+      )
+    : [];
+  const lines = [movedApartLine(own, at.rules), ...out].filter((line) => line !== undefined);
+  return { at, apart: lines.length === 0 ? undefined : lines.join('\n') };
 }
 
 /** The room kept for {@link pathsLeftOut}, whose longest form is below it. */

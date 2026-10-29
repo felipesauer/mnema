@@ -70,9 +70,11 @@
  */
 
 import {
+  acceptedAgainstRetired,
   DECISION_STATES,
   type DecisionProjection,
   type DecisionState,
+  divergenceSentence,
   isUnannounced,
   newestFirst,
   type ProjectionCache,
@@ -208,6 +210,12 @@ export type NamedDecision =
       readonly adr: string;
       readonly title: string;
       readonly state: string;
+      /**
+       * Present when an accept and a retirement of this decision crossed (ADR-121): the `state`
+       * is what the fold kept, and the decision is in force nowhere, which a line that names it
+       * says instead of the state.
+       */
+      readonly divergence?: true;
     }
   | { readonly found: false; readonly id: string };
 
@@ -242,7 +250,17 @@ export function nameDecision(caches: readonly ProjectionCache[], id: string): Na
   for (const cache of caches) {
     const held = cache.getDecision(id);
     if (held !== null) {
-      return { found: true, id, adr: held.adr, title: held.title, state: held.state };
+      const apart = cache
+        .divergentMoves()
+        .some((move) => move.entityId === id && acceptedAgainstRetired(move));
+      return {
+        found: true,
+        id,
+        adr: held.adr,
+        title: held.title,
+        state: held.state,
+        ...(apart ? { divergence: true as const } : {}),
+      };
     }
   }
   return { found: false, id };
@@ -318,11 +336,64 @@ export interface DecisionRef {
  */
 export function decisionsInForce(caches: readonly ProjectionCache[]): DecisionRef[] {
   const all: DecisionProjection[] = [];
+  const apart = disputedDecisionIds(caches);
   for (const cache of caches) {
-    for (const state of IN_FORCE) all.push(...cache.listDecisionsByState(state));
+    for (const state of IN_FORCE) {
+      all.push(...cache.listDecisionsByState(state).filter((one) => !apart.has(one.id)));
+    }
   }
   const ruled = acceptances(caches);
   return all.sort(bySettledDesc).map((decision) => toRef(decision, ruled.get(decision.id), caches));
+}
+
+/**
+ * The decisions one machine accepted and another retired out of the same state, by moves that
+ * did not see each other (`acceptedAgainstRetired`), each with the one line that says why it is
+ * not in force: the id, whatever state the fold left it in, and the sentence every reading of
+ * the rules gives. Ordered by id, so the trees' order cannot reach a document's bytes. Empty in
+ * the ordinary case.
+ *
+ * {@link decisionsInForce} leaves these out through {@link disputedDecisionIds}, the same
+ * reading, so a surface that SAYS why a call is missing cannot disagree with the one that
+ * leaves it out.
+ */
+export function decisionsDisputed(caches: readonly ProjectionCache[]): DisputedDecision[] {
+  const out: DisputedDecision[] = [];
+  for (const cache of caches) {
+    for (const move of cache.divergentMoves()) {
+      if (!acceptedAgainstRetired(move)) continue;
+      const held = cache.getDecision(move.entityId);
+      if (held === null) continue;
+      out.push({
+        id: held.id,
+        adr: held.adr,
+        title: held.title,
+        divergence: divergenceSentence(move),
+      });
+    }
+  }
+  return out.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+/** A decision left out of force by a divergence, named, with the line that says why. */
+export interface DisputedDecision {
+  readonly id: string;
+  readonly adr: string;
+  readonly title: string;
+  readonly divergence: string;
+}
+
+/** The id of each decision {@link decisionsDisputed} lists, with its line: one reading, two shapes. */
+export function disputedDecisionIds(
+  caches: readonly ProjectionCache[],
+): ReadonlyMap<string, string> {
+  const ids = new Map<string, string>();
+  for (const cache of caches) {
+    for (const move of cache.divergentMoves()) {
+      if (acceptedAgainstRetired(move)) ids.set(move.entityId, divergenceSentence(move));
+    }
+  }
+  return ids;
 }
 
 /**

@@ -85,6 +85,7 @@ const EMPTY_BRIEF: Brief = {
   skills: [],
   collisions: [],
   divergent: [],
+  disputed: [],
   addressed: 0,
   asking: 0,
   refusing: 0,

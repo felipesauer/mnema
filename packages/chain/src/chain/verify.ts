@@ -204,6 +204,7 @@ export type CensusNote =
   | ForeignRewriteNote
   | ForeignLinkRetractionNote
   | DecisionRewriteNote
+  | DecisionDivergenceNote
   | IllegalMoveNote
   | RetiredCheckerNote
   | RetiredAgentNote
@@ -414,6 +415,26 @@ export interface DecisionRewriteNote {
   /** The identity that signed the writing that is the text, the one served. */
   readonly author: string;
   /** Where the writing sits. */
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * A decision one machine ACCEPTED and another RETIRED (rejected, or superseded) out of the same
+ * state, by moves that did not see each other (FORMAT.md section 6.7): both moves are legal where
+ * their writers stood, both are applied, and the fold keeps the state of whichever the merged
+ * order puts last. Naming it is all this does: a reader that says what governs leaves the
+ * decision out of force and says why, and `verify` changes no exit for it.
+ *
+ * It is the same reading `divergentMoves` (`@mnema/core`) makes over the moves a reader applies,
+ * kept here because the verifier stands below it; the two are held to the same set by a test.
+ */
+export interface DecisionDivergenceNote {
+  readonly kind: 'decision-divergence';
+  /** The decision the moves cross on (their subject). */
+  readonly decision: string;
+  /** Where the first of the moves sits, in the merged order. */
   readonly tail: string;
   readonly seq: number;
   readonly detail: string;
@@ -1066,6 +1087,7 @@ function verifyReading(
     ...foreignNotes(tails, entriesByTail),
     ...foreignLinkRetractions(tails, entriesByTail),
     ...decisionRewrites(tails, entriesByTail),
+    ...decisionDivergences(entriesByTail),
     ...movesNotApplied(entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
     ...retiredAgents(identity.retiredAgents),
@@ -1498,6 +1520,57 @@ function mergedOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>) {
     return { event: entryAt(tail, position).event as CatalogEvent, tail, position };
   });
   return { tails, entryAt, order, held: merged.held };
+}
+
+/**
+ * Every decision with an accept and a retirement out of one state in the moves a reader applies
+ * ({@link DecisionDivergenceNote}), named in the merged order of the first of its moves. A move
+ * repeated byte for byte is one move read twice, as the reading in `@mnema/core` holds it.
+ */
+function decisionDivergences(
+  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+): DecisionDivergenceNote[] {
+  const { tails, entryAt, order, held } = mergedOrder(entriesByTail);
+  const notApplied = illegalMoves(order, held);
+  const out = new Map<
+    string,
+    { decision: string; from: string; moves: CatalogEvent[]; tail: string; seq: number }
+  >();
+  const read = new Set<string>();
+  order.forEach(({ event, tail, position }, index) => {
+    if (event.kind !== 'decision.transitioned' || notApplied.has(index)) return;
+    const { from } = event.payload;
+    if (from === null) return;
+    const bytes = JSON.stringify(event);
+    if (read.has(bytes)) return;
+    read.add(bytes);
+    const key = JSON.stringify([event.subject, from]);
+    const seen = out.get(key);
+    if (seen === undefined) {
+      out.set(key, {
+        decision: event.subject,
+        from,
+        moves: [event],
+        tail: (tails[tail] as (typeof tails)[number]).tail,
+        seq: entryAt(tail, position).link.seq,
+      });
+    } else seen.moves.push(event);
+  });
+  return [...out.values()]
+    .filter(({ moves }) => {
+      const to = moves.map((move) => (move.payload as { to: string }).to);
+      return to.includes('accepted') && to.some((one) => one !== 'accepted');
+    })
+    .map(({ decision, from, moves, tail, seq }) => ({
+      kind: 'decision-divergence',
+      decision,
+      tail,
+      seq,
+      detail:
+        `${oneLine(decision)} left ${oneLine(from)} by ` +
+        `${moves.map((move) => `${oneLine((move.payload as { to: string }).to)} (${oneLine(move.who)} at ${oneLine(move.at)})`).join(' and ')}` +
+        ', moves on machines that had not seen each other: the decision is in force under neither, and a person decides it again',
+    }));
 }
 
 /**
@@ -2287,6 +2360,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => str
     `${count} link retraction(s) by an identity that did not record the link, not applied (see census: informational, not a break)`,
   'decision-rewrite': (count) =>
     `${count} writing(s) of a decision other than its text, not applied (see census: informational, not a break)`,
+  'decision-divergence': (count) =>
+    `${count} decision(s) accepted and retired out of one state by moves that had not seen each other, in force under neither (see census: informational, not a break)`,
   'illegal-move': (count) =>
     `${count} move(s) the workflow does not allow, not applied (see census: informational, not a break)`,
   'retired-checker': (count) =>

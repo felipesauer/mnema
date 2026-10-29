@@ -967,6 +967,7 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
     _check_retractions(report, entries_by_tail)
     not_applied = _check_moves(report, entries_by_tail, declarations)
     _check_rewrites(report, entries_by_tail, not_applied)
+    _check_divergences(report, entries_by_tail, not_applied)
     _say_keys_without_tail(report, ring, tail_ids, resolution)
     _refuse_a_record_no_tail_holds(report, tails_dir, tail_ids, entries_by_tail)
     _check_requirement(report, require, entries_by_tail, covered_by_tail)
@@ -1018,6 +1019,15 @@ def _check_rewrites(
     6.7 does not apply; empty when the tables could not be read, and then every move judges."""
     for found in retraction.decision_rewrites(entries_by_tail, not_applied):
         report.note("6.8", f"{found.detail} (rule {found.rule})", f"{found.tail} seq {found.seq}")
+
+
+def _check_divergences(
+    report: Report, entries_by_tail: dict[str, list[Entry]], not_applied: set[tuple[str, int]]
+) -> None:
+    """Section 6.7: a decision accepted by one move and retired by another out of the same state,
+    by moves that did not see each other - named, never refused, and the verdict is unchanged."""
+    for found in retraction.decision_divergences(entries_by_tail, not_applied):
+        report.note("6.7", f"{found.detail} (rule {found.rule})", f"{found.tail} seq {found.seq}")
 
 
 def _check_moves(

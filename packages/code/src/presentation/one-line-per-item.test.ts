@@ -126,6 +126,7 @@ describe('the brief prints one line per rule', () => {
     skills: [],
     collisions: [],
     divergent: [],
+    disputed: [],
     decisionsAwaiting: 0,
     skillsAwaiting: 0,
     addressed: 0,
@@ -204,6 +205,13 @@ describe('the brief prints one line per rule', () => {
       entityId: `v-${i}`,
       from: `f-${i}`,
       to: m.to.map((_to, j) => `t-${i}-${j}`),
+    })),
+    // The decisions a divergence leaves out of force are text in the document as well.
+    disputed: brief.disputed.map((_d, i) => ({
+      id: `x-${i}`,
+      adr: `ADR-x${i}`,
+      title: `tx-${i}`,
+      divergence: `dv-${i}`,
     })),
     addressed: brief.addressed,
     asking: brief.asking,
