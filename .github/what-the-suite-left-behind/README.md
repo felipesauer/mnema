@@ -38,7 +38,7 @@ pnpm what-the-suite-left-behind              # after the LAST run of the suite
 
 `--tmp <dir>`, `--prefix <p>`, `--baseline <path>`, `--summary <path>` and `--json <path>` are
 all optional; the defaults are the machine's temp directory, `mnema-`, and
-`what-the-suite-left-behind.json` (gitignored: it is a fact about one machine at one instant).
+`node_modules/.cache/mnema-workspace/what-the-suite-left-behind.json` (under `node_modules`, so not versioned: it is a fact about one machine at one instant).
 
 | it prints | it means | exit |
 |---|---|---|

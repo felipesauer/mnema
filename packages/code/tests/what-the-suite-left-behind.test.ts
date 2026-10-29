@@ -34,6 +34,7 @@ import {
   main,
   sandboxesUnder,
   sweep,
+  THE_BASELINE,
   THE_FAMILY,
 } from '../../../.github/what-the-suite-left-behind/sweep.mjs';
 
@@ -197,14 +198,15 @@ describe('the sweep is wired where it can be right', () => {
   it('does not commit the baseline it writes', () => {
     // It is a fact about one machine at one instant. Committed, it would be somebody else's
     // /tmp, and every sweep after the first would read a stranger's before-listing.
-    const tracked = execFileSync('git', ['ls-files', 'what-the-suite-left-behind.json'], {
+    const tracked = execFileSync('git', ['ls-files', 'node_modules/.cache/mnema-workspace'], {
       cwd: ROOT,
       encoding: 'utf-8',
     });
     expect(tracked.trim()).toBe('');
-    expect(readFileSync(join(ROOT, '.gitignore'), 'utf-8')).toContain(
-      'what-the-suite-left-behind.json',
+    expect(THE_BASELINE).toBe(
+      'node_modules/.cache/mnema-workspace/what-the-suite-left-behind.json',
     );
+    expect(readFileSync(join(ROOT, '.gitignore'), 'utf-8')).toMatch(/^node_modules\/$/m);
   });
 
   it('records before every run of the suite and reports after all of them', () => {

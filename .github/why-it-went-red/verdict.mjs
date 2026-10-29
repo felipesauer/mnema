@@ -551,7 +551,11 @@ export function render(result, cores = 0) {
  * @returns {{ ledger: string, summary: string, json: string }}
  */
 function readArgs(argv) {
-  const args = { ledger: 'why-it-went-red.json', summary: '', json: '' };
+  const args = {
+    ledger: 'node_modules/.cache/mnema-workspace/why-it-went-red.json',
+    summary: '',
+    json: '',
+  };
   /** @type {Record<string, keyof typeof args>} */
   const takes = { '--ledger': 'ledger', '--summary': 'summary', '--json': 'json' };
   for (let index = 0; index < argv.length; index += 2) {

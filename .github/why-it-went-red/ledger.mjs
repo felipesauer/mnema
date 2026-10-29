@@ -35,9 +35,9 @@
  *     refuses if its own budget ever sinks below this floor.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
-import { relative, resolve } from 'node:path';
+import { dirname, relative, resolve } from 'node:path';
 
 /** @typedef {import('vitest/node').Reporter} Reporter */
 /** @typedef {import('vitest/node').TestCase} TestCase */
@@ -140,7 +140,7 @@ const TICK = 250;
 export const RECORDING_FLOOR = 500;
 
 /** Where the ledger is written unless the environment names somewhere else. */
-const DEFAULT_AT = 'why-it-went-red.json';
+const DEFAULT_AT = 'node_modules/.cache/mnema-workspace/why-it-went-red.json';
 
 /**
  * Linux's runnable-thread count, off the fourth field of `/proc/loadavg`; `null` elsewhere.
@@ -368,6 +368,7 @@ export default class Ledger {
         }))
         .sort((a, b) => b.duration - a.duration),
     };
+    mkdirSync(dirname(this.#at), { recursive: true });
     writeFileSync(this.#at, `${JSON.stringify(written, null, 2)}\n`);
   }
 }

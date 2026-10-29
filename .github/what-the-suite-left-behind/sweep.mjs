@@ -26,9 +26,9 @@
  * directory: each is exit 2 and a named reason, never a clean sweep.
  */
 
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 /**
  * ONE COMMAND LINE ON THIS MACHINE, as `/proc` gives it up.
@@ -62,7 +62,7 @@ import { join } from 'node:path';
 export const THE_FAMILY = 'mnema-';
 
 /** Where the before-listing is kept between the two halves of a sweep. */
-export const THE_BASELINE = 'what-the-suite-left-behind.json';
+export const THE_BASELINE = 'node_modules/.cache/mnema-workspace/what-the-suite-left-behind.json';
 
 /**
  * What a process must say on its command line to count as a run of the suite: the RUNNER on
@@ -268,6 +268,7 @@ export function main(
       );
       return 2;
     }
+    mkdirSync(dirname(baselineAt), { recursive: true });
     writeFileSync(baselineAt, `${JSON.stringify({ where, prefix, names: now }, null, 2)}\n`);
     process.stdout.write(`RECORDED: ${now.length} ${prefix}* directory(ies) under ${where}.\n`);
     return 0;

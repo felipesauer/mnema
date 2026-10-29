@@ -13,7 +13,7 @@ that battery is worth something exactly when red means *the guard caught*.
 ## The two pieces
 
 **`ledger.mjs`** is a vitest reporter. It rides `pnpm test` and `pnpm test:coverage`, and writes
-`why-it-went-red.json` (gitignored) holding, per red and per case slower than 500 ms: the
+`node_modules/.cache/mnema-workspace/why-it-went-red.json` (under `node_modules`, so not versioned) holding, per red and per case slower than 500 ms: the
 duration, the ceiling the case actually ran under, and what the machine was doing in that case's
 own window. It classifies nothing.
 
