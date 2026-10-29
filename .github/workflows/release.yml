@@ -33,11 +33,13 @@ name: Release
 #
 # THE EXTENSION. After the release, the VS Code extension is packed once without a secret, checked, installed
 # into a real VS Code, attached to the release and published, the same file, to the Visual Studio Marketplace
-# and to Open VSX by a job that a person approves in the `extension-stores` environment. That job is the only
-# place in the repository that holds a store token (the two secrets of that environment),
+# and to Open VSX by two jobs that a person approves in the `extension-stores` environment: the Marketplace's
+# by trusted publishing, with the OIDC token and no secret, and Open VSX's with the one secret of that environment, and
+# no OIDC token. They are the only places in the repository that publish it or hold a store token,
 # and `no-workflow-publishes-the-extension.test.ts` fails if a token or a publish command is anywhere else.
 # A push whose version npm already serves does nothing, the extension included: to put the extension of such
-# a version in the stores, run the jobs of the run that published it again. Nothing here has run yet.
+# a version in the stores, run the jobs of the run that published it again. The extension went to the stores
+# by this workflow from 0.1.3, with a Marketplace token; trusted publishing runs first at the next release.
 
 on:
   push:
