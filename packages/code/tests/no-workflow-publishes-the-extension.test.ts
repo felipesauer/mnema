@@ -1,12 +1,15 @@
 // @reads-the-tree
 /**
- * ONE JOB PUBLISHES THE EXTENSION, BEHIND A PERSON'S APPROVAL, AND NOTHING ELSE DOES.
+ * TWO JOBS PUBLISH THE EXTENSION, BEHIND A PERSON'S APPROVAL, AND NOTHING ELSE DOES.
  *
- * The VS Code extension is published to the Visual Studio Marketplace and to Open VSX by one job of
- * `.github/workflows/release.yml`, `publish-vsix`, which asks for the `extension-stores` environment (a person
- * approves it there, and the two store tokens are that environment's secrets). Everywhere else the command that
- * sends the file to a store and the tokens that let it are refused: another workflow, another job of that
- * workflow, a job of it that does not ask for the environment, the header of the file, a package script.
+ * The VS Code extension is published by two jobs of `.github/workflows/release.yml`, both asking for the
+ * `extension-stores` environment (a person approves them there): `publish-marketplace` sends it to the Visual
+ * Studio Marketplace by trusted publishing (`vsce publish --oidc`, with `id-token: write` and no secret), and
+ * `publish-open-vsx` sends it to Open VSX with the one secret of the environment, `OVSX_PAT`, and no `id-token`,
+ * so no code of a third party runs in a job that can ask for the Marketplace's token. Everywhere else the command
+ * that sends the file to a store and the tokens that let it are refused: another workflow, another job of that
+ * workflow, a job of it that does not ask for the environment, the header of the file, a package script. The
+ * Marketplace token (`VSCE_PAT`) is named nowhere, and `--oidc` is in the one job.
  * This reads every workflow git carries (not `release.yml` by name only: the next one will not announce itself)
  * and every package manifest. The text is read comments included, so a token named in a comment is a token
  * named; a comment sits with the job that follows it.
@@ -14,7 +17,7 @@
  * A guard that finds nothing is only worth something if it can find, so the cases below hand the scan the
  * defect it exists for: the publish in another job, the publish job without its environment, the same text
  * in another workflow, a token in a job that is not the one, the environment asked for by another job, the
- * versioned form of the command (`vsce@4.0.0 publish`), a secret reached by a computed name or all at once,
+ * versioned form of the command (`vsce@4.1.0 publish`), a secret reached by a computed name or all at once,
  * the Entra credential, a trigger that runs the workflow with the base repository's secrets on a fork's code.
  * Each one must be refused.
  */
@@ -41,13 +44,14 @@ const WORKFLOWS = TRACKED.filter(
 const MANIFESTS = TRACKED.filter((where) => /(^|\/)package\.json$/.test(where));
 
 /**
- * A command that publishes (bare, versioned as `vsce@4.0.0 publish`, or by the path of the installed binary), the
+ * A command that publishes (bare, versioned as `vsce@4.1.0 publish`, or by the path of the installed binary), the
  * secret one needs, or the environment that holds them. Anywhere in the text, comments included.
  */
 const PUBLISHES = new RegExp(
   [
     String.raw`\b(?:vsce|ovsx)["']?(?:@[\w.-]+)?["']?\s+(?:publish|login)\b`,
     String.raw`\bVSCE_PAT\b`,
+    String.raw`--oidc\b`,
     String.raw`\bOVSX_PAT\b`,
     String.raw`^\s*environment:\s*["']?extension-stores\b`,
     String.raw`\bname:\s*["']?extension-stores\b`,
@@ -63,12 +67,14 @@ const PUBLISHES = new RegExp(
 const NEVER =
   /\bsecrets\s*(?:\[|\}\})|\btoJSON\(\s*secrets\b|\bsecrets:\s*inherit\b|--azure-credential\b|\bpull_request_target\b/;
 
-/** The one place that may: the workflow, the job and the environment a person approves it in. */
+/** The one place that may: the workflow, the two jobs and the environment a person approves them in. */
 const PLACE = {
   workflow: '.github/workflows/release.yml',
-  job: 'publish-vsix',
+  marketplace: 'publish-marketplace',
+  openVsx: 'publish-open-vsx',
   environment: 'extension-stores',
 };
+const JOBS: readonly string[] = [PLACE.marketplace, PLACE.openVsx];
 
 /** What precedes the jobs, and each job with the comment lines that sit right above its key. */
 function jobsOf(text: string): { header: string; jobs: Map<string, string> } {
@@ -126,10 +132,19 @@ function offences(where: string, text: string): string[] {
   if (PUBLISHES.test(header)) found.push(`${where}: its header names a publish or a token`);
   for (const [name, block] of jobs) {
     if (!PUBLISHES.test(block)) continue;
-    if (name !== PLACE.job) {
+    if (!JOBS.includes(name)) {
       found.push(`${where}: job ${name} publishes the extension or holds a token for it`);
-    } else if (!new RegExp(`^ {4}environment: ${PLACE.environment}$`, 'm').test(block)) {
+      continue;
+    }
+    if (!new RegExp(`^ {4}environment: ${PLACE.environment}$`, 'm').test(block)) {
       found.push(`${where}: job ${name} does not ask for the ${PLACE.environment} environment`);
+    }
+    const code = block.replace(/^\s*#.*$/gm, '');
+    if (name === PLACE.openVsx && /--oidc\b|^ {6}id-token:/m.test(code)) {
+      found.push(`${where}: job ${name} can ask for the OIDC token, and it runs ovsx`);
+    }
+    if (name === PLACE.marketplace && /\bsecrets\.|_PAT\b/.test(code)) {
+      found.push(`${where}: job ${name} holds a secret, and it publishes by trusted publishing`);
     }
   }
   return found;
@@ -137,7 +152,7 @@ function offences(where: string, text: string): string[] {
 
 const RELEASE = readFileSync(join(ROOT, PLACE.workflow), 'utf-8');
 
-describe('one job publishes the extension, behind an approval', () => {
+describe('two jobs publish the extension, behind an approval', () => {
   it('has no publish command or marketplace token in any workflow or package script but the one job', () => {
     const found = WORKFLOWS.flatMap((where) =>
       offences(where, readFileSync(join(ROOT, where), 'utf-8')),
@@ -149,40 +164,69 @@ describe('one job publishes the extension, behind an approval', () => {
     expect(scripts, 'a package manifest that publishes the extension').toEqual([]);
   });
 
-  it('is there: the job exists, asks for the environment, needs the packing job and publishes that file', () => {
+  it('is there: both jobs exist, ask for the environment, need the packing job and publish that file', () => {
     expect(WORKFLOWS).toContain(PLACE.workflow);
-    const block = jobsOf(RELEASE).jobs.get(PLACE.job) ?? '';
-    expect(block).toMatch(/^ {4}environment: extension-stores$/m);
-    expect(block).toMatch(/^ {4}needs: \[plan, vsix\]$/m);
-    expect(block).toMatch(
-      /release-tools\/node_modules\/\.bin\/vsce" publish --skip-duplicate --packagePath /,
+    const jobs = jobsOf(RELEASE).jobs;
+    const market = jobs.get(PLACE.marketplace) ?? '';
+    const open = jobs.get(PLACE.openVsx) ?? '';
+    for (const block of [market, open]) {
+      expect(block).toMatch(/^ {4}environment: extension-stores$/m);
+      expect(block).toMatch(/^ {4}needs: \[plan, vsix\]$/m);
+      // the token is in the environment of the step and nowhere else: not on a command line
+      expect(block).not.toMatch(/\s-p\s|--pat\b/);
+      // the file is checked against the hash before a store is reached
+      expect(block.indexOf('needs.vsix.outputs.sha256')).toBeGreaterThan(-1);
+    }
+    // the Marketplace: trusted publishing, the token of the workflow and no secret at all
+    expect(market).toMatch(
+      /release-tools\/node_modules\/\.bin\/vsce" publish --oidc --skip-duplicate --packagePath /,
     );
-    expect(block).toMatch(/release-tools\/node_modules\/\.bin\/ovsx" publish --skip-duplicate /);
-    // the token is in the environment of the step and nowhere else: not on a command line
-    expect(block).not.toMatch(/\s-p\s|--pat\b/);
-    expect(block).toMatch(/VSCE_PAT: \$\{\{ secrets\.VSCE_PAT \}\}/);
-    expect(block).toMatch(/OVSX_PAT: \$\{\{ secrets\.OVSX_PAT \}\}/);
-    // the file is checked against the hash before either store is reached
-    expect(block.indexOf('needs.vsix.outputs.sha256')).toBeLessThan(block.indexOf('VSCE_PAT: '));
+    expect(market).toMatch(/^ {6}id-token: write$/m);
+    expect(market).toMatch(/^ {6}contents: read$/m);
+    expect(market.replace(/^\s*#.*$/gm, '')).not.toMatch(/\bsecrets\.|VSCE_PAT|ovsx/);
+    // Open VSX: its one secret, and no way to ask for the OIDC token
+    expect(open).toMatch(/release-tools\/node_modules\/\.bin\/ovsx" publish --skip-duplicate /);
+    expect(open).toMatch(/OVSX_PAT: \$\{\{ secrets\.OVSX_PAT \}\}/);
+    expect(open.replace(/^\s*#.*$/gm, '')).not.toMatch(/id-token|--oidc|\bvsce\b/);
+    expect(open.indexOf('needs.vsix.outputs.sha256')).toBeLessThan(open.indexOf('OVSX_PAT: '));
   });
 
-  it('installs the two command lines from the lockfile with no script and no secret, and resolves nothing after', () => {
-    const block = jobsOf(RELEASE).jobs.get(PLACE.job) ?? '';
-    const install = block.indexOf('npm ci --ignore-scripts');
-    expect(install, 'the install step').toBeGreaterThan(-1);
-    expect(installOffences(block)).toEqual([]);
-    expect(block.slice(install)).toMatch(
-      /^ {8}run: npm ci --ignore-scripts .*--prefix \.github\/release-tools$/m,
+  it('asks for the OIDC token in no other job of the release workflow, and names --oidc nowhere else', () => {
+    const asking = [...jobsOf(RELEASE).jobs]
+      .filter(([, block]) => /^ {6}id-token:/m.test(block))
+      .map(([name]) => name);
+    expect(asking).toEqual(['publish', PLACE.marketplace]);
+    const oidc = TRACKED.filter(
+      (where) =>
+        /^\.github\/(?:workflows|release-tools)\//.test(where) &&
+        /--oidc\b/.test(readFileSync(join(ROOT, where), 'utf-8')),
     );
-    // every secret comes after the install, and no step resolves a package from the registry
-    expect(install).toBeLessThan(block.indexOf('${{ secrets.'));
-    expect(block).not.toMatch(/\bnpx\b|\bnpm (?:install|i|exec|x)\b|\bpnpm (?:dlx|add|install)\b/);
+    expect(oidc).toEqual([PLACE.workflow]);
+  });
+
+  it('installs the command lines from the lockfile with no script and no secret, and resolves nothing after', () => {
+    for (const name of JOBS) {
+      const block = jobsOf(RELEASE).jobs.get(name) ?? '';
+      const install = block.indexOf('npm ci --ignore-scripts');
+      expect(install, `${name}: the install step`).toBeGreaterThan(-1);
+      expect(installOffences(block), name).toEqual([]);
+      expect(block).toMatch(
+        /^ {8}run: npm ci --ignore-scripts .*--prefix \.github\/release-tools$/m,
+      );
+      // every secret comes after the install, and no step resolves a package from the registry
+      if (block.includes('${{ secrets.')) {
+        expect(install).toBeLessThan(block.indexOf('${{ secrets.'));
+      }
+      expect(block).not.toMatch(
+        /\bnpx\b|\bnpm (?:install|i|exec|x)\b|\bpnpm (?:dlx|add|install)\b/,
+      );
+    }
     const tools = JSON.parse(
       readFileSync(join(ROOT, '.github/release-tools/package.json'), 'utf-8'),
     ) as {
       dependencies: Record<string, string>;
     };
-    expect(tools.dependencies).toEqual({ '@vscode/vsce': '4.0.0', ovsx: '1.3.0' });
+    expect(tools.dependencies).toEqual({ '@vscode/vsce': '4.1.0', ovsx: '1.3.0' });
     const lock = JSON.parse(
       readFileSync(join(ROOT, '.github/release-tools/package-lock.json'), 'utf-8'),
     ) as {
@@ -198,7 +242,7 @@ describe('one job publishes the extension, behind an approval', () => {
   });
 
   it('refuses an install that turns the scripts back on, by a later flag or by another form', () => {
-    const block = jobsOf(RELEASE).jobs.get(PLACE.job) ?? '';
+    const block = jobsOf(RELEASE).jobs.get(PLACE.marketplace) ?? '';
     expect(installOffences(block)).toEqual([]);
     for (const tail of [
       ' --ignore-scripts=false',
@@ -227,7 +271,7 @@ describe('one job publishes the extension, behind an approval', () => {
   });
 
   it('refuses the publish in a job that is not the one', () => {
-    const moved = RELEASE.replace(/^ {2}publish-vsix:$/m, '  publish-the-extension:');
+    const moved = RELEASE.replace(/^ {2}publish-marketplace:$/m, '  publish-the-extension:');
     expect(offences(PLACE.workflow, moved)).toEqual([
       `${PLACE.workflow}: job publish-the-extension publishes the extension or holds a token for it`,
     ]);
@@ -237,10 +281,32 @@ describe('one job publishes the extension, behind an approval', () => {
     ]);
   });
 
-  it('refuses the publish job without its environment', () => {
+  it('refuses a publish job without its environment', () => {
     const bare = RELEASE.replace(/^ {4}environment: extension-stores$/m, '');
     expect(offences(PLACE.workflow, bare)).toEqual([
-      `${PLACE.workflow}: job ${PLACE.job} does not ask for the ${PLACE.environment} environment`,
+      `${PLACE.workflow}: job ${PLACE.marketplace} does not ask for the ${PLACE.environment} environment`,
+    ]);
+  });
+
+  it('refuses the Marketplace token back, the OIDC token in the Open VSX job, and the two jobs joined', () => {
+    const pat = RELEASE.replace(
+      /^( {10}VERSION: \$\{\{ needs\.plan\.outputs\.version \}\}\n)(?= {8}run: \|\n {10}set -euo pipefail\n {10}served=)/m,
+      '$1          VSCE_PAT: ${{ secrets.VSCE_PAT }}\n',
+    );
+    expect(pat).not.toBe(RELEASE);
+    expect(offences(PLACE.workflow, pat)).not.toEqual([]);
+    const idToken = RELEASE.replace(
+      /(publish-open-vsx:\n(?:.*\n)*? {4}permissions:\n {6}contents: read\n)/,
+      '$1      id-token: write\n',
+    );
+    expect(idToken).not.toBe(RELEASE);
+    expect(offences(PLACE.workflow, idToken)).toEqual([
+      `${PLACE.workflow}: job ${PLACE.openVsx} can ask for the OIDC token, and it runs ovsx`,
+    ]);
+    const joined = RELEASE.replace(/^ {2}publish-open-vsx:$/m, '  publish-both:');
+    expect(joined).not.toBe(RELEASE);
+    expect(offences(PLACE.workflow, joined)).toEqual([
+      `${PLACE.workflow}: job publish-both publishes the extension or holds a token for it`,
     ]);
   });
 
@@ -273,7 +339,7 @@ describe('one job publishes the extension, behind an approval', () => {
   });
 
   it('refuses the versioned form of the command, wherever it is', () => {
-    const versioned = '      - run: npx --yes @vscode/vsce@4.0.0 publish --packagePath x.vsix\n';
+    const versioned = '      - run: npx --yes @vscode/vsce@4.1.0 publish --packagePath x.vsix\n';
     const other = `jobs:\n  another:\n    runs-on: ubuntu-24.04\n    steps:\n${versioned}`;
     expect(offences('.github/workflows/ci.yml', other)).toEqual([
       '.github/workflows/ci.yml: publishes the extension or holds a token for it',
@@ -294,8 +360,8 @@ describe('one job publishes the extension, behind an approval', () => {
     for (const [step, job] of [
       [computed, 'vsix'],
       [dumped, 'vsix'],
-      [computed, PLACE.job],
-      [dumped, PLACE.job],
+      [computed, PLACE.marketplace],
+      [dumped, PLACE.openVsx],
     ] as const) {
       const at = new RegExp(`^ {2}${job}:\\n(?:.*\\n)*? {4}steps:\\n`, 'm');
       const mutated = RELEASE.replace(at, (head) => `${head}${step}`);
@@ -319,7 +385,7 @@ describe('one job publishes the extension, behind an approval', () => {
     expect(azure).not.toBe(RELEASE);
     expect(offences(PLACE.workflow, azure)).toHaveLength(1);
     const inJob = RELEASE.replace(
-      /release-tools\/node_modules\/\.bin\/vsce" publish /,
+      /release-tools\/node_modules\/\.bin\/vsce" publish --oidc /,
       '$&--azure-credential ',
     );
     expect(inJob).not.toBe(RELEASE);

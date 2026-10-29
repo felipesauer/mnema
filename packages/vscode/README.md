@@ -222,9 +222,9 @@ in front, after asking `mnema show <id> --json`, and where Why Is This File Like
 open a document with what `mnema why` printed). `pnpm --filter @mnema/vscode install-check` does the same
 by hand, under `xvfb-run -a` on a machine without a screen. What no CI reads (a hover, a context menu,
 the light and high-contrast themes, a screen reader) has [a script for a person](../../plugin/captures/vscode-extension-script.md). CI keeps the file as an
-artifact of the run (`mnema-vscode-extension`). The only thing that sends the file anywhere is one job of
-the release workflow, which a person approves in a protected environment and which publishes the very file
-it packed and checked, with the store command lines installed from a lockfile and no install script run, and a store that already has the version is skipped; a test fails if a
+artifact of the run (`mnema-vscode-extension`). The only things that send the file anywhere are two jobs of
+the release workflow, which a person approves in a protected environment and which publish the very file
+it packed and checked (the Marketplace by trusted publishing, with no token; Open VSX with its own token, in a job that cannot ask for the OIDC one), with the store command lines installed from a lockfile and no install script run, and a store that already has the version is skipped; a test fails if a
 publish command or a store token appears in any other job or file. The file has no token in it.
 
 ## How it is built
