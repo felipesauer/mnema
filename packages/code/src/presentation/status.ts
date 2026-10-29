@@ -290,7 +290,14 @@ function sessionLines(
  * actually says.
  */
 function workLines(render: Render, status: Bootstrap): string[] {
-  if (status.work.length === 0) return ['No live tasks.'];
+  const swept = status.workSweptLeftOut ?? 0;
+  const older =
+    swept === 0
+      ? []
+      : [
+          `${swept} older task(s) blocked when a session stopped with no end are not listed; \`mnema search\` finds them.`,
+        ];
+  if (status.work.length === 0) return ['No live tasks.', ...older];
   return [
     `${served(status.work.length, status.workTotal)} live task(s):`,
     ...status.work.map((item) =>
@@ -298,6 +305,7 @@ function workLines(render: Render, status: Bootstrap): string[] {
         itemLine([asId(item.id), oneLine(item.title), asState(item.state), ...standingOf(item)]),
       ),
     ),
+    ...older,
   ];
 }
 

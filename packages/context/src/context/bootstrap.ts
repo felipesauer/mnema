@@ -256,6 +256,7 @@ import {
 import { type TaskStanding, taskStanding } from './task-story.js';
 import {
   liveWork,
+  sweptWorkLeftOut,
   type TaskAwaitingJudgement,
   tasksAwaitingJudgement,
   type WorkItem,
@@ -320,6 +321,12 @@ export interface Bootstrap {
    * guess which one it was about.
    */
   readonly workTotal: number;
+  /**
+   * How many tasks blocked by the sweep of a session nobody saw end, last seen more than two weeks
+   * before `asOf`, are left out of {@link Bootstrap.work} and its total. Absent when there are none.
+   * Nothing is written for them and each stays whole to `read_record`, `show` and `search`.
+   */
+  readonly workSweptLeftOut?: number;
   /**
    * The adopted patterns, by NAME and id, never the body (see the module doc).
    * Ordered by name, so the list is stable whatever order the trees are read in.
@@ -411,7 +418,8 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
   // order belongs to the list that is served and cut, and the same comparator settles
   // both, so "most recently moved first, ties by id DESC" is one rule in one function:
   // the core's `newestFirst`, which every recency listing in the product now asks.
-  const live = liveWork(caches).sort(byUpdatedDesc);
+  const live = liveWork(caches, scope.asOf).sort(byUpdatedDesc);
+  const sweptLeftOut = sweptWorkLeftOut(caches, scope.asOf);
   // Named, never spelled out: the body is dropped here and served by its own
   // read, so the opening context stays one line per pattern.
   const skills = adoptedSkills(caches).map(({ id, name }) => ({ id, name }));
@@ -446,6 +454,7 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
     resume: resume(caches, scope),
     work: work.served.map(standing),
     workTotal: work.total,
+    ...(sweptLeftOut > 0 ? { workSweptLeftOut: sweptLeftOut } : {}),
     skills,
     decisions: decisions.served,
     decisionsTotal: decisions.total,

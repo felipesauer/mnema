@@ -31,7 +31,7 @@
 import { existsSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { channelIsOn } from '@mnema/context';
-import { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from '@mnema/core';
+import { type DiscoveryEnv, type ResolvedTrees, resolveTrees, sweptReason } from '@mnema/core';
 import { AGENT_MIRROR_CHANNEL, SESSION_JOURNAL_CHANNEL } from '../record-framing.js';
 import {
   countASkip,
@@ -224,20 +224,6 @@ function move(
 function closingNote(handoffs: number, skipped: number): string {
   return (
     `${handoffs} ${handoffs === 1 ? 'handoff' : 'handoffs'} recorded in this session.` +
-    (skipped === 0
-      ? ''
-      : ` ${skipped} ${skipped === 1 ? 'dispatch was' : 'dispatches were'} not mirrored.`)
-  );
-}
-
-/**
- * The reason a swept session's task is blocked with: what is known and no more. The session stopped
- * with no `SessionEnd`, so nobody saw how it ended: this says so, when it was last seen, and the count.
- */
-function sweptReason(handoffs: number, skipped: number, lastSeen: string): string {
-  return (
-    `The session stopped with no end, so how it ended is unknown. It was last seen at ${lastSeen}; ` +
-    `${handoffs} ${handoffs === 1 ? 'handoff was' : 'handoffs were'} recorded in it.` +
     (skipped === 0
       ? ''
       : ` ${skipped} ${skipped === 1 ? 'dispatch was' : 'dispatches were'} not mirrored.`)

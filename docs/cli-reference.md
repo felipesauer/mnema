@@ -2160,7 +2160,16 @@ not the first, and a task that is finished or cancelled is on neither.
 Three of the four lists are cut to the freshest items, and
 `workTotal`/`decisionsTotal`/`awaitingJudgementTotal` say how many there were, so a
 cut never reads as "this is everything". The adopted patterns are the exception:
-every one is listed, so that list carries no total.
+every one is listed, so that list carries no total. One more cut is by age and not by
+count: a task blocked by the sweep of a session that stopped with no end (see [What a session
+handed to other agents](#what-a-session-handed-to-other-agents)) and last seen more than 14 days before the read is left out of the
+work list and of `workTotal`, and `workSweptLeftOut` (absent when none) counts them,
+which `mnema status` prints as one line. Nothing is written for them, they stay in the
+record, and `show`, `read_record` and `search` serve them whole. A task a person blocked
+is never cut this way, and neither is one whose block the sweep did not write. The mark
+is the sentence of the reason, not who wrote it: a person who blocks a task by copying that
+sentence sees it leave the opening after 14 days, still counted in the line and still found
+by `search` and `show`.
 
 The `skills` tool is what makes a recorded pattern usable: `bootstrap` lists the
 patterns by name, and the tool hands over the pattern itself: the adopted ones as a

@@ -104,6 +104,9 @@ export function approvedByAnotherPerson(reviews: readonly Review[], author: stri
   return [...standing.values()].some((state) => state === 'APPROVED');
 }
 
-/** The files in the pull request that an accepted `asks-for-a-person` rule addresses. */
-export const askingForAPerson = (files: readonly GovernedFile[]): GovernedFile[] =>
-  files.filter((file) => file.asks.length > 0);
+/**
+ * The files in the pull request that an accepted `asks-for-a-person` or `refuses-a-write` rule
+ * addresses: both wait for a person other than the author before the pull request passes.
+ */
+export const needingAPerson = (files: readonly GovernedFile[]): GovernedFile[] =>
+  files.filter((file) => file.asks.length > 0 || file.refuses.length > 0);

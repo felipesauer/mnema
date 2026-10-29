@@ -29,10 +29,14 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
   a record cut back to an earlier state that is honest in every byte (the newest events taken
   with the checkpoint that covered them), which a reading of the record alone cannot see; it also
   fails a tail removed after a `tail.pruned`, which is the one change a reviewer has to look at.
-- **Optional, off by default: approval for rules that ask for a person.** With
+- **Optional, off by default: approval for rules that ask for a person or refuse a write.** With
   `require-approval-for-asks: "true"` the Action also fails when a changed file is addressed by an
-  accepted `asks-for-a-person` rule and no reviewer other than the author stands approved on the
-  pull request.
+  accepted `asks-for-a-person` or `refuses-a-write` rule and no reviewer other than the author
+  stands approved on the pull request. The two rules are read the same way (the base's and the
+  head's, a rename under both paths, a removal), and the failure says which of the two it is: the
+  comment lists each file with the rule that asks or refuses, and the check names the one that
+  failed. A write the host refuses cannot happen at the agent; the Action asks the same of the
+  pull request that edits the file anyway.
 - **Optional, off by default: the checks the rules carry.** With `checker-key` set from a
   repository secret, the Action runs `mnema check run` with that key once everything above is read:
   each rule in force that carries a check gets one `check.passed` or `check.failed`, signed by the
@@ -126,7 +130,7 @@ date a result before its own retirement, so the record no longer vouches for the
 | Input | Default | What it does |
 | --- | --- | --- |
 | `github-token` | `${{ github.token }}` | reads the pull request's files and reviews, and writes the comment |
-| `require-approval-for-asks` | `false` | `true` fails the check when an accepted `asks-for-a-person` rule addresses a changed file and only the author has approved |
+| `require-approval-for-asks` | `false` | `true` fails the check when an accepted `asks-for-a-person` or `refuses-a-write` rule addresses a changed file and only the author has approved |
 | `checker-key` | empty | the private half (PEM) of a key the record enrolls as a checker, from a secret; runs `mnema check run` with it and fails when a check did not pass. Empty runs no check |
 
 ## An agent in CI
@@ -271,7 +275,7 @@ its own process;
 - The approval check counts a review the pull request holds as approved, from a login other than
   the author's, whose latest deciding review is an approval. It does not tie the approval to the
   commit it was given on, it does not read teams or code owners, and it cannot tell a person from a
-  bot account. Nothing here makes a rule that asks for a person bind anybody else: that remains
+  bot account. Nothing here makes a rule that asks for a person or refuses a write bind anybody else: that remains
   the host's `before-a-write` and the repository's own branch protection.
 - It asks `mnema rules` about at most 200 changed files, all in one process, and the comment says
   how many it left out. Files under `.mnema/` are never asked about.

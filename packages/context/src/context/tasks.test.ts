@@ -20,10 +20,22 @@
 
 import { readFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { TASK_STATES, type TaskState, TRANSITIONS, taskDisposition } from '@mnema/core';
+import {
+  sweptReason,
+  TASK_STATES,
+  type TaskState,
+  TRANSITIONS,
+  taskDisposition,
+} from '@mnema/core';
 import { afterEach, describe, expect, it } from 'vitest';
-import { type Bench, birthTask, makeBench, moveTask } from '../../tests/support/chain.js';
-import { liveWork, tasksAwaitingJudgement } from './tasks.js';
+import {
+  type Bench,
+  birthTask,
+  makeBench,
+  moveTask,
+  moveTaskAt,
+} from '../../tests/support/chain.js';
+import { liveWork, SWEPT_DAYS_SHOWN, sweptWorkLeftOut, tasksAwaitingJudgement } from './tasks.js';
 
 let bench: Bench;
 afterEach(() => {
@@ -301,3 +313,86 @@ function codeOf(relative: string): string {
 function withoutComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
 }
+
+describe('liveWork: the tasks of sessions nobody saw end, once they are old', () => {
+  const NOW = '2026-10-28T12:00:00.000Z';
+  const daysBefore = (days: number): string =>
+    new Date(Date.parse(NOW) - days * 86_400_000).toISOString();
+
+  /** A task in progress that a sweep blocked, whose session was last seen `lastSeen`. */
+  function swept(id: string, lastSeen: string, blockedAt = NOW): string {
+    birthTask(bench, id, `swept ${id}`);
+    moveTask(bench, id, 'DRAFT', 'READY', 'submit');
+    moveTask(bench, id, 'READY', 'IN_PROGRESS', 'start');
+    moveTaskAt(bench, id, blockedAt, 'IN_PROGRESS', 'BLOCKED', 'block', {
+      reason: sweptReason(2, 0, lastSeen),
+    });
+    return id;
+  }
+
+  const served = (): string[] => {
+    const cache = bench.cache();
+    try {
+      return liveWork([cache], NOW)
+        .map((item) => item.id)
+        .sort();
+    } finally {
+      cache.close();
+    }
+  };
+  const leftOut = (): number => {
+    const cache = bench.cache();
+    try {
+      return sweptWorkLeftOut([cache], NOW);
+    } finally {
+      cache.close();
+    }
+  };
+
+  it('serves a swept task last seen within the days shown and counts the older ones', () => {
+    bench = makeBench();
+    expect(SWEPT_DAYS_SHOWN).toBe(14);
+    swept('task-recent', daysBefore(3));
+    swept('task-edge', daysBefore(14));
+    swept('task-old', daysBefore(15));
+    swept('task-ancient', daysBefore(90));
+    expect(served()).toEqual(['task-edge', 'task-recent']);
+    expect(leftOut()).toBe(2);
+  });
+
+  it('measures from when the session was last seen, not from when the sweep ran', () => {
+    // The sweep runs when the next session opens, which can be a month after the one it blocks.
+    bench = makeBench();
+    swept('task-late-sweep', daysBefore(40), NOW);
+    expect(served()).toEqual([]);
+    expect(leftOut()).toBe(1);
+  });
+
+  it('leaves alone a task a person blocked, however old, and one no longer blocked', () => {
+    bench = makeBench();
+    birthTask(bench, 'task-human', 'blocked by a person');
+    moveTask(bench, 'task-human', 'DRAFT', 'READY', 'submit');
+    moveTask(bench, 'task-human', 'READY', 'IN_PROGRESS', 'start');
+    moveTaskAt(bench, 'task-human', daysBefore(60), 'IN_PROGRESS', 'BLOCKED', 'block', {
+      reason: 'waiting on the vendor',
+    });
+    swept('task-back', daysBefore(60));
+    moveTask(bench, 'task-back', 'BLOCKED', 'IN_PROGRESS', 'unblock');
+    swept('task-reblocked', daysBefore(60));
+    moveTask(bench, 'task-reblocked', 'BLOCKED', 'IN_PROGRESS', 'unblock');
+    moveTask(bench, 'task-reblocked', 'IN_PROGRESS', 'BLOCKED', 'block', { reason: 'no key yet' });
+    expect(served()).toEqual(['task-back', 'task-human', 'task-reblocked']);
+    expect(leftOut()).toBe(0);
+  });
+
+  it('filters nothing when asked with no clock', () => {
+    bench = makeBench();
+    swept('task-ancient', daysBefore(90));
+    const cache = bench.cache();
+    try {
+      expect(liveWork([cache]).map((item) => item.id)).toEqual(['task-ancient']);
+    } finally {
+      cache.close();
+    }
+  });
+});

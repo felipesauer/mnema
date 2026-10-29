@@ -351,3 +351,4 @@ export {
   type Transition,
   taskDisposition,
 } from './workflow/index.js';
+export { lastSeenOfSweptTask, sweptReason } from './workflow/swept-session.js';

@@ -1,5 +1,5 @@
 import { rmSync } from 'node:fs';
-import { SEARCH_DEFAULT_LIMIT } from '@mnema/core';
+import { SEARCH_DEFAULT_LIMIT, sweptReason } from '@mnema/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   asking,
@@ -855,6 +855,32 @@ describe('bootstrap: the opening context, focused on the actor', () => {
         'work',
         'workTotal',
       ]);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('leaves out of the live work a swept task last seen long ago, and counts it', () => {
+    bench = makeBench();
+    const asOf = '2026-10-28T12:00:00.000Z';
+    const sweptAt = (id: string, lastSeen: string): void => {
+      birthTask(bench, id, `session ${id}`);
+      moveTask(bench, id, 'DRAFT', 'READY', 'submit');
+      moveTask(bench, id, 'READY', 'IN_PROGRESS', 'start');
+      moveTask(bench, id, 'IN_PROGRESS', 'BLOCKED', 'block', {
+        reason: sweptReason(1, 0, lastSeen),
+      });
+    };
+    sweptAt('task-fresh', '2026-10-20T08:00:00.000Z');
+    sweptAt('task-old', '2026-09-01T08:00:00.000Z');
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who, { asOf }));
+      expect(b.work.map((item) => item.id)).toEqual(['task-fresh']);
+      expect(b.workTotal).toBe(1);
+      expect(b.workSweptLeftOut).toBe(1);
+      const sooner = bootstrap([cache], asking(bench.who, { asOf: '2026-09-02T00:00:00.000Z' }));
+      expect(sooner.workSweptLeftOut).toBeUndefined();
     } finally {
       cache.close();
     }

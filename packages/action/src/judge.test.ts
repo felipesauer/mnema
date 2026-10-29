@@ -237,6 +237,69 @@ describe('judge', () => {
       expect((await judge(world, on)).failed).toBe(false);
     });
 
+    describe('a rule that refuses a write to the file', () => {
+      const refusing = { 'src/a.ts': { refuses: [rule('d2')] } };
+
+      it('fails until someone other than the author approves, and says which rule refuses', async () => {
+        const { world, seen } = worldWith({
+          files: ['src/a.ts'],
+          rules: refusing,
+          reviews: [{ user: 'bob', state: 'APPROVED' }],
+        });
+        const verdict = await judge(world, on);
+        expect(verdict.failed).toBe(true);
+        expect(verdict.reasons).toEqual([
+          'a rule refuses a write to a changed file and no one but the author has approved',
+        ]);
+        expect(seen.comments[0]?.body).toContain('a write is refused by rule d2');
+        expect(seen.comments[0]?.body).toContain('these files ask for a person or refuse a write');
+      });
+
+      it('passes when someone else has approved', async () => {
+        const { world } = worldWith({
+          files: ['src/a.ts'],
+          rules: refusing,
+          reviews: [{ user: 'ana', state: 'APPROVED' }],
+        });
+        expect((await judge(world, on)).failed).toBe(false);
+      });
+
+      it('fails when the pull request lifts the rule, a rename or a removal, as for a rule that asks', async () => {
+        const lifted = { 'src/a.ts': { refuses: [rule('d2', 'superseded')] } };
+        const edit = worldWith({ files: ['src/a.ts'], rules: lifted, baseRules: refusing });
+        expect((await judge(edit.world, on)).failed).toBe(true);
+        const moved = worldWith({
+          files: [{ path: 'src/b.ts', renamedFrom: 'src/a.ts' }],
+          rules: {},
+          baseRules: refusing,
+        });
+        expect((await judge(moved.world, on)).failed).toBe(true);
+        const gone = worldWith({ files: ['src/a.ts'], rules: {}, baseRules: refusing });
+        expect((await judge(gone.world, on)).failed).toBe(true);
+      });
+
+      it('does not count a rule that is not accepted, and does nothing when off', async () => {
+        const proposed = worldWith({
+          files: ['src/a.ts'],
+          rules: { 'src/a.ts': { refuses: [rule('d2', 'proposed')] } },
+        });
+        expect((await judge(proposed.world, on)).failed).toBe(false);
+        const off = worldWith({ files: ['src/a.ts'], rules: refusing });
+        expect((await judge(off.world, pr)).failed).toBe(false);
+      });
+
+      it('gives both reasons when one file asks and another refuses', async () => {
+        const { world } = worldWith({
+          files: ['src/a.ts', 'src/c.ts'],
+          rules: { ...asking, 'src/c.ts': { refuses: [rule('d2')] } },
+        });
+        expect((await judge(world, on)).reasons).toEqual([
+          'a rule asks for a person and no one but the author has approved',
+          'a rule refuses a write to a changed file and no one but the author has approved',
+        ]);
+      });
+    });
+
     it('does nothing about it when it is off', async () => {
       const { world } = worldWith({ files: ['src/a.ts'], rules: asking });
       expect((await judge(world, pr)).failed).toBe(false);

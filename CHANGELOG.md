@@ -242,6 +242,20 @@ with its own changelog.
 
 ### Fixed
 
+- **The Action fails a pull request that edits a file a rule in force refuses a write to, until a person other than the author
+  approves.** `require-approval-for-asks` failed the check only where an `asks-for-a-person` rule addressed a changed file: a file
+  an accepted `refuses-a-write` rule addressed showed in the comment ("a write is refused by ...") and the check passed. It now
+  fails the same way, on the same reading of the base and the head (a rename under both paths, a removal, a rule the pull request
+  supersedes), with its own reason in the log and the comment ("a rule refuses a write to a changed file and no one but the author
+  has approved"); a pull request that touches a file of each kind gets both reasons. The input keeps its name. Held by a case on a
+  real record, run against the edit, the rename, the move with an edit and the removal, and by the cases of the judge.
+- **The opening of a session lists a task blocked by the sweep of a session that stopped with no end only for 14 days.** `bootstrap`
+  (MCP and the plugin's opening) and `mnema status` left such a task on the live list for as long as it stayed blocked, so old ones
+  crowded the freshest work. A task blocked by the sweep (its reason is the sweep's own sentence, shared by the writer and the
+  reader) and last seen more than 14 days before the read is now left out of `work` and `workTotal`, and `workSweptLeftOut` counts
+  them; `mnema status` prints one line saying so. Nothing new is written, each stays whole to `read_record`, `show` and `search`, and
+  a task a person blocked, or one whose block was lifted, is never cut. The age is counted from when the session was last seen, not
+  from when the sweep ran.
 - **The pages say who accepts a decision, and what was measured of each host's rules file.** The README and the two skills of
   the plugin said a person accepts a decision; with the switch `agent-accepts` on, which is the default, an agent may too, and
   its acceptance is recorded as its own. And the host tables (the README, `docs/install.md`, `docs/evidence.md`) called the
