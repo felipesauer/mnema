@@ -257,6 +257,41 @@ describe.each(CASES)('when %s', (_name, acceptAt, retireAt, retire) => {
   });
 });
 
+describe.each(CASES)('the way out, when %s', (_name, acceptAt, retireAt, retire) => {
+  const RATIONALE = 'one file, no server';
+
+  it('recording the same text by the CLI makes a new decision, in either order', async () => {
+    const id = await crossed('governs', acceptAt, retireAt, retire);
+    const told = await did('decision', 'record', TITLE, RATIONALE);
+    expect(told).not.toMatch(/already recorded|Nothing was written/);
+    const fresh = told.match(/\(([0-9a-f-]{20,})\)/)?.[1];
+    expect(fresh).toBeDefined();
+    expect(fresh).not.toBe(id);
+  });
+
+  it('recording the same text by the MCP tool makes a new decision, in either order', async () => {
+    const id = await crossed('governs', acceptAt, retireAt, retire);
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
+    const client = new Client(
+      { name: 'claude-code', version: '1.0.0' },
+      { capabilities: { roots: {} } },
+    );
+    client.setRequestHandler(ListRootsRequestSchema, () => ({
+      roots: [{ uri: pathToFileURL(repo).href, name: repo }],
+    }));
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(clientSide), server.connect(serverSide)]);
+    const reply = await client.callTool({
+      name: 'record_decision',
+      arguments: { title: TITLE, rationale: RATIONALE },
+    });
+    const text = (reply.content as { text: string }[]).map((block) => block.text).join('\n');
+    expect(text).not.toMatch(/already recorded|Nothing was written/);
+    expect(text).not.toContain(id);
+    await client.close();
+  });
+});
+
 describe('a decision nobody crossed', () => {
   it('stays in force and the brief adds not one word about divergence', async () => {
     const told = await did('decision', 'record', TITLE, 'one file');
