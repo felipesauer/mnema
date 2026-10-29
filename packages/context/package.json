@@ -1,6 +1,6 @@
 {
   "name": "@mnema/context",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "The mnema context layer: read-only derivations that turn the proven record into the context that guides an agent. Depends on @mnema/core.",
   "keywords": [
     "ai-agents",

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.4
 
 - A side bar of its own. The two views, Awaiting Judgment and Stacks, left the Explorer for an
   mnema container in the activity bar, with the M as its icon and a badge with the number of
