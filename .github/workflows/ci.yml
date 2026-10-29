@@ -109,7 +109,7 @@ jobs:
         with:
           name: why-it-went-red-node${{ matrix.node }}
           path: |
-            why-it-went-red.json
+            node_modules/.cache/mnema-workspace/why-it-went-red.json
             why-it-went-red-verdict.json
           if-no-files-found: warn
 

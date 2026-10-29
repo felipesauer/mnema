@@ -582,8 +582,12 @@ describe('the instrument is wired to the thing that starts the suite', () => {
   });
 
   it('and what a run leaves behind is not committed', () => {
-    expect(readFileSync(join(ROOT, '.gitignore'), 'utf-8')).toContain('why-it-went-red.json');
-    const tracked = execFileSync('git', ['ls-files', 'why-it-went-red.json'], {
+    // It is written under node_modules/, which .gitignore already holds out; nothing lands at the root.
+    expect(readFileSync(join(ROOT, '.gitignore'), 'utf-8')).toMatch(/^node_modules\/$/m);
+    expect(readFileSync(join(ROOT, '.github/why-it-went-red/ledger.mjs'), 'utf-8')).toContain(
+      "'node_modules/.cache/mnema-workspace/why-it-went-red.json'",
+    );
+    const tracked = execFileSync('git', ['ls-files', 'node_modules/.cache/mnema-workspace'], {
       cwd: ROOT,
       encoding: 'utf-8',
     });

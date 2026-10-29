@@ -24,6 +24,7 @@
     "allowJs": true,
     "checkJs": true,
     "noEmit": true,
+    "tsBuildInfoFile": "./node_modules/.cache/mnema-workspace/tsconfig.rulers.tsbuildinfo",
     "rootDir": ".",
     "types": ["node"]
   },
