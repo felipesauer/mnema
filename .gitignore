@@ -15,8 +15,13 @@ the-link-cannot-come-back.json
 __pycache__/
 *.pyc
 
-# Local AI-assistant state (permissions, plans).
-.claude/
+# Local AI-assistant state (permissions, plans, agents, skills, worktrees). The one file under
+# .claude/ that is committed is the rules file `mnema instructions` writes for Claude Code, so
+# the directory is ignored by its contents and not as a whole; a guard fails any other file there.
+.claude/*
+!.claude/rules/
+.claude/rules/*
+!.claude/rules/mnema-instructions.md
 
 # A local workbench, never committed.
 .refactor/
