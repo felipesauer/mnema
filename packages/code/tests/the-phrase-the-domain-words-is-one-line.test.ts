@@ -1161,6 +1161,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the directory it was actually found in',
     },
+  '@mnema/chain chain/entry.ts «fork: two different entries hold seq {} and follow the same entry: the tail » broke.seq #1':
+    {
+      verdict: 'minted',
+      why: 'a whole number: the seq of an entry the catalog already read, which refuses one that is not',
+    },
   '@mnema/chain chain/entry.ts «seq gap: expected {}, found {}» broke.expected #1': {
     verdict: 'minted',
     why: 'a number the walk that found the break counted while reading the tail',
@@ -2303,8 +2308,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(340);
-    expect(FOUND[0]?.sites.length).toBe(142);
+    expect(SITES.length).toBe(341);
+    expect(FOUND[0]?.sites.length).toBe(143);
     expect(FOUND[1]?.sites.length).toBe(198);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2356,7 +2361,7 @@ describe('every value the domain puts in a sentence is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(233);
-    expect(count('minted')).toBe(82);
+    expect(count('minted')).toBe(83);
     expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
       233,

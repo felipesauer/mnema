@@ -229,6 +229,7 @@ jobs:
           packages/chain/src/chain/a-key-file-that-holds-no-key-is-refused.test.ts
           packages/chain/src/chain/a-reformat-is-named-only-where-the-signatures-prove-it.test.ts
           packages/chain/src/chain/a-refused-line-hides-nothing-else-in-its-tail.test.ts
+          packages/chain/src/chain/a-tail-is-not-forked.test.ts
           packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts
           packages/chain/src/chain/every-reader-refuses-bytes-that-are-not-utf8.test.ts
           packages/chain/src/chain/outside-vectors.test.ts

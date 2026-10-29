@@ -26,7 +26,9 @@
  *     already there is the same bytes, and the old copy goes. One with other bytes is left, and
  *     said.
  *   - `locks/` (the writers' locks, the projection a reader built, the heads a tail cited) is
- *     machinery and not record: it is discarded, and the next read rebuilds what it needs.
+ *     machinery and not record: it is discarded, and the next read rebuilds what it needs. The
+ *     one file of it that goes is the note of the last entry written to a tail that moved
+ *     (`<tailId>.head`), which goes with that tail.
  *
  * Nothing in a tail is rewritten: a tail's files are moved as they are, under the name they had.
  * A file is never written over: a name already taken is compared, not replaced.
@@ -148,6 +150,13 @@ export function movePrivateTree(left: LeftBehind, to: string): MovedTree {
       continue;
     }
     if (moveEntry(source, join(to, 'keys', file)) === 'kept') kept.push(source);
+  }
+  // The writer's note of the last entry it wrote to a tail goes with the tail it is about, so the
+  // worktree goes on writing that tail instead of opening a new one (ADR-123). Only for a tail
+  // that moved: a note left without its tail would name an end that is not there.
+  for (const tail of tails) {
+    const note = join(from, 'locks', `${tail}.head`);
+    if (existsSync(note)) moveEntry(note, join(to, 'locks', `${tail}.head`));
   }
   rmSync(join(from, 'locks'), { recursive: true, force: true });
   for (const entry of listed(from)) {
