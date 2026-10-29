@@ -153,6 +153,7 @@ describe('brief: everything that governs the work here', () => {
       skills: [{ id: 'sk-1', name: 'One slice per PR' }],
       collisions: [],
       divergent: [],
+      disputed: [],
       addressed: 0,
       asking: 0,
       refusing: 0,
@@ -347,6 +348,7 @@ describe('brief: everything that governs the work here', () => {
       'decisions',
       'decisionsAwaiting',
       // Rules moved apart, never tasks: `printedDivergences` keeps only what is printed.
+      'disputed',
       'divergent',
       'editPush',
       'refusesAWrite',
@@ -639,11 +641,10 @@ describe('brief: everything that governs the work here', () => {
 
   it('declares a printed decision two machines moved apart, and stays quiet about one it does not print', () => {
     // Each decision was born here and moved on a clone that had pulled it while `proposed`;
-    // the clone's tail holds only its own moves, as a clone's does. `dec-apart` was rejected
-    // on the clone before it was accepted here, so the merged order leaves it accepted, in
-    // force, printed, and in force only because of that order: the document owes its reader
-    // the other move. `dec-out` was rejected on both: moved apart too, and not printed, so it
-    // is the audit's answer and not this file's.
+    // the clone's tail holds only its own moves, as a clone's does. `dec-apart` was accepted on
+    // the clone and here: moved apart, in force, printed, and the document owes its reader the
+    // other move. `dec-out` was rejected on both: moved apart too, and not printed, so it is the
+    // audit's answer and not this file's.
     const here = bench();
     const clone = bench();
     accept(here, 'dec-apart', 'Use SQLite');
@@ -653,8 +654,8 @@ describe('brief: everything that governs the work here', () => {
       'dec-apart',
       '2026-01-01T00:00:00.500Z',
       'proposed',
-      'rejected',
-      'reject',
+      'accepted',
+      'accept',
     );
     moveDecisionAt(clone, 'dec-out', '2026-01-01T00:01:00.000Z', 'proposed', 'rejected', 'reject');
     mergeTailInto(here, clone);
@@ -667,6 +668,28 @@ describe('brief: everything that governs the work here', () => {
       entityId: 'dec-apart',
       from: 'proposed',
     });
+    expect(composed.disputed).toEqual([]);
+  });
+
+  it('leaves out of the rules a decision one machine accepted and another rejected, whichever came last, and names it with why', () => {
+    // `dec-won` is accepted here AFTER the clone rejected it, so the fold leaves it accepted;
+    // `dec-lost` is accepted here BEFORE the clone rejected it, so the fold leaves it rejected.
+    // Neither is in force: a clock decides nothing (ADR-121). Both are named, with the line.
+    const here = bench();
+    const clone = bench();
+    accept(here, 'dec-won', 'Use SQLite');
+    accept(here, 'dec-lost', 'Use Postgres');
+    moveDecisionAt(clone, 'dec-won', '2026-01-01T00:00:00.500Z', 'proposed', 'rejected', 'reject');
+    moveDecisionAt(clone, 'dec-lost', '2026-12-31T00:00:00.000Z', 'proposed', 'rejected', 'reject');
+    mergeTailInto(here, clone);
+
+    const composed = brief([tree(here, 'public')], CHANNELS);
+    expect(composed.decisions).toEqual([]);
+    expect(composed.disputed.map((one) => one.id)).toEqual(['dec-lost', 'dec-won']);
+    for (const one of composed.disputed) {
+      expect(one.divergence).toMatch(/^divergence between the (accept|rejection) by mnid:/);
+      expect(one.divergence).toContain('record it as a new decision, which a person accepts');
+    }
   });
 
   it('names the holder that is NOT in force, and stays quiet about a label it does not print', () => {
@@ -727,6 +750,7 @@ describe('brief: everything that governs the work here', () => {
       skills: [],
       collisions: [],
       divergent: [],
+      disputed: [],
       addressed: 0,
       asking: 0,
       refusing: 0,
@@ -741,6 +765,7 @@ describe('brief: everything that governs the work here', () => {
       skills: [],
       collisions: [],
       divergent: [],
+      disputed: [],
       addressed: 0,
       asking: 0,
       refusing: 0,
@@ -761,6 +786,7 @@ describe('brief: everything that governs the work here', () => {
       skills: [],
       collisions: [],
       divergent: [],
+      disputed: [],
       addressed: 0,
       asking: 0,
       refusing: 0,

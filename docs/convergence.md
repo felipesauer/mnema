@@ -96,9 +96,9 @@ mnema brief
 #> …
 ```
 
-The other readings leave it out the same way and say the same line: `governing_rules` and `mnema rules` list the
+The other readings leave it out the same way and say the same line: `governing_rules` and the `rules` reading list the
 decision at its address with a `divergence` field, the rules pushed before an edit name it beside the rules
-they do hand over, `bootstrap` leaves it out of the decisions in force, `mnema site` marks it as not in force, and the
+they do hand over, `bootstrap` leaves it out of the decisions in force, the `site` page marks it as not in force, and the
 Action does not judge a pull request by it. A rule that refuses a write, or asks for a person, does neither
 while it is in this state.
 

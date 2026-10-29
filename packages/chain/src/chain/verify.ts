@@ -1544,7 +1544,7 @@ function decisionDivergences(
     const bytes = JSON.stringify(event);
     if (read.has(bytes)) return;
     read.add(bytes);
-    const key = `${event.subject}\u0000${from}`;
+    const key = JSON.stringify([event.subject, from]);
     const seen = out.get(key);
     if (seen === undefined) {
       out.set(key, {
