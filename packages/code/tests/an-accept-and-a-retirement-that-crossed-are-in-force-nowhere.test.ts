@@ -31,6 +31,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession } from '../src/mcp/session.js';
 import { runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
@@ -207,6 +208,28 @@ describe.each(CASES)('when %s', (_name, acceptAt, retireAt, retire) => {
     expect(context).toContain(`Not in force: \`${id}\` (${TITLE}) addresses this path`);
     expect(context).toMatch(WHY);
     expect(context).not.toContain('governs this path');
+  });
+
+  it('a host that pushes at the hook is told, when only the disputed rule is addressed at the path', async () => {
+    const id = await crossed('governs', acceptAt, retireAt, retire);
+    const done = runBeforeAWrite(
+      { cwd: repo, env },
+      {
+        host: 'qwen',
+        payload: JSON.stringify({
+          session_id: 'crossed-session',
+          hook_event_name: 'PreToolUse',
+          tool_name: 'write_file',
+          tool_input: { file_path: join(repo, PATH, 'a.ts'), content: 'x' },
+        }),
+      },
+    );
+    const reply = JSON.parse(JSON.stringify(done.reply)) as {
+      hookSpecificOutput?: { additionalContext?: string };
+    };
+    const context = reply.hookSpecificOutput?.additionalContext ?? '';
+    expect(context).toContain(`Not in force: \`${id}\` (${TITLE}) addresses this path`);
+    expect(context).toMatch(WHY);
   });
 
   it('a rule that refuses a write does not refuse while it is out of force', async () => {
