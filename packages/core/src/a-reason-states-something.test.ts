@@ -1,4 +1,12 @@
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { agentEnrolled, catalogUpcasters, LATEST_VERSION, openChainForWriting } from '@mnema/chain';
@@ -229,6 +237,15 @@ describe('every kind says where its why is, and the door asks it there', () => {
         site: 'reason',
         prepare: () => {
           const machine = mkdtempSync(join(tmpdir(), 'mnema-reason-other-'));
+          // A clone of this record (its tails and public keys, never a private key): a machine
+          // begun on its own is another record, and nothing of a directory of two is read.
+          if (existsSync(join(root, 'tails'))) {
+            cpSync(join(root, 'tails'), join(machine, 'tails'), { recursive: true });
+          }
+          mkdirSync(join(machine, 'keys'), { recursive: true });
+          for (const key of readdirSync(join(root, 'keys'))) {
+            if (key.endsWith('.pub')) cpSync(join(root, 'keys', key), join(machine, 'keys', key));
+          }
           const other = openChainForWriting(machine, { keyRoot: machine });
           const did = createTask(
             { writer: other, layout: { root: machine }, upcasters },
@@ -236,9 +253,9 @@ describe('every kind says where its why is, and the door asks it there', () => {
           );
           if (!did.ok) throw new Error('the other machine wrote nothing to cut');
           other.checkpoint();
-          for (const tail of readdirSync(join(machine, 'tails'))) {
-            cpSync(join(machine, 'tails', tail), join(root, 'tails', tail), { recursive: true });
-          }
+          cpSync(join(machine, 'tails', other.tail), join(root, 'tails', other.tail), {
+            recursive: true,
+          });
           for (const key of readdirSync(join(machine, 'keys'))) {
             if (key.endsWith('.pub')) cpSync(join(machine, 'keys', key), join(root, 'keys', key));
           }
