@@ -142,6 +142,17 @@ describe('renderComment', () => {
     ).not.toContain('```');
   });
 
+  it('names each tail of another record the readings of the rules left out, and is worth a comment for it', () => {
+    const tail = `${'ab'.repeat(32)}-${'cd'.repeat(16)}`;
+    const left = { ...quiet, anotherRecord: [{ tail, record: 'f'.repeat(64) }] };
+    expect(worthSaying(left)).toBe(true);
+    const text = renderComment(left);
+    expect(text).toContain('Left out of the rules read');
+    expect(text).toContain(`- tail \`${tail}\`, of record \`ffffffffffff\``);
+    expect(renderComment(quiet)).not.toContain('Left out of the rules read');
+    expect(worthSaying(quiet)).toBe(false);
+  });
+
   it('says how many changed files were not asked about', () => {
     expect(renderComment({ ...quiet, notAsked: 3 })).toContain(
       '3 changed files were not asked about',

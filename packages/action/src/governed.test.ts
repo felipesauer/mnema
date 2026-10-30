@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { approvedByAnotherPerson, isGoverned, needingAPerson, rulesInForce } from './governed.js';
+import {
+  approvedByAnotherPerson,
+  bothReadings,
+  isGoverned,
+  leftOutOf,
+  needingAPerson,
+  rulesInForce,
+} from './governed.js';
 
 const hit = (rule: string, state: string, kind = 'decision') => ({
   rule,
@@ -85,5 +92,23 @@ describe('needingAPerson', () => {
     const a = rulesInForce('a', { refuses: [hit('d', 'accepted')] });
     const b = rulesInForce('b', { refuses: [hit('d', 'superseded')] });
     expect(needingAPerson([a, b]).map((f) => f.path)).toEqual(['a']);
+  });
+});
+
+describe('the tails of another record a reading left out', () => {
+  const left = { tail: 'tail-a', record: 'a'.repeat(64) };
+
+  it('are read off `anotherRecord` in the answer, whatever the file, and never make it governed', () => {
+    const file = rulesInForce('src/a.ts', { rules: [], anotherRecord: [left, { tail: 1 }, 'x'] });
+    expect(file.anotherRecord).toEqual([left]);
+    expect(isGoverned(file)).toBe(false);
+    expect(rulesInForce('src/a.ts', { rules: [] }).anotherRecord).toEqual([]);
+  });
+
+  it('are named once across files and across the two readings of one file', () => {
+    const a = rulesInForce('a', { anotherRecord: [left] });
+    const b = rulesInForce('b', { anotherRecord: [left] });
+    expect(leftOutOf([a, b])).toEqual([left]);
+    expect(bothReadings(a, rulesInForce('a', {})).anotherRecord).toEqual([left]);
   });
 });

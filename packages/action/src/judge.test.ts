@@ -159,6 +159,17 @@ describe('judge', () => {
     expect(seen.comments[0]?.onlyIfThere).toBe(false);
   });
 
+  it('names a tail of another record the rules left out, even where no changed file is governed', async () => {
+    const left = { tail: 'tail-of-a', record: 'a'.repeat(64) };
+    const { world, seen } = worldWith({
+      files: ['src/a.ts'],
+      rules: { 'src/a.ts': { rules: [], anotherRecord: [left] } },
+    });
+    await judge(world, pr);
+    expect(seen.comments[0]?.body).toContain('Left out of the rules read');
+    expect(seen.comments[0]?.body).toContain('- tail `tail-of-a`, of record `aaaaaaaaaaaa`');
+  });
+
   it('fails the check when the record does not verify as signed', async () => {
     const { world, seen } = worldWith({ verify: { passed: false, said: 'checkpoint missing' } });
     const verdict = await judge(world, pr);
