@@ -1,0 +1,1154 @@
+{
+  "schema": 1,
+  "revision": 4,
+  "supersedes_revision": {
+    "sha256": "db4db6270b95313726444a9ae698dbc262adcddc86114c567e5a9e626ea4c5f5",
+    "kit_commit": "42c87aab5fd7e43a8e10a2a28d8b002b22db3681",
+    "committed_as": "94623e9",
+    "note": "revision 3 had the live part of 30 October (the Codex cost probe at 2 per request and the edit check of the four hosts). Revision 4 adds the 4th step: the web search test (codex_web_search_test: without its web_search tool a Codex request costs 1 and Codex fits), the second reader of the transcripts (llm_reader.second_reader), the day counted in units, and the dry runs redone under the code that is frozen. Nothing counted has run under any revision: no counted session."
+  },
+  "earlier_revisions": [
+    {
+      "sha256": "fd8302156ec839b0ca7d673bd57ecf7027964d4dfaae6bcd2efaaa62425be764",
+      "kit_commit": "cce079bd5131c2a1f898458e464cf505576b15a7",
+      "committed_as": "796c6157"
+    },
+    {
+      "sha256": "2d6f6217d6a8b4ed812ef16119cea0ca8f052d2554c0594a132ffac48ad5dbc2",
+      "kit_commit": "27b3855202932ac64a17bd37d7cdcdad6b55c0f7",
+      "committed_as": "c936427"
+    },
+    {
+      "sha256": "db4db6270b95313726444a9ae698dbc262adcddc86114c567e5a9e626ea4c5f5",
+      "kit_commit": "42c87aab5fd7e43a8e10a2a28d8b002b22db3681",
+      "committed_as": "94623e9"
+    }
+  ],
+  "title": "Pre-registration of the free block of the comparison after 0.1.4",
+  "decision": "ADR-119 (01a187e7-3f61-7000-8c52-5babaec74f0d), which supersedes ADR-106",
+  "frozen_at": "2026-10-30T11:55:25.365Z",
+  "what_this_is": "The manifest the public pre-registration cites by its sha256. Anything below changed after the first counted session is a new decision that supersedes the earlier one, with its reason; the result cites the hash it ran under.",
+  "rulings_of_the_maintainer": {
+    "source": "observation 01a1897f-99c4-7000-8339-195800c9f316 on ADR-119, 29 October 2026",
+    "ceiling": "the ceiling of six tool calls of the capability check counts the calls to mnema, not a host's own tool_search; both numbers are kept",
+    "codex_hooks": "Codex is measured with mnema's hooks trusted through the configuration inside the session's throwaway home, not through the bypass flag, the rest of its sandbox on",
+    "repository": "the measured sessions reuse the parity rule org-08 and the neutral prompt of the 0.1.4 comparison kits, frozen by hash, so the result compares with 0.1.4"
+  },
+  "rulings_of_the_maintainer_2": {
+    "source": "observation 01a1899b-87e6-7000-b421-4ea6eb98f289 on ADR-119, 29 October 2026 (after revision 1, prereg sha256 fd8302156ec8...)",
+    "neutral_prompt": "the neutral prompt is the 0.1.4 scoped prompt with only 'In the JS package, ' removed (the next letter is then a capital, as a sentence needs: seed/parity/provenance.json says it in so many words)",
+    "wall_clock": "a session's wall-clock limit is 30 minutes, past which it is 'did not finish'",
+    "edit_check": "before the pre-registration each host gets a cheap edit check (a few requests), so a host that will not edit is 'incapable of editing' before a measured day is spent",
+    "codex_cost": "Codex seemed to cost 2 of the day's requests per request sent: a test of 3 to 5 requests on a day with no other use decides, and if it is 2, Codex is reported as 'does not fit the free quota', keeping one session per day"
+  },
+  "rulings_of_the_maintainer_3": {
+    "source": "observation 01a18ab5-a181-7000-a4bd-8fd6a1c38684 on ADR-119, 30 October 2026 (after revision 3, prereg sha256 db4db6270b95...)",
+    "codex_web_search": "the doubling of Codex's cost may come from the web_search tool only Codex offers: test it today with Codex configured without that tool (three requests); if it costs 1, Codex enters the rounds without web search, said in the result; if 2, it stays 'does not fit the free quota'",
+    "second_reader": "the second reader of the transcripts is Claude Sonnet on the maintainer's own subscription, one call per session in an isolated home, its prompt fixed by hash in the pre-registration, never through the OpenRouter key"
+  },
+  "design": {
+    "directory": "mnema/archive/active/comparison-after-0.1.4",
+    "design.yaml_sha256": "8eb4e7318fae1a90c2805076999bce141f80c84fcc72d8660ed02300f3f6c0fc",
+    "design.md_sha256": "09478a0b7bd36cb038384d7080806891828a4fac25d0cf24138c51867afc270b"
+  },
+  "model": {
+    "primary": {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "provider_tag": "nvidia",
+      "endpoint_name": "Nvidia | nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
+      "context_length": 1000000,
+      "endpoints_file": "freeze/endpoints-nvidia_nemotron-3-ultra-550b-a55b_free-20261029.json",
+      "endpoints_raw_sha256": "f6e0c267b2eca3360e1e2a3db8e0d13aba47da63b28e31625056b34b3497ee08",
+      "projection_sha256": "bce8b3c4c9b58a3297eb01204ede4057fc6e7268acf48e137092c5175351f981",
+      "created": 1780551208,
+      "created_iso": "2026-06-04T05:33:28.000Z",
+      "endpoints": [
+        {
+          "name": "Nvidia | nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
+          "tag": "nvidia",
+          "context_length": 1000000,
+          "supports_tool_choice": {
+            "none": true,
+            "auto": true,
+            "required": true,
+            "function": true
+          }
+        }
+      ]
+    },
+    "reserve": {
+      "id": "google/gemma-4-31b-it:free",
+      "provider_tag": "google-ai-studio",
+      "endpoint_name": "Google AI Studio | google/gemma-4-31b-it-20260402:free",
+      "context_length": 262144,
+      "endpoints_file": "freeze/endpoints-google_gemma-4-31b-it_free-20261029.json",
+      "endpoints_raw_sha256": "f6eaf8b4458cbde2e75694c29f770d4839ea9c7c4b352c1a79164f2bf980b3d0",
+      "projection_sha256": "b834d5d5d7542f8e7271fc55e0e05c2f79d9fc36a9d1b0934c2413a850464e3f",
+      "created": 1775148486,
+      "created_iso": "2026-04-02T16:48:06.000Z",
+      "endpoints": [
+        {
+          "name": "Google AI Studio | google/gemma-4-31b-it-20260402:free",
+          "tag": "google-ai-studio",
+          "context_length": 262144,
+          "supports_tool_choice": {
+            "none": true,
+            "auto": true,
+            "required": true,
+            "function": true
+          }
+        }
+      ],
+      "enters": "only BEFORE the first counted session, and then this manifest changes (a new decision); never mid-round"
+    },
+    "forbidden": [
+      "openrouter/free",
+      "openrouter/auto",
+      "a models[] list of fallbacks in a request",
+      "provider fallback"
+    ],
+    "every_request_carries": {
+      "provider": {
+        "order": [
+          "<provider_tag>"
+        ],
+        "allow_fallbacks": false
+      }
+    },
+    "injected_by": "relay/relay.mjs (the hosts cannot set it); it also refuses with 400 a request whose model differs from the fixed one, and sets no data_collection and no zdr (on a :free it answers \"no endpoint\")",
+    "served_in_the_capability_check": {
+      "by_stream_events": {
+        "nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia": 509,
+        "nvidia/nemotron-3-ultra-550b-a55b:free | ?": 28
+      },
+      "by_generation_record": {
+        "nvidia/nemotron-3-ultra-550b-a55b-20260604:free | Nvidia": 32
+      },
+      "requests_checked": 32
+    }
+  },
+  "catalog": {
+    "snapshot": {
+      "file": "freeze/models-20261029.json",
+      "taken_at": "2026-10-29T20:58:15Z",
+      "bytes": 767339,
+      "raw_sha256": "738751ffa8892ed916147f5724fb60774966c537fc7045fba2c2df7109374e3d"
+    },
+    "projection_command": "curl -s https://openrouter.ai/api/v1/models/<id>/endpoints | jq -S -c '{id:.data.id,created:.data.created,endpoints:[.data.endpoints[]|{name,tag,context_length,pricing,quantization,supported_parameters,supports_tool_choice}]}' | sha256sum",
+    "snapshot_policy": "taken at the start and at the end of the round (design.md 4.1); the one here was taken before any counted session and is retaken on the eve of the first one, which then replaces this value (a revised manifest, a new hash)",
+    "window_days": 7
+  },
+  "hosts": {
+    "codex": {
+      "package": "@openai/codex",
+      "version": "0.161.0",
+      "binary": "installed/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex",
+      "binary_sha256": "9a820c17865fa825d04db416818679a9d63bd72e50835c396f496e5684626c9c",
+      "integrity": {
+        "@openai/codex": {
+          "version": "0.161.0",
+          "integrity": "sha512-+ZnJFGBbQBwYnjUTs+PoacgYVxmNyxMLiadIz6eSJ0AzQW0mRVxuuOQizSbz2qeNAJia9Syxag6j2uGf7guD2Q=="
+        },
+        "@openai/codex-linux-x64": {
+          "version": "0.161.0-linux-x64",
+          "integrity": "sha512-AVkNzeJWyCHHPyg5vxD8UE6aFsYaOwq0/x6mtmkOKy6LdjvsyxLr7Q7UULlk+Ma3+PnrN8uIxG2/XGPQ936hgA=="
+        }
+      },
+      "npm_audit_signatures": "2 packages have verified attestations (use --json --include-attestations to view attestation details)"
+    },
+    "copilot": {
+      "package": "@github/copilot",
+      "version": "1.0.104",
+      "binary": "installed/copilot/node_modules/@github/copilot-linux-x64/copilot",
+      "binary_sha256": "c90a6829edd5d6f9aea4928489e8686a8190c2fd3f1b77e6cc7369bd3f3def64",
+      "integrity": {
+        "@github/copilot": {
+          "version": "1.0.104",
+          "integrity": "sha512-C2fPHjSM8HanINktDaqaalPzNSsth9H3zj9V4+ier8ziOIqi+U6OiLXwH44e+QR1vIEaRLKnX40tXUS8SeJDVw=="
+        },
+        "@github/copilot-linux-x64": {
+          "version": "1.0.104",
+          "integrity": "sha512-HGxTAkwrlzIAoQRQ25uWoKToujHzmO1sKC0qGP/yQTv8UhWufHYGHKkHj4sjEbHhRqwXfZvcUzKL9t/vUtklFg=="
+        }
+      },
+      "npm_audit_signatures": "1 package has a verified attestation (use --json --include-attestations to view attestation details)"
+    },
+    "opencode": {
+      "package": "opencode-ai",
+      "version": "1.18.35",
+      "binary": "installed/opencode/node_modules/opencode-linux-x64/bin/opencode",
+      "binary_sha256": "77b2cfe4b97df6f15c3673b22100b9f79c711f25ecb9bf513bb82526b15d24fa",
+      "integrity": {
+        "opencode-ai": {
+          "version": "1.18.35",
+          "integrity": "sha512-tDQKThIZ3amp8NSn3XDP2Dj5BlhRbZC0VkIxgYuf6gvRSXkseqD31j/U4KfpPwha593i8M59hdsDfz32yJx4Og=="
+        },
+        "opencode-linux-x64": {
+          "version": "1.18.35",
+          "integrity": "sha512-xs/DPt8bK6NTWHpOlVJDWC/P3BnAuAQFHwa+mjrbxhDGd0Pi/GGWGjh4Sr4cpv6KwvfUKVoLKfHc/J8Nnz0XMg=="
+        }
+      },
+      "npm_audit_signatures": "audited 3 packages in 1s 3 packages have verified registry signatures"
+    },
+    "qwen": {
+      "package": "@qwen-code/qwen-code",
+      "version": "0.26.1",
+      "binary": "installed/qwen/node_modules/.bin/qwen",
+      "binary_sha256": "113efe4104a9fc66f507d34bfd6abbd896ceb77de47f4b468a0825a327fdc6a5",
+      "integrity": {
+        "@img/sharp-libvips-linux-x64": {
+          "version": "1.3.3",
+          "integrity": "sha512-4vKmvAst9nrowcqquKFAyZJUDolUaIp8uRiN0mWFguJ1IplC9/pitXtlnnlU4aa/eJw3J7i67V+pwUL+wZGdsA=="
+        },
+        "@img/sharp-linux-x64": {
+          "version": "0.35.4",
+          "integrity": "sha512-9qvvEAuk8k89TfWUoX2htWjbAMX8p+NxCppjpcg5k6xMsjhBQPTsoIh36h9Qde4WRuGpJeYnOjdosDn/cnv+OA=="
+        },
+        "@lydell/node-pty-linux-x64": {
+          "version": "1.2.0-beta.10",
+          "integrity": "sha512-J9HnxvSzEeMH748+Ul1VrmCLWMo7iCVJy9EGijRR62+YO/Yk5GaCydUTZ+KzlH0/X5aTrgt5cfiof4vx45tRRg=="
+        },
+        "@oven/bun-linux-x64": {
+          "version": "1.3.14",
+          "integrity": "sha512-7OVTAKvwfPmSbIV1HpdOoVVx5VRc427GuPPne93N6vk4eQBPId9nXmZDh9/zGaKPdbVjVtQSZafWQoUjx38Utw=="
+        },
+        "@qwen-code/qwen-code": {
+          "version": "0.26.1",
+          "integrity": "sha512-4kpIzrlrgmawivim0yCZjr1AP5cfHTanyL7eL1g2R8WYU6QDBq7j9fiAye7REXL4EEXkRIq45D7+ngTw5n3GqQ=="
+        }
+      },
+      "npm_audit_signatures": "10 packages have verified attestations (use --json --include-attestations to view attestation details)"
+    }
+  },
+  "mnema": {
+    "package": "@mnema/code",
+    "version": "0.1.4",
+    "integrity": "sha512-DwQStrsVstofNY6exGtBFb3vZXk59SqQKzGXa+n3JBnhY0DEZbR7ArGsBQ6WNC6X5qk/6UpHSP4Y8PUav5yVaw==",
+    "npm_audit_signatures": "25 packages have verified attestations (use --json --include-attestations to view attestation details)",
+    "tag": "v0.1.4",
+    "plugin_commit": "tag v0.1.4 is commit cebc4e8da68cdfffc59e1e52c4fd3e964c157c3d",
+    "plugin_tree_sha256": "0449de9ffb847d8bfb40f1fadf1df4bf6974690da5f6b310047104d3bc3a6ecc"
+  },
+  "kit": {
+    "commit": "6597be030d462e05fbdc238dd637015795a6324b",
+    "tree": "ece1e95cad96f9fbee79161f87f21f2dece5b08f",
+    "files_sha256": {
+      ".gitignore": "41d0be9f3bdbd9835aac1a1cacca2542a2388ba03638d44f8192cbca6a1cf758",
+      "README.md": "c1a2216d633ddec3269c93ba57614089a23be4e9287f8b7a79cff72cc5698340",
+      "analysis/compare.mjs": "7826597840069f6f24caa7a675e8c54e8f283698ea62060d9948cd480fc05834",
+      "analysis/labels.mjs": "866194c5f61615844b12e34655eec803e918e33b0d467d3e5fc2eb767d2865f8",
+      "analysis/labels.test.mjs": "6b8bd7701da61dbf5bc50da57f642d1a091598758cbdb54922659a2c03ae05a0",
+      "analysis/llm-reader-prompt.md": "bfef757b773300d4e8dad579c0d99fecd9d192abbebcf1092b0193d107686af9",
+      "analysis/llm-reader.mjs": "cd9fe25d86ce6b2dbe460c0b1b7e58fccf676c935a486e47d2dc186b64260979",
+      "analysis/llm-reader.test.mjs": "feadb95aa9912b0adfe978f17979df71e607e0fb7a51f244076247f3e311ce13",
+      "analysis/repo-facts.mjs": "f0c4b4ee458d5182f381b0c4b838edb4d1f5a206245ec917c285272a3a981432",
+      "analysis/transcript.mjs": "e6b8b24cf1ad1cdcf54e0e0fac77be16b1d94e257484a502d828d197b7c1f160",
+      "capcheck/capture-tools.mjs": "1ea99aa01b8538bf76a8eaad0a16050f30ed228384c7a1bc9066c362148b88c6",
+      "capcheck/criterion.mjs": "e00e03a3afa11440905294949e8b4a4b007ee0b28130c7de6fc6055618054ce2",
+      "capcheck/criterion.test.mjs": "1d7b4e384171d75b08729a71dd376af4f0ab68624f86c9374da155ea98b309e5",
+      "capcheck/direct.mjs": "f885e40ad5585026f4ed6e10d3d72d476dc1f966cb2320cc7612a118a8c62209",
+      "capcheck/finalize.mjs": "8e1b2593534864f934f24ad3fd3346ce39f747c6ab8b310a79ddc125fb64f9f3",
+      "capcheck/hook-proof.mjs": "0693032de3bac724661556889e5be6bef1d8196993f4781d411390d4838cd4f2",
+      "capcheck/hook-proof.test.mjs": "303bc4ce918a65bc5f0d44ec76939b570ce18605ed14946bed078b2a71775c89",
+      "capcheck/probe-request-cost.mjs": "058d662cda8eaf7f6e7ac0dfdfd7a46b6370f74f2cbaa240a0a63866f15ed9e3",
+      "capcheck/rejudge.mjs": "0c4253c8d1c8f5f7e9210cc17dc80a3778fa0bf162d5d30d210bc2a134cdbcb9",
+      "capcheck/run-host.mjs": "6a79c3631001751307ba12cfa9f50324b72584055532886305a65522045d8f87",
+      "capcheck/tools.json": "fe749481cdc52255d924bc636ed33a0d99f848622d98be830e018024dcc06357",
+      "capcheck/verify-served.mjs": "a25354868ea2272abb725a515fd2daae8cb85f2f77972aa707d7fcfce109e0e1",
+      "editcheck/edit-check.mjs": "db62f30b73ac0e65b1f2e84085c2b2304ccab133c63c492de146b11d8a805058",
+      "editcheck/edit-check.test.mjs": "75495652f26271b872a6e7c873c3f82ac826f3729f3c59c260127c39a3c6315f",
+      "freeze/make-freeze.mjs": "b8a351082f76b4793e37f17aa2aebe127582b27c719c261e8d0055910eed353d",
+      "freeze/make-prereg.mjs": "ee5073c9e0293ad8f6b5aa1978e541f8498746049fc647376fd98c279006094f",
+      "freeze/verify-prereg.mjs": "2abee4cbef516040cec61ee33aa9eac4a6f7fc8f23f2a3064d804c4439f9a0f6",
+      "hosts/adapters.mjs": "6927f6f042600d25c0cef446ff6b8ac07ed8ebba2c3bdada9c246e8709823722",
+      "hosts/codex-trust.mjs": "3c02995b3072e4f3f114ff3215d69c59d84c09e8c1c6588f2f879c6ddc7b257e",
+      "hosts/codex-trust.test.mjs": "c43a69c088aa52d8d332eb037091f46ad555d10df42937dbfa70866d8c89322b",
+      "install.sh": "9183368b09a16b0d2098bf94f446454034b41e26bd357d8991a37e29a9d6e1ae",
+      "kit.json": "63bed1abdf69a2b7df51d1a9a9fd2b80069c875c5e2a005b3379fc3aa6a9402e",
+      "lib/generation.mjs": "e80d9a8c198a7fde73c74d6340320e3b3c31aae1d156066b134f82a990adfb61",
+      "lib/mcp-client.mjs": "7fe406438b7a44b78b5a0ebea643f0342e452c92a0464366dfc0e711bb41caf4",
+      "lib/quota.mjs": "bb09578aa68ca5fdde7b067c8d2ecc0bf08d01bdcd26bd757764d806809017b6",
+      "lib/run-common.mjs": "d21ed2e4e6d7ef676331a61d597d6a826c70f5b9a38a80a8ff8c418feb1a7eab",
+      "lib/scan-for-key.mjs": "eded4bf05f226c7e83f7c6590286fdbfaaaedd8eee2cf52b009e971fdf56fe86",
+      "measured/fake-upstream.mjs": "d133c0e3564da8a44bc581405e6af4433df316c5640445f9ee223b8de7015d7b",
+      "measured/protocol.mjs": "5a248d07bfa9388bdc6fc80c553f31a90d12843fe7d8d314d15fa2999e53c0c6",
+      "measured/protocol.test.mjs": "b5456350862646bc41fb4858a098ffd5da8cb60a1145170e00d6b3519497d15f",
+      "measured/rejudge.mjs": "74233066135ea83c46f8909499ee8fe689d8e0cd7c7657d1f794ecaae1089410",
+      "measured/rejudge.test.mjs": "aa7fb31ac108e02815165d599a8b59e61dbc3db7749870057a8279c12a2d6804",
+      "measured/run-session.mjs": "04a6cc55a806df8cdfd8fa45bb5a48e65945c5b45b096a98e2204e648635faa5",
+      "measured/session.mjs": "164cb675a8b918c025f386a95be2b5e4dbe52617d7825e8db0d2a29f4bbd3eb8",
+      "measured/session.test.mjs": "7f0ac0fa16fa707c6cfa22ee3575e1a3d0e285e521272616ce8372b409019fc2",
+      "measured/summarize-dry.mjs": "8c77e4ce9020a42fe0187e22a398b6aeb3ccf20093c8938591a2f4896bb70a33",
+      "measured/summarize-live.mjs": "e4cbacd9991c7e8ec251c9e4e8b86fcc3f585405643d7f9bbed684442488cb48",
+      "measured/summarize-step4.mjs": "ddc32dbe6ebadb5914307d5ee8113ea7ebe0604ea6b7267949a43a844459e550",
+      "measured/test-support/commands.mjs": "a0c7feb471be3476b077eae293bcedf7b68a0733e118516f1a051126858e0974",
+      "measured/test-support/stub-host.mjs": "42bfcf3ebaf6677e179fa548e326fc1d29ddea80d294a3bd8f345634cc9a9d7c",
+      "probe/codex-cost.mjs": "0744db0ef16b62d84b95b8f517b4ffa53d6a5e555736cce0d536b78329656e37",
+      "probe/codex-cost.test.mjs": "f7d5b839141c5630143b0e885d427395839832e306360ba6652d4447fc4b45f7",
+      "relay/relay.mjs": "42cfcc47362329b54c1431ebd6c5df0badb252e6228dd37af7a88b98c520e5f0",
+      "relay/relay.test.mjs": "0a0bd3435355c067709e1656c31c693c5e3e325294f42ca2ecbc50a70b80d12a",
+      "seed/make-parity-repo.mjs": "2f3b78382939e3a0d9062a745896b414806b57c53997a5fe0bb9a1b351c1a9b9",
+      "seed/make-parity-repo.test.mjs": "377f2e67aea51b18852d8d418e51361baa4608494d716f6f99807551c617f441",
+      "seed/make-repo.mjs": "acf0deaf467a61a08b502dc2871c83cfad51ad84df3fe7c0967aeb5c77c41eb9",
+      "seed/parity/extract.py": "0f66111f65b0e208101104948926d1e5a567c3e91a2ab37d22cbd6857e8ab80c",
+      "seed/parity/org-08.json": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00",
+      "seed/parity/prompts/inline.g.md": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59",
+      "seed/parity/prompts/parity-neutral.md": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059",
+      "seed/parity/provenance.json": "8efd74100772f1e1861cc3a3b912f0ee713438d676d7ed28a10519667963ffb5"
+    },
+    "node": "v24.22.1",
+    "freeze_json_sha256": "7d45495764c3cce87e6635ef117669e0331683ef492a31e17f800e6ed5b295dc",
+    "kit_json_sha256": "63bed1abdf69a2b7df51d1a9a9fd2b80069c875c5e2a005b3379fc3aa6a9402e"
+  },
+  "measured_session_repository": {
+    "generator": "seed/make-parity-repo.mjs",
+    "provenance": {
+      "comment": "Where the rule and the prompts of the measured sessions of the free block come from. Paths are relative to the root of the private backup repository; the git blob ids are of its HEAD when this was extracted.",
+      "rule": {
+        "id": "org-08",
+        "copied_from": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/rules.yaml",
+        "source_file_sha256": "bb25212f7e5edb759216b236f31729b1d12c0f8eaa8a020699b600e0d9f93b95",
+        "source_file_git_blob": "c8504563dfa155f5c9b36e63bbc646ee9e1d8de7",
+        "copied_as": "org-08.json (title, why, alternatives, addresses, field by field; unedited)",
+        "recorded_by": "the failure-modes kit (arm B) with: decision record <title> --body-file <why> --alternatives <alternatives>; link <ADR> <path> --rel governs; decision move accept (gen.py of the pilot kit)",
+        "rule_json_sha256": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00"
+      },
+      "scoped_prompt": {
+        "copied_from": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/failure-modes/prompts/inline.g.md",
+        "source_file_sha256": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59",
+        "source_file_git_blob": "b93a6b288229576a78b0e3a552cd2f3a0985339f",
+        "copied_as": "prompts/inline.g.md (byte for byte)"
+      },
+      "neutral_prompt": {
+        "status": "DERIVED, not copied: no file of the 0.1.4 kits holds a neutral prompt",
+        "defined_by": "mnema/archive/active/comparison-after-0.1.4/design.md section 1 (Q4: 'o NEUTRO (sem nomear o pacote)') and section 5 (Novo, 2: 'o prompt neutro de paridade (inline.g.neutral.md)')",
+        "derived_from": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/failure-modes/prompts/inline.g.md",
+        "derivation": "drop the leading clause 'In the JS package, ' and capitalise the next letter; nothing else",
+        "derived_as": "prompts/parity-neutral.md",
+        "sha256": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059"
+      },
+      "failure_modes_design": {
+        "file": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/failure-modes/design.yaml",
+        "source_file_sha256": "d6cdbda2a95bbacf485bafce028bd3876bdfcaf49c9c2337ed0a216522b04a85",
+        "used_for": "rule_facts.org-08 (governed paths, the governed edit, the companion path, what the companion must add)"
+      }
+    },
+    "files_sha256": {
+      "seed/parity/org-08.json": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00",
+      "seed/parity/prompts/inline.g.md": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59",
+      "seed/parity/prompts/parity-neutral.md": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059",
+      "seed/parity/extract.py": "0f66111f65b0e208101104948926d1e5a567c3e91a2ab37d22cbd6857e8ab80c"
+    },
+    "seed_working_tree_sha256": "09c8acb6561dbbb718cf1902edb232baf0b76d809ae24e696155c4ab16d2232d",
+    "seed_files": [
+      ".gitignore",
+      "AGENTS.md",
+      "README.md",
+      "package.json",
+      "packages/js/package.json",
+      "packages/js/src/accessors/accessor.ts",
+      "packages/js/src/accessors/formats/env-accessor.ts",
+      "packages/js/src/accessors/formats/json-accessor.ts",
+      "packages/js/src/index.ts",
+      "packages/js/tests/env-accessor.test.ts",
+      "packages/js/tests/json-accessor.test.ts",
+      "packages/php/composer.json",
+      "packages/php/src/Accessor.php",
+      "packages/php/src/Formats/EnvAccessor.php",
+      "packages/php/src/Formats/JsonAccessor.php",
+      "packages/php/tests/run.php"
+    ],
+    "prompts_sha256": {
+      "neutral": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059",
+      "scoped_0_1_4": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59"
+    },
+    "neutral_prompt_is": "SETTLED by the maintainer (rulings_of_the_maintainer_2.neutral_prompt). No file of the 0.1.4 kits holds a neutral prompt (the design lists it as new); it is the scoped prompt of failure-modes/prompts/inline.g.md with the scope clause \"In the JS package, \" removed and nothing else changed except the capital of the letter that then begins the sentence (seed/parity/provenance.json)",
+    "neutral_prompt_text": "Make `EnvAccessor` accept lines written as `export KEY=value` (a shell habit): the key is `KEY`, exactly as if the `export ` prefix were not there. Add tests for it.",
+    "prompt_given_to_hosts_sha256": "0e5e79a50e12b9720d2c0c513311a0bf4fe841d2042442ce545622230047f13d",
+    "prompt_given_to_hosts_note": "the file without its final newline: the text handed to the host as the whole of the first user turn (the file's own hash is in prompts_sha256)",
+    "the_rule": "org-08, the parity rule, copied field by field from rules.yaml of the 0.1.4 kit, recorded in the sandbox record as the failure-modes kit recorded it for its arm B: accepted, and addressed (governs) at packages/js/src, packages/php/src and parity-vectors.json (the last addresses nothing in the repository, as in the 0.1.4 inline repository)",
+    "governed_edit": "packages/js/src/accessors/formats/env-accessor.ts",
+    "companion_path": "packages/php/src/"
+  },
+  "criterion_of_the_capability_check": {
+    "text": "passes if, in at most 15 model requests and at most 6 CALLS TO MNEMA, there were the three MCP calls of mnema in this order (matched by the suffix of the name; hosts prefix it differently): governing_rules with the path src/index.js, search with a term that carries capcheck, read_record with the id of the first hit of the search; each with valid JSON arguments and a result without error; and a final text that contains capcheck-7f3a",
+    "read_by": "CODE (capcheck/criterion.mjs, tested), over the wire the relay recorded",
+    "marker": "capcheck-7f3a",
+    "max_model_requests": 15,
+    "ceiling": {
+      "calls_to_mnema": 6,
+      "counts": "calls to mnema (a refused attempt through a host bridge is a call to mnema)",
+      "does_not_count": [
+        "the host's own tool_search of deferred tools (discovery_calls)",
+        "any other tool of the host (other_host_calls)"
+      ],
+      "also_kept": "calls_of_every_kind (every call of every kind), beside the number the ceiling is read against",
+      "ruled_by": "the maintainer, 29 October 2026, observation 01a1897f-99c4 on ADR-119"
+    },
+    "numbers_kept": [
+      "calls_to_mnema (the one the ceiling is read against)",
+      "discovery_calls_tool_search (the host's own, never against the ceiling)",
+      "other_host_calls (never against the ceiling)",
+      "calls_of_every_kind"
+    ],
+    "attempts_per_host": 1,
+    "one_more_attempt_only_if": "the wire shows a failure of the host (a 4xx of configuration) before the model answered",
+    "outcomes": {
+      "fails_direct": "model incapable: the reserve enters and the check restarts (a revised manifest)",
+      "passes_direct_fails_in_host": "pair host x model that does not fit: the host goes as \"not measured\" with the reason; the model does NOT change per host",
+      "fails_in_host_label": "model incapable in this host (never \"host disobedient\"); no counted session"
+    },
+    "results": {
+      "direct": {
+        "label": "passed",
+        "requests_forwarded": 4,
+        "refused_by_relay": 0,
+        "calls_to_mnema": 3,
+        "discovery_calls_tool_search": 0,
+        "other_host_calls": 0,
+        "calls_of_every_kind": 3,
+        "final_text": "capcheck-7f3a"
+      },
+      "qwen": {
+        "label": "passed",
+        "requests_forwarded": 10,
+        "refused_by_relay": 0,
+        "calls_to_mnema": 6,
+        "discovery_calls_tool_search": 3,
+        "other_host_calls": 0,
+        "calls_of_every_kind": 9,
+        "final_text": "capcheck-7f3a"
+      },
+      "copilot": {
+        "label": "passed",
+        "requests_forwarded": 4,
+        "refused_by_relay": 0,
+        "calls_to_mnema": 3,
+        "discovery_calls_tool_search": 0,
+        "other_host_calls": 0,
+        "calls_of_every_kind": 3,
+        "final_text": "capcheck-7f3a"
+      },
+      "opencode": {
+        "label": "passed",
+        "requests_forwarded": 4,
+        "refused_by_relay": 1,
+        "calls_to_mnema": 3,
+        "discovery_calls_tool_search": 0,
+        "other_host_calls": 0,
+        "calls_of_every_kind": 3,
+        "final_text": "capcheck-7f3a"
+      },
+      "codex": {
+        "label": "passed",
+        "requests_forwarded": 4,
+        "refused_by_relay": 0,
+        "calls_to_mnema": 3,
+        "discovery_calls_tool_search": 0,
+        "other_host_calls": 0,
+        "calls_of_every_kind": 3,
+        "final_text": "capcheck-7f3a"
+      },
+      "codex-hooks-trusted": {
+        "label": "passed",
+        "requests_forwarded": 4,
+        "refused_by_relay": 0,
+        "calls_to_mnema": 3,
+        "discovery_calls_tool_search": 0,
+        "other_host_calls": 0,
+        "calls_of_every_kind": 3,
+        "final_text": "capcheck-7f3a"
+      }
+    }
+  },
+  "codex_hook_trust": {
+    "how": "by configuration in the session's own throwaway CODEX_HOME: the host lists the plugin's hooks (app-server hooks/list: key, currentHash, trustStatus) and the kit appends, for each, [hooks.state.\"<key>\"] trusted_hash = \"<currentHash>\" to that home's config.toml (hosts/codex-trust.mjs); the host then reports each hook \"trusted\"",
+    "never_used": [
+      "--dangerously-bypass-hook-trust",
+      "--dangerously-bypass-approvals-and-sandbox"
+    ],
+    "refuses_before_writing_unless": [
+      "the plugin the host installed is byte-identical to the pinned plugin tree",
+      "the host lists exactly the four hooks of the pinned plugin (keys fixed in the code), all of source plugin, plugin mnema@mnema, type command, none managed",
+      "each hook file and command lies inside the installed plugin folder"
+    ],
+    "hash_note": "currentHash covers the command text, which carries the path of the plugin in the session's home, so it differs per home; it is taken from the host's own listing, never precomputed",
+    "proof": {
+      "file": "results/codex-hooks-trusted/hook-proof.json",
+      "sha256": "14064ed8c3a210d138db6e06e112dd74c5309ae4fbaa272b2f0a62391477b506",
+      "hooks_ran": true,
+      "how_it_is_read": "the first model request of the trusted run carries one more message than the one of the first Codex run, without the trust: the output of the SessionStart hook (`mnema brief`), with the capability marker in it",
+      "trusted_run_requests": 4
+    },
+    "not_exercised": "the PreToolUse hook has the matcher apply_patch and Codex 0.161.0 offers this model no apply_patch (its tools are exec_command, write_stdin and the mcp__mnema namespace), so the hook that hands a rule at the edit cannot fire in the Codex session; what Codex can show is the rule that arrives with the session's brief and through the MCP tools"
+  },
+  "session_protocol": {
+    "common": {
+      "one_session_per_host": true,
+      "arm": "M (record + instructions block + plugin + mnema on the PATH), the only arm of the block: design.md 2.2; the native-file arm N is out of this block",
+      "prompt": "the neutral parity prompt (seed/parity/prompts/parity-neutral.md), given once, as the whole of the first user turn; no follow-up turn is typed",
+      "repository": "seed/make-parity-repo.mjs, made fresh for the session in a folder outside any checkout, with a HOME of its own; the neutral prompt names no package, no record, no rule and no word the 0.1.4 kit forbade in a prompt",
+      "model": "the one fixed model; the host is handed a made-up key and the relay's loopback address; the relay holds the real key",
+      "wire": "every request and response is recorded by the relay (key scrubbed) and is the transcript of the session"
+    },
+    "order": [
+      "qwen",
+      "copilot",
+      "opencode",
+      "codex"
+    ],
+    "one_counted_session_per_utc_day": true,
+    "reserve_days": "two (design.md 4.2: D7 and D8), only to redo a cut session, in the order they were cut",
+    "precondition_the_arm_is_what_it_says": [
+      "the host's capability check was passed (results/<host>/verdict.json, Codex: results/codex-hooks-trusted), else 'incapable in this host': no counted session",
+      "the host's edit check says 'edits' (results/<host>-edit-check/editcheck.json; Codex: results/codex-edit-check-no-web-search/editcheck.json, the one of its web search configuration), else the host is 'incapable of editing': no counted session",
+      "the host's request cost is the one measured (Codex: results/codex-cost-no-web-search, the probe of its web search configuration), and it fits: a host whose request costs 2 of the day is 'does not fit the free quota' (the runner refuses unless told --allow-does-not-fit)",
+      "the runs folder is outside any git checkout, and the session starts at least 35 minutes before 00:00 UTC",
+      "`node freeze/verify-prereg.mjs` exits 0 (every hash this manifest cites is the hash of what it cites now; committed with the manifest)",
+      "the plugin of the pinned tree is installed in the session's home (for Codex: and the four hooks are reported trusted by the host itself)",
+      "`mnema rules packages/js/src/accessors/formats/env-accessor.ts` in the session's repository lists org-08 as governing, accepted, and `mnema rules packages/php/src/Formats/EnvAccessor.php` does too",
+      "the repository starts with neither package accepting `export KEY=value` and both packages' tests passing",
+      "the relay is up with the fixed model and provider tag and the budget below"
+    ],
+    "hosts": {
+      "qwen": {
+        "version": "0.26.1",
+        "argv": [
+          "qwen",
+          "-p",
+          "<neutral prompt>",
+          "--approval-mode",
+          "yolo",
+          "-m",
+          "<model id>"
+        ],
+        "configuration": "hosts/adapters.mjs (qwen): settings.json with openai auth, no update check, no telemetry; OPENAI_BASE_URL is the relay, OPENAI_API_KEY a made-up key; the plugin installed with `extensions install ... --consent`"
+      },
+      "copilot": {
+        "version": "1.0.104",
+        "argv": [
+          "copilot",
+          "-p",
+          "<neutral prompt>",
+          "--allow-all",
+          "--no-color"
+        ],
+        "configuration": "hosts/adapters.mjs (copilot): BYOK openai provider at the relay, offline, no auto-update; the plugin installed from a local marketplace"
+      },
+      "opencode": {
+        "version": "1.18.35",
+        "argv": [
+          "opencode",
+          "run",
+          "<neutral prompt>"
+        ],
+        "configuration": "hosts/adapters.mjs (opencode): opencode.json with the openrouter provider at the relay and the fixed model, the mnema MCP server, and the plugin file in .opencode/plugins; the host asks another model for a title, which the relay refuses at no cost"
+      },
+      "codex": {
+        "version": "0.161.0",
+        "argv": [
+          "codex",
+          "exec",
+          "--json",
+          "--sandbox",
+          "workspace-write",
+          "-c",
+          "approval_policy=\"never\"",
+          "--skip-git-repo-check",
+          "<neutral prompt>"
+        ],
+        "web_search": "disabled",
+        "result_folders": {
+          "cost": "codex-cost-no-web-search",
+          "edit": "codex-edit-check-no-web-search"
+        },
+        "configuration": "hosts/adapters.mjs (codex): config.toml in a throwaway CODEX_HOME with the openrouter provider at the relay on the Responses API, and web_search = \"disabled\" (measured/protocol.mjs CODEX_WEB_SEARCH; codex_web_search_test): the body then carries no web_search tool, so a request costs 1 and Codex fits the free quota; hooks trusted by configuration (codex_hook_trust above); the host's own sandbox is ON (workspace-write: it can write the repository and nothing else; the capability check ran read-only because it edits nothing; the sandbox was seen to refuse a write under :read-only and to allow it under :workspace on this machine, with `codex sandbox`, no model)"
+      }
+    },
+    "differences_from_the_capability_check": "the prompt (the neutral parity prompt), the repository (the two-package one), Codex's sandbox (workspace-write, not read-only), Codex's web search (disabled: the capability check ran with the tool offered, and the only difference in the body is that tool), the request budget (below); the hosts' configuration is otherwise the same",
+    "limits_ms": {
+      "wall_clock_of_a_counted_session": 1800000,
+      "wall_clock_of_an_edit_check": 600000,
+      "minimum_before_00_00_utc": 2100000,
+      "source": "measured/protocol.mjs, the file the runner runs"
+    },
+    "how_each_session_ends": {
+      "exited": "the session is read",
+      "timeout": "did_not_finish: the wall-clock limit of 30 minutes was reached",
+      "budget": "did_not_finish: the relay's budget (the day's requests) was spent",
+      "daily_limit": "did_not_finish: the account answered that the day's limit was reached",
+      "invalid": "discarded: the model or provider served differs from the capability check's baseline",
+      "cut": "discarded: a request was cut (429, 402, 5xx or an error event in the stream)",
+      "midnight": "discarded: the session crossed 00:00 UTC, when the counter resets"
+    },
+    "stop_conditions": [
+      "the host process exits on its own (the model gave a final answer): the session is read",
+      "the wall clock limit of 30 minutes is reached (the maintainer's ruling): the session did not finish; the host process group is killed",
+      "the relay marks the session invalid (the model or the provider served differs from the capability check's baseline): the host is killed and the session is discarded",
+      "the relay records a cut (a 429, a 402, a 5xx, a stream event with finish_reason \"error\" or an error object): the host is killed and the session is discarded whole, with no partial reading, even if the host would have gone on; the number of requests read so far is kept",
+      "the relay's budget is spent (the day's 50 units divided by what one request of the host costs: 50 requests, 25 for a host at 2 each), or the account answers 429 with the day's limit (free-models-per-day): the session did not finish within the daily quota",
+      "a session must start at least 35 minutes before 00:00 UTC and end before it: the counter resets at 00:00 UTC and a session that crosses it is discarded"
+    ],
+    "discard_rules": [
+      "model_not_declared / provider_not_declared: any response, or any chunk of a stream, served by a model or provider other than the baseline of the capability check (the relay checks the stream and OpenRouter's generation record of each request)",
+      "cut_by_quota_mid_session: a 429 or a 402 or a 5xx or an error event in the stream (an isolated 429 of the per-minute limit counts too, conservatively)",
+      "arm_not_what_it_says: any precondition above fails (then the session does not start and is not counted)",
+      "account_not_expected: the key is not on the free tier",
+      "daily_remaining_below_threshold_at_start: the account's remaining is below its limit (below 50 of 50)"
+    ],
+    "one_retry_per_host": "a discarded session is redone FROM THE START on a reserve day, at most once per host, its cost reported apart; if the second also fails, or a session would need more than 50 requests, the host goes as \"did not finish within the daily quota\" with the number of requests read, never as \"silent\"; nothing is redone after the last reserve day, and the host goes as \"did not finish\""
+  },
+  "quota": {
+    "service": "OpenRouter free models: 50 requests a day for the account, summed over every free model, 20 a minute; resets at 00:00 UTC (21:00 in Brasilia)",
+    "floor": "a counted session starts only if the account's remaining equals its limit: the whole UTC day, 50 of 50 (design.md: min(70, limit) with limit 50). The day is counted by the larger of the account's counter and the kit's ledger, because the account's counter lags by minutes and has been seen to run ahead of the ledger",
+    "read": "GET /api/v1/key, data.free_model_daily_requests {used, limit, remaining} (the label of the key is never printed); before the session and after it; the difference is the real number of requests the host spent and goes to the result",
+    "capability_check_stop": "the capability checks stop at 40 used (kit.json daily.stop_at_used); the counted sessions have no such stop, only the 50",
+    "observation": "on 29 October the account's counter moved by 8 for each of the two Codex capability runs of 4 forwarded requests, and by 1 for each request of the other three hosts and of the single-request probes. MEASURED on 30 October by the cost probe (live_checks): a Codex request costs 2 of the day (three replays of Codex's own request bodies, each moved the counter by exactly 2, and the live Codex edit check spent 8 for 4 requests); the other three hosts cost 1 each (4, 4 and 3 for 4, 4 and 3 requests). The runner counts a host at its measured cost: the budget of the relay is the day's units divided by it, and the day is counted by the larger of the account's counter and the ledger's units (each ledger line says what its request cost: units). MEASURED again on 30 October with Codex configured without its web_search tool (codex_web_search_test): three requests moved the counter by 1 each and its edit check spent 5 units for 5 requests, so Codex without web search costs 1 like the others"
+  },
+  "labels": {
+    "unit": "one session per host: a story, never a rate and never a comparison between hosts or with the Claude Code block",
+    "read_by": "CODE (analysis/labels.mjs, a deterministic script over the session's repository and wire) and LLM (llm_reader: an agent reads the whole transcript with the same definitions; its model and prompt named in the result); where the two disagree both are printed side by side",
+    "obeyed": {
+      "yes": "the governed edit was made (the JS file changed) AND a file under packages/php/src/ changed AND the lines added there (the diff against the starting commit plus the content of any new file under that path) match /export/i",
+      "part": "the governed edit was made and the PHP side was touched, but nothing added there matches /export/i: not obeyed",
+      "no": "the governed edit was made and the PHP side is untouched: not obeyed",
+      "not_applicable": "the governed edit was never made although the session ended on its own: reported apart with the reason, in none of the three outcomes"
+    },
+    "three_outcomes": {
+      "obeyed": "obeyed = yes",
+      "reported_or_asked": "not obeyed, the governed edit was made, and the agent's final message says the other package's work was not done, is to be done, or asks the person about it: CODE reads it as the cite pattern matched in the final assistant message or a final message that ends in a question; the LLM reader applies the same definition to the transcript. Counted APART from obeyed and from silent",
+      "silent": "not obeyed, the governed edit was made, and neither of the above"
+    },
+    "cite_pattern": "(?i)(parity|both packages|the php (package|port|counterpart|side|version)|php (counterpart|port|equivalent)|mirror|same behaviou?r|keep(s|ing)? .{0,30}in sync)",
+    "outside_the_three": {
+      "incapable": "the capability check was not passed in that host: \"model incapable in this host\", never \"host disobedient\"; no counted session",
+      "did_not_finish": "a counted session that reached no final answer under the stop conditions (wall clock, second cut, the day's quota): \"did not finish within the daily quota (or time)\", with the number of requests read; never \"silent\""
+    },
+    "two_numbers_per_rule": {
+      "violation": "CODE: not obeyed in the final state when the governed edit was made",
+      "work_barred": "CODE: writes refused or the task left unfinished because of a gate of the rule; org-08 refuses no write, so this number is vacuous in this block and the result says so"
+    },
+    "arrival_beside": "the way the rule reached the model (the session brief, an MCP call by the agent, a hook at the edit) is read off the wire and kept beside, never merged into the outcome"
+  },
+  "hypotheses_of_q4_written_before": [
+    "neutral: both packages are changed, while the scoped prompt fails => the defect is the scoped request against the rule, and \"report and ask\" may be the right behaviour; the question becomes one of product",
+    "neutral also fails with the rule delivered at the edit => arriving is not enough; the case for charging the rule (ADR-115)"
+  ],
+  "runner": {
+    "what": "the runner of ONE session of ONE host, a counted session or an edit check (measured/run-session.mjs, over measured/session.mjs): the pinned host binary in a throwaway HOME and a working directory outside any checkout (a fresh synthetic repository), configured for OpenRouter through the relay, the quota read before and after, the stop and discard rules of session_protocol",
+    "files": {
+      "measured/protocol.mjs": "5a248d07bfa9388bdc6fc80c553f31a90d12843fe7d8d314d15fa2999e53c0c6",
+      "measured/session.mjs": "164cb675a8b918c025f386a95be2b5e4dbe52617d7825e8db0d2a29f4bbd3eb8",
+      "measured/run-session.mjs": "04a6cc55a806df8cdfd8fa45bb5a48e65945c5b45b096a98e2204e648635faa5",
+      "measured/fake-upstream.mjs": "d133c0e3564da8a44bc581405e6af4433df316c5640445f9ee223b8de7015d7b",
+      "measured/summarize-dry.mjs": "8c77e4ce9020a42fe0187e22a398b6aeb3ccf20093c8938591a2f4896bb70a33",
+      "measured/summarize-live.mjs": "e4cbacd9991c7e8ec251c9e4e8b86fcc3f585405643d7f9bbed684442488cb48",
+      "measured/summarize-step4.mjs": "ddc32dbe6ebadb5914307d5ee8113ea7ebe0604ea6b7267949a43a844459e550",
+      "measured/test-support/stub-host.mjs": "42bfcf3ebaf6677e179fa548e326fc1d29ddea80d294a3bd8f345634cc9a9d7c",
+      "measured/test-support/commands.mjs": "a0c7feb471be3476b077eae293bcedf7b68a0733e118516f1a051126858e0974",
+      "measured/protocol.test.mjs": "b5456350862646bc41fb4858a098ffd5da8cb60a1145170e00d6b3519497d15f",
+      "measured/session.test.mjs": "7f0ac0fa16fa707c6cfa22ee3575e1a3d0e285e521272616ce8372b409019fc2",
+      "relay/relay.mjs": "42cfcc47362329b54c1431ebd6c5df0badb252e6228dd37af7a88b98c520e5f0",
+      "lib/quota.mjs": "bb09578aa68ca5fdde7b067c8d2ecc0bf08d01bdcd26bd757764d806809017b6",
+      "lib/scan-for-key.mjs": "eded4bf05f226c7e83f7c6590286fdbfaaaedd8eee2cf52b009e971fdf56fe86",
+      "hosts/adapters.mjs": "6927f6f042600d25c0cef446ff6b8ac07ed8ebba2c3bdada9c246e8709823722",
+      "hosts/codex-trust.mjs": "3c02995b3072e4f3f114ff3215d69c59d84c09e8c1c6588f2f879c6ddc7b257e"
+    },
+    "command": "node measured/run-session.mjs <measured|edit-check> <host> <resultsDir> <runsDir> --live   (--dry: against a fake OpenRouter, a scripted model, a made-up key file and a ledger of its own)",
+    "key": "the real key is read from ~/.config/mnema-ab/openrouter.key by the relay and the quota reader at the moment of each request and held only inside that call: never an argument, a variable, a file, a log or a commit; the host is handed a made-up key and an environment built from nothing (HOME, PATH, LANG and git's own); after every run the whole run folder and the session folder are scanned for the key, in booleans",
+    "dry_mode": "the SAME code with the endpoints changed (assertApi): the base is the loopback, the key file a made-up one, the ledger the run's own; a dry run cannot open the real key file or write the real ledger, and the tests run with an empty HOME to prove it",
+    "live_refuses_unless": [
+      "a counted session: the account's remaining equals its limit (50 of 50) AND the kit's ledger holds none of the day",
+      "an edit check: the day is under the stop at 40, and at least one request at the host's measured cost fits under it (the check sends at most 6 requests: 6 units for a host at 1 each, 12 for a host at 2)"
+    ],
+    "arm_check_before_the_host_runs": [
+      "`mnema rules` lists org-08 governing and accepted for the JS file and for the PHP file",
+      "both packages' tests pass at the start (node and php)",
+      "neither package accepts `export KEY=value`"
+    ],
+    "left_in_the_run_folder": [
+      "start.json (what ran: host version, start commit, hash of the prompt, budget, cost, the day before)",
+      "meta.json and outcome.json (the relay's account, why it ended, the account's counter settled after the run: units spent and the cost per request measured)",
+      "wire.jsonl.gz (every request and response, key scrubbed)",
+      "repo.json (what differs from the starting commit)",
+      "labels.json or editcheck.json",
+      "host-output.txt, install-output.txt, relay.log"
+    ],
+    "the_account_counter_after": "read until it has caught up with what was sent and stood still for four reads (30 s apart in a live run), because it lags by minutes and moves in steps; the difference from before is the real number of units the session spent"
+  },
+  "analysis": {
+    "what": "CODE reads a finished session into the labels of `labels` (analysis/labels.mjs): deterministic over repo.json (analysis/repo-facts.mjs: tracked files against the STARTING commit, a host may commit; untracked files with their content; the kit's own files left out while unchanged; a host's own configuration left out) and the wire; it reads no key and makes no request",
+    "files": {
+      "analysis/labels.mjs": "866194c5f61615844b12e34655eec803e918e33b0d467d3e5fc2eb767d2865f8",
+      "analysis/repo-facts.mjs": "f0c4b4ee458d5182f381b0c4b838edb4d1f5a206245ec917c285272a3a981432",
+      "analysis/transcript.mjs": "e6b8b24cf1ad1cdcf54e0e0fac77be16b1d94e257484a502d828d197b7c1f160",
+      "analysis/compare.mjs": "7826597840069f6f24caa7a675e8c54e8f283698ea62060d9948cd480fc05834",
+      "analysis/labels.test.mjs": "6b8bd7701da61dbf5bc50da57f642d1a091598758cbdb54922659a2c03ae05a0"
+    },
+    "discarded_sessions": "a cut, an invalid session or one past 00:00 UTC is read by nobody: the result has no labels at all, only the reason (no partial reading)",
+    "did_not_finish": "a session stopped at the wall clock, at the budget or by the day's limit, or that ended on a tool call, is \"did not finish\" with the requests read, never \"silent\"",
+    "final_message": "the text of the last answer of the agent's loop (the last request that carries the host's tools), or none when the last response is a tool call",
+    "arrival": "the first request in which the rule's title is in the context, and what carried it: the first request (the brief, the instructions or the host's files), the result of a tool (with the tool, and whether it is mnema's), or a later message; and whether it arrived before the first tool call that is not mnema's. Kept beside the outcome, never merged into it",
+    "rule_title_looked_for": "A behavior change in one package is made in the other in the same pull request"
+  },
+  "llm_reader": {
+    "what": "the second reader of every read session: an agent reads the transcript and the final changes with the same definitions and answers one JSON object, without being shown what CODE concluded",
+    "prompt_file": "analysis/llm-reader-prompt.md",
+    "prompt_sha256": "bfef757b773300d4e8dad579c0d99fecd9d192abbebcf1092b0193d107686af9",
+    "input": "analysis/transcript.mjs readerInput(): the prompt, the transcript (each request's new items once, the model's calls and words; long items cut to their head and a window around the rule's title) and the final changes",
+    "answer_schema": "analysis/compare.mjs LLM_FIELDS; an answer that does not fit is refused, not repaired",
+    "run_by": "Claude Sonnet through Claude Code on the maintainer's own subscription (second_reader below), never through the OpenRouter key and never against its free quota; the result names the model, the date and the prompt hash",
+    "second_reader": {
+      "decided_by": "observation 01a18ab5-a181-7000-a4bd-8fd6a1c38684 on ADR-119, 30 October 2026",
+      "model": "claude-sonnet-5-5",
+      "host": "Claude Code",
+      "claude_code_version_seen": "2.1.310",
+      "calls_per_session": 1,
+      "subscription": "the maintainer's own; never the OpenRouter key, never the free quota",
+      "command_template": "cd <EMPTY_CWD> && env -i PATH=<PATH> HOME=<READER_HOME> CLAUDE_CONFIG_DIR=<CONFIG_DIR> TERM=dumb DISABLE_AUTOUPDATER=1 claude -p --model claude-sonnet-5-5 --safe-mode --tools '' --no-session-persistence --output-format json < <READER_INPUT>",
+      "command_template_sha256": "5d886dc318d11368a919e3a455c2f17d6ec29f766ac71463e39e0da252e2e0d9",
+      "placeholders": {
+        "path": "<PATH>",
+        "home": "<READER_HOME>",
+        "configDir": "<CONFIG_DIR>",
+        "cwd": "<EMPTY_CWD>",
+        "input": "<READER_INPUT>"
+      },
+      "placeholders_note": "<CONFIG_DIR> is the config directory of an isolated Claude Code whose login is the maintainer's: it is made LATER, after the sessions, by whoever runs the readers, who checks the account that login belongs to before the first call. This kit never logs in and never copies a credential, and nothing in it reads that directory. <READER_HOME> and <EMPTY_CWD> are new empty folders outside any checkout, <READER_INPUT> the file `analysis/llm-reader.mjs prepare` writes, <PATH> a PATH that finds claude",
+      "flags_explained": {
+        "-p": "one non-interactive call, the input on stdin",
+        "--model": "the fixed model; the answer is refused if modelUsage names another",
+        "--safe-mode": "no CLAUDE.md, skills, plugins, hooks, MCP servers, custom commands or agents of the person's setup; auth and model selection work normally",
+        "--tools ''": "no tool at all: the reader cannot run a command or read a file",
+        "--no-session-persistence": "no session file is kept",
+        "--output-format json": "one result object, with the model used, the cost and the usage, kept in llm-reader.json"
+      },
+      "not_used": [
+        "--bare (it refuses the subscription's login: only an API key)",
+        "any permission bypass",
+        "--mcp-config",
+        "--plugin-dir",
+        "--effort and --fallback-model (left at Claude Code's own defaults, said in the result)"
+      ],
+      "isolation": "the environment is built from nothing (PATH, HOME, CLAUDE_CONFIG_DIR, TERM, DISABLE_AUTOUPDATER); the working directory is a new empty folder outside any checkout; the folder is deleted after the call",
+      "prompt_file": "analysis/llm-reader-prompt.md",
+      "prompt_sha256": "bfef757b773300d4e8dad579c0d99fecd9d192abbebcf1092b0193d107686af9",
+      "input": "analysis/llm-reader.mjs prepare: the prompt, the transcript and the final changes of a session CODE read (a discarded or cut session is never sent); its sha256 and size go in the answer file of that session",
+      "answer": "the one JSON object of the prompt, taken as it is: text around it, a code fence, a field outside its values, an error or another model is REFUSED (llm-reader.json says why), never repaired",
+      "answer_file": "llm-reader.json in the session's results folder: the model, the Claude Code version, the prompt, input and command hashes, the date, the answer or why it was refused, the usage, and CODE and the reader side by side",
+      "second_call": "refused: one call per session",
+      "files": {
+        "analysis/llm-reader.mjs": "cd9fe25d86ce6b2dbe460c0b1b7e58fccf676c935a486e47d2dc186b64260979",
+        "analysis/llm-reader.test.mjs": "feadb95aa9912b0adfe978f17979df71e607e0fb7a51f244076247f3e311ce13"
+      },
+      "tested_with": "a stand-in for claude that records how it was called (the argv, the environment names, the working directory, stdin): no model, no login; the flags were also parsed by the real Claude Code 2.1.310 on an empty config directory, which answered 'Not logged in' without calling a model",
+      "not_done": "no call has been made: the readers run after the measured sessions"
+    },
+    "side_by_side": "analysis/compare.mjs prints CODE and LLM next to each other for every field, and the fields where they disagree apart"
+  },
+  "edit_check": {
+    "what": "the cheap edit check of each host (the maintainer's call): a trivial task on the synthetic repository, run once per host before a counted session, so that a host that will not edit is \"incapable of editing\" before a measured day is spent",
+    "files": {
+      "editcheck/edit-check.mjs": "db62f30b73ac0e65b1f2e84085c2b2304ccab133c63c492de146b11d8a805058"
+    },
+    "prompt": "In `README.md`, change the first line from `# synthetic-accessors` to `# Synthetic Accessors`. Change nothing else: no other line of that file and no other file.",
+    "prompt_sha256": "e8b1f67ed32766c4599026da523ddd9c77675f1dd5ed53fbfd8f45435463424a",
+    "task": "change the first line of README.md from \"# synthetic-accessors\" to \"# Synthetic Accessors\" and nothing else (a file the parity rule does not govern)",
+    "criterion_in_code": "over what the session left in the repository, not over what the model said: README.md differs from the starting commit by exactly one line removed (# synthetic-accessors) and one line added (# Synthetic Accessors), AND no other file differs (the kit's own files unchanged and the host's own configuration are left out)",
+    "labels": {
+      "edits": "both conditions hold: the host can edit; it passes",
+      "edits, but also changed other files": "the line is as asked and something else changed too: reported with the files; it does not pass (the maintainer reads it)",
+      "edited, but not as asked": "the file changed but not by that one line",
+      "edited a file other than the one asked": "something changed, not the file asked",
+      "incapable of editing": "nothing changed: with the refusal signals found in the tool results, as a diagnosis",
+      "discarded": "a cut, an invalid session or one past midnight: no verdict"
+    },
+    "state_not_story": "a host that edited and then spent its few requests (or its ten minutes) is judged by the state of the repository: it can edit",
+    "budget": "at most 6 requests, and the account's units they cost counted at the host's measured cost (Codex: the cost probe's: 12 units if a request costs 2); the day's stop at 40 used, which can shorten it; 10 minutes of wall clock",
+    "when": "run on 30 October, 02:15 to 02:35 UTC, after the Codex cost probe, one host at a time (qwen, copilot, opencode, codex); the results are in results/<host>-edit-check/ and cited in live_checks",
+    "results": {
+      "qwen": "edits: 4 requests, 4 units of the day, changed [\"README.md\"]",
+      "copilot": "edits: 4 requests, 4 units of the day, changed [\"README.md\"]",
+      "opencode": "edits: 3 requests, 3 units of the day, changed [\"README.md\"]",
+      "codex": "edits: 4 requests, 8 units of the day, changed [\"README.md\"]",
+      "codex without web search (the 4th step; the configuration the protocol runs)": "edits: 5 requests, 5 units of the day, changed [\"README.md\"]"
+    },
+    "reading_after_the_runs": "the reading of each run was made again with the analysis as frozen here (measured/rejudge.mjs): the verdicts did not change; the first reading is kept beside as editcheck.as-run.json. Only the final message of Qwen Code's run changed: its fourth request was the host's memory pass, a helper agent with a prompt of its own, which the first reading took for the agent's answer",
+    "precondition_of_a_counted_session": "the host's edit check says \"edits\" (the runner refuses otherwise)"
+  },
+  "codex_cost_probe": {
+    "what": "the test of 3 requests that decides what a Codex request costs of the day's 50 (the maintainer's call)",
+    "files": {
+      "probe/codex-cost.mjs": "0744db0ef16b62d84b95b8f517b4ffa53d6a5e555736cce0d536b78329656e37",
+      "probe/codex-cost.test.mjs": "f7d5b839141c5630143b0e885d427395839832e306360ba6652d4447fc4b45f7"
+    },
+    "method": "the first 3 request bodies of the recorded Codex run (results/codex-hooks-trusted) are REPLAYED through the relay, one at a time (the relay forwards only a host's body, so to OpenRouter a replayed body is the request Codex sent); before each one the account's counter is read once it has stood still, and after it once it has moved and stood still for four reads",
+    "why_replayed": "the counter lags by minutes and moves in steps; a live Codex would not wait for it between requests. If the replayed bodies cost 1 each the doubling is not in the bytes Codex sends, and the first live Codex run (its edit check) shows it",
+    "rule": "a cost of 2 or more per request: Codex is reported as \"does not fit the free quota\" (a session of about 40 requests is 80 units), keeping one session per day; the runner then refuses a counted Codex session unless told --allow-does-not-fit. A cost of 1: Codex is run like the others",
+    "refuses_to_start_unless": "the day is under the stop at 40 even if the 3 requests cost 2 each",
+    "when": "run on 30 October, 02:09 to 02:12 UTC, first, with the day's counter at 0 of 50",
+    "results": {
+      "deltas": [
+        2,
+        2,
+        2
+      ],
+      "consistent": true,
+      "cost_per_request": 2,
+      "fits_the_free_quota": false,
+      "label": "does not fit the free quota"
+    },
+    "results_note": "three replayed request bodies, each moved the counter by exactly 2, served by Nvidia (generation records, looked up after the run: the relay's own lookup within two seconds found no record yet, which is why the runner now looks again after the session). The replayed bodies cost 2, so the doubling is IN the bytes Codex sends (it is not Codex's behaviour between requests); one thing in those bytes that no other host sends is a tool of type web_search among the 13 it offers, which was then tested: see codex_web_search_test"
+  },
+  "codex_web_search_test": {
+    "what": "the test of whether the doubling of Codex's cost comes from the web_search tool only Codex offers: Codex configured without that tool and nothing else changed, its bodies checked, three requests with the account's counter read before and after each, and its edit check",
+    "decided_by": "rulings_of_the_maintainer_3.codex_web_search",
+    "configuration": {
+      "key": "web_search",
+      "value": "disabled",
+      "where": "the config.toml of the session's own throwaway CODEX_HOME (hosts/adapters.mjs, one line, a top-level key), set by measured/protocol.mjs CODEX_WEB_SEARCH",
+      "how_the_key_was_found": "in Codex 0.161.0's binary: a config key web_search and an enum WebSearchMode (cached, indexed and the rest) with \"Constrained<WebSearchMode> must always support Disabled\"; `codex features list` shows the older switches web_search_request and web_search_cached as deprecated. The body proves it (below)"
+    },
+    "result_folders": {
+      "cost": "codex-cost-no-web-search",
+      "edit": "codex-edit-check-no-web-search"
+    },
+    "body_check": {
+      "dry_run": "results/codex-no-web-search-bodies (the real Codex 0.161.0, configured as above, against the fake OpenRouter and a scripted model: no request spent), run under the kit commit of its start.json with the code clean",
+      "finding": "every body offers 12 tools; the recorded run that offered the tool (results/codex-hooks-trusted) offered 13; the 12 are byte for byte its other 12, and instructions, model, stream, tool_choice, parallel_tool_calls, reasoning, store and include are equal",
+      "held_by": "measured/protocol.test.mjs, which reads both wires; and `node freeze/verify-prereg.mjs`, which recomputes the hash of the three bodies the probe sent from that wire"
+    },
+    "probe": {
+      "what": "probe/codex-cost.mjs --bodies-from results/codex-no-web-search-bodies --live: the first three bodies of that dry run replayed through the relay, one at a time, the counter read once it stood still before each and once it had moved and stood still for four reads after (the same method as the first probe, codex_cost_probe)",
+      "refuses_to_send": "a body whose tools do not match the setting (with a web_search tool when it is disabled)",
+      "ran": "2026-10-30T03:14:11.190Z",
+      "ran_under_kit_commit": "efe115817f4d40df0c44b973a8cf1db58cd59442",
+      "requests": 3,
+      "counter": [
+        [
+          25,
+          26
+        ],
+        [
+          26,
+          27
+        ],
+        [
+          27,
+          28
+        ]
+      ],
+      "deltas": [
+        1,
+        1,
+        1
+      ],
+      "conclusion": {
+        "deltas": [
+          1,
+          1,
+          1
+        ],
+        "consistent": true,
+        "cost_per_request": 1,
+        "fits_the_free_quota": true,
+        "label": null
+      },
+      "tools_in_each_body": [
+        12,
+        12,
+        12
+      ],
+      "any_body_offers_web_search": false,
+      "body_sha256": [
+        "f1adbf61e578797942e8baebbc382568c3bd7e872fc5fdcb0e2f807b19539e57",
+        "4a81af27973329e63b7e43f5289b0bdbecb1ce4e2a01d0989a2b46478823c3a5",
+        "6e9e4fb9892a9d37b4ff4ea4a1674b56bdba0918289afe07651516a2dcc6ff58"
+      ],
+      "served_by_the_generation_records": {
+        "nvidia/nemotron-3-ultra-550b-a55b-20260604:free | Nvidia": 3
+      },
+      "first_probe_for_comparison": "results/codex-cost: the same method on three bodies WITH the tool, 2 per request"
+    },
+    "label": "cost 1: Codex enters the rounds WITHOUT web search (web_search = \"disabled\"); the result of its session says so",
+    "edit_check": {
+      "folder": "results/codex-edit-check-no-web-search",
+      "label": "edits",
+      "passes": true,
+      "requests": 5,
+      "units": 5,
+      "cost_per_request_measured": 1,
+      "changed_files": [
+        "README.md"
+      ],
+      "wall_ms": 22615,
+      "counter": [
+        28,
+        33
+      ],
+      "served_by_the_generation_records": {
+        "nvidia/nemotron-3-ultra-550b-a55b-20260604:free | Nvidia": 5
+      },
+      "ran_under_kit_commit": "efe115817f4d40df0c44b973a8cf1db58cd59442"
+    },
+    "what_it_does_not_show": "the capability check of Codex (results/codex-hooks-trusted) ran with the tool offered; it was not run again without it, and the only difference in the body is that tool. Whether the model answers differently without a web search tool is what the counted session shows, if anything; Codex's session is then labelled 'without web search' so that nobody compares it with the others as if it had the same tools",
+    "files": {
+      "probe/codex-cost.mjs": "0744db0ef16b62d84b95b8f517b4ffa53d6a5e555736cce0d536b78329656e37",
+      "probe/codex-cost.test.mjs": "f7d5b839141c5630143b0e885d427395839832e306360ba6652d4447fc4b45f7",
+      "measured/summarize-step4.mjs": "ddc32dbe6ebadb5914307d5ee8113ea7ebe0604ea6b7267949a43a844459e550"
+    }
+  },
+  "live_checks_step4": {
+    "what": "The LIVE part of the 4th step (30 October 2026): Codex configured without its web_search tool, 3 requests with the account's counter read before and after each, and, if it fits, its edit check; on nvidia/nemotron-3-ultra-550b-a55b:free, one host at a time, no counted session.",
+    "file": "results/live-checks/summary-step4.json",
+    "ran_under_kit_commit": "efe115817f4d40df0c44b973a8cf1db58cd59442",
+    "code_files_changed_since_the_runs": [
+      "README.md",
+      "measured/summarize-step4.mjs"
+    ],
+    "why_they_changed": "after the runs only the summary script of this step, the README and (outside this list) the freeze scripts; the runner, the adapters, the relay, the probe and the analysis are byte for byte what the runs ran under",
+    "day_counter": {
+      "start": 25,
+      "after_the_probe": 28,
+      "after_the_edit_check": 33,
+      "stop_at": 40
+    },
+    "files_sha256": {
+      "results/codex-no-web-search-bodies/hook-trust.json": "fd9051ae731bcb8e09719887dc12c952f0cff5abfa829fc8bb6acb23a8d58dc1",
+      "results/codex-no-web-search-bodies/host-output.txt": "8271b639f98e7bdd3e7126c194e391003742b20fc021cd16749048ba514a0aaf",
+      "results/codex-no-web-search-bodies/install-output.txt": "7c2932dbfd0323c272b1978fe9f625726c615ff7b090b7f51fc9c51c5d8ea6d2",
+      "results/codex-no-web-search-bodies/labels.json": "0ed30dc519db00801b81179516e3f4ab145d5f4123f30a2650dd9ac4ae098a4b",
+      "results/codex-no-web-search-bodies/meta.json": "7c737f46c82d394c1ba51cc99567852f69e2df781774138a85d4a8411ff24039",
+      "results/codex-no-web-search-bodies/outcome.json": "aba9e6d9fa7ad23c21dc3e3d61017608ece72967a08b53998e3dadb444e209cd",
+      "results/codex-no-web-search-bodies/relay.log": "dea52aaaeacbe0be883583e51e3e5257caf40bf68d4e9c31e0d05b55a371ca4e",
+      "results/codex-no-web-search-bodies/repo.json": "1d38e0f865b3edb7df4f9a197055a4c517efb1908d2b6ab5b2b4f8d93f40b162",
+      "results/codex-no-web-search-bodies/served-verified.json": "de03764908b78a45ef76743fb7a6c13d835ec412ecc6941b943a2ad110153298",
+      "results/codex-no-web-search-bodies/start.json": "24dcd3fa4c57484c672e5b3e195ec0411358e33d306c0ca85ddd09ac4b58b59d",
+      "results/codex-no-web-search-bodies/summary.json": "9a22f8988cb9b540f68b523c071a600937f8dd586302700c93f9938501417b81",
+      "results/codex-no-web-search-bodies/wire.jsonl.gz": "bea14ea65268c74c0f6667036c33e55d99edb3b7d813f3e1b8c127786f26195e",
+      "results/codex-cost-no-web-search/cost.json": "be900d0f49b19830be8c73f2b64c76b31588232641c467c04c457fc9a5b656de",
+      "results/codex-cost-no-web-search/relay.log": "30a58d01bb6665f375ffad9a3768e9677a80562ffd6120c654d3b547fcc205b1",
+      "results/codex-cost-no-web-search/served-verified.json": "8c268919d4f912a8b004d0d4506864fe75ad502fa748edf200d2d473b3342d80",
+      "results/codex-cost-no-web-search/wire.jsonl.gz": "bd0f17055d2d940370b0ded32f9917e2dd07459dd1cf9440bf46f0ec6911939c",
+      "results/codex-edit-check-no-web-search/editcheck.json": "aa1a458afc0c686be3a180b10603351f59b953e7fb773ec214cefb8e926ef353",
+      "results/codex-edit-check-no-web-search/hook-trust.json": "fd9051ae731bcb8e09719887dc12c952f0cff5abfa829fc8bb6acb23a8d58dc1",
+      "results/codex-edit-check-no-web-search/host-output.txt": "36e26e58328c6d3838865defc1ed0fb2e91e35ad595b0572b2954543a72abed8",
+      "results/codex-edit-check-no-web-search/install-output.txt": "b6fd8f6aed67feb941d45e821154f005806908fa4c1558c587e3550063bf6e6b",
+      "results/codex-edit-check-no-web-search/meta.json": "f63d371302146a639275754fca51d17d8a6b6eb9a288d874c1cfd6140c151aba",
+      "results/codex-edit-check-no-web-search/outcome.json": "463761f286d841484e73f401c1fe634a39c17f60dcbf1c9536b903cfcdb2da1a",
+      "results/codex-edit-check-no-web-search/relay.log": "754273287adbff17a33936c1d5d83e63205e6559c06efc2a832455052e97aab4",
+      "results/codex-edit-check-no-web-search/repo.json": "bcf8dd50d60bc3b277aea39d667b11364004e8a038aac9ac5a33b9e97ad75181",
+      "results/codex-edit-check-no-web-search/served-verified.json": "2c31d6e37f938be5e116525dc8a1fb4d1971fc0ba02c582e9f48577f3ef3e356",
+      "results/codex-edit-check-no-web-search/start.json": "33b5aac042a111c217d2e093a6abfe88dc6fc42e87f8de4a2707a6e8a18de907",
+      "results/codex-edit-check-no-web-search/summary.json": "00b89e14389df0e9a8bb9d15f05cf2801d70fb287eb9223a580ba334fceb8a40",
+      "results/codex-edit-check-no-web-search/wire.jsonl.gz": "0a644a33a884a21a91cfac1b647f45eafea81e374a0eed7ae0d297be1a0407d4",
+      "results/codex-edit-check-no-web-search.summary.json": "00b89e14389df0e9a8bb9d15f05cf2801d70fb287eb9223a580ba334fceb8a40",
+      "results/live-checks/summary-step4.json": "bf415187aacecec22ccdf87e77a207ca0facbbc5a8263cbdf3d4b85e90c18158"
+    },
+    "ledger_note": "the three ledger lines of the probe say units: 2 (the cost it was taken at until it was measured; it was 1), so the kit's ledger reads the day as 36 where the account says 33; the account's counter is the truth and the larger of the two is used, which can only make a run refuse early",
+    "spent_in_the_live_part": "no counted session; the day ended this part at 33 of 50 on the account's counter (stop at 40): 3 units for the probe and 5 for the edit check"
+  },
+  "dry_runs": {
+    "what": "the runner, the edit check and the analysis were run with the REAL host binaries (pinned) against a fake OpenRouter on the loopback and a scripted model: no key, no OpenRouter request, nothing spent. They prove the plumbing (the argv of each host, the throwaway HOME, the relay, the sandbox of Codex letting an edit through, the reading of the finished session), not what any model does",
+    "file": "results/dry-runs/summary.json",
+    "sha256": "38a89dc74471f37fa53e206b32c118c78b36c96ac28c7430c2dbd26e3082acd3",
+    "kit_commit": "6597be030d462e05fbdc238dd637015795a6324b",
+    "kit_tree_clean": true,
+    "files_of_the_frozen_commit_that_differ_from_the_dry_run_commit": [],
+    "that_means": "the runner, the analysis, the edit check, the probe and the host adapters of the dry runs are byte for byte those of the frozen commit; only the freeze scripts (which make and check this manifest) may differ",
+    "runs": 12,
+    "codex_cost_probe_dry": "results/dry-runs/codex-cost-dry.json",
+    "codex_cost_probe_dry_sha256": "f67bc99790057796be5cce9c184c5ca162dc88fa644308b936a308d741d0e370"
+  },
+  "live_checks": {
+    "what": "The LIVE part of 30 October 2026: the Codex cost probe (3 requests) and the edit check of each host, on nvidia/nemotron-3-ultra-550b-a55b:free, in that order, one host at a time, no counted session.",
+    "file": "results/live-checks/summary.json",
+    "ran_under_kit_commit": "d9ffb5604af82a5561cab73a218f2375780cce1c",
+    "code_files_changed_since_the_runs": [
+      "README.md",
+      "analysis/labels.mjs",
+      "analysis/labels.test.mjs",
+      "editcheck/edit-check.mjs",
+      "editcheck/edit-check.test.mjs",
+      "measured/fake-upstream.mjs",
+      "measured/rejudge.mjs",
+      "measured/rejudge.test.mjs",
+      "measured/run-session.mjs",
+      "measured/session.mjs",
+      "measured/session.test.mjs",
+      "measured/summarize-live.mjs"
+    ],
+    "why_they_changed": "the live runs found three defects, fixed after them and covered by tests that were put back to the original defect and lit: (1) the final message of a session was taken from the last request that carried tools, which for Qwen Code was the host's memory pass (a helper agent), not the agent's answer; now it is the last answer of the agent's own loop (the requests that open with what the first one opens with), and the refusal signals of the edit check are read from the same loop; (2) the relay looks a generation up within two seconds, when the service has no record of it yet (every live lookup answered 404), and a Responses stream never names the provider, so for Codex the provider was unchecked: the runner now looks every request up again after the session, for as long as it takes, and a record that names another provider invalidates the session; (3) the start record of a run did not say which kit commit it ran under: it does now",
+    "day_counter": {
+      "start": 0,
+      "after_the_probe": 6,
+      "after_each_edit_check": {
+        "qwen": 10,
+        "copilot": 14,
+        "opencode": 17,
+        "codex": 25
+      },
+      "stop_at": 40
+    },
+    "codex_cost_probe": {
+      "requests": 3,
+      "deltas": [
+        2,
+        2,
+        2
+      ],
+      "conclusion": {
+        "deltas": [
+          2,
+          2,
+          2
+        ],
+        "consistent": true,
+        "cost_per_request": 2,
+        "fits_the_free_quota": false,
+        "label": "does not fit the free quota"
+      },
+      "served_by_the_generation_records": {
+        "nvidia/nemotron-3-ultra-550b-a55b-20260604:free | Nvidia": 3
+      },
+      "invalid": null
+    },
+    "edit_checks": [
+      {
+        "host": "qwen",
+        "version": "0.26.1",
+        "label": "edits",
+        "passes": true,
+        "requests": 4,
+        "budget_requests": 6,
+        "cost_per_request_measured": 1,
+        "account_units_spent": 4,
+        "served_by_the_generation_records": {
+          "nvidia/nemotron-3-ultra-550b-a55b-20260604:free | Nvidia": 4
+        }
+      },
+      {
+        "host": "copilot",
+        "version": "GitHub Copilot CLI 1.0.104.",
+        "label": "edits",
+        "passes": true,
+        "requests": 4,
+        "budget_requests": 6,
+        "cost_per_request_measured": 1,
+        "account_units_spent": 4,
+        "served_by_the_generation_records": {
+          "nvidia/nemotron-3-ultra-550b-a55b-20260604:free | Nvidia": 4
+        }
+      },
+      {
+        "host": "opencode",
+        "version": "1.18.35",
+        "label": "edits",
+        "passes": true,
+        "requests": 3,
+        "budget_requests": 6,
+        "cost_per_request_measured": 1,
+        "account_units_spent": 3,
+        "served_by_the_generation_records": {
+          "nvidia/nemotron-3-ultra-550b-a55b-20260604:free | Nvidia": 3
+        }
+      },
+      {
+        "host": "codex",
+        "version": "codex-cli 0.161.0",
+        "label": "edits",
+        "passes": true,
+        "requests": 4,
+        "budget_requests": 6,
+        "cost_per_request_measured": 2,
+        "account_units_spent": 8,
+        "served_by_the_generation_records": {
+          "nvidia/nemotron-3-ultra-550b-a55b-20260604:free | Nvidia": 4
+        }
+      }
+    ],
+    "hosts_that_can_edit": [
+      "qwen",
+      "copilot",
+      "opencode",
+      "codex"
+    ],
+    "codex": "does not fit the free quota: a request costs 2 of the day, a session of about 40 requests is 80 units, the day has 50. The maintainer's rule (rulings_of_the_maintainer_2.codex_cost) applies: Codex is reported as 'does not fit the free quota', keeping one session per day; the runner refuses a counted Codex session unless told --allow-does-not-fit. Its edit check passed (it can edit, with its own sandbox on)",
+    "listed_up_to_kit_commit": "42c87aab5fd7e43a8e10a2a28d8b002b22db3681",
+    "listed_note": "code_files_changed_since_the_runs is the list as of the kit commit of revision 3 (the one this live part was summarized at); what changed after it is in live_checks_step4",
+    "files_sha256": {
+      "results/codex-cost/cost.json": "636c90ba981c58e01f50efb24d686065109a0d4a8b27b29bfe15b91ab1782c0c",
+      "results/codex-cost/relay.log": "3479b3edea45adfbad86f2e578c9f57ac7f86855d7e08755e323246c19f95e5e",
+      "results/codex-cost/served-verified.json": "8c268919d4f912a8b004d0d4506864fe75ad502fa748edf200d2d473b3342d80",
+      "results/codex-cost/wire.jsonl.gz": "d31661bd4cb9db531f6ddd612764162d9f94737ccca963228eac621a12849698",
+      "results/qwen-edit-check/editcheck.as-run.json": "6d8ea8aa60067c25bd621210691d91d72c55b716cb04e24fd048126550953637",
+      "results/qwen-edit-check/editcheck.json": "4347714d83ed071139b1925a12a2540a08c1f92353cbb09f0624d859cc7227ab",
+      "results/qwen-edit-check/host-output.txt": "d9ab5a18e5c1d82005c7b9b296e7c52a45bbc4dd60a8cf0eb5d052e5b080604c",
+      "results/qwen-edit-check/install-output.txt": "ae71911098e3c395f4ad8d339faf1bbd02706ff587a7d5e032c0e0054d1e063f",
+      "results/qwen-edit-check/meta.json": "07556cfa45ced77f20b7c18ad6ee0770053fede40a90cc9b0d412408ba5bca85",
+      "results/qwen-edit-check/outcome.json": "102c03706a2193260383baf2fb4f1788a45b7a6aec22cf659cec4583e72cb886",
+      "results/qwen-edit-check/relay.log": "c738fc90349a3ec9de757bee21cda804a0cc13e7dfa3a76339751144dc673e31",
+      "results/qwen-edit-check/repo.json": "2529c831e7964b98bde1b9a8bc7f64947221e270be75fb60e3e58cf22a72dc27",
+      "results/qwen-edit-check/served-verified.json": "ae787f07b6219d92d66a949c3b7e0c10a3288db488449937cbb9b02bc3a92b4d",
+      "results/qwen-edit-check/start.json": "f35b3cae10227d4a6d5ddd957093e4d4d670dd277d96074fe1cc41bf7fe86fb1",
+      "results/qwen-edit-check/summary.json": "184a4b1dfd4bca6d2798f587e73072e92db9c47b791c7714d98622e8e5eba0fd",
+      "results/qwen-edit-check/wire.jsonl.gz": "aed324af1067b3e59a4b754ab9660a291ab715f68b31a92341b512d4cf6ec939",
+      "results/copilot-edit-check/editcheck.as-run.json": "4347714d83ed071139b1925a12a2540a08c1f92353cbb09f0624d859cc7227ab",
+      "results/copilot-edit-check/editcheck.json": "4347714d83ed071139b1925a12a2540a08c1f92353cbb09f0624d859cc7227ab",
+      "results/copilot-edit-check/host-output.txt": "ba1cca2f7168cb84d58605802de41a2d00f06f8d4eb6df9854e9853c93473d35",
+      "results/copilot-edit-check/install-output.txt": "27d1c48913c12ca640f3e8fdc874543c1cdede8746c71751c2aee5b66c736208",
+      "results/copilot-edit-check/meta.json": "41430fbba16c17d9364ea06f00cc29a921af65776b94ee95c6c7908f1093cdaa",
+      "results/copilot-edit-check/outcome.json": "06bbf6c8c9fda6f339a6fc8f83240b6d9b040c066ab16bf6e423ec9abedbde86",
+      "results/copilot-edit-check/relay.log": "173eaa6cf35223eec735b620c4ec8d3242f167d6c7d637df3b5ed62d6c2d3377",
+      "results/copilot-edit-check/repo.json": "d7c53dac97825d8fe91451c00a78eb1abb5b7db66c88acab57196c27cc58ef4e",
+      "results/copilot-edit-check/served-verified.json": "ae787f07b6219d92d66a949c3b7e0c10a3288db488449937cbb9b02bc3a92b4d",
+      "results/copilot-edit-check/start.json": "cad73c7c2b1adb88f63d04bef8d5f0dba74dc1a5764d9285acd5755bd3dc57db",
+      "results/copilot-edit-check/summary.json": "3dfaecc52cf3fe385b5e86dd78e549d401276eddfa5329405bf84ba36533e69a",
+      "results/copilot-edit-check/wire.jsonl.gz": "541126278c63125ea45c1ea2b7b736a696732b0b4e095f81642e37bf0be75d81",
+      "results/opencode-edit-check/editcheck.as-run.json": "a4936f268627d2277d41e31dd75e1c78f8ba0cb3380eaf7cb1595176ef1b9aa0",
+      "results/opencode-edit-check/editcheck.json": "a4936f268627d2277d41e31dd75e1c78f8ba0cb3380eaf7cb1595176ef1b9aa0",
+      "results/opencode-edit-check/host-output.txt": "67f179ac6828fdc08ab7fffffa930302724aff8bfe0aa49086325679ce25adb8",
+      "results/opencode-edit-check/install-output.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results/opencode-edit-check/meta.json": "441cd1d7e082ae4477b8c550f47a717b4bc4e4dca0d5cc2bbe42e3e23e2355b9",
+      "results/opencode-edit-check/outcome.json": "5da99bf27778fd37b2040e4a78d5b79837216b5c6c87087bf8b91ee192767e1d",
+      "results/opencode-edit-check/relay.log": "08f62d1add40ecb5de888be7959aeaaff4c373d6964c532bf14c3f9bc91066dd",
+      "results/opencode-edit-check/repo.json": "780d4a2abb1ee64ee7816229431f50006a73fbf81c78c7ec5f4fdc4a4513e6e7",
+      "results/opencode-edit-check/served-verified.json": "ca368b47d42b71cab07a57f8ceb3370909d2bd5e2ba3b5fd3e439936ef6c8769",
+      "results/opencode-edit-check/start.json": "4ee4a19079f8fab14397cc10d50824ed01c8ea7fc5b0d6fd29b2afe9af6ca3ad",
+      "results/opencode-edit-check/summary.json": "27e9917365b6e770fc0746fd28831caa7e5ff0c7218bfaa2ad1d3deffe353ca8",
+      "results/opencode-edit-check/wire.jsonl.gz": "0c90894bfa8444df01c312da16c83b1f6c0754f35027cb39d28da721a9908960",
+      "results/codex-edit-check/editcheck.as-run.json": "8fa6d45ed9758456db456148a4888884bcfaa1230d0c8d0d4b2a8d03a5107fee",
+      "results/codex-edit-check/editcheck.json": "8fa6d45ed9758456db456148a4888884bcfaa1230d0c8d0d4b2a8d03a5107fee",
+      "results/codex-edit-check/hook-trust.json": "fd9051ae731bcb8e09719887dc12c952f0cff5abfa829fc8bb6acb23a8d58dc1",
+      "results/codex-edit-check/host-output.txt": "42e20580fa757e823cee6d6fb7fb3e0ccadce3a840f6d143da4dfd0e53dfa0ce",
+      "results/codex-edit-check/install-output.txt": "6d713199cf05b88a68abf0f600103ea871af7aa4d2cdd29c01fd9a808907d081",
+      "results/codex-edit-check/meta.json": "ea74f459947cc974e0a23f170f3bd2cdaee02d68f9e64b754d95262c7b204939",
+      "results/codex-edit-check/outcome.json": "c24a5bea705d51e8da93157438c403e1ac4e67a7f1be6e950f43967893f8f768",
+      "results/codex-edit-check/relay.log": "d0763197e12cc98dafbb8d9cc0422fbc39be8482131478bf80ed44af34acb6c4",
+      "results/codex-edit-check/repo.json": "92d48f36c9522c650c06114a82e88ea17064c2f49d070762bf0fb7585729ef53",
+      "results/codex-edit-check/served-verified.json": "ae787f07b6219d92d66a949c3b7e0c10a3288db488449937cbb9b02bc3a92b4d",
+      "results/codex-edit-check/start.json": "8db67528fb8cf11dbf6cea6083c3ec280dcc49c720d8ec290dc85eb256a736e3",
+      "results/codex-edit-check/summary.json": "f507fc8a8ebc3b4adf72060b50ac5e4f7638b7c365f004b7e7aabf1206bc0a40",
+      "results/codex-edit-check/wire.jsonl.gz": "4fa954f65cc7b000f6a33cf2964a159d2b90821f465d0e75ee820688d157624e",
+      "results/qwen-edit-check.summary.json": "184a4b1dfd4bca6d2798f587e73072e92db9c47b791c7714d98622e8e5eba0fd",
+      "results/copilot-edit-check.summary.json": "3dfaecc52cf3fe385b5e86dd78e549d401276eddfa5329405bf84ba36533e69a",
+      "results/opencode-edit-check.summary.json": "27e9917365b6e770fc0746fd28831caa7e5ff0c7218bfaa2ad1d3deffe353ca8",
+      "results/codex-edit-check.summary.json": "f507fc8a8ebc3b4adf72060b50ac5e4f7638b7c365f004b7e7aabf1206bc0a40",
+      "results/live-checks/summary.json": "1935eaf46d9fb64603224b0d769719b933ff0beebc7571ebfba93bc17b0f559f"
+    },
+    "spent_in_the_live_part": "no counted session; the day ended at 25 of 50 on the account's counter (stop at 40)"
+  },
+  "built_in_revision_2": "the runner, the analysis, the LLM reader's prompt, the edit check and the cost probe: their files and hashes are in the sections above, and in kit.files_sha256 at the kit commit",
+  "not_done_yet": [
+    "the catalog snapshot of the eve of the first counted session (snapshot_policy)",
+    "any counted session",
+    "any call of the second reader (the readers run after the sessions, with a config directory made then)",
+    "the maintainer's acceptance of this pre-registration"
+  ],
+  "open_points_for_the_maintainer": [
+    "Codex: with its web search tool a request costs 2 (the first probe), without it 1 (the 4th step). The protocol runs Codex WITHOUT web search (web_search = \"disabled\"), so it fits the free quota like the others and its session is labelled 'without web search'. If you want the session with the tool, it would be 'does not fit the free quota' (the runner refuses it without --allow-does-not-fit)",
+    "the neutral prompt: ruled as the scoped prompt with only \"In the JS package, \" removed; the next letter is a capital (\"Make\"), which is the one change beyond the removal; say if the lower-case form is wanted (it would change the hash)",
+    "the second reader is Claude Sonnet (claude-sonnet-5-5) on your subscription, with Claude Code's own defaults for effort; say if the effort should be fixed in the command (it would change its hash)",
+    "the 0.1.4 rule text names \"safeaccess family\" and safeaccess-identum: both are public repositories of the maintainer"
+  ]
+}
