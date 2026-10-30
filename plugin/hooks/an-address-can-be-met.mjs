@@ -55,8 +55,35 @@ const MARKERS = ADDRESS_RELATIONS.map((rel) => Buffer.from(`"rel":${JSON.stringi
 /** How deep under a tree's root a `tails/` directory is looked for before it is a doubt. */
 const DEEPEST = 6;
 
-/** The scheme every checkpoint line names. */
-const CHECKPOINT_SCHEME = 'mnema-checkpoint/1';
+/**
+ * The keys of a checkpoint line by the scheme it names, `sig` among them: the schemes `SCHEME` and
+ * `NAMED_SCHEME` of `@mnema/chain`'s `checkpoint.ts`, the second naming the record (`FORMAT.md`
+ * §6.10), held to them by `packages/code/tests/a-write-no-rule-can-meet-starts-no-mnema.test.ts`.
+ * A line of another scheme, or with a key beside these, is one the reader refuses.
+ */
+export const CHECKPOINT_KEYS = {
+  'mnema-checkpoint/1': [
+    'contentRoot',
+    'fromSeq',
+    'prev',
+    'scheme',
+    'sig',
+    'signerFp',
+    'tail',
+    'toSeq',
+  ],
+  'mnema-checkpoint/2': [
+    'contentRoot',
+    'fromSeq',
+    'prev',
+    'record',
+    'scheme',
+    'sig',
+    'signerFp',
+    'tail',
+    'toSeq',
+  ],
+};
 
 /**
  * Whether a write from `cwd` can meet a rule of the record: `false` only where every tree `mnema`
@@ -310,8 +337,12 @@ function sameInstant(text) {
  * @param {unknown} value
  */
 function aCheckpoint(value) {
-  if (!isObject(value) || value.scheme !== CHECKPOINT_SCHEME) throw new Doubt('a checkpoint');
-  for (const key of ['tail', 'contentRoot', 'signerFp', 'sig']) {
+  if (!isObject(value) || !Object.hasOwn(CHECKPOINT_KEYS, value.scheme)) {
+    throw new Doubt('a checkpoint');
+  }
+  const keys = CHECKPOINT_KEYS[/** @type {keyof typeof CHECKPOINT_KEYS} */ (value.scheme)];
+  if (Object.keys(value).join() !== keys.join()) throw new Doubt('a checkpoint');
+  for (const key of keys.filter((key) => !['fromSeq', 'toSeq', 'prev'].includes(key))) {
     if (!isText(value[key])) throw new Doubt('a checkpoint');
   }
   for (const key of ['fromSeq', 'toSeq']) {

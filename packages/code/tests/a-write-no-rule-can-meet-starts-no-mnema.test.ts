@@ -29,7 +29,13 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ADDRESS_RELATIONS, LATEST_VERSION } from '@mnema/chain';
+import {
+  ADDRESS_RELATIONS,
+  generateKeyPair,
+  LATEST_VERSION,
+  serializeCheckpoint,
+  signCheckpoint,
+} from '@mnema/chain';
 import { resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/program.js';
@@ -442,6 +448,52 @@ describe('what the handler holds of the format', () => {
         published.contracts.find((one) => one.kind === contract.kind && one.v === contract.v),
       ).toEqual(contract);
     }
+  });
+
+  it('reads a checkpoint line of each scheme the writer signs, by the very keys it stores', async () => {
+    const { CHECKPOINT_KEYS } = await theHandlers();
+    const keyPair = generateKeyPair();
+    const tail = `${keyPair.fingerprint}-${'0a'.repeat(16)}`;
+    const signed = (record?: string) =>
+      JSON.parse(
+        serializeCheckpoint(
+          signCheckpoint({
+            tail,
+            fromSeq: 0,
+            events: [],
+            prev: null,
+            keyPair,
+            ...(record === undefined ? {} : { record }),
+          }),
+        ),
+      ) as { scheme: string };
+    const lines = [signed(), signed('ab'.repeat(32))];
+    expect(Object.fromEntries(lines.map((line) => [line.scheme, Object.keys(line)]))).toEqual(
+      CHECKPOINT_KEYS,
+    );
+  });
+
+  it('doubts a checkpoint line the reader refuses, of a scheme it does not read or with a key more', async () => {
+    const { anAddressCanBeMet } = await theHandlers();
+    await aRule('Bill in UTC');
+    expect(anAddressCanBeMet(repo, { HOME: home })).toBe(false);
+    const segment = theSegment(resolveTrees(repo, { home }).projectPublic as string);
+    const checkpoints = join(dirname(segment), 'checkpoints.jsonl');
+    const sound = readFileSync(checkpoints, 'utf-8');
+    const last = sound.trimEnd().split('\n').at(-1) as string;
+    expect(last).toContain('"scheme":"mnema-checkpoint/2"');
+    const refused: Record<string, string> = {
+      'a third scheme': last.replace('mnema-checkpoint/2', 'mnema-checkpoint/3'),
+      'a second scheme without its record': last.replace(/"record":"[0-9a-f]+",/, ''),
+      'a first scheme with a record': last.replace('mnema-checkpoint/2', 'mnema-checkpoint/1'),
+      'a record that is not text': last.replace(/"record":"[0-9a-f]+"/, '"record":7'),
+    };
+    for (const [what, line] of Object.entries(refused)) {
+      writeFileSync(checkpoints, `${sound}${line}\n`);
+      expect(anAddressCanBeMet(repo, { HOME: home }), what).toBe(true);
+    }
+    writeFileSync(checkpoints, sound);
+    expect(anAddressCanBeMet(repo, { HOME: home })).toBe(false);
   });
 
   it('answers that an address can be met where MNEMA_HOME is relative, which mnema refuses', async () => {
