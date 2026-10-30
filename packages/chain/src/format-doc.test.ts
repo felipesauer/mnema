@@ -171,8 +171,8 @@ describe('FORMAT.md points at the artifact the code resolves', () => {
  */
 const PAGES = [
   { page: 'packages/chain/FORMAT.md', vectors: 1, aggregates: 1, gaps: 2, signed: 1 },
-  { page: 'packages/chain/verifier/README.md', vectors: 2, aggregates: 1, gaps: 2, signed: 0 },
-  { page: 'packages/chain/README.md', vectors: 1, aggregates: 1, gaps: 1, signed: 0 },
+  { page: 'packages/chain/verifier/README.md', vectors: 2, aggregates: 1, gaps: 2, signed: 2 },
+  { page: 'packages/chain/README.md', vectors: 1, aggregates: 1, gaps: 1, signed: 1 },
   { page: 'docs/verify-without-installing.md', vectors: 0, aggregates: 0, gaps: 1, signed: 0 },
 ] as const;
 

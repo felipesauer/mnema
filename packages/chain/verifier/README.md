@@ -6,7 +6,7 @@ document** and importing **nothing** of the product it checks.
 ```
 python3 mnema_verify.py record <a record directory>    # T1, T2/T4, T3 over a real record
 python3 mnema_verify.py record <dir> --require signed  # ...and refuse an event no signature covers
-python3 mnema_verify.py vectors                        # reproduce the 39 published vectors
+python3 mnema_verify.py vectors                        # reproduce the 39 published vectors and the 5 signed messages
 python3 mnema_verify.py self-test                      # RFC 8032, section 1, section 8's limits
 python3 mnema_verify.py all --record <dir>             # all three
 python3 mnema_verify.py gaps                           # where FORMAT.md did not suffice
@@ -56,7 +56,7 @@ rigour, so nobody goes looking for it.
 | **T2** | each checkpoint's content root folds over the events of its range, from their canonical bytes |
 | **T4** | the Ed25519 signature over the checkpoint's signed message, under a key whose material is **recomputed** to the fingerprint that names it, and a key file whose name is not its material's fingerprint refused whether or not a signature asks for it, as is a `.pub` that holds no key (a directory, a file it may not read, bytes that are not UTF-8, no PEM-wrapped Ed25519 `SubjectPublicKeyInfo`); a name that starts with `._` (macOS metadata) is skipped, as `.DS_Store` is, by name and with the reason, never with a traceback; and every event of the range names that key as its `signerFp`, with a `which` that is not its `who`; and every checkpoint and every event of a tail, checkpointed or not, names the key the tail id begins with, and one that names another is refused as `tail-signer-mismatch` |
 | **T3** | the OpenTimestamps proof's subject is the checkpoint's digest, the path folds to the merkle root the stored header carries, and the header's own hash meets the target it declares, with section 8's three declared limits refused by name |
-| **§1** | the 39 published vectors and the four aggregate digests, plus every refusal section 1 lists |
+| **§1** | the 39 published vectors and the four aggregate digests, plus every refusal section 1 lists; and the five published signed messages (sections 6, 6.1 and 6.10), each message rebuilt from its stored line, hashed, and its signature verified |
 | **§4** | byte identity: re-serializing what a line holds reproduces that line exactly; and a line, its link, a checkpoint line or the tail proof holding a key beside the ones it has is refused, naming the keys |
 | **§4.1** | every event rebuilt from the fields its `(kind, v)` contract declares in `event-schema.json`, and any other refused, which catches a forged field on a **newly appended** event, where byte identity cannot |
 | **§6.2** | enrolment: every event's signer is a key **valid for its anchor** at that point in the fold, with a revocation and a restoring re-add taking effect only when signature-covered; a checker key signs check results only, and a retirement of one (signature-covered as well) leaves it signing nothing; an agent key signs only for the identity that enrolled it, under the `which` it was enrolled as, and nothing that changes who may sign, and a `key.enrolled` naming it is refused, and the facts it signed are counted as attested, those it signed before a retirement are counted per retired key, and every other `which` as declared, in the same numbers the product's census gives |
