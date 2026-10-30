@@ -122,6 +122,22 @@ describe('renderComment', () => {
     expect(text.match(/```/g)).toHaveLength(2);
   });
 
+  it('quotes, when verify passed, only the lines that note a tail arriving with no name', () => {
+    const note =
+      'since main (0123456789ab): tail aa-bb arrived since and names no record, and no tail there names one either: the record has no name yet; a note, not a failure (unnamed-record)';
+    const text = renderComment({
+      ...quiet,
+      verification: { passed: true, said: `public: verified\n  ${note}\n  census [x] y\n` },
+    });
+    expect(text).toContain('passed');
+    expect(text).toContain(note);
+    expect(text).not.toContain('census [x] y');
+    expect(text).not.toContain('public: verified');
+    expect(
+      renderComment({ ...quiet, verification: { passed: true, said: 'census [x] y' } }),
+    ).not.toContain('```');
+  });
+
   it('says how many changed files were not asked about', () => {
     expect(renderComment({ ...quiet, notAsked: 3 })).toContain(
       '3 changed files were not asked about',

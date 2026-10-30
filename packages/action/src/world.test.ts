@@ -402,6 +402,8 @@ describe('a pull request that brings a tail the base is not the record of', () =
       const { repo, base } = unnamedOver(over);
       const run = await judged(repo, base, 'unnamed');
       expect(run.verdict, `${over}: ${run.comment}`).toEqual({ failed: false, reasons: [] });
+      expect(run.comment, over).toContain('the record has no name yet');
+      expect(run.comment, over).toContain('(unnamed-record)');
     }
   }, 120_000);
 });
