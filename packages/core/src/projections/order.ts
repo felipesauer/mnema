@@ -57,12 +57,12 @@ import {
   firstLinkBreakFrom,
   illegalMoves,
   type LinkBreak,
-  listTails,
   orderedSegments,
   precedesItsText,
   readTail,
   readTailSince,
   type TailBoundary,
+  tailsOfTheRecordAt,
   type UpcasterRegistry,
 } from '@mnema/chain';
 
@@ -390,7 +390,9 @@ export function chainArrivals(
   upcasters: UpcasterRegistry,
   frontier: ChainFrontier,
 ): ChainArrivals {
-  const tails = listTails(layout);
+  // The tails of the record, not every tail of the directory: a tail of another record governs
+  // nowhere here (`tailsOfTheRecordAt`, FORMAT.md section 6.10).
+  const tails = tailsOfTheRecordAt(layout, upcasters).own;
   const present = new Set(tails);
   const unresolved = new Set(frontier.unresolved);
   for (const tail of frontier.tails.keys()) {
@@ -655,7 +657,7 @@ export function orderedEventsOfRecord(
  * chain is tree 0, which leaves the single-chain order the tail id's alone.
  */
 function streamsOf(layout: ChainLayout, upcasters: UpcasterRegistry, tree: number): TailStream[] {
-  return listTails(layout).map((tail) => {
+  return tailsOfTheRecordAt(layout, upcasters).own.map((tail) => {
     // `readTail` rather than `readTailEntries`: the same bytes, plus what the read
     // had to notice about them. A reading that took only the entries is how a chain
     // the verifier refuses was served by every read with no word about it.

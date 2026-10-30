@@ -147,6 +147,7 @@ import {
 } from './presentation/within-a-hook.js';
 import { DERIVED_FROM } from './provenance.js';
 import { recordFramingBlock } from './record-framing.js';
+import { anotherRecordSentence } from './record-integrity.js';
 import { movedApartLine } from './what-a-write-meets.js';
 
 /**
@@ -269,7 +270,14 @@ export function readThePush(
           `Not in force: \`${oneLine(one.id)}\` (${oneLine(one.name)}) addresses this path: ${one.divergence}.`,
       )
     : [];
-  const lines = [movedApartLine(own, at.rules), ...out].filter((line) => line !== undefined);
+  // A tail of another record holds no rule here, and no reading folded it: the push says which it
+  // left out, in the words every surface says it in (FORMAT.md section 6.10).
+  const foreign = addressed
+    .flatMap((source) => source.cache.tailsOfAnotherRecord())
+    .map(anotherRecordSentence);
+  const lines = [movedApartLine(own, at.rules), ...out, ...foreign].filter(
+    (line) => line !== undefined,
+  );
   return { at, apart: lines.length === 0 ? undefined : lines.join('\n') };
 }
 

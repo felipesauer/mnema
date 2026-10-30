@@ -20,7 +20,14 @@ import type { UpcasterRegistry } from '../events/upcaster.js';
 import { checkpointSignatureHolds, NAMED_SCHEME } from './checkpoint.js';
 import { parseEntry } from './entry.js';
 import { type ChainLayout, tailFingerprint, tailProofPath } from './layout.js';
-import { type Arrivals, arrivedSince, type RecordNaming, recordOf } from './record-name.js';
+import {
+  type Arrivals,
+  arrivedSince,
+  type RecordNaming,
+  recordOf,
+  type TailsOfTheRecord,
+  tailsOfTheRecord,
+} from './record-name.js';
 import { committedKeys, lastTailCheckpoint, listTails, orderedSegments } from './store.js';
 import { NAMED_TAILPROOF_SCHEME, parseTailProof, verifyTailProof } from './tailproof.js';
 
@@ -63,6 +70,35 @@ export function arrivalsSince(
   upcasters: UpcasterRegistry,
 ): Arrivals {
   return arrivedSince(namesOfTails(base), () => firstEntries(base, upcasters), namesOfTails(here));
+}
+
+/**
+ * THE TAILS OF THE RECORD AT `layout`, beside {@link listTails}: what a reading of the record reads,
+ * and the tails of another record it leaves out ({@link tailsOfTheRecord}), each tail named as the
+ * writer names it ({@link namesOfTails}). A tail with no segment holds nothing and counts toward no
+ * name, as both readers count it. A directory of one tail or none reads it without asking.
+ *
+ * Every reading that folds the record's events asks this, not `listTails`: the projection's replay
+ * and its catch-up (`@mnema/core`, `projections/order.ts`), so what a tail of another record holds
+ * governs nowhere here. A surface that says what governs says, from its `leftOut`, which tails it
+ * left out (`code/tests/a-tail-of-another-record-governs-nowhere.test.ts`).
+ *
+ * WHAT IT COSTS: nothing more than `listTails` for a directory of one tail; else what
+ * {@link namesOfTails} costs, and the first entries only where two records are named.
+ */
+export function tailsOfTheRecordAt(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+): TailsOfTheRecord {
+  const tails = listTails(layout);
+  if (tails.length < 2) return { own: tails, leftOut: [] };
+  const named = namesOfTails(layout);
+  for (const tail of tails) {
+    if (named.get(tail) !== undefined && orderedSegments(layout, tail).length === 0) {
+      named.set(tail, undefined);
+    }
+  }
+  return tailsOfTheRecord(named, () => firstEntries(layout, upcasters));
 }
 
 /** The record one tail names, as checked here, or `undefined`. */

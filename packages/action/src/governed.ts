@@ -23,6 +23,12 @@ export interface ApartRule extends RuleHit {
   readonly divergence: string;
 }
 
+/** A tail of another record the reading left out, and the record it names. */
+export interface LeftOutTail {
+  readonly tail: string;
+  readonly record: string;
+}
+
 /** A changed file and the rules in force that address it, by what the rule does. */
 export interface GovernedFile {
   readonly path: string;
@@ -33,6 +39,11 @@ export interface GovernedFile {
   readonly refuses: readonly RuleHit[];
   /** The rules that address it and are out of force for a divergence, each with why. */
   readonly apart: readonly ApartRule[];
+  /**
+   * The tails of another record the reading left out (`anotherRecord` in `mnema rules --json`):
+   * nothing they hold is above, whatever it addresses. Empty for a record of one name.
+   */
+  readonly anotherRecord: readonly LeftOutTail[];
 }
 
 /** The reading of `mnema rules --json` for one file, with only the rules in force kept. */
@@ -47,7 +58,24 @@ export function rulesInForce(path: string, reading: unknown): GovernedFile {
     asks: inForce(answer.asks),
     refuses: inForce(answer.refuses),
     apart: apartFrom([answer.rules, answer.asks, answer.refuses].flat()),
+    anotherRecord: leftOutFrom(answer.anotherRecord),
   };
+}
+
+function leftOutFrom(list: unknown): LeftOutTail[] {
+  if (!Array.isArray(list)) return [];
+  return (list as unknown[]).flatMap((item): LeftOutTail[] => {
+    if (typeof item !== 'object' || item === null) return [];
+    const { tail, record } = item as Record<string, unknown>;
+    return typeof tail === 'string' && typeof record === 'string' ? [{ tail, record }] : [];
+  });
+}
+
+/** Every tail of another record the readings of `files` left out, once each. */
+export function leftOutOf(files: readonly GovernedFile[]): LeftOutTail[] {
+  const seen = new Map<string, LeftOutTail>();
+  for (const file of files) for (const left of file.anotherRecord) seen.set(left.tail, left);
+  return [...seen.values()];
 }
 
 function apartFrom(list: unknown): ApartRule[] {
@@ -101,6 +129,7 @@ export function bothReadings(a: GovernedFile, b: GovernedFile): GovernedFile {
     asks: once(a.asks, b.asks),
     refuses: once(a.refuses, b.refuses),
     apart: [...a.apart, ...b.apart.filter((hit) => !a.apart.some((seen) => seen.id === hit.id))],
+    anotherRecord: leftOutOf([a, b]),
   };
 }
 

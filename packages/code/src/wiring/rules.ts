@@ -48,8 +48,20 @@ export function registerRules(program: Command, wiring: Wiring): Declared {
       const { fact } = await import('../presentation/detail.js');
       const notRead = inheritedNotReadLine(result.inherited);
       if (notRead !== undefined) io.err(render(fact(notRead)));
+      // A tail of another record the reading left out holds nothing above: said on the same
+      // stream, and, for `--json`, in the answer itself, which is what the Action reads.
+      const { anotherRecordSentence } = await import('../record-integrity.js');
+      for (const left of result.anotherRecord) io.err(render(fact(anotherRecordSentence(left))));
       if (opts.json === true) {
-        io.out(JSON.stringify(result.governed, null, 2));
+        io.out(
+          JSON.stringify(
+            result.anotherRecord.length === 0
+              ? result.governed
+              : { ...result.governed, anotherRecord: result.anotherRecord },
+            null,
+            2,
+          ),
+        );
         return;
       }
       writeLines(io, rulesReport(render, result.governed));

@@ -127,6 +127,7 @@ describe('the brief prints one line per rule', () => {
     collisions: [],
     divergent: [],
     disputed: [],
+    anotherRecord: [],
     decisionsAwaiting: 0,
     skillsAwaiting: 0,
     addressed: 0,
@@ -213,6 +214,8 @@ describe('the brief prints one line per rule', () => {
       title: `tx-${i}`,
       divergence: `dv-${i}`,
     })),
+    // A tail of another record the brief left out is a line of the document too.
+    anotherRecord: brief.anotherRecord.map((_t, i) => ({ tail: `tl-${i}`, record: `rc-${i}` })),
     addressed: brief.addressed,
     asking: brief.asking,
     refusing: brief.refusing,

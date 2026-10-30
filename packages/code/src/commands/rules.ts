@@ -33,6 +33,7 @@
  */
 
 import { dirname } from 'node:path';
+import type { TailOfAnotherRecord } from '@mnema/chain';
 import type { GoverningRules } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { readGoverningRulesWhereItLands } from '../governed-tree.js';
@@ -69,6 +70,13 @@ export interface RulesDone {
    * says so. Absent when the project inherits nothing.
    */
   readonly inherited?: InheritedReading;
+  /**
+   * The tails of another record that the reading left out of the trees it read
+   * (`tailsOfAnotherRecord`): nothing they hold is in {@link governed}, and the wiring says so,
+   * on the other stream and, for `--json`, in the answer's `anotherRecord`. Empty for a record of
+   * one name.
+   */
+  readonly anotherRecord: readonly TailOfAnotherRecord[];
 }
 
 /** The read was refused before it ran. */
@@ -97,6 +105,7 @@ export function runRules(ctx: RulesContext, input: { path: string }): RulesDone 
       ok: true,
       linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
       governed: readGoverningRulesWhereItLands(all, { path: input.path, root, from: ctx.cwd }),
+      anotherRecord: all.flatMap((source) => source.cache.tailsOfAnotherRecord()),
       ...(inherited !== undefined ? { inherited } : {}),
     })),
   );

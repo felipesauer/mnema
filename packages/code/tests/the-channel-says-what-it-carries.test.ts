@@ -244,6 +244,7 @@ describe('one declaration, and one place that decides it', () => {
       collisions: [],
       divergent: [],
       disputed: [],
+      anotherRecord: [],
       addressed: 0,
       asking: 0,
       refusing: 0,

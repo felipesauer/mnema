@@ -157,10 +157,12 @@ import { closeSession, openSession, refreshWorkspace, type Session } from './ses
 import {
   A_READ,
   A_WRITE,
+  bootstrapOfAnotherRecord,
   channelsOffHere,
   countsToolCalls,
   governingRulesInheritedNotRead,
   governingRulesMovedApart,
+  governingRulesOfAnotherRecord,
   movedApartNotes,
   runAccountabilityTool,
   runAntipatternsTool,
@@ -1560,6 +1562,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // knows which one was meant.
       return withRunState(active, context, [
         ...movedApartBlock(active),
+        ...bootstrapOfAnotherRecord(active),
         whereThisSessionIs(active),
         ...switchedOffBlock(active),
       ]);
@@ -2010,6 +2013,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // error, and the three counts beside it are what say which kind of nothing.
       return served(active, result.value, [
         ...governingRulesMovedApart(active, result.value),
+        ...governingRulesOfAnotherRecord(active),
         ...governingRulesInheritedNotRead(active),
       ]);
     },

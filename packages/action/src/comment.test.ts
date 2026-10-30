@@ -5,6 +5,7 @@ const quiet: Report = {
   verification: { passed: true, said: '' },
   record: { total: 0, byKind: [], decisions: [] },
   governed: [],
+  anotherRecord: [],
   notAsked: 0,
   approval: undefined,
 };
@@ -26,6 +27,7 @@ const busy: Report = {
       asks: [],
       refuses: [],
       apart: [],
+      anotherRecord: [],
     },
   ],
 };
@@ -46,6 +48,7 @@ describe('renderComment checks', () => {
       asks: [],
       refuses: [],
       apart: [],
+      anotherRecord: [],
     }));
     const text = renderComment({ ...busy, governed });
     expect(text.length).toBeLessThanOrEqual(65536);
@@ -85,6 +88,7 @@ describe('renderComment', () => {
               divergence: 'divergence between the accept and the rejection',
             },
           ],
+          anotherRecord: [],
         },
       ],
     });
@@ -198,6 +202,7 @@ describe('plain', () => {
           asks: [],
           refuses: [],
           apart: [],
+          anotherRecord: [],
         },
       ],
     });

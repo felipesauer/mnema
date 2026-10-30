@@ -113,6 +113,7 @@
  * argument, and it is in it now.
  */
 
+import type { TailOfAnotherRecord } from '@mnema/chain';
 import type {
   Acceptance,
   AdrCollision,
@@ -129,6 +130,7 @@ import type { InheritedReading } from '../inherited-record.js';
 import { oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
+import { anotherRecordSentence } from '../record-integrity.js';
 import { acceptedBy } from './accepted-by.js';
 import { NAMED_TITLE_LIMIT, namedDecisionText } from './named-decision.js';
 import { toImport } from './status.js';
@@ -1035,6 +1037,7 @@ function composed(
               ...movedApart(governance.divergent, 'decision'),
             ]),
         ...notInForceForADivergence(governance.disputed),
+        ...ofAnotherRecord(governance.anotherRecord),
       ],
       whatAwaitsAJudgement(governance.decisionsAwaiting, DECISIONS_WAITING),
       decisions.map((decision) =>
@@ -1206,6 +1209,16 @@ function notInForceForADivergence(disputed: readonly DisputedDecision[]): string
         `- \`${oneLine(one.id)}\` (${oneLine(one.adr)}, ${oneLine(one.title)}): ${one.divergence}`,
     ),
   ];
+}
+
+/**
+ * The tails of another record no reading folded, so nothing they hold is counted above or below:
+ * one line each, in the words every surface says it in (`anotherRecordSentence`). Nothing at all
+ * when none. Not a bullet that opens with `- **`: those are the rules in force.
+ */
+function ofAnotherRecord(left: readonly TailOfAnotherRecord[]): string[] {
+  if (left.length === 0) return [];
+  return ['', ...left.map((one) => `- ${anotherRecordSentence(one)}`)];
 }
 
 /** One rule moved apart, as a bullet: its id, the state it left, and every move out of it. */

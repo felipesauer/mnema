@@ -5,7 +5,7 @@
  * comment it wrote and replaces it rather than adding a second.
  */
 
-import type { GovernedFile, RuleHit } from './governed.js';
+import type { GovernedFile, LeftOutTail, RuleHit } from './governed.js';
 import type { DecisionMoved, WhatItDoes } from './record.js';
 
 /** The first line of the comment, and the only thing a later run looks for. */
@@ -17,6 +17,8 @@ export interface Report {
   readonly verification: { readonly passed: boolean; readonly said: string };
   readonly record: WhatItDoes;
   readonly governed: readonly GovernedFile[];
+  /** The tails of another record the readings of the rules left out: nothing they hold is above. */
+  readonly anotherRecord: readonly LeftOutTail[];
   /** The base commit the rules were also read at; absent when the base held no record. */
   readonly rulesFromBase?: string | undefined;
   /** How many changed files were not asked about, when the pull request is larger than the cap. */
@@ -40,6 +42,7 @@ export const worthSaying = (report: Report): boolean =>
   !report.verification.passed ||
   report.record.total > 0 ||
   report.governed.length > 0 ||
+  report.anotherRecord.length > 0 ||
   report.checks?.passed === false;
 
 /** The tag `verify --since` ends its note with, of a tail that arrived before the record has a name. */
@@ -164,6 +167,17 @@ export function renderComment(report: Report): string {
     out.push('None of the files asked about.');
   } else {
     out.push(...report.governed.flatMap(governedLines));
+  }
+  if (report.anotherRecord.length > 0) {
+    out.push(
+      '',
+      'Left out of the rules read: each of these tails names another record than this one, so nothing it holds governs here (`mnema verify` names both records):',
+      '',
+      ...report.anotherRecord.map(
+        (left) =>
+          `- tail \`${plain(left.tail)}\`, of record \`${plain(left.record.slice(0, 12))}\``,
+      ),
+    );
   }
   if (report.notAsked > 0) {
     out.push(

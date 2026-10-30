@@ -87,6 +87,7 @@ describe('the comment over a record whose tails were all deleted', () => {
         verification,
         record: { total: 0, byKind: [], decisions: [] },
         governed: [],
+        anotherRecord: [],
         notAsked: 0,
         approval: undefined,
       });

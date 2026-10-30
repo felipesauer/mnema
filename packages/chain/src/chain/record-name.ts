@@ -160,6 +160,54 @@ export function recordToWriteUnder(
   return { name: continues() ?? recordName(genesisTail(firsts()) ?? tail) };
 }
 
+/** A tail a reading of the record leaves out, and the record it names. */
+export interface TailOfAnotherRecord {
+  readonly tail: string;
+  readonly record: string;
+}
+
+/** The tails a reading of the record reads, and those it leaves out: {@link tailsOfTheRecord}. */
+export interface TailsOfTheRecord {
+  /** The tails read, in the order given. */
+  readonly own: readonly string[];
+  /** The tails left out, each with the record it names, in the order given. */
+  readonly leftOut: readonly TailOfAnotherRecord[];
+}
+
+/**
+ * THE TAILS A READING OF THE RECORD READS (FORMAT.md section 6.10), from what each tail of the
+ * directory names (`named`, `undefined` for a tail that names none); `firsts` gives the first
+ * entries, asked for only where two records are named.
+ *
+ * Where {@link recordOf} finds no name or one, every tail is read: an unnamed tail in a named
+ * record stays what `verify` keeps it, a census note. Where the named tails name two records or
+ * more, the record read is the one that holds its genesis: the record the genesis tail names, or,
+ * where the genesis tail names none (a record written before records were named), the record it
+ * derives. Every tail that names another record is left out. Where that record is none of the
+ * names carried (the genesis is of neither, or no tail holds a first entry), every named tail is
+ * left out and the unnamed ones are read: a directory that cannot say which of its records it is
+ * lets none of them govern. (`record-name.test.ts`, "the tails a reading of the record reads".)
+ *
+ * The genesis is the rule's, by `at`: a tail grafted from a record older than this one, whose
+ * first entry is older than this record's genesis, is the one read. Both readers refuse the
+ * directory (`another-record`), and the readings leave this record's tails out and say so.
+ */
+export function tailsOfTheRecord(
+  named: ReadonlyMap<string, string | undefined>,
+  firsts: () => Iterable<{ readonly tail: string; readonly at: string }>,
+): TailsOfTheRecord {
+  if (recordOf(named).state !== 'several') return { own: [...named.keys()], leftOut: [] };
+  const genesis = genesisTail(firsts());
+  const counted = genesis === undefined ? undefined : (named.get(genesis) ?? recordName(genesis));
+  const own: string[] = [];
+  const leftOut: TailOfAnotherRecord[] = [];
+  for (const [tail, record] of named) {
+    if (record === undefined || record === counted) own.push(tail);
+    else leftOut.push({ tail, record });
+  }
+  return { own, leftOut };
+}
+
 /** What arrived in a directory since a base, as {@link arrivedSince} reads it. */
 export interface Arrivals {
   /**

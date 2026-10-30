@@ -17,6 +17,8 @@ import {
   type LinkBreak,
   listTails,
   projectionCachePath,
+  type TailOfAnotherRecord,
+  tailsOfTheRecordAt,
   type UpcasterRegistry,
   unannouncedRunsOf,
 } from '@mnema/chain';
@@ -899,6 +901,17 @@ export class ProjectionCache {
    */
   divergentMoves(): DivergentMove[] {
     return readDivergences(this.db);
+  }
+
+  /**
+   * The tails of this tree that name another record than the one this tree is, which every
+   * reading of it leaves out (`tailsOfTheRecordAt`, asked by the replay in `order.ts`): asked of
+   * the disk as it stands, by the same function, so a surface that says what governs can say
+   * which tails it left out. Empty for a record of one name, which is every record one `init`
+   * began and nobody grafted into.
+   */
+  tailsOfAnotherRecord(): readonly TailOfAnotherRecord[] {
+    return tailsOfTheRecordAt(this.layout, this.upcasters).leftOut;
   }
 
   /**

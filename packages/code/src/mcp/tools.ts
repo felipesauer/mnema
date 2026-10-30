@@ -186,7 +186,11 @@ import {
   type SwitchableChannel,
   TOOL_CALL_COUNT_CHANNEL,
 } from '../record-framing.js';
-import { movedApartSentence, type ScopedLinkBreak } from '../record-integrity.js';
+import {
+  anotherRecordSentence,
+  movedApartSentence,
+  type ScopedLinkBreak,
+} from '../record-integrity.js';
 import {
   type FellIn,
   forwardReplacement,
@@ -2784,6 +2788,26 @@ export function governingRulesMovedApart(
     ...answer.refuses.map((one) => ({ id: one.rule })),
   ]);
   return line === undefined ? [] : [line];
+}
+
+/**
+ * The lines a reading of what governs owes beside its payload for each tail of another record it
+ * left out (`anotherRecordSentence`): the trees `governing_rules` reads for the one, the session's
+ * own for `bootstrap`. None for a record of one name, which is every record nobody grafted into.
+ */
+export function anotherRecordNotes(caches: readonly ProjectionCache[]): readonly string[] {
+  const said = caches.flatMap((cache) => cache.tailsOfAnotherRecord()).map(anotherRecordSentence);
+  return said.length === 0 ? [] : [said.join('\n')];
+}
+
+/** {@link anotherRecordNotes} over the trees `governing_rules` reads. */
+export function governingRulesOfAnotherRecord(session: Session): readonly string[] {
+  return anotherRecordNotes(governanceCaches(session).map((source) => source.cache));
+}
+
+/** {@link anotherRecordNotes} over the trees the opening context is read from. */
+export function bootstrapOfAnotherRecord(session: Session): readonly string[] {
+  return anotherRecordNotes(sessionCaches(session));
 }
 
 /**

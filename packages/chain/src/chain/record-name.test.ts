@@ -7,6 +7,7 @@ import {
   recordName,
   recordOf,
   recordToWriteUnder,
+  tailsOfTheRecord,
 } from './record-name.js';
 
 const TAIL = `${'ab'.repeat(32)}-${'cd'.repeat(16)}`;
@@ -375,5 +376,100 @@ describe('the tails that arrived since a base', () => {
     };
     arrivedSince(named([TAIL, x], [OTHER, undefined]), counted, named([TAIL, x], [THIRD, y]));
     expect(asked).toBe(0);
+  });
+});
+
+describe('the tails a reading of the record reads (tailsOfTheRecord)', () => {
+  const THIRD = `${'12'.repeat(32)}-${'34'.repeat(16)}`;
+  const B = recordName(TAIL);
+  const A = recordName(OTHER);
+  /** The first entries, `earliest` the tail whose first entry is the older. */
+  const firsts = (earliest: string) => () => [
+    { tail: TAIL, at: earliest === TAIL ? '2026-10-01T00:00:00.000Z' : '2026-10-02T00:00:00.000Z' },
+    {
+      tail: OTHER,
+      at: earliest === OTHER ? '2026-10-01T00:00:00.000Z' : '2026-10-02T00:00:00.000Z',
+    },
+  ];
+
+  it('are every tail where no tail names a record', () => {
+    const named = new Map<string, string | undefined>([
+      [OTHER, undefined],
+      [TAIL, undefined],
+    ]);
+    expect(tailsOfTheRecord(named, firsts(TAIL))).toEqual({ own: [OTHER, TAIL], leftOut: [] });
+  });
+
+  it('are every tail where the named tails name one record, an unnamed one among them', () => {
+    const named = new Map<string, string | undefined>([
+      [OTHER, undefined],
+      [TAIL, B],
+    ]);
+    expect(tailsOfTheRecord(named, firsts(OTHER))).toEqual({ own: [OTHER, TAIL], leftOut: [] });
+  });
+
+  it('ask for the first entries only where the named tails name two records', () => {
+    let asked = 0;
+    const counting = () => {
+      asked += 1;
+      return firsts(TAIL)();
+    };
+    tailsOfTheRecord(new Map([[TAIL, B]]), counting);
+    expect(asked).toBe(0);
+    tailsOfTheRecord(
+      new Map([
+        [OTHER, A],
+        [TAIL, B],
+      ]),
+      counting,
+    );
+    expect(asked).toBe(1);
+  });
+
+  it('leave out, where two records are named, the tails of the one that does not hold the genesis', () => {
+    const named = new Map<string, string | undefined>([
+      [OTHER, A],
+      [TAIL, B],
+      [THIRD, undefined],
+    ]);
+    expect(tailsOfTheRecord(named, firsts(TAIL))).toEqual({
+      own: [TAIL, THIRD],
+      leftOut: [{ tail: OTHER, record: A }],
+    });
+    expect(tailsOfTheRecord(named, firsts(OTHER))).toEqual({
+      own: [OTHER, THIRD],
+      leftOut: [{ tail: TAIL, record: B }],
+    });
+  });
+
+  it('count the record the genesis derives where the genesis tail names no record itself', () => {
+    // A record written before records were named: its genesis tail stayed unnamed, and the tail
+    // a later writer opened names the record from it.
+    const named = new Map<string, string | undefined>([
+      [OTHER, A],
+      [TAIL, undefined],
+      [THIRD, B],
+    ]);
+    expect(tailsOfTheRecord(named, firsts(TAIL))).toEqual({
+      own: [TAIL, THIRD],
+      leftOut: [{ tail: OTHER, record: A }],
+    });
+  });
+
+  it('leave out every named tail where the genesis is of neither record, or is not found', () => {
+    const named = new Map<string, string | undefined>([
+      [OTHER, A],
+      [THIRD, recordName(THIRD)],
+      [TAIL, undefined],
+    ]);
+    const everyNamed = [
+      { tail: OTHER, record: A },
+      { tail: THIRD, record: recordName(THIRD) },
+    ];
+    // TAIL is the genesis, names no record, and derives B: no named tail names B.
+    expect(tailsOfTheRecord(named, () => [{ tail: TAIL, at: '2026-01-01T00:00:00.000Z' }])).toEqual(
+      { own: [TAIL], leftOut: everyNamed },
+    );
+    expect(tailsOfTheRecord(named, () => [])).toEqual({ own: [TAIL], leftOut: everyNamed });
   });
 });
