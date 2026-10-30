@@ -40,7 +40,8 @@ export interface InheritRefused {
     | 'POINTER_INVALID'
     | 'UNREACHABLE'
     | 'NO_SUCH_REVISION'
-    | 'NOT_VERIFIED';
+    | 'NOT_VERIFIED'
+    | 'ANOTHER_RECORD';
   readonly detail?: string;
 }
 
@@ -57,6 +58,12 @@ export interface InheritPlan {
   readonly added: readonly InheritedRule[];
   readonly removed: readonly InheritedRule[];
   readonly written: boolean;
+  /**
+   * The name of the record at the commit pointed at, absent for one written before records were
+   * named (FORMAT.md section 6.10). The commit fixes it, so it is not written beside the commit:
+   * `update` reads it again at the commit it leaves and refuses to move to another record.
+   */
+  readonly record?: string;
 }
 
 type Planned = InheritPlan | InheritRefused;
@@ -81,6 +88,21 @@ function plan(
     };
   }
   const before = from === undefined ? undefined : readInherited(trees, from);
+  // THE RECORD IS PINNED WITH THE COMMIT: the commit fixes the bytes, and the bytes the name. An
+  // update to a commit whose record has another name than the one at the commit it leaves would
+  // move the project to another record in silence (the origin replaced its record), so it is
+  // refused, with or without --write; a record from before records were named takes the name
+  // its first named write gives it, which is not another record.
+  const pinned = before?.state === 'read' ? before.record : undefined;
+  if (pinned !== undefined && reading.record !== pinned) {
+    return {
+      ok: false,
+      reason: 'ANOTHER_RECORD',
+      detail:
+        `The record at ${to.commit} is ${reading.record ?? 'one that names no record'}, and the one pinned at ${from?.commit} is ${pinned}. ` +
+        'Pointing at another record is `inherit set` over a project that points at none.',
+    };
+  }
   const old = before?.state === 'read' ? before.decisions : [];
   const ids = new Set(old.map((d) => d.id));
   const now = new Set(reading.decisions.map((d) => d.id));
@@ -99,6 +121,7 @@ function plan(
     added,
     removed,
     written: write && changed,
+    ...(reading.record !== undefined ? { record: reading.record } : {}),
   };
 }
 

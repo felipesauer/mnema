@@ -22,6 +22,8 @@ const SAYS: Readonly<Record<InheritRefused['reason'], string>> = {
   UNREACHABLE: 'The origin could not be reached.',
   NO_SUCH_REVISION: 'The origin has no such revision.',
   NOT_VERIFIED: 'The record at that commit is not read, so no pointer is moved.',
+  ANOTHER_RECORD:
+    'The origin holds another record at that commit than at the one pinned, so no pointer is moved.',
 };
 
 function refuse(wiring: Wiring, refusal: InheritRefused): void {
@@ -46,9 +48,14 @@ function planLines(plan: InheritPlan): string[] {
         ? `${to.where} is already at commit ${to.commit}; nothing changes.`
         : `${to.where}: commit ${from.commit} -> ${to.commit}${plan.commits === undefined ? '' : ` (${plan.commits} ${plan.commits === 1 ? 'commit' : 'commits'})`}. The record at the new commit verifies.`,
   ];
+  lines.push(
+    plan.record === undefined
+      ? 'The record there names no record yet: it was written before records were named.'
+      : `The record there is ${plan.record}.`,
+  );
   if (plan.previous === 'unread') {
     lines.push(
-      'The previous commit could not be read on this machine, so every decision below is shown as new.',
+      'The previous commit could not be read on this machine, so every decision below is shown as new, and whether it is the same record is not told.',
     );
   }
   if (from?.commit !== to.commit) {

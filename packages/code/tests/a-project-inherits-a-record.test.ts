@@ -161,6 +161,67 @@ describe('inheriting, as a person types it', () => {
     expect(verified.status, verified.err).toBe(0);
   }, 90_000);
 
+  it('names the record at the commit, and does not move to a commit whose record is another', () => {
+    const source = join(sandbox, 'decisions');
+    const project = join(sandbox, 'service');
+    const homeS = join(sandbox, 'home-s');
+    const homeR = join(sandbox, 'home-r');
+    const homeP = join(sandbox, 'home-p');
+    for (const dir of [source, project, homeS, homeR, homeP]) mkdirSync(dir, { recursive: true });
+    git(source, 'init', '-q', '-b', 'main');
+    expect(mnema(source, homeS, 'init').status).toBe(0);
+    decide(source, homeS, 'Postgres in every new service');
+    // The name the origin's own tail proof signs: read off the file, not asked of the code.
+    const named = (): string => {
+      const tails = join(source, '.mnema', 'tails');
+      const [tail] = readdirSync(tails);
+      return (
+        JSON.parse(readFileSync(join(tails, tail as string, 'tailproof.json'), 'utf-8')) as {
+          record: string;
+        }
+      ).record;
+    };
+    const before = named();
+    expect(before).toMatch(/^[0-9a-f]{64}$/);
+    const first = commit(source);
+    expect(mnema(project, homeP, 'init').status).toBe(0);
+    const set = mnema(project, homeP, 'inherit', 'set', source, '--write');
+    expect(set.status, set.err).toBe(0);
+    expect(set.out).toContain(`The record there is ${before}.`);
+
+    // The same record grown: the update says the record and moves.
+    decide(source, homeS, 'Redis for queues');
+    const second = commit(source);
+    const grown = mnema(project, homeP, 'inherit', 'update');
+    expect(grown.status, grown.err).toBe(0);
+    expect(grown.out).toContain(`The record there is ${before}.`);
+
+    // The origin replaced its record: another `init`, under another key, is another genesis.
+    rmSync(join(source, '.mnema'), { recursive: true, force: true });
+    expect(mnema(source, homeR, 'init').status).toBe(0);
+    decide(source, homeR, 'MySQL in every new service');
+    const after = named();
+    expect(after).not.toBe(before);
+    git(source, 'add', '-A', '.mnema');
+    git(source, 'commit', '-q', '-m', 'another record');
+    for (const write of [[], ['--write']]) {
+      const moved = mnema(project, homeP, 'inherit', 'update', ...write);
+      expect(moved.status).not.toBe(0);
+      expect(moved.err).toContain('ANOTHER_RECORD');
+      expect(moved.err).toContain(before);
+      expect(moved.err).toContain(after);
+      expect(JSON.parse(readFileSync(join(project, '.mnema', POINTER_FILE), 'utf-8')).commit).toBe(
+        first,
+      );
+    }
+    // To the grown commit of the same record, the pointer moves as before.
+    const back = mnema(project, homeP, 'inherit', 'update', '--to', second, '--write');
+    expect(back.status, back.err).toBe(0);
+    expect(JSON.parse(readFileSync(join(project, '.mnema', POINTER_FILE), 'utf-8')).commit).toBe(
+      second,
+    );
+  }, 90_000);
+
   it('says it plainly when the origin is gone and nothing was copied, and the brief still prints', () => {
     const project = join(sandbox, 'service');
     const homeP = join(sandbox, 'home-p');
