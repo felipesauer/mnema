@@ -48,6 +48,7 @@ import {
   statSync,
 } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
+import { recordNamedIn } from '@mnema/chain';
 import { gitPlaceOf, privateTreePlace, privateTreeUnder } from './git-place.js';
 import { PRIVATE_DIR, PROJECT_DIR } from './resolve.js';
 
@@ -112,6 +113,23 @@ export function privateTreesLeftBehind(projectDir: string): PrivateTreesLeftBehi
     });
   }
   return { to: here.tree, left };
+}
+
+/**
+ * The one record the private trees `projectDir`'s worktrees left behind name, or `undefined` where
+ * they name none or several (`recordNamedIn`, `@mnema/chain`).
+ *
+ * A project written outside a repository keeps its private tree in `.mnema/private/`, and from
+ * 0.1.5 that tree names a record (FORMAT.md section 6.10). When a repository arrives, the next
+ * private write founds the tree in its git directory: that writer takes this name
+ * (`continues`, in the routing of a write), so `mnema doctor --fix private-tree` joins two trees
+ * of one record and not two records, which both readers would refuse as `another-record`.
+ */
+export function recordLeftBehind(projectDir: string): string | undefined {
+  const found = privateTreesLeftBehind(projectDir);
+  if (found === undefined || found.left.length === 0) return undefined;
+  const naming = recordNamedIn(found.left.map((left) => left.tree));
+  return naming.state === 'named' ? naming.name : undefined;
 }
 
 /** What a move did. */

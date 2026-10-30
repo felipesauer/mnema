@@ -137,6 +137,14 @@ export interface WriterOptions {
    * this.
    */
   readonly onNewTail?: (opened: NewTail) => void;
+  /**
+   * The record this directory continues, asked only where none of its tails names one yet
+   * (`recordToWriteUnder`, step 3): a project's private tree founded in the repository's git
+   * directory while the tree from before it moved there still names a record, so the two join
+   * as one record when a person moves the old one in. Absent, or `undefined`, the genesis rule
+   * names it.
+   */
+  readonly continues?: () => string | undefined;
 }
 
 /**
@@ -280,6 +288,8 @@ export class ChainWriter {
   private tailId: string;
   private readonly citeHeads: boolean;
   private readonly onNewTail: ((opened: NewTail) => void) | undefined;
+  /** {@link WriterOptions.continues}. */
+  private readonly continues: (() => string | undefined) | undefined;
   /**
    * Set by {@link recover} when the tail does not end at the entry this installation last
    * wrote to it: the act does not run there, and {@link underTailLock} moves to a new tail.
@@ -318,6 +328,7 @@ export class ChainWriter {
     this.tailId = `${keyPair.fingerprint}-${installationId}`;
     this.citeHeads = options.citeHeads === true;
     this.onNewTail = options.onNewTail;
+    this.continues = options.continues;
     this.heads = this.citeHeads ? new HeadsToCite(layout, this.tailId, upcasters) : undefined;
     // NOTHING IS WRITTEN HERE. Both the recovery and the birth happen in the first act,
     // under the tail's lock.
@@ -550,8 +561,11 @@ export class ChainWriter {
    */
   private recordName(): string {
     if (this.record !== undefined) return this.record;
-    const under = recordToWriteUnder(this.tailId, namesOfTails(this.layout), () =>
-      firstEntries(this.layout, this.upcasters),
+    const under = recordToWriteUnder(
+      this.tailId,
+      namesOfTails(this.layout),
+      () => firstEntries(this.layout, this.upcasters),
+      this.continues,
     );
     if (!('name' in under)) throw new AnotherRecordError(this.tailId, under);
     this.record = under.name;

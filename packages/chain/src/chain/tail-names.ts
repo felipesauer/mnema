@@ -20,6 +20,7 @@ import type { UpcasterRegistry } from '../events/upcaster.js';
 import { checkpointSignatureHolds, NAMED_SCHEME } from './checkpoint.js';
 import { parseEntry } from './entry.js';
 import { type ChainLayout, tailFingerprint, tailProofPath } from './layout.js';
+import { type RecordNaming, recordOf } from './record-name.js';
 import { committedKeys, lastTailCheckpoint, listTails, orderedSegments } from './store.js';
 import { NAMED_TAILPROOF_SCHEME, parseTailProof, verifyTailProof } from './tailproof.js';
 
@@ -31,6 +32,24 @@ export function namesOfTails(layout: ChainLayout): Map<string, string | undefine
     named.set(tail, nameOfTail(layout, keys, tail));
   }
   return named;
+}
+
+/**
+ * What the tails of the directories at `roots`, read together, name ({@link recordOf}): one
+ * record, several, or none. Each directory's tails are checked under that directory's own keys.
+ *
+ * Asked where one record is kept in two places a person may join: a project's private tree from
+ * before it moved into the repository, and the one there now (`@mnema/core`, `doctor --fix
+ * private-tree`).
+ */
+export function recordNamedIn(roots: readonly string[]): RecordNaming {
+  const named = new Map<string, string | undefined>();
+  for (const root of roots) {
+    for (const [tail, name] of namesOfTails({ root })) {
+      if (name !== undefined || !named.has(tail)) named.set(tail, name);
+    }
+  }
+  return recordOf(named);
 }
 
 /** The record one tail names, as checked here, or `undefined`. */

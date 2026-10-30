@@ -1367,8 +1367,11 @@ tail born named.
 
 **What this implementation's writer signs under**, from 0.1.5: every tail proof and every
 checkpoint it writes is of the second scheme, and names the record its own tail already names;
-else the one record the directory's other tails name; else (no tail names one) the record whose
-genesis tail is found by the rule above, its own tail where no tail holds a first entry, so a new
+else the one record the directory's other tails name; else (no tail names one) the record the
+directory continues, where it continues one: a project's private tree founded in the repository's
+git directory takes the record its tree from before the repository (`.mnema/private/`) names, so
+`mnema doctor --fix private-tree` joins one record; else the record whose genesis tail is found by
+the rule above, its own tail where no tail holds a first entry, so a new
 record names itself from its first tail. A tail is read for this as the readers read it: by its
 second-scheme proof, else by its last checkpoint when that one is of the second scheme, each
 signature checked under the committed key its id names. The writer writes nothing where the other

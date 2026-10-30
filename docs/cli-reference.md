@@ -1355,8 +1355,12 @@ into the repository's private tree (`--dry-run` says what it would move), carrie
 tail's head note (the writer's note of the last entry it wrote) along with it, drops the rest of the writers'
 `locks/`, and leaves where it was anything whose name there already holds other bytes. A worktree
 that had written again since keeps the tail it writes now, and its old tail is moved as a closed
-one. The exit status is 0 whatever it found: a script that wants to act on a
-finding reads the line.
+one. A project written outside a repository and given one later joins as one record: the first
+private write in the repository names its tree after the record the old `.mnema/private/` names.
+An old tree whose tails already name another record than the repository's is not moved: the fix
+says which two records, writes nothing, and exits 1, since joined they would be refused as
+`another-record` by `mnema verify`. Otherwise the exit status is 0 whatever it found: a script that
+wants to act on a finding reads the line.
 
 ### Skills and agents a project adopts: stacks
 

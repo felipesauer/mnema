@@ -191,6 +191,37 @@ describe('the record a writer writes under', () => {
     });
   });
 
+  it('is the record the directory continues, before the genesis rule, where no tail carries one', () => {
+    const named = new Map<string, string | undefined>([
+      [TAIL, undefined],
+      [OTHER, undefined],
+    ]);
+    const older = firsts([OTHER, '2020-01-01T00:00:00.000Z']);
+    expect(recordToWriteUnder(TAIL, named, older, () => x)).toEqual({ name: x });
+    expect(recordToWriteUnder(TAIL, named, older, () => undefined)).toEqual({ name: y });
+  });
+
+  it('asks what the directory continues only where no tail carries a name', () => {
+    let asked = 0;
+    const continued = () => {
+      asked += 1;
+      return x;
+    };
+    expect(
+      recordToWriteUnder(
+        TAIL,
+        new Map<string, string | undefined>([
+          [TAIL, undefined],
+          [OTHER, y],
+        ]),
+        none,
+        continued,
+      ),
+    ).toEqual({ name: y });
+    expect(recordToWriteUnder(TAIL, new Map([[TAIL, y]]), none, continued)).toEqual({ name: y });
+    expect(asked).toBe(0);
+  });
+
   it('asks for the first entries only when it applies the genesis rule', () => {
     let asked = 0;
     const counted = () => {

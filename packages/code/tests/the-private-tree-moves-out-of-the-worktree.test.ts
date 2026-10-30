@@ -15,7 +15,12 @@
  *     moved to its own git directory); the checkout, which had, keeps its new one, and its old
  *     tail is moved as a closed tail;
  *   - after the move, `git worktree remove` without `--force` takes nothing private with it,
- *     and the doctor has nothing more to say.
+ *     and the doctor has nothing more to say;
+ *   - a project written outside a repository, then given one: the tree founded in the git
+ *     directory takes the record the old tree names, so the move joins one record, both readers
+ *     verify it, and private writes go on (FORMAT.md section 6.10);
+ *   - an old tree that already names another record than the shared one is not moved: the fix
+ *     says why and fails, and nothing is written.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -48,6 +53,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
+const SECOND_READER = fileURLToPath(
+  new URL('../../chain/verifier/mnema_verify.py', import.meta.url),
+);
 
 let sandbox: string;
 let home: string;
@@ -80,12 +88,11 @@ function git(cwd: string, ...args: string[]) {
 }
 
 /**
- * A private note written where the private tree used to live: the repository set aside. The tree
- * is then signed again as a writer before 0.1.5 signed it, under the first schemes, naming no
- * record: every tree from before the move was written before records were named (FORMAT.md
- * section 6.10), and each such tree was a record of its own.
+ * A private note written where the private tree used to live, by this binary: the repository set
+ * aside, so the tree is founded in `.mnema/private/` and names a record of its own (FORMAT.md
+ * section 6.10), as a project's private tree outside a repository does.
  */
-function writtenTheOldWay(top: string, text: string): void {
+function writtenOutsideTheRepository(top: string, text: string): void {
   renameSync(join(top, '.git'), join(top, '.git.aside'));
   try {
     const wrote = mnema(top, 'memory', '--scope', 'private', text);
@@ -93,7 +100,25 @@ function writtenTheOldWay(top: string, text: string): void {
   } finally {
     renameSync(join(top, '.git.aside'), join(top, '.git'));
   }
+}
+
+/**
+ * The same, signed again as a writer before 0.1.5 signed it, under the first schemes, naming no
+ * record: a tree left in a worktree from before the move, which every binary since writes into
+ * the repository's git directory, was written before records were named.
+ */
+function writtenTheOldWay(top: string, text: string): void {
+  writtenOutsideTheRepository(top, text);
   signedAsBeforeRecordsWereNamed(oldTree(top));
+}
+
+/** The second reader's verdict on the tree at `root`. */
+function secondReading(root: string): string {
+  const ran = spawnSync('python3', ['-I', SECOND_READER, '--json', 'record', root], {
+    encoding: 'utf-8',
+  });
+  if (ran.stdout === '') throw new Error(`the second reader produced no verdict: ${ran.stderr}`);
+  return (JSON.parse(ran.stdout) as { verdict: string }).verdict;
 }
 
 /** Every tail proof and checkpoint of the tree at `root` signed again under the first schemes. */
@@ -142,7 +167,8 @@ afterEach(() => {
 
 describe('private trees from before the move', () => {
   it('are named by the doctor, moved by --fix private-tree, and verify', () => {
-    writtenTheOldWay(repo, 'old note from the checkout');
+    // The checkout's tree by this binary, naming a record; the worktree's from before 0.1.5.
+    writtenOutsideTheRepository(repo, 'old note from the checkout');
     writtenTheOldWay(worktree, 'old note from the worktree');
     // The checkout writes once after the move: its installation id in the shared tree is new.
     expect(mnema(repo, 'memory', '--scope', 'private', 'new note from the checkout').status).toBe(
@@ -177,6 +203,7 @@ describe('private trees from before the move', () => {
     }
     const verified = mnema(repo, 'verify');
     expect(verified.status, verified.out).toBe(0);
+    expect(secondReading(shared())).toBe('VERIFIED');
 
     // The worktree had not written since: it goes on writing the tail it had.
     expect(mnema(worktree, 'memory', '--scope', 'private', 'after the move').status).toBe(0);
@@ -186,6 +213,52 @@ describe('private trees from before the move', () => {
     const removed = git(repo, 'worktree', 'remove', worktree);
     expect(removed.status, removed.out).toBe(0);
     expect(mnema(repo, 'recall').out).toContain('after the move');
+  }, 180_000);
+
+  it('join the tree a project kept before its repository, both written by this binary', () => {
+    const project = join(sandbox, 'no-repository-yet');
+    mkdirSync(project);
+    expect(mnema(project, 'init').status).toBe(0);
+    const before = mnema(project, 'memory', '--scope', 'private', 'before the repository');
+    expect(before.status, before.out).toBe(0);
+    expect(git(project, 'init', '-q', '-b', 'main').status).toBe(0);
+    const after = mnema(project, 'memory', '--scope', 'private', 'after the repository');
+    expect(after.status, after.out).toBe(0);
+    expect(mnema(project, 'doctor').out).toContain(`${oldTree(project)} holds 1 tail(s)`);
+
+    const fixed = mnema(project, 'doctor', '--fix', 'private-tree');
+    expect(fixed.status, fixed.out).toBe(0);
+    expect(fixed.out).toContain('moved 1 tail(s)');
+    expect(existsSync(oldTree(project))).toBe(false);
+    const tree = join(project, '.git', 'mnema', '%2E', 'private');
+    expect(readdirSync(join(tree, 'tails'))).toHaveLength(2);
+
+    const verified = mnema(project, 'verify');
+    expect(verified.status, verified.out).toBe(0);
+    expect(secondReading(tree)).toBe('VERIFIED');
+    const later = mnema(project, 'memory', '--scope', 'private', 'later still');
+    expect(later.status, later.out).toBe(0);
+    for (const note of ['before the repository', 'after the repository', 'later still']) {
+      expect(mnema(project, 'recall').out).toContain(note);
+    }
+  }, 180_000);
+
+  it('are not moved where they already name another record, and the fix says why', () => {
+    // The shared tree founded first, by its own genesis; then a tree outside it, founded apart.
+    expect(mnema(repo, 'memory', '--scope', 'private', 'in the repository').status).toBe(0);
+    writtenOutsideTheRepository(repo, 'founded apart');
+    const tails = readdirSync(join(shared(), 'tails'));
+
+    const fixed = mnema(repo, 'doctor', '--fix', 'private-tree');
+    expect(fixed.status, fixed.out).toBe(1);
+    expect(fixed.out).toContain(`${oldTree(repo)}: not moved, since its tails name record `);
+    expect(fixed.out).toContain('(another-record)');
+    expect(fixed.out).toContain('nothing was written');
+    expect(readdirSync(join(oldTree(repo), 'tails'))).toHaveLength(1);
+    expect(readdirSync(join(shared(), 'tails'))).toEqual(tails);
+    const verified = mnema(repo, 'verify');
+    expect(verified.status, verified.out).toBe(0);
+    expect(mnema(repo, 'doctor', '--fix', 'private-tree', '--dry-run').out).toContain('not moved');
   }, 180_000);
 
   it('give the doctor nothing to say where there are none, and the fix nothing to move', () => {

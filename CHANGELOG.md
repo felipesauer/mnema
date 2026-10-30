@@ -18,7 +18,10 @@ with its own changelog.
   record names itself at `init` from its first tail, and in a record written before, the first write of each installation
   (which opens a new tail, as it already did) names it after the tail `init` wrote, so two clones that never saw each other
   give it one name. Where the tails already name two records, or this machine's tail names one and the other tails
-  another, the write is refused and nothing is written (`ANOTHER_RECORD`). The tails written before 0.1.5 stay unnamed for
+  another, the write is refused and nothing is written (`ANOTHER_RECORD`). A project's private tree founded in its
+repository's git directory takes the record its `.mnema/private/` from before the repository names, so `mnema doctor --fix
+private-tree` joins one record; an old tree that already names another record is not moved, and the fix says why and
+exits 1. The tails written before 0.1.5 stay unnamed for
   good, a census note beside named ones; a record none of whose tails is named now ends `verify`'s verdict line with
   `record: unnamed (written before 0.1.5): a tail of another record could not be told from this record's own`, as the
   Python reader already said, and exits 0. The gate's handler before a write (`plugin/hooks/an-address-can-be-met.mjs`)

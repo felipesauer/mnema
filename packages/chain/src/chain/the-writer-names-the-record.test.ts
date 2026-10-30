@@ -24,7 +24,7 @@ import { keptHeadPath } from './kept-head.js';
 import { checkpointsPath, installationIdPath, publicKeyPath, tailProofPath } from './layout.js';
 import { recordName } from './record-name.js';
 import { listTails } from './store.js';
-import { firstEntries, namesOfTails } from './tail-names.js';
+import { firstEntries, namesOfTails, recordNamedIn } from './tail-names.js';
 import { NAMED_TAILPROOF_SCHEME } from './tailproof.js';
 import { ensureTree } from './tree.js';
 import { AnotherRecordError, type ChainWriter } from './writer.js';
@@ -75,8 +75,16 @@ function found(w: ChainWriter): void {
 }
 
 /** One act by the person whose keys are at `keys`: founded once, a note, and signed. */
-function write(root: string, keys: string, content: string): string {
-  const w = openChainForWriting(root, { keyRoot: join(sandbox, keys) });
+function write(
+  root: string,
+  keys: string,
+  content: string,
+  continues?: () => string | undefined,
+): string {
+  const w = openChainForWriting(root, {
+    keyRoot: join(sandbox, keys),
+    ...(continues === undefined ? {} : { continues }),
+  });
   if (!w.hasAnchor) {
     found(w);
     w.recordAnchor(w.anchor);
@@ -230,6 +238,47 @@ describe('what a tail names, to the writer', () => {
     const canonical = JSON.stringify(Object.fromEntries(Object.entries(forged).sort()));
     writeFileSync(path, `${[...lines.slice(0, -1), canonical].join('\n')}\n`);
     expect(namesOfTails({ root }).get(GENESIS)).toBeUndefined();
+  });
+});
+
+describe('a tail proof of the second scheme', () => {
+  it('names nothing where its signature does not hold, and a writer does not take its name', () => {
+    const root = aRecord('tampered');
+    const tail = write(root, 'alice', 'one');
+    const path = tailProofPath({ root }, tail);
+    const proof = JSON.parse(readFileSync(path, 'utf-8')) as Record<string, unknown>;
+    expect(proof.scheme).toBe(NAMED_TAILPROOF_SCHEME);
+    // Another name in the same signed proof: canonical still, and its signature no longer holds.
+    const forged = { ...proof, record: 'ab'.repeat(32) };
+    writeFileSync(path, `${JSON.stringify(Object.fromEntries(Object.entries(forged).sort()))}\n`);
+    expect(namesOfTails({ root }).get(tail)).toBe(recordName(tail));
+    const second = write(root, 'bob', 'two');
+    expect(signedBy(root, second).proof.record).toBe(recordName(tail));
+  });
+});
+
+describe('a directory that continues another one', () => {
+  it('takes the name the other one carries where none of its own tails names a record', () => {
+    const before = aRecord('before');
+    const old = write(before, 'alice', 'kept apart');
+    const root = aRecord('continued');
+    const continued = recordNamedIn([before]);
+    const tail = write(root, 'alice', 'here', () =>
+      continued.state === 'named' ? continued.name : undefined,
+    );
+    expect(tail).not.toBe(old);
+    expect(signedBy(root, tail).proof.record).toBe(recordName(old));
+    expect(recordNamedIn([before, root])).toMatchObject({ state: 'named', name: recordName(old) });
+    expect(verify(root).issues).toEqual([]);
+  });
+
+  it('reads as several records, or none, where the directories do not name one', () => {
+    const one = aRecord('one');
+    write(one, 'alice', 'one');
+    const two = aRecord('two');
+    write(two, 'bob', 'two');
+    expect(recordNamedIn([one, two]).state).toBe('several');
+    expect(recordNamedIn([aRecord('empty')]).state).toBe('unnamed');
   });
 });
 

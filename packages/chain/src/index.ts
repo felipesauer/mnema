@@ -133,6 +133,7 @@ export {
 } from './chain/level.js';
 export { UnreadableLineError } from './chain/lines.js';
 export { illegalMoves, type PlacedEvent } from './chain/moves.js';
+export type { RecordNaming } from './chain/record-name.js';
 export {
   firstLinkBreakFrom,
   holdsRecord,
@@ -152,6 +153,7 @@ export {
 } from './chain/store.js';
 export { subjectEvents } from './chain/subject-events.js';
 export { DEFAULT_WAIT_MS, TailBusyError } from './chain/tail-lock.js';
+export { recordNamedIn } from './chain/tail-names.js';
 export { ensureTree } from './chain/tree.js';
 export {
   type BackupKeyNote,

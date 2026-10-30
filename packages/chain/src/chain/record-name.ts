@@ -125,8 +125,11 @@ export type WriteUnder =
  * 1. the name its own tail carries;
  * 2. else the one name the other tails carry;
  * 3. else (no tail names a record: one written before records were named, or a new one) the name
- *    of the genesis tail, by the first entries `firsts` gives, asked for only here; with no tail
- *    holding a first entry, the writer's own tail is the genesis: a new record names itself.
+ *    of the record the directory `continues`, when it continues one (a project's private tree
+ *    founded in the repository while the one from before it moved still names a record);
+ * 4. else the name of the genesis tail, by the first entries `firsts` gives, asked for only here;
+ *    with no tail holding a first entry, the writer's own tail is the genesis: a new record names
+ *    itself.
  *
  * Refused, whatever the writer's own tail names, where the other tails name two records; and
  * where its own tail names one and the other named tails another.
@@ -135,6 +138,7 @@ export function recordToWriteUnder(
   tail: string,
   named: ReadonlyMap<string, string | undefined>,
   firsts: () => Iterable<{ readonly tail: string; readonly at: string }>,
+  continues: () => string | undefined = () => undefined,
 ): WriteUnder {
   const own = named.get(tail);
   const others = recordOf(new Map([...named].filter(([other]) => other !== tail)));
@@ -145,5 +149,5 @@ export function recordToWriteUnder(
       : { name: own };
   }
   if (others.state === 'named') return { name: others.name };
-  return { name: recordName(genesisTail(firsts()) ?? tail) };
+  return { name: continues() ?? recordName(genesisTail(firsts()) ?? tail) };
 }
