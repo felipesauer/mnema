@@ -22,7 +22,7 @@ with its own changelog.
   one name reads as before. The brief, `mnema rules` (on the other stream, and in `--json` as `anotherRecord`, which
   the Action reads and names in its comment), `governing_rules`, the rules pushed at a write by the MCP tool and by
   the hook verb, and `bootstrap` each say `Left out of this reading: tail <tail> names another record (<name>) than
-  this one`. `show`, `search` and the page leave its records out too, and say nothing. **The cost, measured** on the
+  this one`. `show`, `search`, the page and the console's feed leave its records out too, and say nothing. **The cost, measured** on the
   built binary, the push at a write over a record of 8 tails: 267 ms against 256 ms (median of 15, base and head
   alternated); a record of one tail reads nothing more. **The limit, declared:** the genesis is the rule's, by `at`, so
   a tail grafted from a record older than this one is the record read and this one's tails are left out; both readers

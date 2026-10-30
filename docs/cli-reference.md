@@ -546,7 +546,7 @@ tail is. The brief, `mnema rules` (on stderr, and in `--json` as `anotherRecord`
 Action names in its comment), `governing_rules`, the rules pushed at a write and `bootstrap`
 each say which tail they left out: `Left out of this reading: tail <tail> names another
 record (<first 12 of its name>) than this one, so nothing it holds governs here`. `show`,
-`search` and the page leave its records out without a word. The genesis is the rule's, by
+`search`, the page and the console's feed leave its records out without a word. The genesis is the rule's, by
 `at`: a tail grafted from an older record is the record read, and this one's tails are the
 ones left out, which is said the same way.
 
