@@ -537,6 +537,19 @@ that ran behind). Either branch is refused as `another-record` against a base th
 the record, or derives its name, the other way; merged anyway, `verify` refuses the
 directory.
 
+**What a tail of another record holds governs nowhere here, merged or not.** The readings
+that say what governs run over a directory nobody verified, so each reads the tails of the
+record only: where the tails name two records, the record read is the one that holds its
+genesis (the record the genesis tail names, or the one it derives where it names none), and
+every tail naming another is left out; where the genesis is of none of them, every named
+tail is. The brief, `mnema rules` (on stderr, and in `--json` as `anotherRecord`, which the
+Action names in its comment), `governing_rules`, the rules pushed at a write and `bootstrap`
+each say which tail they left out: `Left out of this reading: tail <tail> names another
+record (<first 12 of its name>) than this one, so nothing it holds governs here`. `show`,
+`search` and the page leave its records out without a word. The genesis is the rule's, by
+`at`: a tail grafted from an older record is the record read, and this one's tails are the
+ones left out, which is said the same way.
+
 It fails on a cut you authorized with `mnema tail prune` too, and that is the point of it:
 the change that removes a tail is the one change a reviewer has to look at. A cut made in
 two commits, the waiver first and the tail's files removed by a later one, fails a branch
@@ -1308,6 +1321,14 @@ origin is the one you meant or that it deserves trust: pointing at an origin is 
 commit, and the commit never moves unless `inherit update --write` moves it. Only `set` and `update`
 use the network; a read uses this machine's copy, kept under the mnema home and not in the project,
 and says when the commit is not there yet.
+
+**The commit fixes the record, and `update` does not move to another one.** `set` and `update`
+print the name of the record at the commit (`The record there is <name>`, or that it names none,
+written before records were named). Nothing beside the commit is written: `update` reads the
+record at the commit it leaves, and where the origin holds another record at the new one (it
+replaced its record), it refuses with `ANOTHER_RECORD`, with or without `--write`, naming both;
+pointing at another record is `inherit set` over a project that points at none. A record from
+before records were named may take its first name, and that is moved to.
 
 **An inherited rule reaches the path it addresses.** A link the origin's record holds under
 `governs`, `asks-for-a-person` or `refuses-a-write` is an address in the project that inherits it,
