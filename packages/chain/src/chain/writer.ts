@@ -1047,12 +1047,16 @@ function anotherRecordSaid(
   tail: string,
   refusal: Exclude<WriteUnder, { readonly name: string }>,
 ): string {
+  // WHICH OF THE TWO WAS HERE FIRST IS NOT SAID: measured on the binary, a tail grafted into a
+  // record beside this machine's own one reads this way from this machine's side, and the graft
+  // is the newcomer there. A directory alone does not tell (FORMAT.md section 6.10).
   if (refusal.refused === 'foreign') {
     return (
-      `this machine's tail ${tail} names record ${refusal.own.slice(0, 12)}..., and every other ` +
-      `tail here that names a record names ${refusal.record.slice(0, 12)}...: this tail belongs ` +
-      'to another record (copied in from another project or tree, or written by a `mnema init` ' +
-      'on another branch), and `mnema verify` refuses the two together (another-record).'
+      `this machine's tail ${tail} names record ${refusal.own.slice(0, 12)}..., and the other ` +
+      `tails here that name a record name ${refusal.record.slice(0, 12)}...: this directory ` +
+      'holds tails of two records (a tail grafted from another record, or two records an ' +
+      '`mnema init` began on two branches and a merge joined), which `mnema verify` refuses ' +
+      '(another-record).'
     );
   }
   const groups = refusal.groups

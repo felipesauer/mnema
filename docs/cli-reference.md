@@ -448,6 +448,19 @@ A tail removed *together with its key*, while another remains, may leave nothing
 all, and only a history outside this record (the one a git remote keeps) can testify to what
 was taken out.
 
+**A tail of another record is refused, and a record written before 0.1.5 says it cannot tell
+one.** From 0.1.5 every tail proof and checkpoint a write signs names the record it belongs to
+(`FORMAT.md` section 6.10): a new record names itself from its first tail, and a record written
+before is named by the first write of 0.1.5, the same name in every clone. `verify` refuses a
+record whose tails name two records (`another-record`, naming each record with its tails), a
+tail that names two (`record-mismatch`), and a checkpoint that names none after one that did
+(`scheme-downgrade`), and the write refuses to grow such a record (`ANOTHER_RECORD`). A tail
+written before 0.1.5 names nothing, and stays that way: beside named tails it is a census line
+(`N tail(s) that name no record, written before 0.1.5`), and a record none of whose tails names
+one ends its verdict with `record: unnamed (written before 0.1.5): a tail of another record could
+not be told from this record's own`, exit 0. A binary from before 0.1.5 reads a record holding
+a named line as unreadable, exit 1.
+
 **A record in which no tail holds anything is refused.** No `tails/` directory, no tail
 directory in it, or only tails that hold nothing: such a record asserts no fact, and `verify`
 fails it by name at every `--require`, exit 1: the one-line verdict says `local integrity

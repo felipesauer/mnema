@@ -104,8 +104,10 @@ export function recordOf(named: ReadonlyMap<string, string | undefined>): Record
  *
  * - `several`: the OTHER tails already name two records or more. Writing would grow a directory
  *   both readers refuse (`another-record`), whichever name the writer chose.
- * - `foreign`: the writer's own tail names `own`, and every other named tail names `record`: its
- *   tail is the one of another record, and growing it grows what both readers refuse.
+ * - `foreign`: the writer's own tail names `own`, and every other named tail names `record`: to
+ *   the rest of the directory its tail is the one of another record (and the rest are to it; a
+ *   directory alone does not tell which came first), and growing it grows what both readers
+ *   refuse.
  */
 export type WriteUnder =
   | { readonly name: string }

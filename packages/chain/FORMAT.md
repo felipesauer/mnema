@@ -1356,11 +1356,27 @@ A tail that names no record, in a record whose other tails name one, is **said a
 as a census note `unnamed-tail`: a tail written before records were named on a machine that
 wrote nothing since, and, the guilty reading, a tail of another record written before, which
 nothing here tells from this record's own. A record none of whose tails names one (every record
-written before 0.1.5) is unnamed, and the second reader says so in a note. Each frozen record
+written before 0.1.5, until a writer of 0.1.5 writes in it) is unnamed, and both readers say so in
+the same words, `record: unnamed (written before 0.1.5): a tail of another record could not be
+told from this record's own`: `verify` as a clause of its verdict, before the witness clause, and
+the second reader in a note. Neither refuses it. Each frozen record
 in the suite is read this way, byte for byte as it was written, and
 `__fixtures__/named-by-its-genesis`, written once by the signing code of the second schemes, is
 read as named: a genesis tail born before and bound by its first second-scheme checkpoint, and a
 tail born named.
+
+**What this implementation's writer signs under**, from 0.1.5: every tail proof and every
+checkpoint it writes is of the second scheme, and names the record its own tail already names;
+else the one record the directory's other tails name; else (no tail names one) the record whose
+genesis tail is found by the rule above, its own tail where no tail holds a first entry, so a new
+record names itself from its first tail. A tail is read for this as the readers read it: by its
+second-scheme proof, else by its last checkpoint when that one is of the second scheme, each
+signature checked under the committed key its id names. The writer writes nothing where the other
+tails name two records, or where its own tail names one and every other named tail another
+(`ANOTHER_RECORD`). It never appends to a tail whose end it holds no note of having written
+(the `<tailId>.head` of §4): it opens a new tail, named, instead. So a tail written before 0.1.5
+is never bound by its owner's first second-scheme checkpoint in practice, and stays unnamed: the
+protection holds from 0.1.5 on (`packages/chain/src/chain/the-writer-names-the-record.test.ts`).
 
 ## 7. Versions, and why a proof is never recomputed over a reading
 

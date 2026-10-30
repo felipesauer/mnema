@@ -302,7 +302,7 @@ describe('a write into tails of two records', () => {
       own: recordName(bTail),
       record: expect.any(String),
     });
-    expect((thrown as AnotherRecordError).message).toContain('belongs to another record');
+    expect((thrown as AnotherRecordError).message).toContain('holds tails of two records');
     expect(readFileSync(checkpointsPath({ root: a }, bTail), 'utf-8')).toBe(lines);
     expect(listTails({ root: a })).toHaveLength(2);
   });
