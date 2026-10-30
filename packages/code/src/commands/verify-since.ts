@@ -27,8 +27,18 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, realpathSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, relative, sep } from 'node:path';
+import { type Arrivals, arrivalsSince, catalogUpcasters } from '@mnema/chain';
 
 /** One file of the record at the base that the disk no longer holds as it was. */
 export interface SinceFinding {
@@ -49,8 +59,26 @@ export type SinceReading =
       /** How many files of the record the base held: what was compared. */
       readonly held: number;
       readonly findings: readonly SinceFinding[];
+      /**
+       * The tails on disk that the base did not hold and that are not the base's record: those
+       * that name no record, and those that name another (FORMAT.md section 6.10).
+       */
+      readonly arrived: Arrivals;
     }
   | { readonly kind: 'refused'; readonly rev: string; readonly why: string };
+
+/**
+ * Whether the record on disk is the base's record grown: compared, no file of the base gone or
+ * rewritten, and no tail arrived that names no record or another record than the base's.
+ */
+export function sinceHolds(since: SinceReading): boolean {
+  return (
+    since.kind === 'read' &&
+    since.findings.length === 0 &&
+    since.arrived.unnamed.length === 0 &&
+    since.arrived.foreign.length === 0
+  );
+}
 
 /** The files whose bytes may only grow at the end: the segments and the checkpoints. */
 const GROWS_AT_THE_END = /(?:^|\/)(?:checkpoints|\d{6})\.jsonl$/;
@@ -127,5 +155,61 @@ export function sinceBase(ask: {
       findings.push({ file, what: 'rewritten' });
     }
   }
-  return { kind: 'read', rev, commit, held: files.length, findings };
+  const arrived = arrivedSinceTheCommit(top, commit, record, files, recordRoot);
+  if (arrived === null) {
+    return { kind: 'refused', rev, why: 'git could not read the record that commit held' };
+  }
+  return { kind: 'read', rev, commit, held: files.length, findings, arrived };
+}
+
+/** A tail's file that says what the tail names, or where its first entry is. */
+const NAMES_OR_BEGINS = /^tails\/([^/]+)\/(?:tailproof\.json|checkpoints\.jsonl|(\d{6})\.jsonl)$/;
+
+/**
+ * WHAT ARRIVED SINCE THE COMMIT: the tails on disk the commit did not hold, held to the record
+ * the commit's tails were (`arrivalsSince`). The base is read as the commit held it, never off
+ * the disk a pull request may have changed: each tail's proof, its checkpoints and its first
+ * segment, and the keys, are taken out of git into a directory of its own, removed after.
+ */
+function arrivedSinceTheCommit(
+  top: string,
+  commit: string,
+  record: string,
+  files: readonly string[],
+  recordRoot: string,
+): Arrivals | null {
+  const prefix = record === '' ? '' : `${record}/`;
+  const wanted: string[] = [];
+  const firstSegment = new Map<string, string>();
+  for (const file of files) {
+    const inRecord = file.slice(prefix.length);
+    if (inRecord.startsWith('keys/')) {
+      wanted.push(file);
+      continue;
+    }
+    const matched = NAMES_OR_BEGINS.exec(inRecord);
+    if (matched === null) continue;
+    const segment = matched[2];
+    if (segment === undefined) {
+      wanted.push(file);
+      continue;
+    }
+    const tail = matched[1] as string;
+    const first = firstSegment.get(tail);
+    if (first === undefined || file < first) firstSegment.set(tail, file);
+  }
+  wanted.push(...firstSegment.values());
+  const base = mkdtempSync(join(tmpdir(), 'mnema-since-'));
+  try {
+    for (const file of wanted) {
+      const bytes = git(top, ['cat-file', 'blob', `${commit}:${file}`]);
+      if (bytes === null) return null;
+      const into = join(base, file.slice(prefix.length));
+      mkdirSync(dirname(into), { recursive: true });
+      writeFileSync(into, bytes);
+    }
+    return arrivalsSince({ root: base }, { root: recordRoot }, catalogUpcasters());
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
 }
