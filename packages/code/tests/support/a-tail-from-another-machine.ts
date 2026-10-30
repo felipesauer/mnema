@@ -24,7 +24,7 @@
  * Collapsing the other four is a slice of its own, not a line of this one.
  */
 
-import { cpSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   agentEnrolled,
@@ -51,6 +51,7 @@ import { createTask, openTreeForWriting } from '@mnema/core/write';
  * of the project being exercised.
  */
 export function mergeAForeignTail(into: string, machine: string): string {
+  cloneTheRecord(into, machine);
   const writer = openChainForWriting(machine, { keyRoot: machine });
   const created = createTask(
     { writer, layout: { root: machine }, upcasters: catalogUpcasters() },
@@ -66,6 +67,25 @@ export function mergeAForeignTail(into: string, machine: string): string {
   }
   rmSync(machine, { recursive: true, force: true });
   return writer.tail;
+}
+
+/**
+ * What another machine holds of the record at `from` before it writes: its tails and the public
+ * keys beside them, as a clone carries them. Its tail then names the record those tails name
+ * (FORMAT.md section 6.10); a machine that never saw them would begin a record of its own, which
+ * both readers refuse beside this one (`another-record`).
+ */
+export function cloneTheRecord(from: string, machine: string): void {
+  // A tree nothing was written to yet has nothing to clone: the machine begins it.
+  const tails = existsSync(join(from, 'tails')) ? readdirSync(join(from, 'tails')) : [];
+  for (const tail of tails) {
+    cpSync(join(from, 'tails', tail), join(machine, 'tails', tail), { recursive: true });
+  }
+  mkdirSync(join(machine, 'keys'), { recursive: true });
+  const keys = existsSync(join(from, 'keys')) ? readdirSync(join(from, 'keys')) : [];
+  for (const key of keys) {
+    if (key.endsWith('.pub')) cpSync(join(from, 'keys', key), join(machine, 'keys', key));
+  }
 }
 
 /**

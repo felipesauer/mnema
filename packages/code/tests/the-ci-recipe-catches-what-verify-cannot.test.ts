@@ -191,13 +191,20 @@ function rewrittenBySigner(dir: string): void {
   const checkpoints = join(tail, 'checkpoints.jsonl');
   let previous: string | null = null;
   const signed = lines(checkpoints).map((line) => {
-    const stored = JSON.parse(line) as { tail: string; fromSeq: number; toSeq: number };
+    const stored = JSON.parse(line) as {
+      tail: string;
+      fromSeq: number;
+      toSeq: number;
+      record?: string;
+    };
+    // Under the record the checkpoint named, as the key holder would sign it again.
     const checkpoint = signCheckpoint({
       tail: stored.tail,
       fromSeq: stored.fromSeq,
       events: sealed.slice(stored.fromSeq, stored.toSeq + 1).map((entry) => entry.written),
       prev: previous,
       keyPair,
+      ...(stored.record === undefined ? {} : { record: stored.record }),
     });
     previous = checkpointHash(checkpoint);
     return `${serializeCheckpoint(checkpoint)}\n`;

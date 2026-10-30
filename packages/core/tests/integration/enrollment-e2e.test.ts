@@ -101,6 +101,18 @@ function commitPublicKeyOfB(): void {
   );
 }
 
+/**
+ * Copies A's tails and committed public keys into B's chain: B cloned the record before it wrote,
+ * so B's tail names the record A's does (FORMAT.md section 6.10). Two chains that never saw each
+ * other are two records, which both readers refuse together.
+ */
+function cloneAIntoB(): void {
+  cpSync(join(a.root, 'tails'), join(b.root, 'tails'), { recursive: true });
+  for (const key of readdirSync(join(a.root, 'keys'))) {
+    if (key.endsWith('.pub')) cpSync(join(a.root, 'keys', key), join(b.root, 'keys', key));
+  }
+}
+
 /** Copies B's tail + committed public key into A's chain (an offline merge). */
 function mergeIntoA(): void {
   cpSync(join(b.root, 'tails'), join(a.root, 'tails'), { recursive: true });
@@ -130,7 +142,8 @@ describe('enrollment e2e: a distinct second key joins one anchor', () => {
     if (!enrolledOk.ok) throw new Error(`A could not enroll B: ${JSON.stringify(enrolledOk)}`);
     expect(enrolledOk.anchor).toBe(anchor);
 
-    // B, now a member, authors a task under the SHARED anchor.
+    // B, now a member, authors a task under the SHARED anchor, in its clone of the record.
+    cloneAIntoB();
     b.writer.append(
       taskCreated(
         { at: clock(), who: anchor, signerFp: b.fingerprint, subject: 't-b' },

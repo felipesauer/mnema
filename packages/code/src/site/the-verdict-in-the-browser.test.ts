@@ -280,8 +280,8 @@ describe('the verdict a page computes', () => {
     [
       'a key no writer puts in the tail proof',
       'tailproof.json',
-      (text: string) => text.replace('{"scheme"', '{"forged":1,"scheme"'),
-      "tail-proof keys are ['forged', 'scheme', 'sig', 'signerFp', 'tail'], not ['scheme', 'sig', 'signerFp', 'tail']",
+      (text: string) => text.replace('{"record"', '{"forged":1,"record"'),
+      "tail-proof keys are ['forged', 'record', 'scheme', 'sig', 'signerFp', 'tail'], not ['record', 'scheme', 'sig', 'signerFp', 'tail']",
     ],
     // A line broken where the order of the checks decides which cause is named first
     // (`FORMAT.md` section 4): the page names the one both readers name.
@@ -306,13 +306,13 @@ describe('the verdict a page computes', () => {
     [
       'a checkpoint scheme no version names',
       'checkpoints.jsonl',
-      (text: string) => text.replace('"mnema-checkpoint/1"', '"mnema-checkpoint/9"'),
+      (text: string) => text.replace('"mnema-checkpoint/2"', '"mnema-checkpoint/9"'),
       "a checkpoint scheme this reader does not know: 'mnema-checkpoint/9'",
     ],
     [
       'a tail-proof scheme no version names',
       'tailproof.json',
-      (text: string) => text.replace('"mnema-tail/1"', '"mnema-tail/9"'),
+      (text: string) => text.replace('"mnema-tail/2"', '"mnema-tail/9"'),
       "a tail-proof scheme this reader does not know: 'mnema-tail/9'",
     ],
   ])('refuses %s where mnema verify refuses it, in its words', (_, file, add, words) => {

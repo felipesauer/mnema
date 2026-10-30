@@ -42,6 +42,7 @@ import { catalogUpcasters, openChainForWriting } from '@mnema/chain';
 import { createTask } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/program.js';
+import { cloneTheRecord } from './support/a-tail-from-another-machine.js';
 
 let sandbox: string;
 let repo: string;
@@ -92,6 +93,8 @@ function tailDirectory(tail: string): string {
  */
 function mergeAForeignTail(): { tail: string; anchor: string } {
   const elsewhere = mkdtempSync(join(sandbox, 'other-machine-'));
+  // A clone of the record first, so its tail names this record (FORMAT.md section 6.10).
+  cloneTheRecord(publicRoot(), elsewhere);
   const writer = openChainForWriting(elsewhere, { keyRoot: elsewhere });
   const created = createTask(
     { writer, layout: { root: elsewhere }, upcasters: catalogUpcasters() },

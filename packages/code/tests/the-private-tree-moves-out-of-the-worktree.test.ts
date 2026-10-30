@@ -19,10 +19,31 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, renameSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  canonicalBytes,
+  canonicalStringify,
+  catalogUpcasters,
+  checkpointHash,
+  listTails,
+  loadOrCreateKeyPair,
+  readTailCheckpoints,
+  readTailEntries,
+  serializeCheckpoint,
+  sign,
+  signCheckpoint,
+} from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
@@ -58,7 +79,12 @@ function git(cwd: string, ...args: string[]) {
   return { status: ran.status, out: `${ran.stdout}${ran.stderr}` };
 }
 
-/** A private note written where the private tree used to live: the repository set aside. */
+/**
+ * A private note written where the private tree used to live: the repository set aside. The tree
+ * is then signed again as a writer before 0.1.5 signed it, under the first schemes, naming no
+ * record: every tree from before the move was written before records were named (FORMAT.md
+ * section 6.10), and each such tree was a record of its own.
+ */
 function writtenTheOldWay(top: string, text: string): void {
   renameSync(join(top, '.git'), join(top, '.git.aside'));
   try {
@@ -66,6 +92,30 @@ function writtenTheOldWay(top: string, text: string): void {
     expect(wrote.status, wrote.out).toBe(0);
   } finally {
     renameSync(join(top, '.git.aside'), join(top, '.git'));
+  }
+  signedAsBeforeRecordsWereNamed(oldTree(top));
+}
+
+/** Every tail proof and checkpoint of the tree at `root` signed again under the first schemes. */
+function signedAsBeforeRecordsWereNamed(root: string): void {
+  const keyPair = loadOrCreateKeyPair({ root: join(home, '.mnema', 'identity') });
+  for (const tail of listTails({ root })) {
+    const dir = join(root, 'tails', tail);
+    const proof = { scheme: 'mnema-tail/1', signerFp: keyPair.fingerprint, tail };
+    const sig = Buffer.from(sign(canonicalBytes(proof), keyPair.privateKey)).toString('hex');
+    writeFileSync(join(dir, 'tailproof.json'), `${canonicalStringify({ ...proof, sig })}\n`);
+    const entries = readTailEntries({ root }, tail, catalogUpcasters());
+    let prev: string | null = null;
+    const lines: string[] = [];
+    for (const { fromSeq, toSeq } of readTailCheckpoints({ root }, tail)) {
+      const events = entries
+        .filter((entry) => entry.link.seq >= fromSeq && entry.link.seq <= toSeq)
+        .map((entry) => entry.written);
+      const signed = signCheckpoint({ tail, fromSeq, events, prev, keyPair });
+      lines.push(serializeCheckpoint(signed));
+      prev = checkpointHash(signed);
+    }
+    writeFileSync(join(dir, 'checkpoints.jsonl'), `${lines.join('\n')}\n`);
   }
 }
 

@@ -16,6 +16,7 @@ import { catalogUpcasters, openChainForWriting } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees, type Scope } from '@mnema/core';
 import { createTask } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { cloneTheRecord } from '../../tests/support/a-tail-from-another-machine.js';
 import { runInit } from './init.js';
 import { runTailPrune } from './tail-prune.js';
 
@@ -55,6 +56,8 @@ function rootOf(repo: string, env: DiscoveryEnv, scope: Scope): string {
 function mergeAForeignTail(into: string, label: string): { tail: string; anchor: string } {
   const machine = join(sandbox, label);
   mkdirSync(machine, { recursive: true });
+  // A clone of the record first, so its tail names this record (FORMAT.md section 6.10).
+  cloneTheRecord(into, machine);
   const writer = openChainForWriting(machine, { keyRoot: machine });
   const created = createTask(
     { writer, layout: { root: machine }, upcasters: catalogUpcasters() },
