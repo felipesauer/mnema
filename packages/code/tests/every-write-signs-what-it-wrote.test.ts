@@ -72,6 +72,7 @@ import {
   runRulesBeforeAnEditTool,
   runSkillsTool,
 } from '../src/mcp/tools.js';
+import { cloneTheRecord } from './support/a-tail-from-another-machine.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 /**
@@ -483,6 +484,8 @@ function mergeAForeignTail(into: string): string {
   const machine = mkdtempSync(join(tmpdir(), 'mnema-signs-other-'));
   try {
     const trees = { keyRoot: machine, projectPublic: machine } as unknown as ResolvedTrees;
+    // A clone of the record first, so its tail names this record (FORMAT.md section 6.10).
+    cloneTheRecord(into, machine);
     const writer = openTreeForWriting(trees, 'public');
     // Signed in the hold that wrote it, as every write of the product is.
     const made = writer.exclusively(() => {

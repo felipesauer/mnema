@@ -26,7 +26,7 @@
  *     leave one of the two saying something the other does not.
  */
 
-import { cpSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -96,15 +96,19 @@ interface TailSpec {
 
 /**
  * Writes each spec as its OWN tail (a separate root mints a distinct key, so the
- * tails never collide) and merges them all into `root`, the way independently
- * written machines are merged offline: copy each tail directory and its
- * committed public key. Returns the summed residual expected across the tails.
+ * tails never collide) and merges them all into `root`, the way machines that each
+ * cloned the record are merged offline: each machine starts from a copy of `root` as
+ * it stands (a clone, so its tail names the same record: FORMAT.md section 6.10), and
+ * its tail directory and committed public key are copied back. Returns the summed
+ * residual expected across the tails.
  */
 function writeManyTails(specs: readonly TailSpec[]): number {
   let expectedResidual = 0;
   for (const spec of specs) {
     const tailRoot = mkdtempSync(join(tmpdir(), 'mnema-inv-tail-'));
     try {
+      // The clone first: the founding is this tail's first write, and it names the record.
+      mergeInto(root, tailRoot);
       const w = found(
         openChainForWriting(tailRoot, {
           keyRoot: tailRoot,
@@ -128,6 +132,8 @@ function writeManyTails(specs: readonly TailSpec[]): number {
 function mergeInto(fromRoot: string, intoRoot: string): void {
   const fromTails = join(fromRoot, 'tails');
   const intoTails = join(intoRoot, 'tails');
+  if (!existsSync(fromTails)) return;
+  mkdirSync(join(intoRoot, 'keys'), { recursive: true });
   for (const tail of readdirSync(fromTails)) {
     const dest = join(intoTails, tail);
     cpSync(join(fromTails, tail), dest, { recursive: true });

@@ -1030,11 +1030,12 @@ def refounded_record(root: str) -> tuple[bool, str]:
     return True, f"the record erased and a new identity {anchor[:16]}... founded in its place"
 
 
-def _refound(root: str, content: str, scheme: int = 1) -> str:
+def _refound(root: str, content: str, scheme: int = 2) -> str:
     """Erase the record and found a new one under RFC 8032's key; return its anchor.
 
-    `scheme` is the one its checkpoint and tail proof are signed under: 1, as every writer
-    before section 6.10 signed them, or 2, naming the record whose genesis is this tail.
+    `scheme` is the one its checkpoint and tail proof are signed under: 2, naming the record
+    whose genesis is this tail, as every writer from 0.1.5 on signs them, or 1, as every writer
+    before section 6.10 signed them.
     """
     template = _last_event(root)
     for name in ("tails", "keys"):
@@ -1137,7 +1138,7 @@ def named_record(root: str) -> tuple[bool, str]:
     """A record founded afresh under the second schemes (section 6.10): its one tail's proof and
     checkpoint name the record whose genesis that tail is. Honest; both readers verify it and
     name its genesis tail."""
-    _refound(root, "a record that names itself", scheme=2)
+    _refound(root, "a record that names itself")
     tail = os.path.basename(_tail_dir(root))
     return True, f"a record named {record_name(tail)[:12]}..., its genesis tail {tail[:12]}..."
 
@@ -1151,7 +1152,7 @@ def tail_of_another_record(root: str) -> tuple[bool, str]:
     copied whole with its public key is. Both readers refuse the directory as another-record,
     naming both groups.
     """
-    _refound(root, "the record a tail is grafted into", scheme=2)
+    _refound(root, "the record a tail is grafted into")
     template = _last_event(root)
     graft = _tail_name(CHECKER_SECRET, "cd")
     _found_tail(
@@ -1239,7 +1240,7 @@ def unnamed_tail_beside_named_ones(root: str) -> tuple[bool, str]:
     """A named record, and a second tail beside it written under the first schemes, naming no
     record: what a colleague's tail written before 0.1.5 looks like. Both readers verify it and
     say the tail names no record (section 6.10)."""
-    _refound(root, "a named record with an unnamed tail beside it", scheme=2)
+    _refound(root, "a named record with an unnamed tail beside it")
     template = _last_event(root)
     other = _tail_name(CHECKER_SECRET, "cd")
     _found_tail(
@@ -1466,17 +1467,22 @@ def _append_signed(root: str, event: dict, secret: bytes) -> int:
     checkpoints = _checkpoints(root)
     lines = _read_lines(checkpoints)
     last = strict_loads(lines[-1].decode("utf-8"))
+    # Under the last checkpoint's scheme, as a writer goes on: a `/1` one after a `/2` one is
+    # the downgrade section 6.10 refuses, which none of the cases built on this is about.
+    named = last["scheme"] == NAMED_CHECKPOINT_SCHEME
+    keys = NAMED_CHECKPOINT_KEYS if named else CHECKPOINT_KEYS
     _, seq = _append(root, event)
     stored = {
         "contentRoot": content_root([canonical_bytes(event)]),
         "fromSeq": seq,
-        "prev": hashlib.sha256(signed_message(last, CHECKPOINT_KEYS)).hexdigest(),
-        "scheme": CHECKPOINT_SCHEME,
+        "prev": hashlib.sha256(signed_message(last, keys)).hexdigest(),
+        "scheme": NAMED_CHECKPOINT_SCHEME if named else CHECKPOINT_SCHEME,
         "signerFp": fingerprint,
         "tail": _tail_dir(root).rsplit(os.sep, 1)[-1],
         "toSeq": seq,
+        **({"record": last["record"]} if named else {}),
     }
-    message = signed_message(stored, CHECKPOINT_KEYS)
+    message = signed_message(stored, keys)
     lines.append(canonical_bytes({**stored, "sig": sign(secret, message).hex()}))
     _rewrite(checkpoints, lines)
     return seq

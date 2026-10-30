@@ -36,6 +36,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import type { EventKind } from '@mnema/chain';
 import {
   type ChainSigner,
@@ -58,6 +59,7 @@ import { IdentityUnavailableError, membershipIn, rosterByRole } from '../identit
 import { canonicalIdentity } from '../identity/who.js';
 import type { DeferredWriteContext } from '../workflow/operations.js';
 import { PrivateTreeVisibleError, privateTreeVisibility } from './private-tree.js';
+import { recordLeftBehind } from './private-tree-move.js';
 import type { AgentSigning, ResolvedTrees } from './resolve.js';
 
 /** The three trees a write can be routed to. */
@@ -335,12 +337,17 @@ export function openTreeForWriting(
   // what orders it after them whatever the clocks of two machines say.
   // The private tree of a repository is one for all its worktrees, and each keeps its own
   // installation id in its own git directory, so each writes its own tail (`git-place.ts`).
+  // And a private tree founded there while the one from before it moved still names a record
+  // takes that name, so the two join as one record (`recordLeftBehind`).
   const installationRoot = scope === 'private' ? trees.projectPrivateInstallation : undefined;
+  const projectPublic = trees.projectPublic;
   return openChainForWriting(chainRoot, {
     keyRoot,
     citeHeads: true,
     onNewTail: sayNewTail,
-    ...(installationRoot === undefined ? {} : { installationRoot }),
+    ...(installationRoot === undefined || projectPublic === undefined
+      ? {}
+      : { installationRoot, continues: () => recordLeftBehind(dirname(projectPublic)) }),
     ...options,
   });
 }

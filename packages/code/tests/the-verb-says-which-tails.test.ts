@@ -34,6 +34,7 @@ import { PROJECT_DIR, resolveTrees } from '@mnema/core';
 import { createTask } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/program.js';
+import { cloneTheRecord } from './support/a-tail-from-another-machine.js';
 
 let sandbox: string;
 let repo: string;
@@ -107,6 +108,8 @@ function publicRoot(): string {
 function mergeAForeignTail(): string {
   const machine = join(sandbox, 'other-machine');
   mkdirSync(machine, { recursive: true });
+  // A clone of the record first, so its tail names this record (FORMAT.md section 6.10).
+  cloneTheRecord(publicRoot(), machine);
   const writer = openChainForWriting(machine, { keyRoot: machine });
   const created = createTask(
     { writer, layout: { root: machine }, upcasters: catalogUpcasters() },

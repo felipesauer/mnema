@@ -12,6 +12,30 @@ with its own changelog.
 
 ### Changed
 
+- **Every tail proof and checkpoint a write signs names the record, and mnema 0.1.4 refuses a record from its first such
+  line.** The writer signs `mnema-tail/2` and `mnema-checkpoint/2` only, under the name its own tail already carries, else
+  the one the other tails of the record carry, else the name of the record's genesis tail (FORMAT.md section 6.10): a new
+  record names itself at `init` from its first tail, and in a record written before, the first write of each installation
+  (which opens a new tail, as it already did) names it after the tail `init` wrote, so two clones that never saw each other
+  give it one name. Where the tails already name two records, or this machine's tail names one and the other tails
+  another, the write is refused and nothing is written (`ANOTHER_RECORD`). A project's private tree founded in its
+repository's git directory takes the record its `.mnema/private/` from before the repository names, so `mnema doctor --fix
+private-tree` joins one record; an old tree that already names another record is not moved, and the fix says why and
+exits 1. The tails written before 0.1.5 stay unnamed for
+  good, a census note beside named ones; a record none of whose tails is named now ends `verify`'s verdict line with
+  `record: unnamed (written before 0.1.5): a tail of another record could not be told from this record's own`, as the
+  Python reader already said, and exits 0. The gate's handler before a write (`plugin/hooks/an-address-can-be-met.mjs`)
+  reads a `/2` checkpoint line as it reads a `/1` one, so a named record does not start `mnema` on every write, and it
+  doubts a checkpoint line of either scheme with a key more or less. **The cost, for a binary from before:** from the first
+  `/2` line in a record, mnema 0.1.4 refuses it, as 0.1.3 refuses a run's mark (below): its `mnema verify` says
+  `local integrity FAILED`, the tail that holds the line UNREADABLE (`a checkpoint scheme this reader does not know:
+  'mnema-checkpoint/2'`), exits 1, and its Python reader says REFUSED, so a GitHub Action built from 0.1.4 goes red on
+  every pull request of that repository. A colleague still on 0.1.4 keeps writing a tail of their own, which reads as
+  unnamed; a machine that went back to 0.1.4 after 0.1.5 wrote in its checkout cannot write there (its installation now
+  names the `/2` tail). Upgrade the CLI on every machine that writes, and move the Action in the same pull request that
+  brings the first `/2` line, or before it: the commit or ref your workflow checks out to build `packages/action` from,
+  to this release.
+
 - **Both readers read a checkpoint and a tail proof that name the record they belong to, and refuse a tail of another record.**
   One key signs in every record its person writes in, and public keys travel with the record, so a tail copied from one
   record with its key verified in another as that person's acts. `mnema-checkpoint/2` and `mnema-tail/2` sign one key more,
@@ -22,8 +46,7 @@ with its own changelog.
   is a census note, `unnamed-tail`; a record that names none, every record written so far, reads as it did, and the Python
   reader says it is unnamed. A scheme of the family neither reads names the mnema that refuses it, as a kind it does not
   read does. `canonical-vectors.json` publishes five signed messages (each scheme of each artifact, signed by RFC 8032's
-  published key), and a new frozen record is named by its genesis tail. The writer still writes `/1`: this release's
-  reading of a record changes nothing until a record is written under `/2`.
+  published key), and a new frozen record is named by its genesis tail. The writer writes `/2` (the entry above).
 
 - **A decision one machine accepted and another rejected or superseded, out of the same state, is in force in no reading, and each
   reading says why.** Two clones that had not seen each other, once their tails meet, leave two signed moves out of `proposed`,

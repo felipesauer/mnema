@@ -52,7 +52,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, delimiter, dirname, join, relative } from 'node:path';
-import { listAppleDoubleKeyFiles, listPrivateKeyFingerprints } from '@mnema/chain';
+import { listAppleDoubleKeyFiles, listPrivateKeyFingerprints, recordNamedIn } from '@mnema/chain';
 import {
   AGENT_NAME,
   type AgentStanding,
@@ -1104,7 +1104,9 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
 /**
  * `mnema doctor --fix private-tree`: moves every old private tree of this project into the one
  * the repository keeps (`privateTreesLeftBehind`, `movePrivateTree`, `@mnema/core`), and says
- * what it moved. With `dryRun`, it says what it would move and writes nothing.
+ * what it moved. With `dryRun`, it says what it would move and writes nothing. An old tree that
+ * names another record than the one there is not moved, and the fix says why and fails
+ * ({@link twoRecords}).
  */
 export function fixPrivateTree(
   ctx: DoctorContext,
@@ -1126,8 +1128,15 @@ export function fixPrivateTree(
     };
   }
   const lines: string[] = [];
+  let refused = false;
   for (const left of found.left) {
     const where = oneLine(left.tree);
+    const apart = twoRecords(left.tree, found.to);
+    if (apart !== undefined) {
+      refused = true;
+      lines.push(`${where}: not moved, ${apart}; nothing was written.`);
+      continue;
+    }
     if (options.dryRun) {
       lines.push(
         `${where}: would move ${left.tails} tail(s) to ${oneLine(found.to)}; nothing was written.`,
@@ -1147,7 +1156,30 @@ export function fixPrivateTree(
       `${where}: moved ${moved.tails.length} tail(s) to ${oneLine(found.to)}${closed}${kept}.`,
     );
   }
-  return { refused: false, lines };
+  return { refused, lines };
+}
+
+/**
+ * Why the old tree at `from` cannot join the one at `to`, or `undefined` when they name one
+ * record or none (FORMAT.md section 6.10): two trees that already name two records would be one
+ * directory both readers refuse as `another-record`, and every private write after it refused
+ * too. Each tree's name is said apart, since only the two together are two records.
+ */
+function twoRecords(from: string, to: string): string | undefined {
+  if (recordNamedIn([from, to]).state !== 'several') return undefined;
+  const named = (root: string): string => {
+    const naming = recordNamedIn([root]);
+    return naming.state === 'named'
+      ? `record ${naming.name.slice(0, 12)}...`
+      : naming.state === 'several'
+        ? `${naming.groups.length} records`
+        : 'no record';
+  };
+  return (
+    `since its tails name ${named(from)} and those of ${oneLine(to)} name ${named(to)}: ` +
+    'joined, they would be two records in one directory, which `mnema verify` refuses ' +
+    '(another-record), and this version of mnema has no way to join two records'
+  );
 }
 
 /** Reads the machine and answers, in the order the questions are asked above. */

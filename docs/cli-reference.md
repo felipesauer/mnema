@@ -448,6 +448,19 @@ A tail removed *together with its key*, while another remains, may leave nothing
 all, and only a history outside this record (the one a git remote keeps) can testify to what
 was taken out.
 
+**A tail of another record is refused, and a record written before 0.1.5 says it cannot tell
+one.** From 0.1.5 every tail proof and checkpoint a write signs names the record it belongs to
+(`FORMAT.md` section 6.10): a new record names itself from its first tail, and a record written
+before is named by the first write of 0.1.5, the same name in every clone. `verify` refuses a
+record whose tails name two records (`another-record`, naming each record with its tails), a
+tail that names two (`record-mismatch`), and a checkpoint that names none after one that did
+(`scheme-downgrade`), and the write refuses to grow such a record (`ANOTHER_RECORD`). A tail
+written before 0.1.5 names nothing, and stays that way: beside named tails it is a census line
+(`N tail(s) that name no record, written before 0.1.5`), and a record none of whose tails names
+one ends its verdict with `record: unnamed (written before 0.1.5): a tail of another record could
+not be told from this record's own`, exit 0. A binary from before 0.1.5 reads a record holding
+a named line as unreadable, exit 1.
+
 **A record in which no tail holds anything is refused.** No `tails/` directory, no tail
 directory in it, or only tails that hold nothing: such a record asserts no fact, and `verify`
 fails it by name at every `--require`, exit 1: the one-line verdict says `local integrity
@@ -1342,8 +1355,12 @@ into the repository's private tree (`--dry-run` says what it would move), carrie
 tail's head note (the writer's note of the last entry it wrote) along with it, drops the rest of the writers'
 `locks/`, and leaves where it was anything whose name there already holds other bytes. A worktree
 that had written again since keeps the tail it writes now, and its old tail is moved as a closed
-one. The exit status is 0 whatever it found: a script that wants to act on a
-finding reads the line.
+one. A project written outside a repository and given one later joins as one record: the first
+private write in the repository names its tree after the record the old `.mnema/private/` names.
+An old tree whose tails already name another record than the repository's is not moved: the fix
+says which two records, writes nothing, and exits 1, since joined they would be refused as
+`another-record` by `mnema verify`. Otherwise the exit status is 0 whatever it found: a script that
+wants to act on a finding reads the line.
 
 ### Skills and agents a project adopts: stacks
 

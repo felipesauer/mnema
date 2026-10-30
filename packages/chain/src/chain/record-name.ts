@@ -97,3 +97,57 @@ export function recordOf(named: ReadonlyMap<string, string | undefined>): Record
     ? { state: 'named', name, unnamed }
     : { state: 'named', name, genesis, unnamed };
 }
+
+/**
+ * The record a writer writes under, or why it does not write: the answer of
+ * {@link recordToWriteUnder}.
+ *
+ * - `several`: the OTHER tails already name two records or more. Writing would grow a directory
+ *   both readers refuse (`another-record`), whichever name the writer chose.
+ * - `foreign`: the writer's own tail names `own`, and every other named tail names `record`: to
+ *   the rest of the directory its tail is the one of another record (and the rest are to it; a
+ *   directory alone does not tell which came first), and growing it grows what both readers
+ *   refuse.
+ */
+export type WriteUnder =
+  | { readonly name: string }
+  | {
+      readonly refused: 'several';
+      readonly groups: readonly { readonly name: string; readonly tails: readonly string[] }[];
+    }
+  | { readonly refused: 'foreign'; readonly own: string; readonly record: string };
+
+/**
+ * THE NAME A WRITER SIGNS UNDER (FORMAT.md section 6.10), from what each tail of the directory
+ * names (`named`, `undefined` for a tail that names none, the writer's own `tail` among them or
+ * not), in this order:
+ *
+ * 1. the name its own tail carries;
+ * 2. else the one name the other tails carry;
+ * 3. else (no tail names a record: one written before records were named, or a new one) the name
+ *    of the record the directory `continues`, when it continues one (a project's private tree
+ *    founded in the repository while the one from before it moved still names a record);
+ * 4. else the name of the genesis tail, by the first entries `firsts` gives, asked for only here;
+ *    with no tail holding a first entry, the writer's own tail is the genesis: a new record names
+ *    itself.
+ *
+ * Refused, whatever the writer's own tail names, where the other tails name two records; and
+ * where its own tail names one and the other named tails another.
+ */
+export function recordToWriteUnder(
+  tail: string,
+  named: ReadonlyMap<string, string | undefined>,
+  firsts: () => Iterable<{ readonly tail: string; readonly at: string }>,
+  continues: () => string | undefined = () => undefined,
+): WriteUnder {
+  const own = named.get(tail);
+  const others = recordOf(new Map([...named].filter(([other]) => other !== tail)));
+  if (others.state === 'several') return { refused: 'several', groups: others.groups };
+  if (own !== undefined) {
+    return others.state === 'named' && others.name !== own
+      ? { refused: 'foreign', own, record: others.name }
+      : { name: own };
+  }
+  if (others.state === 'named') return { name: others.name };
+  return { name: continues() ?? recordName(genesisTail(firsts()) ?? tail) };
+}

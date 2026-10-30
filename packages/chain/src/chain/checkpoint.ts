@@ -50,8 +50,8 @@ import type { KeyPair } from './keys.js';
 import { type KeyObject, sign, verify } from './keys.js';
 
 /**
- * The first scheme tag a checkpoint declares, the one the writer signs under today; a verifier
- * reads it and {@link NAMED_SCHEME} and refuses to read past either.
+ * The first scheme tag a checkpoint declares, the one every writer before 0.1.5 signed under (the
+ * writer signs under {@link NAMED_SCHEME} since); a verifier reads both and refuses to read past either.
  *
  * Exported off the package's public surface (this module, not `index.ts`) for
  * the reason the hash domains are: `FORMAT.md` NAMES it, and a version typed into
