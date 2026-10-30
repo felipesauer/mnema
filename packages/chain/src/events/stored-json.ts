@@ -23,6 +23,7 @@
  * record (see `both-readers-read-the-same-bytes.test.ts`, which names them).
  */
 
+import { READER_VERSION } from '../version.js';
 import { type CanonicalValue, canonicalStringify } from './canonical.js';
 
 /** A stored line that cannot be read as JSON the format accepts; `message` says why. */
@@ -294,6 +295,26 @@ export function schemeNamed(value: unknown): string {
   if (typeof value === 'boolean') return 'a boolean';
   if (typeof value === 'number') return 'a number';
   return Array.isArray(value) ? 'an array' : 'an object';
+}
+
+/**
+ * The refusal of a scheme this reader does not read, in the second reader's words, and, for a
+ * scheme of the family, which mnema refuses it, as the refusal of a kind does (FORMAT.md section
+ * 7.1): nothing in a record says which version wrote a line, so it names the one that does not
+ * read it.
+ */
+export function schemeNotRead(
+  what: string,
+  scheme: unknown,
+  family: string,
+  read: readonly string[],
+): string {
+  const said = `a ${what} scheme this reader does not know: ${schemeNamed(scheme)}`;
+  if (typeof scheme !== 'string' || !scheme.startsWith(family)) return said;
+  return (
+    `${said}: mnema ${READER_VERSION} reads ${read.join(' and ')}. ` +
+    'If a newer mnema wrote the line, read the record with it.'
+  );
 }
 
 function byCodePoint(a: string, b: string): number {

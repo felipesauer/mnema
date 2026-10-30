@@ -176,7 +176,9 @@ GAPS: tuple[Gap, ...] = (
         "tailproof.json is a signed per-tail artifact with scheme mnema-tail/1 and is not "
         "mentioned anywhere in the document",
         "experiment",
-        "five candidate messages tried; canonical bytes of {scheme,signerFp,tail} verifies",
+        "five candidate messages tried; canonical bytes of {scheme,signerFp,tail} verifies. "
+        "Section 6.1 documents it now, and its second scheme, mnema-tail/2, which signs "
+        "{record,scheme,signerFp,tail} (section 6.10)",
         standing="settled",
     ),
     Gap(

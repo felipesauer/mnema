@@ -987,6 +987,7 @@ function censusLocus(note: CensusNote): string {
     case 'partial-final-line':
     case 'citation-not-held':
     case 'clock-behind-what-it-read':
+    case 'unnamed-tail':
       return note.tail;
     case 'foreign-retraction':
     case 'foreign-rewrite':

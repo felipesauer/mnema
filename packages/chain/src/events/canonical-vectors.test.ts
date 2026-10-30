@@ -155,6 +155,8 @@ describe('the published artifact says what the code says', () => {
       'envelope',
       'vectors',
       'chain',
+      // The signed messages (section 6, 6.1 and 6.10), held by `chain/signed-vectors.test.ts`.
+      'signedMessages',
     ]);
     expect(Object.keys(artifact.vectors[0] ?? {})).toEqual(['name', 'kind', 'event', 'sha256']);
     expect(Object.keys(artifact.chain)).toEqual([

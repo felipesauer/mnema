@@ -47,8 +47,8 @@
  * over-refusal is found only by building an honest input, which is not where anybody looks.
  *
  * So no input `mutate.py` builds is accepted by ONE reader alone: the case that says so is
- * the count in `leaves exactly SIX rows out of the refusal loop`, which names the six that
- * are not refusals (three accepted by both readers, two read as incomplete).
+ * the count in `leaves exactly EIGHT rows out of the refusal loop`, which names the eight that
+ * are not refusals.
  *
  * IT NEEDS `python3`, AND IT FAILS RATHER THAN SKIPS WITHOUT IT. A second reader nobody
  * runs is prose again, and a skipped case is a case nobody reads. Python 3 is on the runner
@@ -216,6 +216,30 @@ describe('the second reader can be run at all', () => {
     expect(said).toMatch(/the entry hash of a genesis entry reproduces/);
     expect(said).toMatch(/the entry hash of a linked entry reproduces/);
     expect(said).toMatch(/the content root over all 39 vectors reproduces/);
+    // The signed messages (sections 6, 6.1 and 6.10), counted so a shrinking set cannot pass.
+    expect(said).toMatch(/5 of 5 published signed messages reproduce, and their signatures verify/);
+    expect(said).toMatch(/the record's name reproduces from its genesis tail/);
+  });
+
+  it('refuses a published signed message whose signature was changed by one character', () => {
+    const vectors = join(root, 'canonical-vectors.json');
+    const text = readFileSync(
+      fileURLToPath(new URL('../../canonical-vectors.json', import.meta.url)),
+      'utf-8',
+    );
+    const document = JSON.parse(text) as {
+      signedMessages: { vectors: { stored: { sig: string } }[] };
+    };
+    const last = document.signedMessages.vectors.at(-1);
+    if (last === undefined) throw new Error('no signed message is published');
+    last.stored.sig = `${last.stored.sig.slice(0, -1)}${last.stored.sig.endsWith('0') ? '1' : '0'}`;
+    writeFileSync(vectors, JSON.stringify(document));
+    const run = python([VERIFIER, '--json', 'vectors', vectors]);
+    const report = JSON.parse(run.stdout) as SecondReading;
+    expect(report.verdict).toBe('REFUSED');
+    expect(refusals(report).map((f) => f.what)).toEqual([
+      "the signed message 'tail proof, second scheme' does not reproduce",
+    ]);
   });
 });
 
@@ -855,6 +879,44 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // ADR-134: a tail of another record, grafted with its key into a named record. Every
+    // signature verifies; what refuses it is that its proof and checkpoint name another record.
+    name: 'tail-of-another-record',
+    refusals: 1,
+    section: '6.10',
+    says: 'this directory holds tails of 2 records',
+    productSays: '(another-record)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'tail-names-two-records',
+    refusals: 1,
+    section: '6.10',
+    says: '(record-mismatch)',
+    productSays: '(record-mismatch)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'checkpoint-signed-under-the-first-scheme-after-a-named-proof',
+    refusals: 1,
+    section: '6.10',
+    says: '(scheme-downgrade)',
+    productSays: '(scheme-downgrade)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'checkpoint-signed-under-the-first-scheme-after-a-named-checkpoint',
+    refusals: 1,
+    section: '6.10',
+    says: '(scheme-downgrade)',
+    productSays: '(scheme-downgrade)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'tail-proof-removed',
     refusals: 1,
     section: '6.1',
@@ -926,6 +988,27 @@ const MUTATIONS = [
     agreedAccepted: true,
   },
   {
+    // ADR-134: a record that names itself, and one with a tail beside it that names no record.
+    // Both are honest; both readers verify them, and `a-tail-of-another-record-is-refused.test.ts`
+    // holds them to the same name and the same note.
+    name: 'named-record',
+    refusals: 0,
+    section: '6.10',
+    says: '',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+    agreedAccepted: true,
+  },
+  {
+    name: 'unnamed-tail-beside-named-ones',
+    refusals: 0,
+    section: '6.10',
+    says: '',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+    agreedAccepted: true,
+  },
+  {
     // A move the workflow does not allow (FORMAT.md section 6.7) is not applied and is named,
     // and it is not a break: both readers verify the record, and
     // `second-reader-agrees-on-what-is-not-applied.test.ts` holds them to naming the same move.
@@ -974,9 +1057,10 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
   });
 
   /**
-   * Every row but the SIX that are not refusals: the four `agreedAccepted` rows (a cut that
+   * Every row but the EIGHT that are not refusals: the six `agreedAccepted` rows (a cut that
    * takes events and their checkpoint together, a record erased and refounded, a move the
-   * workflow does not allow, a macOS metadata file beside the keys), which BOTH readers accept and which `both-readers-read-the-same-bytes.test.ts` asserts, and the TWO
+   * workflow does not allow, a macOS metadata file beside the keys, a record that names itself and
+   * a tail beside it that names none), which BOTH readers accept and which `both-readers-read-the-same-bytes.test.ts` asserts, and the TWO
    * below. Both of those are in the table so the enumeration
    * from `mutate.py list` above stays total, and both belong to the INCOMPLETE describe
    * below instead: a check that could not run is not a check that refused, and a loop that
@@ -1006,8 +1090,8 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
     (mutation) => !('incomplete' in mutation) && !('agreedAccepted' in mutation),
   );
 
-  it('leaves exactly SIX rows out of the refusal loop, and no row is an acceptance by one reader alone', () => {
-    expect(MUTATIONS.length - REFUSING.length).toBe(6);
+  it('leaves exactly EIGHT rows out of the refusal loop, and no row is an acceptance by one reader alone', () => {
+    expect(MUTATIONS.length - REFUSING.length).toBe(8);
     expect(
       MUTATIONS.filter((m) => 'incomplete' in m || 'agreedAccepted' in m)
         .map((m) => m.name)
@@ -1018,7 +1102,9 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
       'blank-segment-same-size',
       'key-metadata-file-beside-the-keys',
       'keys-removed',
+      'named-record',
       'refounded-record',
+      'unnamed-tail-beside-named-ones',
     ]);
     // NO ROW MAY BE AN ACCEPTANCE. This is the assertion the delivery is measured by: every
     // input `mutate.py` builds that the product refuses is refused here too.

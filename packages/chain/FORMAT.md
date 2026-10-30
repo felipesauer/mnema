@@ -58,6 +58,16 @@ compile until it has one.
 To check an implementation: canonicalize each `event` by the rules in §1, SHA-256
 the bytes, and compare with the row's `sha256`.
 
+Under `signedMessages` the file also holds five signed messages: a checkpoint (§6) under each
+scheme, a second-scheme checkpoint whose `prev` is the hash of a first-scheme one, and a tail
+proof (§6.1) under each scheme, each as its stored line, the message its signature is over and
+that message's SHA-256, with the record's name derived from its genesis tail (§6.10). They are
+signed by RFC 8032 section 7.1's first test key, whose secret the RFC publishes, so an
+implementation checks the bytes it signs and verifies, not only the bytes it hashes. The code
+builds them again and requires the file to equal what it builds
+(`packages/chain/src/chain/signed-vectors.test.ts`), and the second reader reproduces each and
+verifies its signature (`python3 verifier/mnema_verify.py vectors`).
+
 The vectors are **exemplars, not a schema**: one event per kind, plus the cases that
 carry a rule of their own: a second `task.created` whose title is written in NFD, three
 `task.transitioned` (a birth, a move that carries proof fields, a move the task workflow
@@ -516,7 +526,11 @@ part of it**:
 
 ```json
 {"contentRoot":"…","fromSeq":0,"prev":"…"|null,"scheme":"mnema-checkpoint/1","signerFp":"…","tail":"…","toSeq":9}
+{"contentRoot":"…","fromSeq":0,"prev":"…"|null,"record":"…","scheme":"mnema-checkpoint/2","signerFp":"…","tail":"…","toSeq":9}
 ```
+
+The second scheme signs one key more, `record`: the name of the record the tail belongs to
+(§6.10). Both are read, by every reader, for ever; which one a writer writes is the writer's.
 
 - `contentRoot` is §5 folded over the events of the range, in order.
 - `prev` is the SHA-256 of the **previous checkpoint's signed message**, or `null`
@@ -624,10 +638,15 @@ part of it**:
   (`packages/chain/src/chain/a-tail-is-written-by-the-key-its-id-names.test.ts`;
   `second-reader-agrees-on-the-record.test.ts`, `tail-written-by-another-enrolled-key` and
   `event-by-another-enrolled-key-above-the-checkpoint`).
-- `scheme` is `mnema-checkpoint/1`; a reader refuses a scheme it does not know
-  rather than guessing at the fields, before it reads the other keys or the bytes (§4), and the signature is over the seven keys
-  above with `sig` absent
+- `scheme` is `mnema-checkpoint/1` or `mnema-checkpoint/2`; a reader refuses a scheme it does
+  not know rather than guessing at the fields, before it reads the other keys or the bytes (§4),
+  and the signature is over the seven keys above, or the eight of the second scheme, with `sig`
+  absent. A line holds exactly the keys of its scheme and `sig`: a first-scheme line carrying
+  `record`, or a second-scheme line without it, is refused by its keys
   (`packages/chain/src/chain/format-on-disk.test.ts`).
+- `prev` is the SHA-256 of the previous checkpoint's signed message **under that checkpoint's own
+  scheme**, so a second-scheme checkpoint links to a first-scheme one before it, and its
+  signature, over its own `prev`, covers the tail's history before it (§6.10).
 
 ### 6.1 The tail proof
 
@@ -638,12 +657,15 @@ mentioned, and had to try five candidate messages to learn what it signs.
 
 ```json
 {"scheme":"mnema-tail/1","sig":"…","signerFp":"…","tail":"…"}
+{"record":"…","scheme":"mnema-tail/2","sig":"…","signerFp":"…","tail":"…"}
 ```
 
 The signed message is the same shape as §6: the canonical bytes (§1) of the object
-with **`sig` removed**, so `{"scheme","signerFp","tail"}` and nothing else. The
+with **`sig` removed**, so `{"scheme","signerFp","tail"}` and nothing else, or, under the second
+scheme, `{"record","scheme","signerFp","tail"}`, which also names the record the tail belongs to
+(§6.10). The
 signature is Ed25519 under the key `signerFp` names, which is the fingerprint the
-tail id begins with. The file holds those four keys, `sig` included, and a proof with any
+tail id begins with. The file holds the keys of its scheme, `sig` included, and a proof with any
 other key is refused (§4).
 
 So a reader takes the key from the **tail id**, recomputes its fingerprint from the
@@ -1288,6 +1310,58 @@ that holds the mark unreadable to it, and every reading of it that needs that ta
 It reads every record that holds none: a client that announces a usable name in its handshake
 writes no new bytes.
 
+### 6.10 The record a tail belongs to
+
+One person signs every record they write in with one key, and the public keys travel with the
+record. So a signature made for one record verified in any other holding the key: a tail of
+record A, copied with its key into record B, read as that person's acts in B. The second schemes
+of §6 and §6.1 name the record, so that **a signature made for one record does not count in
+another**.
+
+```
+record       = SHA-256( frame("mnema.record.v1") ‖ frame(UTF-8 of the genesis tail id) )   (§2, hex)
+genesis tail = the tail whose first entry (seq 0) carries the smallest `at`, compared as text;
+               a tie goes to the smaller tail id, compared as text by UTF-16 code unit
+```
+
+The name is derived and never drawn: a new record names itself from its own tail, and two
+machines that never saw each other derive the same name from the tail every clone of the record
+holds. It is carried only in what is signed, the tail proof and the checkpoint under their second
+schemes; no file and no event carries it. A reader never recomputes it as an authority: it checks
+that the tails agree, and names, as information, the genesis tail when one of the record's tails
+hashes to the name (`packages/chain/src/chain/record-name.test.ts`).
+
+A tail **names** a record by its second-scheme tail proof, when that proof verifies, and
+otherwise by its latest second-scheme checkpoint whose signature, root and binding verify (§6). A
+checkpoint that failed names nothing, and a tail that holds nothing (§4) counts toward no name.
+A tail born before records were named is bound to one by its owner's first second-scheme
+checkpoint, whose `prev` covers the history before it.
+
+Both readers refuse, by the same names (`packages/chain/src/chain/a-tail-of-another-record-is-refused.test.ts`,
+`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`):
+
+- **`record-mismatch`**: two verified artifacts of one tail name two records, its proof and a
+  checkpoint or two checkpoints. Said once per tail.
+- **`scheme-downgrade`**: a first-scheme checkpoint under a second-scheme tail proof, or after a
+  second-scheme checkpoint in the tail's order: a signature made for no record where the tail had
+  named its own. Read over every checkpoint line, verified or not, since the scheme is in the
+  bytes. Said once per tail.
+- **`another-record`**: the named tails of the directory name two records or more. The refusal
+  is about the record and names every group with its tails, on purpose: a reader of a directory
+  alone cannot tell which group was there first, and counting tails would let a graft of many
+  win. A tail grafted from another record, and two records an honest `init` began on two branches
+  and a merge joined, both read this way.
+
+A tail that names no record, in a record whose other tails name one, is **said and not refused**,
+as a census note `unnamed-tail`: a tail written before records were named on a machine that
+wrote nothing since, and, the guilty reading, a tail of another record written before, which
+nothing here tells from this record's own. A record none of whose tails names one (every record
+written before 0.1.5) is unnamed, and the second reader says so in a note. Each frozen record
+in the suite is read this way, byte for byte as it was written, and
+`__fixtures__/named-by-its-genesis`, written once by the signing code of the second schemes, is
+read as named: a genesis tail born before and bound by its first second-scheme checkpoint, and a
+tail born named.
+
 ## 7. Versions, and why a proof is never recomputed over a reading
 
 Every event carries `kind` and `v`. Together they select exactly one payload
@@ -1348,7 +1422,13 @@ are this product's, and the test named below holds both readers beside this docu
   v1*, for a version ahead of the one it holds). The second reader names the pair and what the
   table it read declares of the kind. Nothing in a record says which version wrote a line, and no
   field is added to say it, so the refusal names the version that does not read the line rather
-  than the one that does. This product's `verify` fails on it.
+  than the one that does. This product's `verify` fails on it. A checkpoint or a tail proof under
+  a scheme of its family a reader does not read is refused the same way, before its other keys:
+  *a checkpoint scheme this reader does not know: '\<a later scheme\>': mnema \<version\> reads
+  mnema-checkpoint/1 and mnema-checkpoint/2. If a newer mnema wrote the line, read the record
+  with it.* The second reader names the scheme and the schemes it reads. A value that is no
+  scheme of the family is named alone. Versions released before 0.1.5 name no version in this
+  refusal, and refuse every second-scheme line as a scheme they do not know.
 - **A rule of authenticity or of legality is never loosened within an existing `kind` and `v`.**
   What a line may carry (§4.1), which key may sign it (§6.2), who may take a note or a link back
   (§6.4), which moves a workflow allows (§6.7) and which writing of a decision is its text (§6.8)
@@ -1854,6 +1934,18 @@ Stated plainly, because a published format invites all three readings:
   dependency on Bitcoin and on a public calendar answering, not by anything
   publishing these bytes achieved. A record nobody stamped is exactly where it
   always was. See the "What it proves, and what it does not" table in `README.md`.
+- **The name of a record names a lineage, not a repository** (§6.10). A record copied whole (a
+  fork, a `.mnema/` copied into a template) is the same record, and its tails verify in both
+  copies. Anyone may still write their own tail into a record: the name is not secret, and a
+  party who knows it signs a tail naming it with their own key, which is a contribution, not a
+  graft; review is the gate for that, as before.
+- **A tail written before records were named is never named by being read.** It stays unnamed
+  until its owner signs a second-scheme checkpoint over it, and one whose last such checkpoint is
+  cut off together with the events it covered (the aligned cut of §6) is unnamed again. A graft
+  of an unnamed tail is a census note, not a refusal, to a reader of the directory alone; what
+  refuses one that arrives in a pull request is the product's reading of the base, not this
+  document. And a graft made between two records both written before, before either named
+  itself, can make them derive one name, if the grafted tail is the older record's genesis.
 - **This document specifies the bytes and the rules that read them, not the
   product's reading of them.** Which moves of a workflow a reader applies is here
   (§6.7), as are the enrolment fold (§6.2), who may take a note back (§6.4) and which writing of

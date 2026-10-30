@@ -10,7 +10,7 @@ it checks:
 ```sh
 git clone https://github.com/felipesauer/mnema
 python3 mnema/packages/chain/verifier/mnema_verify.py record /path/to/a/repo/.mnema
-#> checks: 12 ok, 0 FAIL, 0 UNCHECKED, 5 note
+#> checks: 12 ok, 0 FAIL, 0 UNCHECKED, 6 note
 #> VERDICT: VERIFIED
 ```
 
@@ -23,8 +23,8 @@ being right about a path with nothing behind it rather than about your record.
 
 Python 3.9 or later, no third-party packages, nothing to install: Ed25519 is
 RFC 8032 by hand, checked against the RFC's own vectors. It reproduces the
-published canonical vectors, refuses all but five of the mutations in its own
-`mutate.py` (three both readers accept and two it reads as incomplete; its README
+published canonical vectors, refuses all but eight of the mutations in its own
+`mutate.py` (six both readers accept and two it reads as incomplete; its README
 says which), and prints what it does **not** check before it prints a verdict. Writing it found
 twenty-seven points where the specification was not enough to work from, and those
 are the deliverable half of it: `mnema_verify.py gaps` lists them.

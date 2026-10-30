@@ -742,5 +742,94 @@
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
     "contentRootOverAllVectors": "c87196ea4f715594eadcf089393a0d7d97c16a6253280c33e966505af0dc5cd8"
+  },
+  "signedMessages": {
+    "key": {
+      "secret": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+      "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=\n-----END PUBLIC KEY-----\n",
+      "fingerprint": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9"
+    },
+    "record": {
+      "domain": "mnema.record.v1",
+      "genesisTail": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab",
+      "name": "35c6f365ac841ea337fa231facf55f24133dde10d4e74e0e473ce5ee116981e6"
+    },
+    "vectors": [
+      {
+        "name": "checkpoint, first scheme, the first of its tail",
+        "scheme": "mnema-checkpoint/1",
+        "stored": {
+          "contentRoot": "9dec38f84177c8db42f0e4451b48ac250bffabda2fcc0e028d975cb65ae5613e",
+          "fromSeq": 0,
+          "prev": null,
+          "scheme": "mnema-checkpoint/1",
+          "sig": "6de16bc96ff6554ce0e2882873b5b9821ef3397df8d395de3651a991a0ce9ee1101a7a13c0f0802451de164371d6b35a48c4fa00f22a1534622488ac3cbbac0c",
+          "signerFp": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9",
+          "tail": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab",
+          "toSeq": 0
+        },
+        "message": "{\"contentRoot\":\"9dec38f84177c8db42f0e4451b48ac250bffabda2fcc0e028d975cb65ae5613e\",\"fromSeq\":0,\"prev\":null,\"scheme\":\"mnema-checkpoint/1\",\"signerFp\":\"06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9\",\"tail\":\"06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab\",\"toSeq\":0}",
+        "sha256": "c63df601d781f3340b358d77fbe175a4c5a006c383da208ba0dcff5201af175a"
+      },
+      {
+        "name": "checkpoint, second scheme, after one of the first: prev is the hash of its message",
+        "scheme": "mnema-checkpoint/2",
+        "stored": {
+          "contentRoot": "e89c28d2a3c0deace6469b5b178bd504ab8b385ac5021031b5bdc1357e299fed",
+          "fromSeq": 1,
+          "prev": "c63df601d781f3340b358d77fbe175a4c5a006c383da208ba0dcff5201af175a",
+          "record": "35c6f365ac841ea337fa231facf55f24133dde10d4e74e0e473ce5ee116981e6",
+          "scheme": "mnema-checkpoint/2",
+          "sig": "42771848af0fc5084dc1a43d5c684ae8fedcab4c61554a27da8b4804346a33e4964ee9c6b07766acbcd912baceb359c850bee2c97dfab2fe11ba0f5d95e2180e",
+          "signerFp": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9",
+          "tail": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab",
+          "toSeq": 1
+        },
+        "message": "{\"contentRoot\":\"e89c28d2a3c0deace6469b5b178bd504ab8b385ac5021031b5bdc1357e299fed\",\"fromSeq\":1,\"prev\":\"c63df601d781f3340b358d77fbe175a4c5a006c383da208ba0dcff5201af175a\",\"record\":\"35c6f365ac841ea337fa231facf55f24133dde10d4e74e0e473ce5ee116981e6\",\"scheme\":\"mnema-checkpoint/2\",\"signerFp\":\"06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9\",\"tail\":\"06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab\",\"toSeq\":1}",
+        "sha256": "ff927228b2c26aafa3c6e034233f0e1c54d77b566ec7ff80680f7fc892e74aaa"
+      },
+      {
+        "name": "checkpoint, second scheme, the first of its tail",
+        "scheme": "mnema-checkpoint/2",
+        "stored": {
+          "contentRoot": "9dec38f84177c8db42f0e4451b48ac250bffabda2fcc0e028d975cb65ae5613e",
+          "fromSeq": 0,
+          "prev": null,
+          "record": "35c6f365ac841ea337fa231facf55f24133dde10d4e74e0e473ce5ee116981e6",
+          "scheme": "mnema-checkpoint/2",
+          "sig": "03f4df4c91075eda06488b561a64a5345add14f27d6d34737ebdb8fd0234ec10142a274e7898d0526885717713aee3acc3616b85678416c489b538c44797f90b",
+          "signerFp": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9",
+          "tail": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab",
+          "toSeq": 0
+        },
+        "message": "{\"contentRoot\":\"9dec38f84177c8db42f0e4451b48ac250bffabda2fcc0e028d975cb65ae5613e\",\"fromSeq\":0,\"prev\":null,\"record\":\"35c6f365ac841ea337fa231facf55f24133dde10d4e74e0e473ce5ee116981e6\",\"scheme\":\"mnema-checkpoint/2\",\"signerFp\":\"06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9\",\"tail\":\"06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab\",\"toSeq\":0}",
+        "sha256": "b3bbf899ae0667d5a29e7221bca1c60cbb9d35a303755a2207181bf01f913cd7"
+      },
+      {
+        "name": "tail proof, first scheme",
+        "scheme": "mnema-tail/1",
+        "stored": {
+          "scheme": "mnema-tail/1",
+          "sig": "7887832c87c2eb6b06a92702d989bb0e69afa4569f5cc427426a7f2f4ac265b764bb01c50b59866faf46fb2b134b15fc73955e58a4d76708734236a417947b07",
+          "signerFp": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9",
+          "tail": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab"
+        },
+        "message": "{\"scheme\":\"mnema-tail/1\",\"signerFp\":\"06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9\",\"tail\":\"06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab\"}",
+        "sha256": "13930c9028c219c722c826b19d45d67189daf6f6151082f5036337f87c4fbc4e"
+      },
+      {
+        "name": "tail proof, second scheme",
+        "scheme": "mnema-tail/2",
+        "stored": {
+          "record": "35c6f365ac841ea337fa231facf55f24133dde10d4e74e0e473ce5ee116981e6",
+          "scheme": "mnema-tail/2",
+          "sig": "8b7d0da6b6941936232112969d2066e14bba3cff73397532b6faddac1aebf0d518fa936b997a6513e59565726a327edbffd8e1a9153ce66ee71e6b6338de6309",
+          "signerFp": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9",
+          "tail": "06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab"
+        },
+        "message": "{\"record\":\"35c6f365ac841ea337fa231facf55f24133dde10d4e74e0e473ce5ee116981e6\",\"scheme\":\"mnema-tail/2\",\"signerFp\":\"06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9\",\"tail\":\"06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-abababababababababababababababab\"}",
+        "sha256": "ab890ceb67401fbaffaf129fb12b3e588d0dce8819e03ad9382b2ba36612ba8b"
+      }
+    ]
   }
 }

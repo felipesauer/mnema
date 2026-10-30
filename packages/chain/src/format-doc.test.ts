@@ -35,9 +35,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { SCHEME } from './chain/checkpoint.js';
+import { NAMED_SCHEME, SCHEME } from './chain/checkpoint.js';
 import { ENTRY_DOMAIN, ROOT_DOMAIN } from './chain/hash.js';
-import { TAILPROOF_SCHEME } from './chain/tailproof.js';
+import { RECORD_DOMAIN } from './chain/record-name.js';
+import { NAMED_TAILPROOF_SCHEME, TAILPROOF_SCHEME } from './chain/tailproof.js';
 import { SCHEMA_FILE, SCHEMA_FILE_NAME } from './events/schema.js';
 import { VECTORS_FILE, VECTORS_FILE_NAME } from './events/vectors.js';
 
@@ -55,7 +56,7 @@ describe('FORMAT.md names the versions the code hashes under', () => {
     // NON-VACUITY: a document that mentioned no tag at all would pass a subset
     // check trivially, so the count is asserted before the membership is.
     expect(written.length).toBeGreaterThan(0);
-    expect([...new Set(written)].sort()).toEqual([ENTRY_DOMAIN, ROOT_DOMAIN].sort());
+    expect([...new Set(written)].sort()).toEqual([ENTRY_DOMAIN, RECORD_DOMAIN, ROOT_DOMAIN].sort());
   });
 
   it('writes no scheme tag the code does not export', () => {
@@ -74,7 +75,11 @@ describe('FORMAT.md names the versions the code hashes under', () => {
     // has to export its own to be nameable.
     const written = [...FORMAT.matchAll(/mnema-[a-z]+\/\d+/g)].map((m) => m[0]);
     expect(written.length).toBeGreaterThan(0);
-    expect([...new Set(written)].sort()).toEqual([SCHEME, TAILPROOF_SCHEME].sort());
+    // Section 6.10 is the second section that arrived: each artifact has a second scheme,
+    // naming the record, and both are read beside the first.
+    expect([...new Set(written)].sort()).toEqual(
+      [SCHEME, NAMED_SCHEME, TAILPROOF_SCHEME, NAMED_TAILPROOF_SCHEME].sort(),
+    );
   });
 });
 
@@ -165,10 +170,10 @@ describe('FORMAT.md points at the artifact the code resolves', () => {
  * place the pages spell it, in digits or in words, is held to it.
  */
 const PAGES = [
-  { page: 'packages/chain/FORMAT.md', vectors: 1, aggregates: 1, gaps: 2 },
-  { page: 'packages/chain/verifier/README.md', vectors: 2, aggregates: 1, gaps: 2 },
-  { page: 'packages/chain/README.md', vectors: 1, aggregates: 1, gaps: 1 },
-  { page: 'docs/verify-without-installing.md', vectors: 0, aggregates: 0, gaps: 1 },
+  { page: 'packages/chain/FORMAT.md', vectors: 1, aggregates: 1, gaps: 2, signed: 1 },
+  { page: 'packages/chain/verifier/README.md', vectors: 2, aggregates: 1, gaps: 2, signed: 2 },
+  { page: 'packages/chain/README.md', vectors: 1, aggregates: 1, gaps: 1, signed: 1 },
+  { page: 'docs/verify-without-installing.md', vectors: 0, aggregates: 0, gaps: 1, signed: 0 },
 ] as const;
 
 const UNITS = [
@@ -221,7 +226,9 @@ describe('the pages spell the counts the artifacts hold', () => {
   const published = JSON.parse(readFileSync(VECTORS_FILE, 'utf-8')) as {
     readonly vectors: readonly unknown[];
     readonly chain: Readonly<Record<string, unknown>>;
+    readonly signedMessages: { readonly vectors: readonly unknown[] };
   };
+  const signed = published.signedMessages.vectors.length;
   // An aggregate is an entry of `chain` that carries a digest: a bare one, or an entry hash.
   const aggregates = Object.values(published.chain).filter(
     (value) =>
@@ -251,6 +258,7 @@ describe('the pages spell the counts the artifacts hold', () => {
       // today, and says so; it is the one spelling left out.
       vectors: spelled(text, /\b(\S+) (?:published )?vectors\b(?! published when)/gi),
       aggregates: spelled(text, /\b(\S+) aggregate digests?\b/gi),
+      signed: spelled(text, /\b(\S+) (?:published )?signed messages\b/gi),
       gaps: spelled(
         text,
         /\b(\S+) (?:(?:points|places) where (?:this|the) (?:document|specification) was|of them did)\b/gi,
@@ -260,8 +268,10 @@ describe('the pages spell the counts the artifacts hold', () => {
     expect(said.vectors.length).toBeGreaterThanOrEqual(floor.vectors);
     expect(said.aggregates.length).toBeGreaterThanOrEqual(floor.aggregates);
     expect(said.gaps.length).toBeGreaterThanOrEqual(floor.gaps);
+    expect(said.signed.length).toBeGreaterThanOrEqual(floor.signed);
     expect(said.vectors.filter((n) => n !== published.vectors.length)).toEqual([]);
     expect(said.aggregates.filter((n) => n !== aggregates)).toEqual([]);
     expect(said.gaps.filter((n) => n !== gaps)).toEqual([]);
+    expect(said.signed.filter((n) => n !== signed)).toEqual([]);
   });
 });

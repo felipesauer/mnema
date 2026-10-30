@@ -366,6 +366,12 @@ type Agreement =
       };
     };
 
+/**
+ * The tail `mutate.py` founds a record afresh in, under RFC 8032's first key and the suffix `ab`:
+ * where the second reader names a refusal of that one tail.
+ */
+const TAIL_OF_A_REFOUNDED_RECORD = `06e3fd8fda29bb60ab59557de61edb0aecdb231134be30e75b455f8e1b792fa9-${'ab'.repeat(16)}`;
+
 const AGREEMENTS: readonly Agreement[] = [
   {
     name: 'duplicate-key-in-a-signed-line',
@@ -512,6 +518,53 @@ const AGREEMENTS: readonly Agreement[] = [
   { name: 'key-metadata-file-beside-the-keys', verdict: 'accepted' },
   { name: 'aligned-cut', verdict: 'accepted' },
   { name: 'refounded-record', verdict: 'accepted' },
+  { name: 'named-record', verdict: 'accepted' },
+  { name: 'unnamed-tail-beside-named-ones', verdict: 'accepted' },
+  // ADR-134: a tail of another record, a tail naming two, a /1 checkpoint under a named proof.
+  {
+    name: 'tail-of-another-record',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: 'this directory holds tails of 2 records' },
+    second: {
+      section: '6.10',
+      says: 'this directory holds tails of 2 records',
+      where: 'tails/',
+      refusals: 1,
+    },
+  },
+  {
+    name: 'tail-names-two-records',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(record-mismatch)' },
+    second: {
+      section: '6.10',
+      says: '(record-mismatch)',
+      where: TAIL_OF_A_REFOUNDED_RECORD,
+      refusals: 1,
+    },
+  },
+  {
+    name: 'checkpoint-signed-under-the-first-scheme-after-a-named-proof',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(scheme-downgrade)' },
+    second: {
+      section: '6.10',
+      says: '(scheme-downgrade)',
+      where: TAIL_OF_A_REFOUNDED_RECORD,
+      refusals: 1,
+    },
+  },
+  {
+    name: 'checkpoint-signed-under-the-first-scheme-after-a-named-checkpoint',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(scheme-downgrade)' },
+    second: {
+      section: '6.10',
+      says: '(scheme-downgrade)',
+      where: TAIL_OF_A_REFOUNDED_RECORD,
+      refusals: 1,
+    },
+  },
 ];
 
 describe('the two readers reach the same verdict on the same bytes, and name the same cause', () => {

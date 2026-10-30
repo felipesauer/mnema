@@ -27,7 +27,7 @@
  */
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
-import { holdsExactly, keyList, parseCanonicalLine, schemeNamed } from '../events/stored-json.js';
+import { holdsExactly, keyList, parseCanonicalLine, schemeNotRead } from '../events/stored-json.js';
 import { type KeyObject, type KeyPair, sign, verify } from './keys.js';
 import { tailFingerprint } from './layout.js';
 
@@ -40,11 +40,20 @@ import { tailFingerprint } from './layout.js';
  * can name it". This artifact went undocumented until an independent verifier
  * found it in a tail directory and had to guess what it signs (gap G10), so the
  * document now has a section about it, and this is the constant that section is
- * checked against. The three readers of the value are all in this file.
+ * checked against, with {@link NAMED_TAILPROOF_SCHEME} beside it. The readers of the values are all
+ * in this file.
  */
 export const TAILPROOF_SCHEME = 'mnema-tail/1';
 
+/**
+ * The scheme of a tail proof that also names the record the tail belongs to (FORMAT.md section
+ * 6.10): `{"record","scheme","signerFp","tail"}` signed. A tail born under it counts only in that
+ * record.
+ */
+export const NAMED_TAILPROOF_SCHEME = 'mnema-tail/2';
+
 const SCHEME = TAILPROOF_SCHEME;
+const SCHEMES_READ = [TAILPROOF_SCHEME, NAMED_TAILPROOF_SCHEME] as const;
 
 /** A signing key's proof that it owns a given tail id. */
 export interface TailProof {
@@ -53,25 +62,38 @@ export interface TailProof {
   readonly tail: string;
   /** Full fingerprint of the signing key (equal to the tail's prefix). */
   readonly signerFp: string;
+  /** The record the tail belongs to: present exactly under {@link NAMED_TAILPROOF_SCHEME}. */
+  readonly record?: string;
   /** Hex Ed25519 signature over the canonical signed message. */
   readonly sig: string;
 }
 
-/** The canonical bytes that are signed: everything but the signature. */
-function signedMessage(fields: Omit<TailProof, 'sig'>): Uint8Array {
-  return canonicalBytes({
+/** The fields a proof stores, by its scheme, `sig` aside. */
+function storedFields(fields: Omit<TailProof, 'sig'>): Record<string, string | null> {
+  const signed: Record<string, string | null> = {
     scheme: fields.scheme,
     tail: fields.tail,
     signerFp: fields.signerFp,
-  });
+  };
+  if (fields.scheme === NAMED_TAILPROOF_SCHEME) signed.record = fields.record ?? null;
+  return signed;
 }
 
-/** Signs a proof that `keyPair` owns `tail`. */
-export function signTailProof(tail: string, keyPair: KeyPair): TailProof {
+/** The canonical bytes that are signed: everything but the signature. */
+function signedMessage(fields: Omit<TailProof, 'sig'>): Uint8Array {
+  return canonicalBytes(storedFields(fields));
+}
+
+/**
+ * Signs a proof that `keyPair` owns `tail`; given `record`, under {@link NAMED_TAILPROOF_SCHEME},
+ * naming the record the tail belongs to.
+ */
+export function signTailProof(tail: string, keyPair: KeyPair, record?: string): TailProof {
   const fields: Omit<TailProof, 'sig'> = {
-    scheme: SCHEME,
+    scheme: record === undefined ? SCHEME : NAMED_TAILPROOF_SCHEME,
     tail,
     signerFp: keyPair.fingerprint,
+    ...(record === undefined ? {} : { record }),
   };
   const sig = Buffer.from(sign(signedMessage(fields), keyPair.privateKey)).toString('hex');
   return { ...fields, sig };
@@ -91,7 +113,9 @@ export function verifyTailProof(input: {
   publicKey: KeyObject;
 }): TailProofVerdict {
   const { proof, tail, publicKey } = input;
-  if (proof.scheme !== SCHEME) return { ok: false, reason: 'unknown-scheme' };
+  if (proof.scheme !== SCHEME && proof.scheme !== NAMED_TAILPROOF_SCHEME) {
+    return { ok: false, reason: 'unknown-scheme' };
+  }
   if (proof.tail !== tail) return { ok: false, reason: 'tail-mismatch' };
   // The key is the one the tail id names, and the proof has to say so (FORMAT.md section
   // 6.1): a proof another key of the record signed, or one that names another key, proves
@@ -116,16 +140,15 @@ export type TailProofVerdict =
 
 /** Serializes a tail proof to its stored line (canonical). */
 export function serializeTailProof(proof: TailProof): string {
-  return canonicalStringify({
-    scheme: proof.scheme,
-    tail: proof.tail,
-    signerFp: proof.signerFp,
-    sig: proof.sig,
-  });
+  const { sig, ...fields } = proof;
+  return canonicalStringify({ ...storedFields(fields), sig });
 }
 
-/** The keys of a stored tail proof: the three signed ones and `sig`, and nothing else. */
+/** The keys of a stored `/1` tail proof: the three signed ones and `sig`, and nothing else. */
 const TAILPROOF_LINE_KEYS = ['scheme', 'sig', 'signerFp', 'tail'] as const;
+
+/** The keys of a stored `/2` tail proof: the four signed ones and `sig`. */
+const NAMED_TAILPROOF_LINE_KEYS = ['record', 'scheme', 'sig', 'signerFp', 'tail'] as const;
 
 /**
  * The proof's shape, checked before its bytes, in the second reader's order and words
@@ -138,14 +161,13 @@ function tailProofShape(raw: unknown): void {
     throw new TailProofParseError('a tail proof that is not a JSON object');
   }
   const { scheme } = raw as { scheme?: unknown };
-  if (scheme !== SCHEME) {
-    throw new TailProofParseError(
-      `a tail-proof scheme this reader does not know: ${schemeNamed(scheme)}`,
-    );
+  if (scheme !== SCHEME && scheme !== NAMED_TAILPROOF_SCHEME) {
+    throw new TailProofParseError(schemeNotRead('tail-proof', scheme, 'mnema-tail/', SCHEMES_READ));
   }
-  if (!holdsExactly(raw, TAILPROOF_LINE_KEYS)) {
+  const keys = scheme === NAMED_TAILPROOF_SCHEME ? NAMED_TAILPROOF_LINE_KEYS : TAILPROOF_LINE_KEYS;
+  if (!holdsExactly(raw, keys)) {
     throw new TailProofParseError(
-      `tail-proof keys are ${keyList(Object.keys(raw))}, not ${keyList(TAILPROOF_LINE_KEYS)}`,
+      `tail-proof keys are ${keyList(Object.keys(raw))}, not ${keyList(keys)}`,
     );
   }
 }
@@ -167,11 +189,12 @@ export function parseTailProof(line: string): TailProof {
     return value;
   };
   // The shape above refused any other scheme, before the bytes.
-  const scheme = SCHEME;
+  const scheme = raw.scheme === NAMED_TAILPROOF_SCHEME ? NAMED_TAILPROOF_SCHEME : SCHEME;
   return {
     scheme,
     tail: requireString('tail'),
     signerFp: requireString('signerFp'),
+    ...(scheme === NAMED_TAILPROOF_SCHEME ? { record: requireString('record') } : {}),
     sig: requireString('sig'),
   };
 }

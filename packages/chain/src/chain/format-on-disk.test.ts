@@ -19,8 +19,11 @@ import { describe, expect, it } from 'vitest';
 import { taskCreated } from '../events/build.js';
 import { canonicalStringify } from '../events/canonical.js';
 import { catalogUpcasters } from '../events/registry.js';
+import { READER_VERSION } from '../version.js';
 import {
   CheckpointParseError,
+  checkpointSignatureHolds,
+  NAMED_SCHEME,
   parseCheckpoint,
   SCHEME,
   serializeCheckpoint,
@@ -95,11 +98,52 @@ describe('the stored checkpoint', () => {
     // The mutation this case IS: the same line, one character of the scheme moved.
     // A reader that shrugged at it would read a future format's fields under
     // today's meaning, which is the one thing a version tag exists to prevent.
-    const line = serializeCheckpoint({ ...signed(), scheme: 'mnema-checkpoint/2' });
+    const line = serializeCheckpoint({ ...signed(), scheme: 'mnema-checkpoint/3' });
     expect(() => parseCheckpoint(line)).toThrow(CheckpointParseError);
     expect(() => parseCheckpoint(line)).toThrow(
-      "a checkpoint scheme this reader does not know: 'mnema-checkpoint/2'",
+      "a checkpoint scheme this reader does not know: 'mnema-checkpoint/3'",
     );
+  });
+
+  it('names the mnema that refuses a later scheme of the family, as a kind it does not read', () => {
+    const line = serializeCheckpoint({ ...signed(), scheme: 'mnema-checkpoint/3' });
+    expect(() => parseCheckpoint(line)).toThrow(
+      `: mnema ${READER_VERSION} reads mnema-checkpoint/1 and mnema-checkpoint/2. If a newer ` +
+        'mnema wrote the line, read the record with it.',
+    );
+    // A value that is no scheme of the family was written by no mnema, and is not said to be.
+    const other = line.replace('"mnema-checkpoint/3"', '"other"');
+    expect(() => parseCheckpoint(other)).toThrow(
+      /a checkpoint scheme this reader does not know: 'other'$/,
+    );
+  });
+
+  it('reads a checkpoint that names its record, and signs the name with the rest', () => {
+    const record = 'ab'.repeat(32);
+    const named = signCheckpoint({
+      tail: TAIL,
+      fromSeq: 0,
+      events: [writtenAsBuilt(anEvent())],
+      prev: null,
+      keyPair,
+      record,
+    });
+    expect(named.scheme).toBe(NAMED_SCHEME);
+    const line = serializeCheckpoint(named);
+    expect(JSON.parse(line)).toHaveProperty('record', record);
+    expect(parseCheckpoint(line)).toEqual(named);
+    expect(checkpointSignatureHolds(named, keyPair.publicKey)).toBe(true);
+    // The name is inside the signed message: another name under the same signature fails.
+    expect(checkpointSignatureHolds({ ...named, record: 'cd'.repeat(32) }, keyPair.publicKey)).toBe(
+      false,
+    );
+    // And a /1 line carrying a name, or a /2 line carrying none, is refused by its keys.
+    expect(() => parseCheckpoint(line.replace(NAMED_SCHEME, SCHEME))).toThrow(
+      "unexpected ['record']",
+    );
+    expect(() =>
+      parseCheckpoint(serializeCheckpoint(signed()).replace(SCHEME, NAMED_SCHEME)),
+    ).toThrow("missing ['record']");
   });
 
   it('refuses a stored line that is a JSON value but not an object, by its kind', () => {
