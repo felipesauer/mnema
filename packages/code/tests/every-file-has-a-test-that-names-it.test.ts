@@ -1043,6 +1043,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-sticky-pattern-answers-differently-each-call.test.ts': 3,
   'packages/code/tests/a-stopped-import-fails-the-run.test.ts': 1,
   'packages/code/tests/a-subagent-hands-back-its-decisions.test.ts': 12,
+  'packages/code/tests/a-tail-of-another-record-governs-nowhere.test.ts': 15,
   'packages/code/tests/a-tail-that-arrives-is-held-to-the-base.test.ts': 7,
   'packages/code/tests/a-task-carries-its-prose.test.ts': 10,
   'packages/code/tests/a-terminal-of-its-own.test.ts': 19,

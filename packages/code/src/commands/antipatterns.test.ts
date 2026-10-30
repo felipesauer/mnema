@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import {
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -68,9 +69,27 @@ function accepted(
  * view of the chain, so two decisions on ONE machine are `ADR-1` and `ADR-2`.
  */
 function merge(from: string, into: string): void {
-  for (const part of ['tails', 'keys']) {
-    cpSync(join(from, '.mnema', part), join(into, '.mnema', part), { recursive: true });
+  // The tails `into` does not hold: one it holds is its own, read on from where it stands.
+  for (const tail of readdirSync(join(from, '.mnema', 'tails'))) {
+    if (existsSync(join(into, '.mnema', 'tails', tail))) continue;
+    cpSync(join(from, '.mnema', 'tails', tail), join(into, '.mnema', 'tails', tail), {
+      recursive: true,
+    });
   }
+  cpSync(join(from, '.mnema', 'keys'), join(into, '.mnema', 'keys'), { recursive: true });
+}
+
+/**
+ * `to` as a clone of the repository at `from`, as `git clone` gives one: its committed `.mnema/`
+ * (not the `locks/` a machine keeps beside it). Two projects each begun by their own `init` are
+ * two records (FORMAT.md section 6.10), and a merge of those leaves one of them out of every
+ * reading; two clones of one share its genesis.
+ */
+function cloneProject(from: string, to: string): void {
+  cpSync(join(from, '.mnema'), join(to, '.mnema'), {
+    recursive: true,
+    filter: (source) => !source.split(/[\\/]/).includes('locks'),
+  });
 }
 
 function digest(dir: string): string {
@@ -170,7 +189,7 @@ describe('mnema audit antipatterns (recurring shapes, with evidence)', () => {
     const mine = setup();
     const theirs = setup('clone');
     runInit({ cwd: mine.repo, env: mine.env });
-    runInit({ cwd: theirs.repo, env: theirs.env });
+    cloneProject(mine.repo, theirs.repo);
     const ours = accepted({ cwd: mine.repo, env: mine.env }, 'Round over the total', 'public');
     const yours = accepted({ cwd: theirs.repo, env: theirs.env }, 'Round per line', 'public');
     expect([ours.adr, yours.adr]).toEqual(['ADR-1', 'ADR-1']);
