@@ -88,10 +88,11 @@ export function arrivalsSince(
  *
  * WHAT IT COSTS: nothing more than `listTails` for a directory of one tail. Else what
  * {@link namesOfTails} costs, a small file, the last checkpoint line and an Ed25519 verification
- * per tail, at each catch-up of the projection, which is each write a hook gates: measured on the
- * built binary, the rules pushed at a write took about 1 ms more per tail (8 tails: +11 ms, 32
- * tails: +32 ms, median of 15, base and head alternated). The projection keeps what its last
- * catch-up found, so a surface asking `several` reads nothing again.
+ * per tail, at each catch-up of the projection, which is each write a hook gates. The projection
+ * keeps what its catch-up found (`ProjectionCache.severalRecords`), so a surface asking reads
+ * nothing again. Measured on the built binary, the rules pushed at a write, median of 15, base and
+ * head alternated: one tail +0 ms, 8 tails +7 ms, 32 tails +18 ms, about 0.6 ms per tail (before the
+ * surfaces took the catch-up's answer it was about 1 ms: 8 tails +11 ms, 32 tails +32 ms).
  */
 export function tailsReadAt(layout: ChainLayout): TheRecordRead {
   const tails = listTails(layout);

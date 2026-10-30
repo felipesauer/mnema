@@ -537,18 +537,15 @@ that ran behind). Either branch is refused as `another-record` against a base th
 the record, or derives its name, the other way; merged anyway, `verify` refuses the
 directory.
 
-**What a tail of another record holds governs nowhere here, merged or not.** The readings
-that say what governs run over a directory nobody verified, so each reads the tails of the
-record only: where the tails name two records, the record read is the one that holds its
-genesis (the record the genesis tail names, or the one it derives where it names none), and
-every tail naming another is left out; where the genesis is of none of them, every named
-tail is. The brief, `mnema rules` (on stderr, and in `--json` as `anotherRecord`, which the
-Action names in its comment), `governing_rules`, the rules pushed at a write and `bootstrap`
-each say which tail they left out: `Left out of this reading: tail <tail> names another
-record (<first 12 of its name>) than this one, so nothing it holds governs here`. `show`,
-`search`, the page and the console's feed leave its records out without a word. The genesis is the rule's, by
-`at`: a tail grafted from an older record is the record read, and this one's tails are the
-ones left out, which is said the same way.
+**Nothing governs in a directory of two records, merged or not.** The readings that say
+what governs run over a directory nobody verified, and a directory alone cannot tell which
+of its records it is, so none of them reads a tail of a directory whose tails name two
+records or more; a record of one name, or of none, reads as before. The brief, `mnema rules`
+(on stderr, and in `--json` as `severalRecords`, which the Action says in its comment),
+`governing_rules`, the rules pushed at a write and `bootstrap` each say `This directory holds
+tails of <n> records: <first 12 of a name> (tail <tail>); ...`, that `mnema verify` refuses
+it, and that nothing in it governs here until it holds one record. `show`, `search`, the
+page and the console's feed read nothing of it, without a word.
 
 It fails on a cut you authorized with `mnema tail prune` too, and that is the point of it:
 the change that removes a tail is the one change a reviewer has to look at. A cut made in
@@ -1328,7 +1325,8 @@ written before records were named). Nothing beside the commit is written: `updat
 record at the commit it leaves, and where the origin holds another record at the new one (it
 replaced its record), it refuses with `ANOTHER_RECORD`, with or without `--write`, naming both;
 pointing at another record is `inherit set` over a project that points at none. A record from
-before records were named may take its first name, and that is moved to.
+before records were named may take a name, and only the one its genesis derives (the name
+its first write from 0.1.5 on gives it); any other is refused the same way.
 
 **An inherited rule reaches the path it addresses.** A link the origin's record holds under
 `governs`, `asks-for-a-person` or `refuses-a-write` is an address in the project that inherits it,

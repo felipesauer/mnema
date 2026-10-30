@@ -12,26 +12,26 @@ with its own changelog.
 
 ### Changed
 
-- **A tail of another record governs nowhere here, and every reading of what governs says which tail it left out.** Both
-  readers refuse a directory whose tails name two records (`another-record`), but the readings that say what governs run
-  over a directory nobody verified, and read a tail grafted from another record as this one's: its decisions were listed
-  in force in the brief, pushed at an edit and served to the agent. Every reading that folds the record now reads the
-  tails of the record only (FORMAT.md section 6.10): where the tails name two records or more, the record read is the
-  one that holds its genesis (the record the genesis tail names, or the one it derives where it names none), and every
-  tail that names another is left out; where the genesis is of none of them, every named tail is left out. A record of
-  one name reads as before. The brief, `mnema rules` (on the other stream, and in `--json` as `anotherRecord`, which
-  the Action reads and names in its comment), `governing_rules`, the rules pushed at a write by the MCP tool and by
-  the hook verb, and `bootstrap` each say `Left out of this reading: tail <tail> names another record (<name>) than
-  this one`. `show`, `search`, the page and the console's feed leave its records out too, and say nothing. **The cost, measured** on the
-  built binary, the push at a write over a record of 8 tails: 267 ms against 256 ms (median of 15, base and head
-  alternated); a record of one tail reads nothing more. **The limit, declared:** the genesis is the rule's, by `at`, so
-  a tail grafted from a record older than this one is the record read and this one's tails are left out; both readers
-  refuse the directory either way, and `verify --since` refuses the graft before the merge.
+- **Nothing governs in a directory whose tails name two records, and every reading of what governs says so.** Both
+  readers refuse such a directory (`another-record`), but the readings that say what governs run over a directory
+  nobody verified, and read a tail grafted from another record as this one's: its decisions were listed in force in the
+  brief, pushed at an edit and served to the agent. A directory alone cannot tell which of its records it is, so every
+  reading that folds the record now reads no tail of a directory whose tails name two records or more, and a record of
+  one name, or of none, reads as before (`tailsReadAsOneRecord`, `packages/chain/src/chain/record-name.ts`, and its
+  test). The brief, `mnema rules` (on the other stream, and in `--json` as `severalRecords`, which the Action reads and
+  says in its comment), `governing_rules`, the rules pushed at a write by the MCP tool and by the hook verb, and
+  `bootstrap` each say `This directory holds tails of <n> records: <name> (tail <tail>); ...`, that `mnema verify`
+  refuses it, and that nothing in it governs here until it holds one record. `show`, `search`, the page and the
+  console's feed read nothing of it either, and say nothing. **The cost, measured** on the built binary, the rules
+  pushed at a write, median of 15, base and head alternated: one tail 246 ms against 246 ms; 8 tails 258 ms against
+  251 ms; 32 tails 295 ms against 277 ms, so about 0.6 ms per tail per write (the name of each tail is read and its
+  signature checked once per write; the surfaces take what the projection's catch-up found).
 - **`mnema inherit set` and `inherit update` name the origin's record, and `update` does not move to a commit that
   holds another record.** Each prints `The record there is <name>` (or that it names none, written before records were
   named). The commit fixes the record, so nothing is added to `.mnema/inherit.json`: `update` reads the record at the
   commit it leaves, and where the origin holds another record at the new commit, it refuses (`ANOTHER_RECORD`), with
-  or without `--write`, naming both. A record from before records were named may take its first name and is moved to.
+  or without `--write`, naming both. A record from before records were named may take a name, and only the one its
+  genesis derives (the name its first write from 0.1.5 on gives it); any other is refused the same way.
 - **Every tail proof and checkpoint a write signs names the record, and mnema 0.1.4 refuses a record from its first such
   line.** The writer signs `mnema-tail/2` and `mnema-checkpoint/2` only, under the name its own tail already carries, else
   the one the other tails of the record carry, else the name of the record's genesis tail (FORMAT.md section 6.10): a new
