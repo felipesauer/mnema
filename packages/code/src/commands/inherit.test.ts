@@ -9,6 +9,7 @@
 
 import { execFileSync } from 'node:child_process';
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -19,6 +20,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-maintenance.js';
@@ -337,5 +339,80 @@ describe('updating', () => {
       reason: 'UNREACHABLE',
     });
     expect(existsSync(join(project.cwd, '.mnema', 'inherit.json'))).toBe(false);
+  });
+});
+
+describe('the record an update moves to', () => {
+  /** The name the tail proof of a tail of the record at `at` signs, read off the file. */
+  function signed(at: Place, tail?: string): string {
+    const tails = join(at.cwd, '.mnema', 'tails');
+    const chosen = tail ?? (readdirSync(tails)[0] as string);
+    return (
+      JSON.parse(readFileSync(join(tails, chosen, 'tailproof.json'), 'utf8')) as { record: string }
+    ).record;
+  }
+
+  /** The origin replaces its record with another one, begun by its own `init`, and commits. */
+  function replaced(at: Place): string {
+    rmSync(join(at.cwd, '.mnema'), { recursive: true, force: true });
+    const again = { cwd: at.cwd, env: { home: join(sandbox, 'origin-home-again') } };
+    runInit(again);
+    accept(again, 'MySQL in every new service');
+    return commit(again);
+  }
+
+  it('refuses a commit whose record is another than the one pinned, and names both', () => {
+    const { at: source, first } = origin();
+    const pinned = signed(source);
+    const project = place('project');
+    expect(runInheritSet(project, { where: source.cwd, write: true }).ok).toBe(true);
+    const third = replaced(source);
+    const refused = runInheritUpdate(project, { to: third, write: true });
+    expect(refused).toMatchObject({ ok: false, reason: 'ANOTHER_RECORD' });
+    if (refused.ok) return;
+    expect(refused.detail).toContain(`the one pinned at ${first} is ${pinned}.`);
+    expect(refused.detail).toContain(`is ${signed(source)}, and`);
+    const pointer = JSON.parse(readFileSync(join(project.cwd, '.mnema', 'inherit.json'), 'utf8'));
+    expect(pointer.commit).toBe(first);
+  });
+
+  it('moves an unnamed record only to the name its genesis derives', () => {
+    const fixture = fileURLToPath(
+      new URL(
+        '../../../chain/src/chain/__fixtures__/written-by-an-earlier-binary',
+        import.meta.url,
+      ),
+    );
+    const source: Place = {
+      cwd: join(sandbox, 'origin'),
+      env: { home: join(sandbox, 'origin-home') },
+    };
+    mkdirSync(source.cwd, { recursive: true });
+    git(source.cwd, 'init', '-q', '-b', 'main');
+    for (const part of ['tails', 'keys']) {
+      cpSync(join(fixture, part), join(source.cwd, '.mnema', part), { recursive: true });
+    }
+    const old = readdirSync(join(source.cwd, '.mnema', 'tails'));
+    const first = commit(source);
+    const project = place('project');
+    const set = runInheritSet(project, { where: source.cwd, write: true });
+    expect(set).toMatchObject({ ok: true });
+    if (set.ok) expect(set.record).toBeUndefined();
+
+    accept(source, 'Postgres in every new service');
+    const fresh = readdirSync(join(source.cwd, '.mnema', 'tails')).find((t) => !old.includes(t));
+    const derived = signed(source, fresh);
+    const second = commit(source);
+    const third = replaced(source);
+
+    const refused = runInheritUpdate(project, { to: third, write: true });
+    expect(refused).toMatchObject({ ok: false, reason: 'ANOTHER_RECORD' });
+    if (!refused.ok) {
+      expect(refused.detail).toContain(
+        `the one pinned at ${first} is one that names no record and whose genesis derives ${derived}.`,
+      );
+    }
+    const moved = runInheritUpdate(project, { to: second, write: true });
+    expect(moved).toMatchObject({ ok: true, written: true, record: derived });
   });
 });
