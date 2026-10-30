@@ -10,6 +10,9 @@
  * and rebuilt by dropping and replaying; there are no data migrations.
  */
 
+// A tail of another record the readings leave out (`ProjectionCache.tailsOfAnotherRecord`): the
+// context package's brief carries the list, and that package may not name the chain.
+export type { TailOfAnotherRecord } from '@mnema/chain';
 // The relation labels a READER has to know by name, and the set of them. It read
 // "the ONE relation label" and named `governs` alone; `asks-for-a-person` falsified
 // that, `refuses-a-write` made the pair a set of three, and `ADDRESS_RELATIONS` is the

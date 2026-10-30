@@ -20,7 +20,9 @@
  * The name lives only inside what is already signed: the tail proof and the checkpoint under
  * their second schemes (tailproof.ts, checkpoint.ts). A reader never recomputes it as an
  * authority. It asks {@link recordOf} whether the named tails of a directory agree, and names the
- * genesis tail, as information, when one of them hashes to the name.
+ * genesis tail, as information, when one of them hashes to the name. The readings that say what
+ * governs ask the genesis once, where the named tails disagree, and only to choose which tails
+ * they read ({@link tailsOfTheRecord}); they refuse nothing, which stays the readers'.
  */
 
 import { framedTextDigest } from './hash.js';

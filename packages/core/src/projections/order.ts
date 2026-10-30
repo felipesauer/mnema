@@ -1,6 +1,14 @@
 /**
- * Reading every tail of a chain into ONE deterministic, total order of events:
+ * Reading every tail of a chain's RECORD into ONE deterministic, total order of events:
  * the input a projection replays.
+ *
+ * IT SAID "every tail of a chain", and the directory held more than its record. A tail of
+ * another record, copied with its key into this directory, verified on its own and was read as
+ * this record's: its decisions governed here. Both readers refuse such a directory
+ * (`another-record`), but a projection runs over one nobody verified, so the tails it reads are
+ * the record's own (`tailsOfTheRecordAt`, `@mnema/chain`, FORMAT.md section 6.10), and every
+ * tail of another record is left out of the order, the frontier and the catch-up alike
+ * (`code/tests/a-tail-of-another-record-governs-nowhere.test.ts`).
  *
  * The chain is per-tail by design: each machine appends to its own tail, and
  * there is NO global order across tails (that is what makes an offline merge a
@@ -111,7 +119,7 @@ interface TailStream {
 }
 
 /**
- * Reads all tails and merges them into one total, deterministic order. This is
+ * Reads the record's tails and merges them into one total, deterministic order. This is
  * the single bridge from the chain to a projection: a projection consumes this
  * ordered stream and never reads tails itself.
  */
@@ -228,7 +236,7 @@ export interface ChainReplay {
 }
 
 /**
- * Reads all tails, merges them, AND reports how far the reading reached.
+ * Reads the record's tails, merges them, AND reports how far the reading reached.
  *
  * The frontier is a by-product rather than a second pass: each tail's last `seq`
  * is in hand the moment its entries are parsed, so learning it costs nothing.

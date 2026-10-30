@@ -109,7 +109,6 @@
  * dropping sources cannot reorder what the remaining ones say.
  */
 
-import type { TailOfAnotherRecord } from '@mnema/chain';
 import {
   ADDRESS_RELATIONS,
   type AdrCollision,
@@ -118,6 +117,7 @@ import {
   type ProjectionCache,
   REFUSES_A_WRITE_RELATION,
   type Scope,
+  type TailOfAnotherRecord,
 } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
 import {

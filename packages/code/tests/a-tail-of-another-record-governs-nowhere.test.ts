@@ -33,6 +33,7 @@ import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession } from '../src/mcp/session.js';
 import { runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { type CliIo, run } from '../src/program.js';
+import { followingTheRecord } from '../src/repl/following.js';
 
 let sandbox: string;
 let repo: string;
@@ -268,6 +269,12 @@ describe('a tail grafted from another record', () => {
     await client.close();
   });
 
+  it('the console that follows the record does not show what arrives on it as having happened here', async () => {
+    const following = followingTheRecord([join(repo, '.mnema')]);
+    graft();
+    expect(following.whatHappened()).toEqual([]);
+  });
+
   it('a reading that does not say what governs does not serve it either', async () => {
     graft();
     const shown = await said('show', theirs);
@@ -312,6 +319,12 @@ describe('the same directory with no graft (the control)', () => {
       ),
     ).toEqual([ours]);
     await client.close();
+  });
+
+  it('the console that follows the record shows a write of this record as having happened', async () => {
+    const following = followingTheRecord([join(repo, '.mnema')]);
+    await did('decision', 'record', 'Drain the queue at night', 'the load is low then');
+    expect(following.whatHappened().map((event) => event.kind)).toContain('decision.recorded');
   });
 
   it('show serves the other project’s decision in its own project', async () => {

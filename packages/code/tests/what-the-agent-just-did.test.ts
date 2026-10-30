@@ -636,6 +636,7 @@ describe('what asks the disk about the record, on this surface', () => {
     'orderedEvents',
     'readTail',
     'listTails',
+    'tailsOfTheRecordAt',
     'orderedSegments',
     'chainExtent',
   ];
@@ -663,10 +664,12 @@ describe('what asks the disk about the record, on this surface', () => {
     // what makes each of them the ONE place its rule lives, and what says the corner did
     // not quietly gain a reader of tails.
     expect(opened['session.ts']).toEqual(['runVerify']);
+    // The follower lists the tails of the record (`tailsOfTheRecordAt`), not every tail of the
+    // directory: a tail of another record did not happen here. It was `listTails` until then.
     expect([...(opened['following.ts'] ?? [])].sort()).toEqual([
       'chainExtent',
-      'listTails',
       'readTail',
+      'tailsOfTheRecordAt',
     ]);
     expect(opened['proving.ts']).toEqual(['chainExtent']);
     // NOT VACUOUS: the scan really read the surface, and the surface really has modules
