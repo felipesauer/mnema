@@ -522,8 +522,12 @@ The refusal holds from the first write of a mnema from 0.1.5 on, which names the
 After that, a tail written by mnema 0.1.4 or earlier is refused the first way; upgrade,
 take the tail out of the change, and record its work again. With `--json`, the tails are in
 `since.arrived`: `unnamed` (refused), `noted` (the note) and `foreign` (by the name they
-carry). A tail `<rev>` already held is not asked again: an unnamed one stays the census
-note `verify` gives it.
+carry). A tail `<rev>` already held is not asked again, an unnamed one staying the census
+note `verify` gives it, unless it held no name there and names a record now: that name must
+be the revision's record (where no tail of it names one, the name its genesis tail
+derives, which is the one a writer from 0.1.5 on gives a record written before), and any
+other name, or a revision whose genesis tail is not found, is refused as `another-record`
+with the line above.
 
 It fails on a cut you authorized with `mnema tail prune` too, and that is the point of it:
 the change that removes a tail is the one change a reviewer has to look at. It rules on
