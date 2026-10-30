@@ -192,7 +192,7 @@ CLI and the MCP tools behave identically, because they are the same call.
 
 The record is **tamper-evident, not tamper-proof**: it does not stop an edit, and
 `mnema verify` shows when what is in the record has changed since it was
-signed, and a cut that leaves the last checkpoint in place; by default it does not catch a cut off the end that takes the last checkpoint with it, or one tail deleted whole while another remains (a key left without a tail is noted, not failed). A record in which no tail holds anything any more exits 1, by name, at every `--require`; `--since <rev>` exits 1 when files the revision held are gone, and when a tail new since it names no record or another record than its own. It reads the events and public keys of
+signed, and a cut that leaves the last checkpoint in place; by default it does not catch a cut off the end that takes the last checkpoint with it, or one tail deleted whole while another remains (a key left without a tail is noted, not failed). A record in which no tail holds anything any more exits 1, by name, at every `--require`; `--since <rev>` exits 1 when files the revision held are gone, when a tail new since it names another record than its own, and when one names no record where a tail of the revision names the record. It reads the events and public keys of
 this project's trees (no private key, no network) and prints each verdict
 verbatim. The surfaces never upgrade a verdict into a stronger claim.
 
@@ -509,9 +509,21 @@ since <rev> (<commit>): tail <id> arrived since and names record <name>..., and 
 ```
 
 The second names the tails that arrived, which the bare verdict's `another-record` cannot:
-it names both groups. A tail written by mnema 0.1.4 or earlier is refused the first way;
-upgrade, take the tail out of the change, and record its work again. A tail `<rev>` already
-held is not asked again: an unnamed one stays the census note `verify` gives it.
+it names both groups. The first holds only where a tail of `<rev>` names the record. Where
+none does (a record written wholly by mnema 0.1.4 or earlier, or no record at `<rev>`), the
+record has no name yet to hold the tail to: the tail passes, and `--since` says so on
+stdout, a note and not a failure:
+
+```text
+since <rev> (<commit>): tail <id> arrived since and names no record, and no tail there names one either: the record has no name yet, ...; a note, not a failure, ... (unnamed-record)
+```
+
+The refusal holds from the first write of a mnema from 0.1.5 on, which names the record.
+After that, a tail written by mnema 0.1.4 or earlier is refused the first way; upgrade,
+take the tail out of the change, and record its work again. With `--json`, the tails are in
+`since.arrived`: `unnamed` (refused), `noted` (the note) and `foreign` (by the name they
+carry). A tail `<rev>` already held is not asked again: an unnamed one stays the census
+note `verify` gives it.
 
 It fails on a cut you authorized with `mnema tail prune` too, and that is the point of it:
 the change that removes a tail is the one change a reviewer has to look at. It rules on

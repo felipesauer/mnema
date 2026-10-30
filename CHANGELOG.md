@@ -51,13 +51,17 @@ exits 1. The tails written before 0.1.5 stay unnamed for
 - **`verify --since <rev>` holds a tail that arrives to the record the revision is, and so does the Action.** A directory
   alone cannot tell which of two records was there first, nor a tail written before records were named from one grafted
   out of another record written then. A tail on disk that `<rev>` did not hold must now name the record its tails were (the
-  name they carry, or the name of its genesis tail where none carries one): one that names no record exits 1 with `tail <id>
-  arrived since and names no record ... (born-unnamed)`, and the tails that name another record exit 1 with a line naming
-  them as the ones that arrived (`another-record`), which the bare verdict, naming both groups, cannot say. A tail the
-  revision already held is not asked again: an unnamed one stays a census note. The Action runs `verify --since` on the pull
-  request's base, so a pull request that brings such a tail fails, and its comment quotes the line. **The cost:** a tail
-  written by mnema 0.1.4 or earlier that arrives in a change is refused; upgrade, take the tail out, and record its work
-  again (`docs/cli-reference.md`).
+  name they carry, or the name of its genesis tail where none carries one): the tails that name another record exit 1 with a
+  line naming them as the ones that arrived (`another-record`), which the bare verdict, naming both groups, cannot say. A
+  tail that names no record exits 1 with `tail <id> arrived since and names no record ... (born-unnamed)` only where a tail
+  of `<rev>` names the record; where none does (a record written wholly before 0.1.5, or no record at all), the record has
+  no name yet to hold the tail to, and it passes with the note `... the record has no name yet ...; a note, not a failure
+  ... (unnamed-record)`, so the refusal holds from the first write of a mnema from 0.1.5 on. In `--json` the two kinds are
+  `since.arrived.unnamed` and `since.arrived.noted`. A tail the revision already held is not asked again: an unnamed one
+  stays a census note. The Action runs `verify --since` on the pull request's base, so a pull request that brings a tail
+  refused here fails, and its comment quotes the line. **The cost:** once a record is named, a tail written by mnema 0.1.4
+  or earlier that arrives in a change is refused; upgrade, take the tail out, and record its work again
+  (`docs/cli-reference.md`).
 
 - **A decision one machine accepted and another rejected or superseded, out of the same state, is in force in no reading, and each
   reading says why.** Two clones that had not seen each other, once their tails meet, leave two signed moves out of `proposed`,
