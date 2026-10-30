@@ -192,7 +192,7 @@ CLI and the MCP tools behave identically, because they are the same call.
 
 The record is **tamper-evident, not tamper-proof**: it does not stop an edit, and
 `mnema verify` shows when what is in the record has changed since it was
-signed, and a cut that leaves the last checkpoint in place; by default it does not catch a cut off the end that takes the last checkpoint with it, or one tail deleted whole while another remains (a key left without a tail is noted, not failed). A record in which no tail holds anything any more exits 1, by name, at every `--require`; `--since <rev>` exits 1 when files the revision held are gone. It reads the events and public keys of
+signed, and a cut that leaves the last checkpoint in place; by default it does not catch a cut off the end that takes the last checkpoint with it, or one tail deleted whole while another remains (a key left without a tail is noted, not failed). A record in which no tail holds anything any more exits 1, by name, at every `--require`; `--since <rev>` exits 1 when files the revision held are gone, and when a tail new since it names no record or another record than its own. It reads the events and public keys of
 this project's trees (no private key, no network) and prints each verdict
 verbatim. The surfaces never upgrade a verdict into a stronger claim.
 
@@ -495,6 +495,23 @@ request, fetched (a shallow checkout holds no base, and `--since` says so and fa
 mnema verify --require=signed --since "$BASE"
 ```
 <!-- END ci-recipe -->
+
+**A tail that arrives is held to the record the revision is.** A directory alone cannot
+tell which of two records was there first, nor a tail written before records were named
+(mnema 0.1.4 and earlier) from one grafted out of another record written then: both name
+no record (FORMAT.md section 6.10). The revision can. A tail on disk that `<rev>` did not
+hold must name the record its tails were (the name they carry, or, where none carries one,
+the name of its genesis tail), and `--since` exits 1 otherwise, one line per case:
+
+```text
+since <rev> (<commit>): tail <id> arrived since and names no record: ... (born-unnamed)
+since <rev> (<commit>): tail <id> arrived since and names record <name>..., and the record there is <name>...: a tail of another record (another-record)
+```
+
+The second names the tails that arrived, which the bare verdict's `another-record` cannot:
+it names both groups. A tail written by mnema 0.1.4 or earlier is refused the first way;
+upgrade, take the tail out of the change, and record its work again. A tail `<rev>` already
+held is not asked again: an unnamed one stays the census note `verify` gives it.
 
 It fails on a cut you authorized with `mnema tail prune` too, and that is the point of it:
 the change that removes a tail is the one change a reviewer has to look at. It rules on

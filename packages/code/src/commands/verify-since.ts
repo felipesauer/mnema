@@ -18,6 +18,15 @@
  * only grows at the end, so an honest change passes whatever it appended, and a witness proof
  * that was upgraded in place passes too (its presence is asked, not its bytes).
  *
+ * AND A TAIL THAT ARRIVED IS THE BASE'S RECORD'S OWN (ADR-134, FORMAT.md section 6.10). A
+ * directory alone cannot tell which of two records was there first, nor a tail written before
+ * records were named from one grafted out of another record written then. The base can: a tail
+ * on disk that it did not hold must name the record its tails were (the name they carry, or the
+ * name of its genesis tail where none carries one). One that names no record is refused
+ * (`born-unnamed`), and the tails that name another record are named as the ones that arrived
+ * (`another-record`). A tail the base already held is not asked again: an unnamed one stays the
+ * census note the bare verdict gives it.
+ *
  * WHAT IT DOES NOT DO. It reads git and never the network: `<rev>` must already be in the
  * clone (a shallow CI checkout has no base, and is refused by name rather than passed). It
  * rules on the COMMITTED tree only: the private tree never travels, so git holds nothing of

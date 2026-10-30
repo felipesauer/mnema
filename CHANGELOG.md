@@ -48,6 +48,17 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   read does. `canonical-vectors.json` publishes five signed messages (each scheme of each artifact, signed by RFC 8032's
   published key), and a new frozen record is named by its genesis tail. The writer writes `/2` (the entry above).
 
+- **`verify --since <rev>` holds a tail that arrives to the record the revision is, and so does the Action.** A directory
+  alone cannot tell which of two records was there first, nor a tail written before records were named from one grafted
+  out of another record written then. A tail on disk that `<rev>` did not hold must now name the record its tails were (the
+  name they carry, or the name of its genesis tail where none carries one): one that names no record exits 1 with `tail <id>
+  arrived since and names no record ... (born-unnamed)`, and the tails that name another record exit 1 with a line naming
+  them as the ones that arrived (`another-record`), which the bare verdict, naming both groups, cannot say. A tail the
+  revision already held is not asked again: an unnamed one stays a census note. The Action runs `verify --since` on the pull
+  request's base, so a pull request that brings such a tail fails, and its comment quotes the line. **The cost:** a tail
+  written by mnema 0.1.4 or earlier that arrives in a change is refused; upgrade, take the tail out, and record its work
+  again (`docs/cli-reference.md`).
+
 - **A decision one machine accepted and another rejected or superseded, out of the same state, is in force in no reading, and each
   reading says why.** Two clones that had not seen each other, once their tails meet, leave two signed moves out of `proposed`,
   and the fold kept the state of whichever had the later `at`: a decision governed, or stopped governing, because of a clock. The

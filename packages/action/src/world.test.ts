@@ -9,7 +9,7 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -257,5 +257,111 @@ describe('a pull request that lifts the rule off the file it edits', () => {
     vi.stubEnv('RUNNER_TEMP', runnerTemp);
     await judged(repo, base, 'attack');
     expect(readdirSync(runnerTemp)).toEqual([]);
+  }, 120_000);
+});
+
+describe('a pull request that brings a tail the base is not the record of', () => {
+  /** A record the 0.1.4 binary wrote: its one tail names no record. */
+  const WRITTEN_BEFORE = join(
+    import.meta.dirname,
+    '../../chain/src/chain/__fixtures__/written-by-an-earlier-binary',
+  );
+
+  /** Copies the one tail of the record at `from`, with every public key beside it, into `repo`. */
+  function graft(repo: string, from: string): string {
+    const tail = readdirSync(join(from, 'tails'))[0] as string;
+    cpSync(join(from, 'tails', tail), join(repo, '.mnema', 'tails', tail), { recursive: true });
+    for (const key of readdirSync(join(from, 'keys'))) {
+      if (key.endsWith('.pub')) cpSync(join(from, 'keys', key), join(repo, '.mnema', 'keys', key));
+    }
+    return tail;
+  }
+
+  /**
+   * A base named by the record `init` began, and four branches: a second machine writing into the
+   * same record, a tail written before records were named grafted in, a tail of another record
+   * grafted in, and the first machine writing again.
+   */
+  function theRepository(): { repo: string; base: string; unnamed: string; foreign: string } {
+    const repo = join(sandbox, 'repo-arrived');
+    const home = join(sandbox, 'home-arrived');
+    const second = join(sandbox, 'second-arrived');
+    const elsewhere = join(sandbox, 'elsewhere-arrived');
+    const other = join(sandbox, 'other-arrived');
+    for (const dir of [repo, home, second, elsewhere, other]) mkdirSync(dir);
+    git(repo, 'init', '-q', '-b', 'main');
+    mnemaAs(home, repo, 'init');
+    mnemaAs(home, repo, 'decision', 'record', 'Use the standard library', 'It is there');
+    git(repo, 'add', '.mnema');
+    git(repo, 'commit', '-q', '-m', 'base');
+    const base = gitOut(repo, 'rev-parse', 'HEAD');
+    git(other, 'init', '-q');
+    mnemaAs(elsewhere, other, 'init');
+    mnemaAs(elsewhere, other, 'decision', 'record', 'Another project', 'Elsewhere');
+
+    const branch = (name: string, change: () => void) => {
+      git(repo, 'switch', '-q', 'main');
+      git(repo, 'switch', '-q', '-c', name);
+      change();
+      git(repo, 'add', '.mnema');
+      git(repo, 'commit', '-q', '-m', name);
+    };
+    branch('same-record', () => {
+      mnemaAs(second, repo, 'decision', 'record', 'A second machine', 'Its own tail');
+    });
+    let unnamed = '';
+    branch('unnamed', () => {
+      unnamed = graft(repo, WRITTEN_BEFORE);
+    });
+    let foreign = '';
+    branch('another-record', () => {
+      foreign = graft(repo, join(other, '.mnema'));
+    });
+    branch('nothing-new', () => {
+      mnemaAs(home, repo, 'decision', 'record', 'The same machine', 'The same tail');
+    });
+    vi.stubEnv('HOME', home);
+    return { repo, base, unnamed, foreign };
+  }
+
+  async function judged(repo: string, base: string, branch: string) {
+    git(repo, 'switch', '-q', branch);
+    let comment = '';
+    const github = {
+      changedFiles: async () =>
+        gitOut(repo, 'diff', '--name-only', `${base}..HEAD`)
+          .split('\n')
+          .filter(Boolean)
+          .map((path) => ({ path })),
+      reviews: async () => [],
+      upsertComment: async (body: string) => {
+        comment = body;
+        return 'created';
+      },
+    };
+    const world = worldAt(repo, github as never, { info() {}, warning() {} }, {});
+    const verdict = await judge(world, {
+      baseSha: base,
+      author: 'author',
+      requireApprovalForAsks: false,
+    });
+    return { verdict, comment };
+  }
+
+  it('fails the tail that names no record and the tail of another record, saying which', async () => {
+    const { repo, base, unnamed, foreign } = theRepository();
+    for (const branch of ['same-record', 'nothing-new']) {
+      const run = await judged(repo, base, branch);
+      expect(run.verdict.failed, `${branch}: ${run.comment}`).toBe(false);
+    }
+    const bare = await judged(repo, base, 'unnamed');
+    expect(bare.verdict.reasons).toEqual([
+      'the record does not verify as signed, as the base record grown',
+    ]);
+    expect(bare.comment).toContain(`tail ${unnamed} arrived since and names no record`);
+    const grafted = await judged(repo, base, 'another-record');
+    expect(grafted.verdict.failed).toBe(true);
+    expect(grafted.comment).toContain(`tail ${foreign} arrived since and names record`);
+    expect(grafted.comment).toContain('a tail of another record (another-record)');
   }, 120_000);
 });
