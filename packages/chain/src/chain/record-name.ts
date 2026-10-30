@@ -21,8 +21,8 @@
  * their second schemes (tailproof.ts, checkpoint.ts). A reader never recomputes it as an
  * authority. It asks {@link recordOf} whether the named tails of a directory agree, and names the
  * genesis tail, as information, when one of them hashes to the name. The readings that say what
- * governs ask the genesis once, where the named tails disagree, and only to choose which tails
- * they read ({@link tailsOfTheRecord}); they refuse nothing, which stays the readers'.
+ * governs ask {@link recordOf} too, and read nothing of a directory whose tails name two records
+ * ({@link tailsReadAsOneRecord}); they refuse nothing, which stays the readers'.
  */
 
 import { framedTextDigest } from './hash.js';
@@ -162,52 +162,43 @@ export function recordToWriteUnder(
   return { name: continues() ?? recordName(genesisTail(firsts()) ?? tail) };
 }
 
-/** A tail a reading of the record leaves out, and the record it names. */
-export interface TailOfAnotherRecord {
-  readonly tail: string;
-  readonly record: string;
+/** One record a directory holds tails of: its name, and those tails. */
+export interface RecordGroup {
+  readonly name: string;
+  readonly tails: readonly string[];
 }
 
-/** The tails a reading of the record reads, and those it leaves out: {@link tailsOfTheRecord}. */
-export interface TailsOfTheRecord {
-  /** The tails read, in the order given. */
-  readonly own: readonly string[];
-  /** The tails left out, each with the record it names, in the order given. */
-  readonly leftOut: readonly TailOfAnotherRecord[];
+/** What a reading of the record reads in a directory: {@link tailsReadAsOneRecord}. */
+export interface TheRecordRead {
+  /** The tails read, in the order given: none where the directory holds tails of two records. */
+  readonly read: readonly string[];
+  /**
+   * The records the directory holds tails of, by name, where it holds two or more: then nothing
+   * is read. Empty where its tails name one record or none.
+   */
+  readonly several: readonly RecordGroup[];
 }
 
 /**
- * THE TAILS A READING OF THE RECORD READS (FORMAT.md section 6.10), from what each tail of the
- * directory names (`named`, `undefined` for a tail that names none); `firsts` gives the first
- * entries, asked for only where two records are named.
+ * THE TAILS A READING OF THE RECORD READS, from what each tail of the directory names (`named`,
+ * `undefined` for a tail that names none). Where {@link recordOf} finds no name or one, every tail
+ * is read: an unnamed tail in a named record stays what `verify` keeps it, a census note. Where the
+ * named tails name two records or more, no tail is read, named or not, and the records are said:
+ * a directory alone cannot tell which of them it is (FORMAT.md section 6.10 says why both readers
+ * refuse it, `another-record`), so nothing in it governs until it holds one
+ * (`record-name.test.ts`, "the tails a reading of the record reads").
  *
- * Where {@link recordOf} finds no name or one, every tail is read: an unnamed tail in a named
- * record stays what `verify` keeps it, a census note. Where the named tails name two records or
- * more, the record read is the one that holds its genesis: the record the genesis tail names, or,
- * where the genesis tail names none (a record written before records were named), the record it
- * derives. Every tail that names another record is left out. Where that record is none of the
- * names carried (the genesis is of neither, or no tail holds a first entry), every named tail is
- * left out and the unnamed ones are read: a directory that cannot say which of its records it is
- * lets none of them govern. (`record-name.test.ts`, "the tails a reading of the record reads".)
- *
- * The genesis is the rule's, by `at`: a tail grafted from a record older than this one, whose
- * first entry is older than this record's genesis, is the one read. Both readers refuse the
- * directory (`another-record`), and the readings leave this record's tails out and say so.
+ * IT USED TO READ the record that held the genesis, by `at`, and leave the others out. A tail
+ * grafted from a record older than this one then became the record read and this one's tails
+ * the ones left out; the maintainer chose failing closed instead (ADR-148).
  */
-export function tailsOfTheRecord(
+export function tailsReadAsOneRecord(
   named: ReadonlyMap<string, string | undefined>,
-  firsts: () => Iterable<{ readonly tail: string; readonly at: string }>,
-): TailsOfTheRecord {
-  if (recordOf(named).state !== 'several') return { own: [...named.keys()], leftOut: [] };
-  const genesis = genesisTail(firsts());
-  const counted = genesis === undefined ? undefined : (named.get(genesis) ?? recordName(genesis));
-  const own: string[] = [];
-  const leftOut: TailOfAnotherRecord[] = [];
-  for (const [tail, record] of named) {
-    if (record === undefined || record === counted) own.push(tail);
-    else leftOut.push({ tail, record });
-  }
-  return { own, leftOut };
+): TheRecordRead {
+  const naming = recordOf(named);
+  return naming.state === 'several'
+    ? { read: [], several: naming.groups }
+    : { read: [...named.keys()], several: [] };
 }
 
 /** What arrived in a directory since a base, as {@link arrivedSince} reads it. */

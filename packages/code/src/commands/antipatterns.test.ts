@@ -82,8 +82,8 @@ function merge(from: string, into: string): void {
 /**
  * `to` as a clone of the repository at `from`, as `git clone` gives one: its committed `.mnema/`
  * (not the `locks/` a machine keeps beside it). Two projects each begun by their own `init` are
- * two records (FORMAT.md section 6.10), and a merge of those leaves one of them out of every
- * reading; two clones of one share its genesis.
+ * two records (FORMAT.md section 6.10), and every reading reads nothing of a merge
+ * of those; two clones of one share its genesis.
  */
 function cloneProject(from: string, to: string): void {
   cpSync(join(from, '.mnema'), join(to, '.mnema'), {

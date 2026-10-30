@@ -15,8 +15,8 @@ import {
   bothReadings,
   type GovernedFile,
   isGoverned,
-  leftOutOf,
   needingAPerson,
+  recordsHeldBy,
   rulesInForce,
 } from './governed.js';
 import { decisionLabels, eventsAdded, readEvents, whatItDoes } from './record.js';
@@ -135,9 +135,9 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
     atBase?.close();
   }
   const governed = read.filter(isGoverned);
-  // A tail of another record holds no rule here: the readings left it out, and the comment says
-  // which, whether or not a changed file was addressed (FORMAT.md section 6.10).
-  const anotherRecord = leftOutOf(read);
+  // A directory of more than one record was read for nothing: the comment says so, whether or
+  // not a changed file was addressed, or the silence would read as files no rule addresses.
+  const severalRecords = recordsHeldBy(read);
 
   let approval: { asking: GovernedFile[]; approved: boolean } | undefined;
   if (pr.requireApprovalForAsks) {
@@ -170,7 +170,7 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
     verification,
     record,
     governed,
-    anotherRecord,
+    severalRecords,
     notAsked: changed.length - asked.length,
     rulesFromBase: atBase === undefined ? undefined : pr.baseSha,
     approval,

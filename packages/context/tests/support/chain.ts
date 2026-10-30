@@ -686,7 +686,7 @@ export function link(b: Bench, subject: string, target: string, rel = 'relates-t
  *
  * IT USED TO BE A SECOND `makeBench`, a record of its own, and a merge of two of those is a
  * directory of two records: both readers refuse it (`another-record`), and every reading of the
- * record now leaves the tails of the one that does not hold the genesis out. Two clones of one
+ * record now reads nothing of it. Two clones of one
  * repository share the genesis, so `of` must have written before it is cloned.
  */
 export function cloneOf(of: Bench): Bench {

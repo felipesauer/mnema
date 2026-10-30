@@ -91,15 +91,28 @@ function plan(
   // THE RECORD IS PINNED WITH THE COMMIT: the commit fixes the bytes, and the bytes the name. An
   // update to a commit whose record has another name than the one at the commit it leaves would
   // move the project to another record in silence (the origin replaced its record), so it is
-  // refused, with or without --write; a record from before records were named takes the name
-  // its first named write gives it, which is not another record.
-  const pinned = before?.state === 'read' ? before.record : undefined;
-  if (pinned !== undefined && reading.record !== pinned) {
+  // refused, with or without --write. A record from before records were named may take a name,
+  // and only the one its genesis derives, which is the name its first named write gives it: any
+  // other is another record, as `verify --since` holds a tail that gains a name.
+  const pinned =
+    before?.state === 'read'
+      ? (before.record ?? (before.derives !== undefined ? { derives: before.derives } : undefined))
+      : undefined;
+  const allowed = typeof pinned === 'string' ? pinned : pinned?.derives;
+  const moved =
+    typeof pinned === 'string'
+      ? reading.record !== pinned
+      : before?.state === 'read' && reading.record !== undefined && reading.record !== allowed;
+  if (moved) {
+    const was =
+      typeof pinned === 'string'
+        ? pinned
+        : `one that names no record and whose genesis derives ${allowed ?? 'no name'}`;
     return {
       ok: false,
       reason: 'ANOTHER_RECORD',
       detail:
-        `The record at ${to.commit} is ${reading.record ?? 'one that names no record'}, and the one pinned at ${from?.commit} is ${pinned}. ` +
+        `The record at ${to.commit} is ${reading.record ?? 'one that names no record'}, and the one pinned at ${from?.commit} is ${was}. ` +
         'Pointing at another record is `inherit set` over a project that points at none.',
     };
   }

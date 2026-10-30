@@ -76,7 +76,7 @@
  * on the record is a verb of its own.
  */
 
-import type { TailOfAnotherRecord } from '@mnema/chain';
+import type { RecordGroup } from '@mnema/chain';
 import {
   acceptedAgainstRetired,
   type DivergentMove,
@@ -397,15 +397,19 @@ export function movedApartSentence(move: DivergentMove): string {
 }
 
 /**
- * THE ONE SENTENCE FOR A TAIL OF ANOTHER RECORD THAT A READING LEFT OUT (FORMAT.md section 6.10),
- * for every surface that says what governs: the brief, `rules` and `governing_rules`, the rules
- * pushed at a write, `bootstrap`, and the Action through `rules --json`. A tail whose tail proof or
- * checkpoint names another record than the one the tree is holds nothing that governs here, and
- * every reading leaves it out (`tailsOfTheRecordAt`); a reading that said nothing would read as a
- * record with fewer rules. It names the tail by its id and the record by the first twelve
- * characters of its name, and names the verb that names both records in full
- * (`code/tests/a-tail-of-another-record-governs-nowhere.test.ts`).
+ * THE ONE SENTENCE FOR A DIRECTORY THAT HOLDS TAILS OF MORE THAN ONE RECORD, for every surface that
+ * says what governs: the brief, `rules` and `governing_rules`, the rules pushed at a write,
+ * `bootstrap`, and the Action through `rules --json`. Its tails name two records or more, so a
+ * reading of it reads no tail (`tailsReadAt`, `@mnema/chain`) and nothing in it governs; a reading
+ * that said nothing would read as a record with no rules. It names each record by the first twelve
+ * characters of its name, with its tails, says that `verify` refuses the directory, and that
+ * nothing governs until it holds one record
+ * (`code/tests/a-directory-of-two-records-governs-nothing.test.ts`).
  */
-export function anotherRecordSentence(left: TailOfAnotherRecord): string {
-  return `Left out of this reading: tail ${oneLine(left.tail)} names another record (${oneLine(left.record.slice(0, 12))}) than this one, so nothing it holds governs here; \`mnema verify\` names both records.`;
+export function severalRecordsSentence(groups: readonly RecordGroup[]): string {
+  const each = groups.map(
+    (group) =>
+      `${oneLine(group.name.slice(0, 12))} (${group.tails.length === 1 ? 'tail' : 'tails'} ${group.tails.map(oneLine).join(', ')})`,
+  );
+  return `This directory holds tails of ${groups.length} records: ${each.join('; ')}. \`mnema verify\` refuses it (another-record), and nothing in it governs here until it holds one record.`;
 }

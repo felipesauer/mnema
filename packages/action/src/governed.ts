@@ -23,10 +23,10 @@ export interface ApartRule extends RuleHit {
   readonly divergence: string;
 }
 
-/** A tail of another record the reading left out, and the record it names. */
-export interface LeftOutTail {
-  readonly tail: string;
-  readonly record: string;
+/** One record a directory holds tails of, where it holds more than one: its name and its tails. */
+export interface HeldRecord {
+  readonly name: string;
+  readonly tails: readonly string[];
 }
 
 /** A changed file and the rules in force that address it, by what the rule does. */
@@ -40,10 +40,11 @@ export interface GovernedFile {
   /** The rules that address it and are out of force for a divergence, each with why. */
   readonly apart: readonly ApartRule[];
   /**
-   * The tails of another record the reading left out (`anotherRecord` in `mnema rules --json`):
-   * nothing they hold is above, whatever it addresses. Empty for a record of one name.
+   * The records the directory holds tails of, where it holds more than one (`severalRecords` in
+   * `mnema rules --json`): nothing of it was read, so no rule of it is above. Empty for a record of
+   * one name.
    */
-  readonly anotherRecord: readonly LeftOutTail[];
+  readonly severalRecords: readonly HeldRecord[];
 }
 
 /** The reading of `mnema rules --json` for one file, with only the rules in force kept. */
@@ -58,23 +59,27 @@ export function rulesInForce(path: string, reading: unknown): GovernedFile {
     asks: inForce(answer.asks),
     refuses: inForce(answer.refuses),
     apart: apartFrom([answer.rules, answer.asks, answer.refuses].flat()),
-    anotherRecord: leftOutFrom(answer.anotherRecord),
+    severalRecords: heldFrom(answer.severalRecords),
   };
 }
 
-function leftOutFrom(list: unknown): LeftOutTail[] {
+function heldFrom(list: unknown): HeldRecord[] {
   if (!Array.isArray(list)) return [];
-  return (list as unknown[]).flatMap((item): LeftOutTail[] => {
+  return (list as unknown[]).flatMap((item): HeldRecord[] => {
     if (typeof item !== 'object' || item === null) return [];
-    const { tail, record } = item as Record<string, unknown>;
-    return typeof tail === 'string' && typeof record === 'string' ? [{ tail, record }] : [];
+    const { name, tails } = item as Record<string, unknown>;
+    return typeof name === 'string' &&
+      Array.isArray(tails) &&
+      tails.every((tail) => typeof tail === 'string')
+      ? [{ name, tails: tails as string[] }]
+      : [];
   });
 }
 
-/** Every tail of another record the readings of `files` left out, once each. */
-export function leftOutOf(files: readonly GovernedFile[]): LeftOutTail[] {
-  const seen = new Map<string, LeftOutTail>();
-  for (const file of files) for (const left of file.anotherRecord) seen.set(left.tail, left);
+/** Every record the readings of `files` say the directory holds, once each, by name. */
+export function recordsHeldBy(files: readonly GovernedFile[]): HeldRecord[] {
+  const seen = new Map<string, HeldRecord>();
+  for (const file of files) for (const held of file.severalRecords) seen.set(held.name, held);
   return [...seen.values()];
 }
 
@@ -129,7 +134,7 @@ export function bothReadings(a: GovernedFile, b: GovernedFile): GovernedFile {
     asks: once(a.asks, b.asks),
     refuses: once(a.refuses, b.refuses),
     apart: [...a.apart, ...b.apart.filter((hit) => !a.apart.some((seen) => seen.id === hit.id))],
-    anotherRecord: leftOutOf([a, b]),
+    severalRecords: recordsHeldBy([a, b]),
   };
 }
 

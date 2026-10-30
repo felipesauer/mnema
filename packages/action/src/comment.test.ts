@@ -5,7 +5,7 @@ const quiet: Report = {
   verification: { passed: true, said: '' },
   record: { total: 0, byKind: [], decisions: [] },
   governed: [],
-  anotherRecord: [],
+  severalRecords: [],
   notAsked: 0,
   approval: undefined,
 };
@@ -27,7 +27,7 @@ const busy: Report = {
       asks: [],
       refuses: [],
       apart: [],
-      anotherRecord: [],
+      severalRecords: [],
     },
   ],
 };
@@ -48,7 +48,7 @@ describe('renderComment checks', () => {
       asks: [],
       refuses: [],
       apart: [],
-      anotherRecord: [],
+      severalRecords: [],
     }));
     const text = renderComment({ ...busy, governed });
     expect(text.length).toBeLessThanOrEqual(65536);
@@ -88,7 +88,7 @@ describe('renderComment', () => {
               divergence: 'divergence between the accept and the rejection',
             },
           ],
-          anotherRecord: [],
+          severalRecords: [],
         },
       ],
     });
@@ -142,14 +142,23 @@ describe('renderComment', () => {
     ).not.toContain('```');
   });
 
-  it('names each tail of another record the readings of the rules left out, and is worth a comment for it', () => {
+  it('says the directory holds more than one record, that verify refuses it and nothing governs, and is worth a comment for it', () => {
     const tail = `${'ab'.repeat(32)}-${'cd'.repeat(16)}`;
-    const left = { ...quiet, anotherRecord: [{ tail, record: 'f'.repeat(64) }] };
-    expect(worthSaying(left)).toBe(true);
-    const text = renderComment(left);
-    expect(text).toContain('Left out of the rules read');
-    expect(text).toContain(`- tail \`${tail}\`, of record \`ffffffffffff\``);
-    expect(renderComment(quiet)).not.toContain('Left out of the rules read');
+    const several = {
+      ...quiet,
+      severalRecords: [
+        { name: 'e'.repeat(64), tails: ['tail-e'] },
+        { name: 'f'.repeat(64), tails: [tail] },
+      ],
+    };
+    expect(worthSaying(several)).toBe(true);
+    const text = renderComment(several);
+    expect(text).toContain(
+      'This directory holds tails of 2 records, so none of its rules was read',
+    );
+    expect(text).toContain('nothing in it governs until it holds one record');
+    expect(text).toContain(`- record \`ffffffffffff\`: \`${tail}\``);
+    expect(renderComment(quiet)).not.toContain('This directory holds tails of');
     expect(worthSaying(quiet)).toBe(false);
   });
 
@@ -213,7 +222,7 @@ describe('plain', () => {
           asks: [],
           refuses: [],
           apart: [],
-          anotherRecord: [],
+          severalRecords: [],
         },
       ],
     });

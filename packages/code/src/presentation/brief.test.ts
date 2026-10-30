@@ -43,7 +43,7 @@ function governance(over: Partial<Brief> = {}): Brief {
     collisions: [],
     divergent: [],
     disputed: [],
-    anotherRecord: [],
+    severalRecords: [],
     addressed: 0,
     asking: 0,
     refusing: 0,

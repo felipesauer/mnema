@@ -3752,7 +3752,7 @@ describe('mnema CLI: brief, the record as the file an agent reads', () => {
     await run(['init'], capture().io);
     // The second working copy is a clone of this repository as `init` left it: its committed
     // `.mnema/`, not the `locks/` this machine keeps. A second `init` would begin another
-    // record (FORMAT.md section 6.10), which every reading of this one leaves out.
+    // record (FORMAT.md section 6.10), of which every reading reads nothing once merged.
     const clone = join(sandbox, 'clone');
     cpSync(join(repo, '.mnema'), join(clone, '.mnema'), {
       recursive: true,

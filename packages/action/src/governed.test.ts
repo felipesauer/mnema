@@ -3,8 +3,8 @@ import {
   approvedByAnotherPerson,
   bothReadings,
   isGoverned,
-  leftOutOf,
   needingAPerson,
+  recordsHeldBy,
   rulesInForce,
 } from './governed.js';
 
@@ -95,20 +95,23 @@ describe('needingAPerson', () => {
   });
 });
 
-describe('the tails of another record a reading left out', () => {
-  const left = { tail: 'tail-a', record: 'a'.repeat(64) };
+describe('the records a directory holds, where it holds more than one', () => {
+  const held = { name: 'a'.repeat(64), tails: ['tail-a'] };
 
-  it('are read off `anotherRecord` in the answer, whatever the file, and never make it governed', () => {
-    const file = rulesInForce('src/a.ts', { rules: [], anotherRecord: [left, { tail: 1 }, 'x'] });
-    expect(file.anotherRecord).toEqual([left]);
+  it('are read off `severalRecords` in the answer, whatever the file, and never make it governed', () => {
+    const file = rulesInForce('src/a.ts', {
+      rules: [],
+      severalRecords: [held, { name: 1, tails: [] }, { name: 'b', tails: [2] }, 'x'],
+    });
+    expect(file.severalRecords).toEqual([held]);
     expect(isGoverned(file)).toBe(false);
-    expect(rulesInForce('src/a.ts', { rules: [] }).anotherRecord).toEqual([]);
+    expect(rulesInForce('src/a.ts', { rules: [] }).severalRecords).toEqual([]);
   });
 
   it('are named once across files and across the two readings of one file', () => {
-    const a = rulesInForce('a', { anotherRecord: [left] });
-    const b = rulesInForce('b', { anotherRecord: [left] });
-    expect(leftOutOf([a, b])).toEqual([left]);
-    expect(bothReadings(a, rulesInForce('a', {})).anotherRecord).toEqual([left]);
+    const a = rulesInForce('a', { severalRecords: [held] });
+    const b = rulesInForce('b', { severalRecords: [held] });
+    expect(recordsHeldBy([a, b])).toEqual([held]);
+    expect(bothReadings(a, rulesInForce('a', {})).severalRecords).toEqual([held]);
   });
 });

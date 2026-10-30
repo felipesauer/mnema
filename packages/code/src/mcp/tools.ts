@@ -187,9 +187,9 @@ import {
   TOOL_CALL_COUNT_CHANNEL,
 } from '../record-framing.js';
 import {
-  anotherRecordSentence,
   movedApartSentence,
   type ScopedLinkBreak,
+  severalRecordsSentence,
 } from '../record-integrity.js';
 import {
   type FellIn,
@@ -2791,23 +2791,27 @@ export function governingRulesMovedApart(
 }
 
 /**
- * The lines a reading of what governs owes beside its payload for each tail of another record it
- * left out (`anotherRecordSentence`): the trees `governing_rules` reads for the one, the session's
- * own for `bootstrap`. None for a record of one name, which is every record nobody grafted into.
+ * The line a reading of what governs owes beside its payload for each tree that holds tails of more
+ * than one record, of which nothing was read (`severalRecordsSentence`): the trees
+ * `governing_rules` reads for the one, the session's own for `bootstrap`. None for a record of one
+ * name, which is every record nobody grafted into.
  */
-export function anotherRecordNotes(caches: readonly ProjectionCache[]): readonly string[] {
-  const said = caches.flatMap((cache) => cache.tailsOfAnotherRecord()).map(anotherRecordSentence);
+export function severalRecordsNotes(caches: readonly ProjectionCache[]): readonly string[] {
+  const said = caches
+    .map((cache) => cache.severalRecords())
+    .filter((groups) => groups.length > 0)
+    .map(severalRecordsSentence);
   return said.length === 0 ? [] : [said.join('\n')];
 }
 
-/** {@link anotherRecordNotes} over the trees `governing_rules` reads. */
-export function governingRulesOfAnotherRecord(session: Session): readonly string[] {
-  return anotherRecordNotes(governanceCaches(session).map((source) => source.cache));
+/** {@link severalRecordsNotes} over the trees `governing_rules` reads. */
+export function governingRulesOfSeveralRecords(session: Session): readonly string[] {
+  return severalRecordsNotes(governanceCaches(session).map((source) => source.cache));
 }
 
-/** {@link anotherRecordNotes} over the trees the opening context is read from. */
-export function bootstrapOfAnotherRecord(session: Session): readonly string[] {
-  return anotherRecordNotes(sessionCaches(session));
+/** {@link severalRecordsNotes} over the trees the opening context is read from. */
+export function bootstrapOfSeveralRecords(session: Session): readonly string[] {
+  return severalRecordsNotes(sessionCaches(session));
 }
 
 /**

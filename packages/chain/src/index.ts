@@ -135,9 +135,9 @@ export { UnreadableLineError } from './chain/lines.js';
 export { illegalMoves, type PlacedEvent } from './chain/moves.js';
 export type {
   Arrivals,
+  RecordGroup,
   RecordNaming,
-  TailOfAnotherRecord,
-  TailsOfTheRecord,
+  TheRecordRead,
 } from './chain/record-name.js';
 export {
   firstLinkBreakFrom,
@@ -158,7 +158,12 @@ export {
 } from './chain/store.js';
 export { subjectEvents } from './chain/subject-events.js';
 export { DEFAULT_WAIT_MS, TailBusyError } from './chain/tail-lock.js';
-export { arrivalsSince, recordNamedIn, tailsOfTheRecordAt } from './chain/tail-names.js';
+export {
+  arrivalsSince,
+  nameTheGenesisDerives,
+  recordNamedIn,
+  tailsReadAt,
+} from './chain/tail-names.js';
 export { ensureTree } from './chain/tree.js';
 export {
   type BackupKeyNote,

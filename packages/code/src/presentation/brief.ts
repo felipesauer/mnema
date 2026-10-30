@@ -113,7 +113,7 @@
  * argument, and it is in it now.
  */
 
-import type { TailOfAnotherRecord } from '@mnema/chain';
+import type { RecordGroup } from '@mnema/chain';
 import type {
   Acceptance,
   AdrCollision,
@@ -130,7 +130,7 @@ import type { InheritedReading } from '../inherited-record.js';
 import { oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
-import { anotherRecordSentence } from '../record-integrity.js';
+import { severalRecordsSentence } from '../record-integrity.js';
 import { acceptedBy } from './accepted-by.js';
 import { NAMED_TITLE_LIMIT, namedDecisionText } from './named-decision.js';
 import { toImport } from './status.js';
@@ -1037,7 +1037,7 @@ function composed(
               ...movedApart(governance.divergent, 'decision'),
             ]),
         ...notInForceForADivergence(governance.disputed),
-        ...ofAnotherRecord(governance.anotherRecord),
+        ...ofSeveralRecords(governance.severalRecords),
       ],
       whatAwaitsAJudgement(governance.decisionsAwaiting, DECISIONS_WAITING),
       decisions.map((decision) =>
@@ -1212,13 +1212,14 @@ function notInForceForADivergence(disputed: readonly DisputedDecision[]): string
 }
 
 /**
- * The tails of another record no reading folded, so nothing they hold is counted above or below:
- * one line each, in the words every surface says it in (`anotherRecordSentence`). Nothing at all
- * when none. Not a bullet that opens with `- **`: those are the rules in force.
+ * A directory that holds tails of more than one record, of which nothing was read, so nothing of it
+ * is counted above or below: the one line every surface says it in (`severalRecordsSentence`).
+ * Nothing at all for a record of one name. Not a bullet that opens with `- **`: those are the
+ * rules in force.
  */
-function ofAnotherRecord(left: readonly TailOfAnotherRecord[]): string[] {
-  if (left.length === 0) return [];
-  return ['', ...left.map((one) => `- ${anotherRecordSentence(one)}`)];
+function ofSeveralRecords(groups: readonly RecordGroup[]): string[] {
+  if (groups.length === 0) return [];
+  return ['', `- ${severalRecordsSentence(groups)}`];
 }
 
 /** One rule moved apart, as a bullet: its id, the state it left, and every move out of it. */

@@ -192,7 +192,7 @@ describe('ProjectionCache: multi-tail materialization', () => {
       const a = openChainForWriting(chainRoot, { keyRoot: chainRoot });
       writeTaskMovedTo(a, 't-a', 'CANCELED');
       // B is a clone of A's record (its tails and public key, never a private key): two chains
-      // begun apart are two records, and a merge of those leaves one of them out of the reading.
+      // begun apart are two records, and nothing of a merge of those is read.
       cpSync(join(chainRoot, 'tails'), join(rootB, 'tails'), { recursive: true });
       mkdirSync(join(rootB, 'keys'), { recursive: true });
       for (const key of readdirSync(join(chainRoot, 'keys'))) {

@@ -23,10 +23,12 @@ import { type ChainLayout, tailFingerprint, tailProofPath } from './layout.js';
 import {
   type Arrivals,
   arrivedSince,
+  genesisTail,
   type RecordNaming,
+  recordName,
   recordOf,
-  type TailsOfTheRecord,
-  tailsOfTheRecord,
+  type TheRecordRead,
+  tailsReadAsOneRecord,
 } from './record-name.js';
 import { committedKeys, lastTailCheckpoint, listTails, orderedSegments } from './store.js';
 import { NAMED_TAILPROOF_SCHEME, parseTailProof, verifyTailProof } from './tailproof.js';
@@ -74,31 +76,47 @@ export function arrivalsSince(
 
 /**
  * THE TAILS OF THE RECORD AT `layout`, beside {@link listTails}: what a reading of the record reads,
- * and the tails of another record it leaves out ({@link tailsOfTheRecord}), each tail named as the
- * writer names it ({@link namesOfTails}). A tail with no segment holds nothing and counts toward no
- * name, as both readers count it. A directory of one tail or none reads it without asking.
+ * and, where the directory holds tails of two records or more, those records, of which it reads
+ * nothing ({@link tailsReadAsOneRecord}). Each tail is named as the writer names it
+ * ({@link namesOfTails}); a tail with no segment holds nothing and counts toward no name, as both
+ * readers count it. A directory of one tail or none is read without asking.
  *
  * Every reading that folds the record's events asks this, not `listTails`: the projection's replay
- * and its catch-up (`@mnema/core`, `projections/order.ts`), so what a tail of another record holds
- * governs nowhere here. A surface that says what governs says, from its `leftOut`, which tails it
- * left out (`code/tests/a-tail-of-another-record-governs-nowhere.test.ts`).
+ * and its catch-up (`@mnema/core`, `projections/order.ts`) and the console's feed, so nothing of a
+ * directory of two records governs, and a surface that says what governs says why from `several`
+ * (`code/tests/a-directory-of-two-records-governs-nothing.test.ts`).
  *
- * WHAT IT COSTS: nothing more than `listTails` for a directory of one tail; else what
- * {@link namesOfTails} costs, and the first entries only where two records are named.
+ * WHAT IT COSTS: nothing more than `listTails` for a directory of one tail. Else what
+ * {@link namesOfTails} costs, a small file, the last checkpoint line and an Ed25519 verification
+ * per tail, at each catch-up of the projection, which is each write a hook gates: measured on the
+ * built binary, the rules pushed at a write took about 1 ms more per tail (8 tails: +11 ms, 32
+ * tails: +32 ms, median of 15, base and head alternated). The projection keeps what its last
+ * catch-up found, so a surface asking `several` reads nothing again.
  */
-export function tailsOfTheRecordAt(
-  layout: ChainLayout,
-  upcasters: UpcasterRegistry,
-): TailsOfTheRecord {
+export function tailsReadAt(layout: ChainLayout): TheRecordRead {
   const tails = listTails(layout);
-  if (tails.length < 2) return { own: tails, leftOut: [] };
+  if (tails.length < 2) return { read: tails, several: [] };
   const named = namesOfTails(layout);
   for (const tail of tails) {
     if (named.get(tail) !== undefined && orderedSegments(layout, tail).length === 0) {
       named.set(tail, undefined);
     }
   }
-  return tailsOfTheRecord(named, () => firstEntries(layout, upcasters));
+  return tailsReadAsOneRecord(named);
+}
+
+/**
+ * The name the genesis tail of the record at `layout` derives (FORMAT.md section 6.10): the name a
+ * writer from 0.1.5 on gives a record written before records were named, and the one
+ * {@link arrivalsSince} holds a tail to where no tail of the base names one. Undefined where no
+ * tail holds a first entry.
+ */
+export function nameTheGenesisDerives(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+): string | undefined {
+  const genesis = genesisTail(firstEntries(layout, upcasters));
+  return genesis === undefined ? undefined : recordName(genesis);
 }
 
 /** The record one tail names, as checked here, or `undefined`. */

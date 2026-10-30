@@ -11,6 +11,7 @@
 import { spawnSync } from 'node:child_process';
 import {
   appendFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -35,6 +36,10 @@ import { POINTER_FILE } from '../src/inherited-record.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
+/** A record an earlier binary wrote, before records were named: its one tail names none. */
+const WRITTEN_BEFORE = fileURLToPath(
+  new URL('../../chain/src/chain/__fixtures__/written-by-an-earlier-binary', import.meta.url),
+);
 
 let sandbox: string;
 
@@ -220,6 +225,55 @@ describe('inheriting, as a person types it', () => {
     expect(JSON.parse(readFileSync(join(project, '.mnema', POINTER_FILE), 'utf-8')).commit).toBe(
       second,
     );
+  }, 90_000);
+
+  it('moves from a record written before records were named only to the name its genesis derives', () => {
+    const source = join(sandbox, 'decisions');
+    const project = join(sandbox, 'service');
+    const homeS = join(sandbox, 'home-s');
+    const homeR = join(sandbox, 'home-r');
+    const homeP = join(sandbox, 'home-p');
+    for (const dir of [source, project, homeS, homeR, homeP]) mkdirSync(dir, { recursive: true });
+    git(source, 'init', '-q', '-b', 'main');
+    // A record an earlier binary wrote: its one tail names no record.
+    for (const part of ['tails', 'keys']) {
+      cpSync(join(WRITTEN_BEFORE, part), join(source, '.mnema', part), { recursive: true });
+    }
+    const first = commit(source);
+    expect(mnema(project, homeP, 'init').status).toBe(0);
+    const set = mnema(project, homeP, 'inherit', 'set', source, '--write');
+    expect(set.status, set.err).toBe(0);
+    expect(set.out).toContain('The record there names no record yet');
+
+    // A writer from 0.1.5 on writes into it: its tail names the record the genesis derives.
+    decide(source, homeS, 'Postgres in every new service');
+    const tails = readdirSync(join(source, '.mnema', 'tails'));
+    const fresh = tails.find((tail) => !readdirSync(join(WRITTEN_BEFORE, 'tails')).includes(tail));
+    const derived = (
+      JSON.parse(
+        readFileSync(join(source, '.mnema', 'tails', fresh as string, 'tailproof.json'), 'utf-8'),
+      ) as { record: string }
+    ).record;
+    const second = commit(source);
+
+    // The origin then replaces its record with another one, begun by its own `init`.
+    rmSync(join(source, '.mnema'), { recursive: true, force: true });
+    expect(mnema(source, homeR, 'init').status).toBe(0);
+    decide(source, homeR, 'MySQL in every new service');
+    git(source, 'add', '-A', '.mnema');
+    git(source, 'commit', '-q', '-m', 'another record');
+    const third = git(source, 'rev-parse', 'HEAD');
+
+    const elsewhere = mnema(project, homeP, 'inherit', 'update', '--to', third, '--write');
+    expect(elsewhere.status).not.toBe(0);
+    expect(elsewhere.err).toContain('ANOTHER_RECORD');
+    expect(elsewhere.err).toContain(derived);
+    expect(JSON.parse(readFileSync(join(project, '.mnema', POINTER_FILE), 'utf-8')).commit).toBe(
+      first,
+    );
+    const named = mnema(project, homeP, 'inherit', 'update', '--to', second, '--write');
+    expect(named.status, named.err).toBe(0);
+    expect(named.out).toContain(`The record there is ${derived}.`);
   }, 90_000);
 
   it('says it plainly when the origin is gone and nothing was copied, and the brief still prints', () => {

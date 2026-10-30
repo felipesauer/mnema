@@ -256,7 +256,7 @@ describe('the frozen number does not slip when a concurrent decision merges in',
  * Makes `into` a clone of the record at `from` before its first write: the tails and the public
  * keys, as `git clone` brings them, never a private key. Its writer then names the record `from`'s
  * tails name (FORMAT.md section 6.10). Two chains each begun on their own are two records, and a
- * merge of those leaves one of them out of every reading. `from` must hold a tail: a record is
+ * merge of those is a directory every reading reads nothing of. `from` must hold a tail: a record is
  * cloned once something is written in it.
  */
 function cloneRecord(from: string, into: string): void {

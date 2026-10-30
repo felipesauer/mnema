@@ -159,15 +159,19 @@ describe('judge', () => {
     expect(seen.comments[0]?.onlyIfThere).toBe(false);
   });
 
-  it('names a tail of another record the rules left out, even where no changed file is governed', async () => {
-    const left = { tail: 'tail-of-a', record: 'a'.repeat(64) };
-    const { world, seen } = worldWith({
-      files: ['src/a.ts'],
-      rules: { 'src/a.ts': { rules: [], anotherRecord: [left] } },
-    });
-    await judge(world, pr);
-    expect(seen.comments[0]?.body).toContain('Left out of the rules read');
-    expect(seen.comments[0]?.body).toContain('- tail `tail-of-a`, of record `aaaaaaaaaaaa`');
+  it('says the directory holds more than one record, even where no changed file is governed', () => {
+    return (async () => {
+      const held = { name: 'a'.repeat(64), tails: ['tail-of-a'] };
+      const { world, seen } = worldWith({
+        files: ['src/a.ts'],
+        rules: {
+          'src/a.ts': { rules: [], severalRecords: [held, { ...held, name: 'b'.repeat(64) }] },
+        },
+      });
+      await judge(world, pr);
+      expect(seen.comments[0]?.body).toContain('This directory holds tails of 2 records');
+      expect(seen.comments[0]?.body).toContain('- record `aaaaaaaaaaaa`: `tail-of-a`');
+    })();
   });
 
   it('fails the check when the record does not verify as signed', async () => {
