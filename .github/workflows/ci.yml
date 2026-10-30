@@ -251,6 +251,7 @@ jobs:
           packages/code/tests/ten-writers-one-record.test.ts
           packages/code/tests/the-agent-ci-step-installs-the-key-the-agent-signs-with.test.ts
           packages/code/tests/the-front-page-says-what-its-sources-say.test.ts
+          packages/code/tests/the-private-tree-moves-out-of-the-worktree.test.ts
           packages/code/tests/the-python-floor-is-declared-once.test.ts
           packages/code/tests/the-verifier-a-page-publishes-runs.test.ts
           packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts
