@@ -9,6 +9,14 @@
  * entry carries the smallest `at` (a tie to the smaller tail id). Two machines that never saw each
  * other derive the same name from the tail `init` wrote, which every clone holds.
  *
+ * Every clone holds it until a person cuts it, which `mnema tail prune` lets them do. The name
+ * does not move with that cut while one tail carries it, because a writer takes the name the other
+ * tails carry before it asks the genesis rule, and the waiver the cut needs is written, before it,
+ * on a tail that names the record (`code/tests/the-record-name-survives-a-cut-of-its-genesis.test.ts`).
+ * A genesis removed with no tail left carrying the name, or a tail older than the genesis arriving
+ * before any tail names the record, gives the next writer another genesis, and the record two
+ * names that both readers refuse (the same test).
+ *
  * The name lives only inside what is already signed: the tail proof and the checkpoint under
  * their second schemes (tailproof.ts, checkpoint.ts). A reader never recomputes it as an
  * authority. It asks {@link recordOf} whether the named tails of a directory agree, and names the
