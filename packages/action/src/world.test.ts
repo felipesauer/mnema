@@ -261,7 +261,7 @@ describe('a pull request that lifts the rule off the file it edits', () => {
 });
 
 describe('a pull request that brings a tail the base is not the record of', () => {
-  /** A record the 0.1.4 binary wrote: its one tail names no record. */
+  /** A record an earlier binary wrote, before records were named: its one tail names none. */
   const WRITTEN_BEFORE = join(
     import.meta.dirname,
     '../../chain/src/chain/__fixtures__/written-by-an-earlier-binary',

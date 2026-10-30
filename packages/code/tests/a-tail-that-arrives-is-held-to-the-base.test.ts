@@ -23,7 +23,7 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 import { ROOT } from './support/published-examples.js';
 
 const BINARY = join(ROOT, 'packages/code/dist/cli.js');
-/** A record the 0.1.4 binary wrote: its one tail names no record. */
+/** A record an earlier binary wrote, before records were named: its one tail names none. */
 const WRITTEN_BEFORE = join(
   ROOT,
   'packages/chain/src/chain/__fixtures__/written-by-an-earlier-binary',
