@@ -244,6 +244,18 @@ describe('a tail grafted from another record', () => {
     await client.close();
   });
 
+  it('a clone that holds no cache of its own leaves it out of the whole replay too', async () => {
+    const tail = graft();
+    // A fresh clone carries no projection: the reading replays every tail of the record.
+    for (const file of readdirSync(join(repo, '.mnema', 'locks'))) {
+      if (file.startsWith('projection.db')) rmSync(join(repo, '.mnema', 'locks', file));
+    }
+    const document = await did('brief');
+    expect(document).toContain(OURS);
+    expect(document).not.toContain(THEIRS);
+    expect(document).toContain(leftOut(tail));
+  });
+
   it('a graft that arrives while a session is open is left out of what the session reads next', async () => {
     const client = await connected();
     const [before] = await called(client, 'bootstrap');
