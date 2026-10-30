@@ -119,6 +119,7 @@ describe('a record that names itself, to both readers', () => {
     const record = mutated('named-record');
     const here = verify(record, catalogUpcasters());
     expect(here.ok).toBe(true);
+    expect(here.clauses.map((clause) => clause.of)).not.toContain('record');
     if (here.record.state !== 'named') throw new Error(`named: ${JSON.stringify(here.record)}`);
     expect(here.record.genesis).toBeDefined();
     expect(here.record.name).toBe(recordName(here.record.genesis ?? ''));
@@ -148,6 +149,10 @@ describe('a tail that names no record beside tails that name one', () => {
   });
 });
 
+/** What both readers say of a record none of whose tails names one, word for word. */
+const UNNAMED_SAID =
+  "record: unnamed (written before 0.1.5): a tail of another record could not be told from this record's own";
+
 describe('a record written before records were named, to both readers', () => {
   it.each(['witnessed-record', 'witnessed-then-written', 'written-by-an-earlier-binary'])(
     'reads %s as unnamed, said and not refused, byte for byte as frozen',
@@ -156,13 +161,17 @@ describe('a record written before records were named, to both readers', () => {
       const here = verify(record, catalogUpcasters());
       expect(here.ok).toBe(true);
       expect(here.record).toEqual({ state: 'unnamed' });
+      // The verdict says it in the words the second reader says it in, once, before the witness.
+      expect(here.clauses.filter((clause) => clause.of === 'record')).toEqual([
+        { of: 'record', text: UNNAMED_SAID },
+      ]);
+      expect(here.clauses.at(-2)?.of).toBe('record');
+      expect(here.summary).toContain(`; ${UNNAMED_SAID}; external witness (T3)`);
       // No census note per tail in a record that names nothing: every tail would carry one.
       expect(here.census.filter((note) => note.kind === 'unnamed-tail')).toEqual([]);
       const there = secondSaid(record);
       expect(there.verdict).toBe('VERIFIED');
-      expect(there.findings.map((f) => `${f.level} ${f.what}`)).toEqual([
-        "note record: unnamed (written before 0.1.5): a tail of another record could not be told from this record's own",
-      ]);
+      expect(there.findings.map((f) => `${f.level} ${f.what}`)).toEqual([`note ${UNNAMED_SAID}`]);
     },
   );
 });

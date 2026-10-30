@@ -693,7 +693,7 @@ function agentsNamed(agents: IdentityResolution['agents']): CensusNote[] {
  * a tool for auditing a record must not do, and it would break the day a clause was
  * reworded.
  */
-export type VerdictClauseOf = 'level' | 'tails' | 'coverage' | 'census' | 'witness';
+export type VerdictClauseOf = 'level' | 'tails' | 'coverage' | 'census' | 'record' | 'witness';
 
 /**
  * One clause of the one-line verdict: what it is about, and what it says.
@@ -1163,6 +1163,7 @@ function verifyReading(
     signedEvents,
     uncheckpointed,
     census,
+    unnamed: record.state === 'unnamed' && namedByTail.size > 0,
     witness: witnessed,
   });
   return {
@@ -2355,6 +2356,11 @@ interface VerdictFacts {
   /** Events resting on the hash chain alone. */
   readonly uncheckpointed: number;
   readonly census: readonly CensusNote[];
+  /**
+   * Whether the tails read name no record at all (FORMAT.md section 6.10): a record written
+   * before records were named, which says so ({@link UNNAMED_RECORD}).
+   */
+  readonly unnamed: boolean;
   /** What the external witness stands at, and why: see witness.ts. */
   readonly witness: ChainWitness;
 }
@@ -2388,9 +2394,19 @@ function verdictClauses(facts: VerdictFacts): readonly [VerdictClause, ...Verdic
     { of: 'tails', text: `${facts.tailCount} tail(s)` },
     { of: 'coverage', text: coverageClause(facts) },
     ...censusClauses(facts.census).map((text): VerdictClause => ({ of: 'census', text })),
+    ...(facts.unnamed ? [{ of: 'record', text: UNNAMED_RECORD } as const] : []),
     { of: 'witness', text: witnessClause(facts.witness) },
   ];
 }
+
+/**
+ * The clause of a record none of whose tails names one (FORMAT.md section 6.10), in the second
+ * reader's words: every record written before 0.1.5 until its first write by 0.1.5, and for good
+ * where nobody writes in it again. Said, never a refusal: what it cannot tell is a tail grafted
+ * from another record written before, which the signatures of such a record do not name.
+ */
+export const UNNAMED_RECORD =
+  "record: unnamed (written before 0.1.5): a tail of another record could not be told from this record's own";
 
 /**
  * How the external-witness layer reads: TOTAL over {@link WitnessStatus}, so a
