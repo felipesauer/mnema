@@ -29,6 +29,12 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
   a record cut back to an earlier state that is honest in every byte (the newest events taken
   with the checkpoint that covered them), which a reading of the record alone cannot see; it also
   fails a tail removed after a `tail.pruned`, which is the one change a reviewer has to look at.
+  It fails, too, a pull request that brings a tail naming another record than the base's, or naming
+  no record (one written by mnema 0.1.4 or earlier, or grafted from a record written then) where a
+  tail of the base names the record, and the comment quotes the line that names the tail and says
+  which of the two it is. Over a base whose record has no name yet (written wholly before 0.1.5) or
+  no record, a tail naming no record passes
+  ([`docs/cli-reference.md`](../../docs/cli-reference.md)).
 - **Optional, off by default: approval for rules that ask for a person or refuse a write.** With
   `require-approval-for-asks: "true"` the Action also fails when a changed file is addressed by an
   accepted `asks-for-a-person` or `refuses-a-write` rule and no reviewer other than the author
@@ -261,7 +267,9 @@ its own process;
 
 - It proves what `mnema verify --require=signed --since <base>` proves and nothing beyond it: every
   event of the record is covered by a verified signature, and every file of the record the base
-  commit held still begins with the bytes it held there. It does not add a second verifier and does
+  commit held still begins with the bytes it held there, and every tail the pull request brings
+  names the record the base is (a tail naming no record only once the base's record is named). It
+  does not add a second verifier and does
   not widen that promise; `--require=witnessed` is not asked. A cut is caught against the base the
   pull request names, and a base that is itself already cut is not
   (`packages/action/src/run.test.ts`).

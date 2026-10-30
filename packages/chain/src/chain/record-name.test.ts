@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  arrivedSince,
   genesisTail,
   RECORD_DOMAIN,
   recordName,
@@ -240,5 +241,139 @@ describe('the record a writer writes under', () => {
     expect(asked).toBe(0);
     recordToWriteUnder(TAIL, new Map([[TAIL, undefined]]), counted);
     expect(asked).toBe(1);
+  });
+});
+
+describe('the tails that arrived since a base', () => {
+  const THIRD = `${'ab'.repeat(32)}-${'99'.repeat(16)}`;
+  const x = recordName(TAIL);
+  const y = recordName(OTHER);
+  const firsts =
+    (...pairs: (readonly [string, string])[]) =>
+    () =>
+      pairs.map(([tail, at]) => ({ tail, at }));
+  const none = firsts();
+  const named = (...pairs: (readonly [string, string | undefined])[]) =>
+    new Map<string, string | undefined>(pairs);
+
+  it('says nothing of a new tail that names the record the base is, nor of none at all', () => {
+    const base = named([TAIL, x]);
+    expect(arrivedSince(base, none, named([TAIL, x], [OTHER, x]))).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [],
+      foreign: [],
+    });
+    expect(arrivedSince(base, none, named([TAIL, x]))).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [],
+      foreign: [],
+    });
+  });
+
+  it('names a new tail that names no record', () => {
+    expect(arrivedSince(named([TAIL, x]), none, named([TAIL, x], [OTHER, undefined]))).toEqual({
+      records: [x],
+      unnamed: [OTHER],
+      noted: [],
+      foreign: [],
+    });
+  });
+
+  it('leaves an unnamed tail the base already held to the census', () => {
+    const base = named([TAIL, x], [OTHER, undefined]);
+    expect(arrivedSince(base, none, named([TAIL, x], [OTHER, undefined]))).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [],
+      foreign: [],
+    });
+  });
+
+  it('names the new tails that name another record than the base, as one group by name', () => {
+    const here = named([TAIL, x], [OTHER, y], [THIRD, y]);
+    expect(arrivedSince(named([TAIL, x]), none, here)).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [],
+      foreign: [{ name: y, tails: [OTHER, THIRD] }],
+    });
+  });
+
+  it('holds new tails to the genesis of a base none of whose tails names a record', () => {
+    const base = named([TAIL, undefined], [OTHER, undefined]);
+    const older = firsts([TAIL, '2026-01-01T00:00:00.000Z'], [OTHER, '2026-02-01T00:00:00.000Z']);
+    const same = named([TAIL, undefined], [OTHER, undefined], [THIRD, x]);
+    expect(arrivedSince(base, older, same)).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [],
+      foreign: [],
+    });
+    const graft = named([TAIL, undefined], [OTHER, undefined], [THIRD, y]);
+    expect(arrivedSince(base, older, graft)).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [],
+      foreign: [{ name: y, tails: [THIRD] }],
+    });
+  });
+
+  it('notes, and does not name, a new unnamed tail where no tail of the base names a record', () => {
+    const base = named([TAIL, undefined]);
+    const older = firsts([TAIL, '2026-01-01T00:00:00.000Z']);
+    expect(arrivedSince(base, older, named([TAIL, undefined], [OTHER, undefined]))).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [OTHER],
+      foreign: [],
+    });
+  });
+
+  it('holds no new tail to a record where the base held none, and only notes an unnamed one', () => {
+    expect(arrivedSince(named(), none, named([TAIL, x], [OTHER, undefined]))).toEqual({
+      records: [],
+      unnamed: [],
+      noted: [OTHER],
+      foreign: [],
+    });
+  });
+
+  it('holds a tail the base held unnamed that names a record now to the name of the base genesis', () => {
+    const base = named([TAIL, undefined], [OTHER, undefined]);
+    const older = firsts([TAIL, '2026-01-01T00:00:00.000Z'], [OTHER, '2026-02-01T00:00:00.000Z']);
+    expect(arrivedSince(base, older, named([TAIL, undefined], [OTHER, x]))).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [],
+      foreign: [],
+    });
+    expect(arrivedSince(base, older, named([TAIL, undefined], [OTHER, y]))).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [],
+      foreign: [{ name: y, tails: [OTHER] }],
+    });
+  });
+
+  it('refuses a tail the base held unnamed that names a record now, where no genesis is found', () => {
+    const base = named([TAIL, undefined]);
+    expect(arrivedSince(base, none, named([TAIL, x]))).toEqual({
+      records: [],
+      unnamed: [],
+      noted: [],
+      foreign: [{ name: x, tails: [TAIL] }],
+    });
+  });
+
+  it('asks for the first entries only where no tail of the base names a record', () => {
+    let asked = 0;
+    const counted = () => {
+      asked += 1;
+      return [];
+    };
+    arrivedSince(named([TAIL, x], [OTHER, undefined]), counted, named([TAIL, x], [THIRD, y]));
+    expect(asked).toBe(0);
   });
 });

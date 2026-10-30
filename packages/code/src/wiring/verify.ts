@@ -531,15 +531,17 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         }
         // The comparison with a base, only when one was named: without `--since` nothing
         // here runs, and the verdict and its exit are the ones a bare `verify` gives.
+        const sinceModule =
+          opts.since === undefined ? undefined : await import('../commands/verify-since.js');
         const compared =
           opts.since === undefined
             ? undefined
-            : (await import('../commands/verify-since.js')).sinceBase({
+            : sinceModule?.sinceBase({
                 recordRoot: (result.trees[0] as TreeReport).root,
                 rev: opts.since,
               });
-        const grewOnly =
-          compared === undefined || (compared.kind === 'read' && compared.findings.length === 0);
+        // The base's record grown, and no tail arrived that is not its own (ADR-134).
+        const grewOnly = compared === undefined || sinceModule?.sinceHolds(compared) === true;
         // The comparison with GitHub, only when asked: without the flag the module is not even
         // loaded, so nothing here can reach the network. Its answer is notes, never the exit.
         const asksGithub = opts.againstGithub === true;
@@ -626,7 +628,46 @@ function reportSince(io: CliIo, render: Render, since: SinceReading): void {
       ),
     );
   }
-  if (since.findings.length === 0) {
+  for (const tail of since.arrived.unnamed) {
+    io.err(
+      render(
+        fact(
+          onOneLine`${at}: tail ${tail} arrived since and names no record: written by a mnema before 0.1.5, or grafted from a record written then, which this record cannot tell from its own (born-unnamed)`,
+        ),
+      ),
+    );
+  }
+  const there =
+    since.arrived.records.length === 0
+      ? 'unnamed, with no genesis tail found'
+      : since.arrived.records.map((name) => `${name.slice(0, 12)}...`).join(' and ');
+  for (const { name, tails } of since.arrived.foreign) {
+    const which = `${tails.length === 1 ? 'tail' : 'tails'} ${tails.join(', ')}`;
+    io.err(
+      render(
+        fact(
+          onOneLine`${at}: ${which} arrived since and ${tails.length === 1 ? 'names' : 'name'} record ${name.slice(0, 12)}..., and the record there is ${there}: a tail of another record (another-record)`,
+        ),
+      ),
+    );
+  }
+  // A tail that names no record over a base none of whose tails names one: no name to hold it
+  // to yet, so it is a note on stdout, beside the line that says the record only grew.
+  const held = since.held === 0 ? 'there was no record there' : 'no tail there names one either';
+  for (const tail of since.arrived.noted) {
+    io.out(
+      render(
+        fact(
+          onOneLine`${at}: tail ${tail} arrived since and names no record, and ${held}: the record has no name yet, so a tail grafted from another record written before 0.1.5 cannot be told from its own; a note, not a failure, until a mnema from 0.1.5 on writes here and names it (unnamed-record)`,
+        ),
+      ),
+    );
+  }
+  if (
+    since.findings.length === 0 &&
+    since.arrived.unnamed.length === 0 &&
+    since.arrived.foreign.length === 0
+  ) {
     io.out(
       render(
         fact(

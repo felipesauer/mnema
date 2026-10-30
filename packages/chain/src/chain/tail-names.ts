@@ -20,7 +20,7 @@ import type { UpcasterRegistry } from '../events/upcaster.js';
 import { checkpointSignatureHolds, NAMED_SCHEME } from './checkpoint.js';
 import { parseEntry } from './entry.js';
 import { type ChainLayout, tailFingerprint, tailProofPath } from './layout.js';
-import { type RecordNaming, recordOf } from './record-name.js';
+import { type Arrivals, arrivedSince, type RecordNaming, recordOf } from './record-name.js';
 import { committedKeys, lastTailCheckpoint, listTails, orderedSegments } from './store.js';
 import { NAMED_TAILPROOF_SCHEME, parseTailProof, verifyTailProof } from './tailproof.js';
 
@@ -50,6 +50,19 @@ export function recordNamedIn(roots: readonly string[]): RecordNaming {
     }
   }
   return recordOf(named);
+}
+
+/**
+ * What arrived at `here` since the record at `base` ({@link arrivedSince}): the tails new since
+ * it that name no record, and those that name another record than it, each directory's tails
+ * checked under its own keys. `verify --since` asks it, with the base taken out of git.
+ */
+export function arrivalsSince(
+  base: ChainLayout,
+  here: ChainLayout,
+  upcasters: UpcasterRegistry,
+): Arrivals {
+  return arrivedSince(namesOfTails(base), () => firstEntries(base, upcasters), namesOfTails(here));
 }
 
 /** The record one tail names, as checked here, or `undefined`. */

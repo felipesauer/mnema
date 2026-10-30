@@ -42,6 +42,9 @@ export const worthSaying = (report: Report): boolean =>
   report.governed.length > 0 ||
   report.checks?.passed === false;
 
+/** The tag `verify --since` ends its note with, of a tail that arrived before the record has a name. */
+const UNNAMED_RECORD = '(unnamed-record)';
+
 /** The longest stretch of `verify`'s own words the comment quotes. */
 const MOST_QUOTED = 1500;
 
@@ -125,8 +128,17 @@ export function renderComment(report: Report): string {
   out.push(
     `**Verification** (\`verify --require=signed --since <base>\`): ${passed ? 'passed' : 'failed'}`,
   );
-  if (!passed && said.trim() !== '') {
-    out.push('', '```', said.trim().slice(0, MOST_QUOTED).replaceAll('```', "'''"), '```');
+  // A pass quotes only the notes of a tail that arrived naming no record over a base whose record
+  // has no name yet: not a failure, and the one thing a reviewer of a pass should still see.
+  const quoted = passed
+    ? said
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.endsWith(UNNAMED_RECORD))
+        .join('\n')
+    : said.trim();
+  if (quoted !== '') {
+    out.push('', '```', quoted.slice(0, MOST_QUOTED).replaceAll('```', "'''"), '```');
   }
 
   out.push('', '**The record**');

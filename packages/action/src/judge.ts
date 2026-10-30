@@ -34,7 +34,10 @@ export interface World {
     /**
      * `mnema verify --require=signed --since <base>`: whether it exited zero, and what it said.
      * `--since` is what catches a record cut back to an earlier, honest state (the newest events
-     * taken with the checkpoint that covered them), which no reading of the record alone can see.
+     * taken with the checkpoint that covered them), which no reading of the record alone can see,
+     * and a tail the pull request brings that names another record than the base's, or names no
+     * record where a tail of the base names it, which `said` names by its id. Over a base whose
+     * record has no name yet, a tail that names no record passes with a note.
      */
     verify(base: string): { passed: boolean; said: string };
     /** `mnema rules <path> --json`, parsed, over what is checked out. */
