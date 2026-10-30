@@ -531,7 +531,7 @@ with the line above.
 
 Two honest changes can leave a record two names, and this is where they are caught,
 before the merge: the record's genesis tail removed by hand or cut by mnema 0.1.4 while a
-branch named the record from it (see `mnema tail prune`), and two branches that moved to
+branch named the record from it (see the `tail prune` verb), and two branches that moved to
 0.1.5 over different tails written by 0.1.4, one of them older than the genesis (a clock
 that ran behind). Either branch is refused as `another-record` against a base that names
 the record, or derives its name, the other way; merged anyway, `verify` refuses the
@@ -1040,10 +1040,6 @@ by mnema 0.1.4 (on a tail that names no record), leaves no tail carrying the nam
 write names the record from the tails still there, and a branch that had named it from the
 old genesis leaves two names once merged, which `verify` refuses (`another-record`).
 `verify --since` refuses that branch before the merge.
-<!-- not-on-the-site -->
-After it, the way back is for the owner of each tail named the other way to relink it to
-the record with their own signature, which is still to come.
-<!-- /not-on-the-site -->
 
 And it does **not** promise forgetting. Once the record is committed and pushed, the
 events are in the git history, on the remote and in every clone; reaching those takes

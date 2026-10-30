@@ -65,7 +65,7 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   or earlier that arrives in a change is refused; upgrade, take the tail out, and record its work again
   (`docs/cli-reference.md`).
 
-- **A cut of the record's genesis tail made with `mnema tail prune` keeps the record's name, and the two ways a record can
+- **A cut of the record's genesis tail made with the `tail prune` verb keeps the record's name, and the two ways a record can
   still take two names are said.** The name derives from the genesis tail, and the waiver `tail prune` writes before the cut
   lives on the pruner's own tail, which names the record from that genesis: every later write takes the name from it, and a
   branch made before the cut merges into one record that both readers verify. Nothing in the format changed; a test with
@@ -74,7 +74,8 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   still there; and a tail written by 0.1.4 whose first entry is older than the genesis (a clock that ran behind), brought
   by a branch where a 0.1.5 writer named the record after it, does the same. Merged, either leaves a directory of two names
   that both readers refuse (`another-record`); `verify --since`, and so the Action, refuses the branch before the merge
-  (FORMAT.md section 6.10, `docs/cli-reference.md`).
+  (FORMAT.md section 6.10, `docs/cli-reference.md`). After a merge, the way back is the relink ADR-134 settled (the owner
+  of each tail named the other way binds it to the record with their own signature), which is still to come.
 
 - **A decision one machine accepted and another rejected or superseded, out of the same state, is in force in no reading, and each
   reading says why.** Two clones that had not seen each other, once their tails meet, leave two signed moves out of `proposed`,
