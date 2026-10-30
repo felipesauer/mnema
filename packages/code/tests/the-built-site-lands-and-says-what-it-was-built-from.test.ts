@@ -180,6 +180,17 @@ when('the built site', () => {
     const seen = { site: 0, fragment: 0, github: 0 };
     const held = tracked();
     const sha = head();
+    // The ids of each file, read once: `record/index.html` names hundreds of its own fragments,
+    // and reading the whole page again for each one took the case past its timeout.
+    const ids = new Map<string, Set<string>>();
+    const idsIn = (file: string): Set<string> => {
+      let found = ids.get(file);
+      if (found === undefined) {
+        found = idsOf(readText(file));
+        ids.set(file, found);
+      }
+      return found;
+    };
     for (const page of [...pages, 'record/index.html']) {
       const text = html(page);
       const here = `${BASE}/${page.replace(/index\.html$/, '')}`;
@@ -210,10 +221,9 @@ when('the built site', () => {
         seen.site++;
         if (fragment !== undefined && fragment !== '' && file.endsWith('.html')) {
           seen.fragment++;
-          expect(
-            idsOf(readText(file)).has(decodeURIComponent(fragment)),
-            `${page}: ${raw} names no id`,
-          ).toBe(true);
+          expect(idsIn(file).has(decodeURIComponent(fragment)), `${page}: ${raw} names no id`).toBe(
+            true,
+          );
         }
       }
     }
