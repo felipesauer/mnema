@@ -529,6 +529,14 @@ derives, which is the one a writer from 0.1.5 on gives a record written before),
 other name, or a revision whose genesis tail is not found, is refused as `another-record`
 with the line above.
 
+Two honest changes can leave a record two names, and this is where they are caught,
+before the merge: the record's genesis tail removed by hand or cut by mnema 0.1.4 while a
+branch named the record from it (see `mnema tail prune`), and two branches that moved to
+0.1.5 over different tails written by 0.1.4, one of them older than the genesis (a clock
+that ran behind). Either branch is refused as `another-record` against a base that names
+the record, or derives its name, the other way; merged anyway, `verify` refuses the
+directory.
+
 It fails on a cut you authorized with `mnema tail prune` too, and that is the point of it:
 the change that removes a tail is the one change a reviewer has to look at. It rules on
 the committed tree only (the private one never travels), and it trusts the base: a
@@ -1022,6 +1030,20 @@ the head they ran through, so `verify` can later name the account instead of lis
 the three reasons a key might have no tail. It writes from **another** tail (a
 waiver inside the tail being cut would be cut with it), so the tail it names is never
 the one this machine writes to.
+
+**Cutting the record's first tail keeps the record's name, when this command authorizes
+the cut.** The name derives from the record's genesis tail (FORMAT.md section 6.10), and
+the waiver is written before the cut on this machine's own tail, which names the record
+from that genesis; every later write takes the name from it, and a branch made before the
+cut merges into one record. Removing the genesis with no waiver, or with a waiver written
+by mnema 0.1.4 (on a tail that names no record), leaves no tail carrying the name: the next
+write names the record from the tails still there, and a branch that had named it from the
+old genesis leaves two names once merged, which `verify` refuses (`another-record`).
+`verify --since` refuses that branch before the merge.
+<!-- not-on-the-site -->
+After it, the way back is for the owner of each tail named the other way to relink it to
+the record with their own signature, which is still to come.
+<!-- /not-on-the-site -->
 
 And it does **not** promise forgetting. Once the record is committed and pushed, the
 events are in the git history, on the remote and in every clone; reaching those takes

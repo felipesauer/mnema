@@ -65,6 +65,17 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   or earlier that arrives in a change is refused; upgrade, take the tail out, and record its work again
   (`docs/cli-reference.md`).
 
+- **A cut of the record's genesis tail made with `mnema tail prune` keeps the record's name, and the two ways a record can
+  still take two names are said.** The name derives from the genesis tail, and the waiver `tail prune` writes before the cut
+  lives on the pruner's own tail, which names the record from that genesis: every later write takes the name from it, and a
+  branch made before the cut merges into one record that both readers verify. Nothing in the format changed; a test with
+  the built binary holds it. **The cost, declared:** the genesis removed by hand, or cut by mnema 0.1.4 (whose waiver lives
+  on a tail that names no record), leaves no tail carrying the name, so the next write names the record from the tails
+  still there; and a tail written by 0.1.4 whose first entry is older than the genesis (a clock that ran behind), brought
+  by a branch where a 0.1.5 writer named the record after it, does the same. Merged, either leaves a directory of two names
+  that both readers refuse (`another-record`); `verify --since`, and so the Action, refuses the branch before the merge
+  (FORMAT.md section 6.10, `docs/cli-reference.md`).
+
 - **A decision one machine accepted and another rejected or superseded, out of the same state, is in force in no reading, and each
   reading says why.** Two clones that had not seen each other, once their tails meet, leave two signed moves out of `proposed`,
   and the fold kept the state of whichever had the later `at`: a decision governed, or stopped governing, because of a clock. The

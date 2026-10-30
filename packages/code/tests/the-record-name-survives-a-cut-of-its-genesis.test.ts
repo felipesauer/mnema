@@ -18,7 +18,9 @@
  * THE OTHER SIDE, declared and not mended: the same genesis removed from git with no waiver (a cut
  * by hand, or by mnema 0.1.4, whose waiver lives on a tail that names no record) leaves the main
  * writer to name the record from the tails present, and the merge holds two names, which both
- * readers refuse. `verify --since` refuses the branch before the merge.
+ * readers refuse. `verify --since` refuses the branch before the merge. So does a tail written
+ * before records were named whose first entry is older than the genesis, brought by a branch on
+ * which a mnema that names records wrote after it (the clock case).
  */
 
 import { spawnSync } from 'node:child_process';
@@ -192,6 +194,54 @@ describe('a genesis removed with no waiver leaves two names, refused before and 
 
   it('is refused by both readers once merged', () => {
     git(repo, 'merge', '-q', '--no-edit', 'feature');
+    const ran = mnema('branch', repo, 'verify', '--require=signed');
+    expect(ran.status).toBe(1);
+    expect(ran.err).toContain('this directory holds tails of 2 records');
+    expect(secondVerdict(repo)).toBe('REFUSED');
+  });
+});
+
+describe('an older tail brought by a branch that named the record after it leaves two names', () => {
+  let repo: string;
+  let base: string;
+
+  beforeAll(() => {
+    // Main holds only the later tail; a branch brings the earlier one (a machine whose clock ran
+    // behind, on mnema 0.1.4) and a mnema that names records writes there, naming the record from
+    // it; main's own writer names it from the later one.
+    repo = join(sandbox, 'clock');
+    mkdirSync(join(repo, '.mnema'), { recursive: true });
+    git(repo, 'init', '-q');
+    cpSync(join(LATER, 'tails'), join(repo, '.mnema', 'tails'), { recursive: true });
+    cpSync(join(LATER, 'keys'), join(repo, '.mnema', 'keys'), { recursive: true });
+    git(repo, 'add', '.mnema');
+    git(repo, 'commit', '-q', '-m', 'base');
+    base = git(repo, 'rev-parse', 'HEAD');
+    git(repo, 'switch', '-q', '-c', 'older');
+    cpSync(join(EARLIER, 'tails'), join(repo, '.mnema', 'tails'), { recursive: true });
+    for (const key of readdirSync(join(EARLIER, 'keys'))) {
+      if (key.endsWith('.pub'))
+        cpSync(join(EARLIER, 'keys', key), join(repo, '.mnema', 'keys', key));
+    }
+    written('branch', repo, 'decision', 'record', 'Work beside an older tail', 'On the branch');
+    git(repo, 'add', '.mnema');
+    git(repo, 'commit', '-q', '-m', 'older');
+    git(repo, 'switch', '-q', 'main');
+    written('main', repo, 'decision', 'record', 'Work on main', 'Without it');
+    git(repo, 'add', '.mnema');
+    git(repo, 'commit', '-q', '-m', 'main');
+  }, 120_000);
+
+  it('refuses the branch with verify --since against the base', () => {
+    git(repo, 'switch', '-q', 'older');
+    const ran = mnema('branch', repo, 'verify', '--require=signed', '--since', base);
+    git(repo, 'switch', '-q', 'main');
+    expect(ran.status).toBe(1);
+    expect(ran.err).toContain('(another-record)');
+  });
+
+  it('is refused by both readers once merged', () => {
+    git(repo, 'merge', '-q', '--no-edit', 'older');
     const ran = mnema('branch', repo, 'verify', '--require=signed');
     expect(ran.status).toBe(1);
     expect(ran.err).toContain('this directory holds tails of 2 records');
