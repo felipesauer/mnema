@@ -68,8 +68,11 @@ exits 1. The tails written before 0.1.5 stay unnamed for
 - **A cut of the record's genesis tail made with the `tail prune` verb keeps the record's name, and the two ways a record can
   still take two names are said.** The name derives from the genesis tail, and the waiver `tail prune` writes before the cut
   lives on the pruner's own tail, which names the record from that genesis: every later write takes the name from it, and a
-  branch made before the cut merges into one record that both readers verify. Nothing in the format changed; a test with
-  the built binary holds it. **The cost, declared:** the genesis removed by hand, or cut by mnema 0.1.4 (whose waiver lives
+  branch made before the cut merges into a record of one name. Nothing in the format changed; a test with the built binary
+  holds it, its writers being keys other than the cut tail's: both readers verify the merge there. The cut keeps the name,
+  not the identity the cut tail founded, if it founded one: measured and not yet held by a test, a later write signed by
+  that tail's key is refused (`STALE_ANCHOR`), and its writes on a branch made before the cut fail T2/T4 in both readers
+  once merged. **The cost, declared:** the genesis removed by hand, or cut by mnema 0.1.4 (whose waiver lives
   on a tail that names no record), leaves no tail carrying the name, so the next write names the record from the tails
   still there; and a tail written by 0.1.4 whose first entry is older than the genesis (a clock that ran behind), brought
   by a branch where a 0.1.5 writer named the record after it, does the same. Merged, either leaves a directory of two names

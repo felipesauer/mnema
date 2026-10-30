@@ -1387,8 +1387,13 @@ record, the genesis may go. The waiver of §3 is that tail when this implementat
 genesis: it is written before the cut, while the genesis is still on disk, on the pruner's own
 tail, whose second-scheme proof names the record from that genesis; after the cut, every writer
 signs under the name it carries, and a branch made before the cut that named the record from the
-same genesis merges into one record that both readers verify
-(`packages/code/tests/the-record-name-survives-a-cut-of-its-genesis.test.ts`). Where no tail
+same genesis merges into a record of one name, which both readers verify where every write after
+the cut is signed by a key other than the cut tail's
+(`packages/code/tests/the-record-name-survives-a-cut-of-its-genesis.test.ts`, whose writers are keys
+of their own). The cut keeps the name, not the identity the cut tail founded, if it founded one:
+measured and not yet held by a test, a later write signed by that tail's key is refused
+(`STALE_ANCHOR`), and its writes on a branch made before the cut fail T2/T4 once merged, in both
+readers. Where no tail
 carrying the name is left when the genesis goes (the genesis removed with no waiver, or cut by a
 writer from before 0.1.5, whose waiver lives on a tail that names no record), a writer from 0.1.5
 on names the record from the genesis among the tails still present, and a branch that had named it

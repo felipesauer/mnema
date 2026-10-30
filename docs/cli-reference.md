@@ -538,7 +538,12 @@ the record, or derives its name, the other way; merged anyway, `verify` refuses 
 directory.
 
 It fails on a cut you authorized with `mnema tail prune` too, and that is the point of it:
-the change that removes a tail is the one change a reviewer has to look at. It rules on
+the change that removes a tail is the one change a reviewer has to look at. A cut made in
+two commits, the waiver first and the tail's files removed by a later one, fails a branch
+that took only the first: the cut tail is on that branch and not on the base, so `--since`
+refuses it as `tail <id> arrived since and names no record ... (born-unnamed)`. Bring the
+base into the branch and it passes; checked out at the merge, as the Action does by
+default, it passes already. This is measured, and not yet held by a test. It rules on
 the committed tree only (the private one never travels), and it trusts the base: a
 history rewritten on the remote moves the base with it, which is what a protected branch
 on the git host is for.
@@ -1035,7 +1040,12 @@ the one this machine writes to.
 the cut.** The name derives from the record's genesis tail (FORMAT.md section 6.10), and
 the waiver is written before the cut on this machine's own tail, which names the record
 from that genesis; every later write takes the name from it, and a branch made before the
-cut merges into one record. Removing the genesis with no waiver, or with a waiver written
+cut merges into a record of one name. The cut keeps the name, not the identity the cut tail
+founded, if it founded one (as a record's first tail usually did): a later write signed by that
+tail's key is refused (`STALE_ANCHOR`), and its writes on a branch made before the cut fail
+`verify` once merged (T2/T4). So the merge verifies where every write after the cut is
+signed by another key, which is what the test holds; the rest is measured, not yet held by
+one. Removing the genesis with no waiver, or with a waiver written
 by mnema 0.1.4 (on a tail that names no record), leaves no tail carrying the name: the next
 write names the record from the tails still there, and a branch that had named it from the
 old genesis leaves two names once merged, which `verify` refuses (`another-record`).
