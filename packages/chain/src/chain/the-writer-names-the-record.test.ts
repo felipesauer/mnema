@@ -322,6 +322,7 @@ describe('a write into tails of two records', () => {
     expect((thrown as AnotherRecordError).code).toBe('ANOTHER_RECORD');
     expect((thrown as AnotherRecordError).message).toContain('name 2 records');
     expect((thrown as AnotherRecordError).message).toContain('This write was not appended.');
+    expect((thrown as AnotherRecordError).message).not.toContain('Nothing was written');
     expect(listTails({ root: a })).toEqual(before);
   });
 

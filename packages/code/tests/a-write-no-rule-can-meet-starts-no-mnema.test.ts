@@ -487,8 +487,10 @@ describe('what the handler holds of the format', () => {
       'a second scheme without its record': last.replace(/"record":"[0-9a-f]+",/, ''),
       'a first scheme with a record': last.replace('mnema-checkpoint/2', 'mnema-checkpoint/1'),
       'a record that is not text': last.replace(/"record":"[0-9a-f]+"/, '"record":7'),
+      'a second scheme with a key more': last.replace('"prev":', '"extra":"x","prev":'),
     };
     for (const [what, line] of Object.entries(refused)) {
+      expect(line, what).not.toBe(last);
       writeFileSync(checkpoints, `${sound}${line}\n`);
       expect(anAddressCanBeMet(repo, { HOME: home }), what).toBe(true);
     }

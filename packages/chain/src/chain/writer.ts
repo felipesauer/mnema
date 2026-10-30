@@ -1078,8 +1078,7 @@ function anotherRecordSaid(
     .join(' and ');
   return (
     `the tails of this record name ${refusal.groups.length} records, ${groups}: a tail grafted ` +
-    'from another record, or two records merged, which `mnema verify` refuses (another-record). ' +
-    `Nothing was written to this machine's tail ${tail}.`
+    'from another record, or two records merged, which `mnema verify` refuses (another-record).'
   );
 }
 
