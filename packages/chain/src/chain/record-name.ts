@@ -159,8 +159,14 @@ export interface Arrivals {
    * its genesis tail. Empty where the base held no tail with an entry.
    */
   readonly records: readonly string[];
-  /** The tails new since the base that name no record. */
+  /** The tails new since the base that name no record, where a tail of the base names one. */
   readonly unnamed: readonly string[];
+  /**
+   * The tails new since the base that name no record, where no tail of the base names one
+   * either (a record written before records were named, or no record at all): the record has no
+   * name yet, so such a tail is a note and not a refusal.
+   */
+  readonly noted: readonly string[];
   /** The tails new since the base that name a record the base is not, one group per name. */
   readonly foreign: readonly { readonly name: string; readonly tails: readonly string[] }[];
 }
@@ -171,10 +177,12 @@ export interface Arrivals {
  * entries of the base's tails, asked only where none of them names a record.
  *
  * A directory alone cannot tell which of two records was there first; the base can. A tail the
- * base did not hold is held to the record the base is: one that names no record is named (a
- * tail written before records were named, which is how a tail grafted from such a record
- * arrives), and one that names another record is named with the other tails of that record. A
- * tail the base already held is not asked: an unnamed one stays the census note it was.
+ * base did not hold is held to the record the base is: one that names another record is named
+ * with the other tails of that record, and one that names no record (a tail written before
+ * records were named, which is how a tail grafted from such a record arrives) is named where a
+ * tail of the base names the record, and only noted where none does, the record having no name
+ * yet to hold it to. A tail the base already held is not asked: an unnamed one stays the census
+ * note it was.
  */
 export function arrivedSince(
   base: ReadonlyMap<string, string | undefined>,
@@ -182,16 +190,18 @@ export function arrivedSince(
   here: ReadonlyMap<string, string | undefined>,
 ): Arrivals {
   const named = new Set([...base.values()].filter((name) => name !== undefined));
-  if (named.size === 0) {
+  const carried = named.size > 0;
+  if (!carried) {
     const genesis = genesisTail(firsts());
     if (genesis !== undefined) named.add(recordName(genesis));
   }
   const unnamed: string[] = [];
+  const noted: string[] = [];
   const foreign = new Map<string, string[]>();
   for (const [tail, name] of here) {
     if (base.has(tail)) continue;
     if (name === undefined) {
-      unnamed.push(tail);
+      (carried ? unnamed : noted).push(tail);
       continue;
     }
     if (named.size === 0 || named.has(name)) continue;
@@ -202,6 +212,7 @@ export function arrivedSince(
   return {
     records: [...named].sort(),
     unnamed,
+    noted,
     foreign: [...foreign]
       .map(([name, tails]) => ({ name, tails }))
       .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),

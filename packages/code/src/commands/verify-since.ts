@@ -22,10 +22,13 @@
  * directory alone cannot tell which of two records was there first, nor a tail written before
  * records were named from one grafted out of another record written then. The base can: a tail
  * on disk that it did not hold must name the record its tails were (the name they carry, or the
- * name of its genesis tail where none carries one). One that names no record is refused
- * (`born-unnamed`), and the tails that name another record are named as the ones that arrived
- * (`another-record`). A tail the base already held is not asked again: an unnamed one stays the
- * census note the bare verdict gives it.
+ * name of its genesis tail where none carries one). The tails that name another record are
+ * named as the ones that arrived (`another-record`). One that names no record is refused
+ * (`born-unnamed`) where a tail of the base names the record; where none does (a record written
+ * before 0.1.5, or no record at all) the record has no name yet to hold it to, and it passes with
+ * a note (`unnamed-record`), the refusal holding from the first write of a mnema that names the
+ * record. A tail the base already held is not asked again: an unnamed one stays the census note
+ * the bare verdict gives it.
  *
  * WHAT IT DOES NOT DO. It reads git and never the network: `<rev>` must already be in the
  * clone (a shallow CI checkout has no base, and is refused by name rather than passed). It
@@ -70,7 +73,8 @@ export type SinceReading =
       readonly findings: readonly SinceFinding[];
       /**
        * The tails on disk that the base did not hold and that are not the base's record: those
-       * that name no record, and those that name another (FORMAT.md section 6.10).
+       * that name no record, and those that name another (FORMAT.md section 6.10); and, only
+       * noted, those that name no record where no tail of the base names one either.
        */
       readonly arrived: Arrivals;
     }
@@ -78,7 +82,9 @@ export type SinceReading =
 
 /**
  * Whether the record on disk is the base's record grown: compared, no file of the base gone or
- * rewritten, and no tail arrived that names no record or another record than the base's.
+ * rewritten, and no tail arrived that names another record than the base's, or that names no
+ * record where a tail of the base names it. A tail that names no record over a base with no name
+ * yet (`arrived.noted`) is a note, and does not count here.
  */
 export function sinceHolds(since: SinceReading): boolean {
   return (

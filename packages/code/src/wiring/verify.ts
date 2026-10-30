@@ -648,6 +648,18 @@ function reportSince(io: CliIo, render: Render, since: SinceReading): void {
       ),
     );
   }
+  // A tail that names no record over a base none of whose tails names one: no name to hold it
+  // to yet, so it is a note on stdout, beside the line that says the record only grew.
+  const held = since.held === 0 ? 'there was no record there' : 'no tail there names one either';
+  for (const tail of since.arrived.noted) {
+    io.out(
+      render(
+        fact(
+          onOneLine`${at}: tail ${tail} arrived since and names no record, and ${held}: the record has no name yet, so a tail grafted from another record written before 0.1.5 cannot be told from its own; a note, not a failure, until a mnema from 0.1.5 on writes here and names it (unnamed-record)`,
+        ),
+      ),
+    );
+  }
   if (
     since.findings.length === 0 &&
     since.arrived.unnamed.length === 0 &&

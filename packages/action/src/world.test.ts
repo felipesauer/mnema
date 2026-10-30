@@ -267,10 +267,17 @@ describe('a pull request that brings a tail the base is not the record of', () =
     '../../chain/src/chain/__fixtures__/written-by-an-earlier-binary',
   );
 
+  /** Another record written before records were named, by another key: its one tail names none. */
+  const WITNESSED_BEFORE = join(
+    import.meta.dirname,
+    '../../chain/src/chain/__fixtures__/witnessed-record',
+  );
+
   /** Copies the one tail of the record at `from`, with every public key beside it, into `repo`. */
   function graft(repo: string, from: string): string {
     const tail = readdirSync(join(from, 'tails'))[0] as string;
     cpSync(join(from, 'tails', tail), join(repo, '.mnema', 'tails', tail), { recursive: true });
+    mkdirSync(join(repo, '.mnema', 'keys'), { recursive: true });
     for (const key of readdirSync(join(from, 'keys'))) {
       if (key.endsWith('.pub')) cpSync(join(from, 'keys', key), join(repo, '.mnema', 'keys', key));
     }
@@ -363,5 +370,38 @@ describe('a pull request that brings a tail the base is not the record of', () =
     expect(grafted.verdict.failed).toBe(true);
     expect(grafted.comment).toContain(`tail ${foreign} arrived since and names record`);
     expect(grafted.comment).toContain('a tail of another record (another-record)');
+  }, 120_000);
+
+  /**
+   * A base whose one tail was written before records were named, or a base with no record, and a
+   * branch that brings a tail that names no record either: the record has no name yet.
+   */
+  function unnamedOver(base: 'unnamed' | 'none'): { repo: string; base: string } {
+    const repo = join(sandbox, `repo-over-${base}`);
+    const home = join(sandbox, `home-over-${base}`);
+    for (const dir of [repo, home]) mkdirSync(dir);
+    git(repo, 'init', '-q', '-b', 'main');
+    if (base === 'unnamed') {
+      graft(repo, WRITTEN_BEFORE);
+      git(repo, 'add', '.mnema');
+      git(repo, 'commit', '-q', '-m', 'a record written before records were named');
+    } else {
+      git(repo, 'commit', '-q', '--allow-empty', '-m', 'no record yet');
+    }
+    const at = gitOut(repo, 'rev-parse', 'HEAD');
+    git(repo, 'switch', '-q', '-c', 'unnamed');
+    graft(repo, base === 'unnamed' ? WITNESSED_BEFORE : WRITTEN_BEFORE);
+    git(repo, 'add', '.mnema');
+    git(repo, 'commit', '-q', '-m', 'a tail that names no record');
+    vi.stubEnv('HOME', home);
+    return { repo, base: at };
+  }
+
+  it('passes a tail that names no record where the record has no name yet', async () => {
+    for (const over of ['unnamed', 'none'] as const) {
+      const { repo, base } = unnamedOver(over);
+      const run = await judged(repo, base, 'unnamed');
+      expect(run.verdict, `${over}: ${run.comment}`).toEqual({ failed: false, reasons: [] });
+    }
   }, 120_000);
 });

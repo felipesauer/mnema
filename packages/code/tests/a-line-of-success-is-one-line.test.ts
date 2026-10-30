@@ -916,6 +916,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the revision as typed, and tail ids and record names read off the disk',
     },
+  'verify.ts «{}: tail {} arrived since and names no record, and {}: the record has no name yet, so a tail grafted from another record written before 0.1.5 cannot be told from its own; a note, not a failure, until a mnema from 0.1.5 on writes here and names it (unnamed-record)» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the revision as typed, a tail id read off the disk, and whether the base held a record: chosen on disk',
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -1033,7 +1038,8 @@ describe('every line this wiring words is classified', () => {
     // 160 with the agent name the account says no MCP client announced.
     // 161 with the line `init` prints when the answer to which host files is not on the list.
     // 163 with the two lines `verify --since` prints of a tail that arrived (born-unnamed, another-record).
-    expect(FOUND.sites.length).toBe(163);
+    // 164 with the note it prints of an unnamed tail over a base with no name yet (unnamed-record).
+    expect(FOUND.sites.length).toBe(164);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1053,9 +1059,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(87);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(88);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(76);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(87);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(88);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1319,6 +1325,9 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'verify.ts «{}: {} arrived since and {} record {}..., and the record there is {}: a tail of another record (another-record)» #1':
     'needs a base commit and a tail of another record grafted after it; driven through the ' +
     'binary in `a-tail-that-arrives-is-held-to-the-base.test.ts`',
+  'verify.ts «{}: tail {} arrived since and names no record, and {}: the record has no name yet, so a tail grafted from another record written before 0.1.5 cannot be told from its own; a note, not a failure, until a mnema from 0.1.5 on writes here and names it (unnamed-record)» #1':
+    'needs a base commit with no named tail and a tail written before records were named ' +
+    'grafted after it; driven through the binary in `a-tail-that-arrives-is-held-to-the-base.test.ts`',
   'verify.ts «reformatted {}: {}» #1':
     'needs a record a formatter rewrote, which is file surgery and not an argv; driven in ' +
     '`the-verdict-tells-the-truth.test.ts`',
