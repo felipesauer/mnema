@@ -212,6 +212,7 @@ export {
   type WitnessReturnVisit,
 } from './chain/witness-request.js';
 export {
+  AnotherRecordError,
   ChainWriter,
   DEFAULT_MAX_SEGMENT_BYTES,
   DEFAULT_MAX_UNSIGNED_EVENTS,

@@ -770,8 +770,9 @@ describe('chain: segmentation by size', () => {
 
 describe('chain: aggregation across tails (multi-machine)', () => {
   it('verifies two independently written tails together', () => {
-    // Two roots share nothing; copy tail B's directory into tail A's chain to
-    // simulate an offline merge (each machine wrote its own tail).
+    // Machine B cloned A's record, then each machine wrote its own tail; copy tail B's
+    // directory into A's chain to simulate an offline merge. (Two roots that never saw each
+    // other are two records, which both readers refuse together: FORMAT.md section 6.10.)
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-chain-b-'));
     try {
       const a = openChain(root);
@@ -779,6 +780,7 @@ describe('chain: aggregation across tails (multi-machine)', () => {
       a.append(runStarted(env(a, 'r-a'), { agent: 'claude' }));
       a.checkpoint();
       const b = openChain(rootB);
+      mergeTails(root, rootB);
       found(b);
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
@@ -801,7 +803,9 @@ describe('chain: census crosses committed keys against tails on disk', () => {
       found(a);
       a.append(runStarted(env(a, 'r-a'), { agent: 'claude' }));
       a.checkpoint();
+      // B cloned A's record before it wrote, so its tail names the same record.
       const b = openChain(rootB);
+      mergeTails(root, rootB);
       found(b);
       b.append(runStarted(env(b, 'r-b'), { agent: 'cursor' }));
       b.checkpoint();
@@ -937,12 +941,14 @@ describe('chain: one key on several installations keeps distinct tails (copy-key
     const laptopRoot = mkdtempSync(join(tmpdir(), 'mnema-laptop-'));
     try {
       copyKeyOnly(root, laptopRoot);
+      // The laptop cloned the record before it wrote, so its tail names the same one.
+      cpDir(join(root, 'tails', tailIdOf(root)), join(laptopRoot, 'tails', tailIdOf(root)));
       const laptop = found(openChain(laptopRoot));
       laptop.append(taskCreated(env(laptop, 't-l0'), { title: 'laptop 0' }));
       laptop.checkpoint();
 
       const desktopTail = tailIdOf(root);
-      const laptopTail = tailIdOf(laptopRoot);
+      const laptopTail = laptop.tail;
 
       // Sync the laptop's tail into the desktop's chain (an offline merge). The
       // shared public key is already present, so only the tail travels.
@@ -1360,6 +1366,7 @@ function mergeTails(fromRoot: string, intoRoot: string): void {
   }
   const fromKeys = join(fromRoot, 'keys');
   const intoKeys = join(intoRoot, 'keys');
+  mkdirSync(intoKeys, { recursive: true });
   for (const key of readdirSync(fromKeys)) {
     if (key.endsWith('.pub')) {
       writeFileSync(join(intoKeys, key), readFileSync(join(fromKeys, key), 'utf-8'));

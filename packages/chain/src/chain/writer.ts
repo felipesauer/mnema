@@ -48,6 +48,13 @@
  *
  * A writer that is opened and never appends leaves nothing a clone receives: the tail
  * is BORN at the first append ({@link ChainWriter.ensureBorn}), not when it is opened.
+ *
+ * EVERY TAIL PROOF AND EVERY CHECKPOINT IT WRITES NAMES THE RECORD (FORMAT.md section 6.10),
+ * under their second schemes: the name its own tail already carries, else the one the other tails
+ * carry, else the name of the record's genesis tail (`recordToWriteUnder`), resolved once per tail
+ * at the first act that writes and never again. A write into a directory whose tails name two
+ * records, or from a tail that names another record than the rest, is refused before anything
+ * is born or sealed ({@link AnotherRecordError}).
  */
 
 import { existsSync, mkdirSync, statSync, truncateSync, writeFileSync } from 'node:fs';
@@ -79,8 +86,10 @@ import {
   tailProofPath,
 } from './layout.js';
 import { linesFromEnd, parseStoredLine } from './lines.js';
+import { recordToWriteUnder, type WriteUnder } from './record-name.js';
 import { lastTailCheckpoint, orderedSegments, readTailTip } from './store.js';
 import { withTailLock } from './tail-lock.js';
+import { firstEntries, namesOfTails } from './tail-names.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 import { unprovenWaiverReason } from './waiver.js';
 
@@ -278,6 +287,12 @@ export class ChainWriter {
   private movedOn: NewTail | undefined;
   /** The head last kept in the note ({@link keepHead}), so an act that wrote nothing writes no note. */
   private keptHash: string | null = null;
+  /**
+   * The record this tail's proof and checkpoints name, once {@link recordName} resolved it: per
+   * tail, so a writer that moves to a new tail resolves it again (from the tail it left, which the
+   * other tails now include).
+   */
+  private record: string | undefined;
 
   constructor(
     private readonly layout: ChainLayout,
@@ -454,6 +469,7 @@ export class ChainWriter {
     this.damage = undefined;
     this.movedOn = undefined;
     this.keptHash = null;
+    this.record = undefined;
     this.born = false;
     this.mark = { segmentBytes: -2, nextSegment: false, checkpointBytes: -2 };
   }
@@ -517,8 +533,29 @@ export class ChainWriter {
   private ensureTailProof(): void {
     const path = tailProofPath(this.layout, this.tailId);
     if (existsSync(path)) return;
-    const proof = signTailProof(this.tailId, this.keyPair);
+    const proof = signTailProof(this.tailId, this.keyPair, this.recordName());
     writeFileSync(path, `${serializeTailProof(proof)}\n`, 'utf-8');
+  }
+
+  /**
+   * The record this tail's proof and checkpoints name (FORMAT.md section 6.10), resolved at the
+   * first act that writes, under the lock, and kept for the tail: see {@link recordToWriteUnder}
+   * for the order, and `tail-names.ts` for what each tail is read to name.
+   *
+   * Both append doors ask it after their own refusals and before the tail is born, so a refusal
+   * here leaves nothing on disk; a checkpoint asks it before it signs.
+   *
+   * @throws {AnotherRecordError} where the directory's other tails name two records, or this
+   * tail names one and the other named tails another. Nothing is written.
+   */
+  private recordName(): string {
+    if (this.record !== undefined) return this.record;
+    const under = recordToWriteUnder(this.tailId, namesOfTails(this.layout), () =>
+      firstEntries(this.layout, this.upcasters),
+    );
+    if (!('name' in under)) throw new AnotherRecordError(this.tailId, under);
+    this.record = under.name;
+    return under.name;
   }
 
   /**
@@ -715,6 +752,7 @@ export class ChainWriter {
     const event = cited.event;
     refuseUnreadable(event);
     this.refuseUnprovenWaiver(event);
+    this.recordName();
     this.ensureBorn();
     if (this.segmentBytes >= this.maxSegmentBytes) {
       this.segment += 1;
@@ -779,6 +817,7 @@ export class ChainWriter {
       refuseUnreadable(event);
       this.refuseUnprovenWaiver(event);
     }
+    this.recordName();
     this.ensureBorn();
     if (this.segmentBytes >= this.maxSegmentBytes) {
       this.segment += 1;
@@ -934,6 +973,7 @@ export class ChainWriter {
       events: this.pending,
       prev: this.lastCheckpointHash,
       keyPair: this.keyPair,
+      record: this.recordName(),
     });
     const path = checkpointsPath(this.layout, this.tailId);
     ensureDir(path);
@@ -983,6 +1023,46 @@ export class TailDamagedError extends CodedError {
     );
     this.name = 'TailDamagedError';
   }
+}
+
+/**
+ * A write into a directory that holds tails of two records, or from a tail of another record
+ * than the rest (FORMAT.md section 6.10): what both readers refuse as `another-record`, which
+ * growing would only grow. Thrown under the tail's lock and before anything is born or sealed.
+ */
+export class AnotherRecordError extends CodedError {
+  readonly code = 'ANOTHER_RECORD';
+
+  constructor(
+    readonly tail: string,
+    readonly refusal: Exclude<WriteUnder, { readonly name: string }>,
+  ) {
+    super(`${anotherRecordSaid(tail, refusal)} This write was not appended.`);
+    this.name = 'AnotherRecordError';
+  }
+}
+
+/** What {@link AnotherRecordError} says, by its refusal. */
+function anotherRecordSaid(
+  tail: string,
+  refusal: Exclude<WriteUnder, { readonly name: string }>,
+): string {
+  if (refusal.refused === 'foreign') {
+    return (
+      `this machine's tail ${tail} names record ${refusal.own.slice(0, 12)}..., and every other ` +
+      `tail here that names a record names ${refusal.record.slice(0, 12)}...: this tail belongs ` +
+      'to another record (copied in from another project or tree, or written by a `mnema init` ' +
+      'on another branch), and `mnema verify` refuses the two together (another-record).'
+    );
+  }
+  const groups = refusal.groups
+    .map(({ name, tails }) => `${name.slice(0, 12)}... (${tails.join(', ')})`)
+    .join(' and ');
+  return (
+    `the tails of this record name ${refusal.groups.length} records, ${groups}: a tail grafted ` +
+    'from another record, or two records merged, which `mnema verify` refuses (another-record). ' +
+    `Nothing was written to this machine's tail ${tail}.`
+  );
 }
 
 /**

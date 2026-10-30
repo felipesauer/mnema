@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { genesisTail, RECORD_DOMAIN, recordName, recordOf } from './record-name.js';
+import {
+  genesisTail,
+  RECORD_DOMAIN,
+  recordName,
+  recordOf,
+  recordToWriteUnder,
+} from './record-name.js';
 
 const TAIL = `${'ab'.repeat(32)}-${'cd'.repeat(16)}`;
 const OTHER = `${'ef'.repeat(32)}-${'01'.repeat(16)}`;
@@ -92,5 +98,116 @@ describe('which record the tails of a directory belong to', () => {
         { name: y, tails: [OTHER] },
       ].sort((a, b) => (a.name < b.name ? -1 : 1)),
     });
+  });
+});
+
+describe('the record a writer writes under', () => {
+  const THIRD = `${'ab'.repeat(32)}-${'99'.repeat(16)}`;
+  const x = recordName(TAIL);
+  const y = recordName(OTHER);
+  const firsts =
+    (...pairs: (readonly [string, string])[]) =>
+    () =>
+      pairs.map(([tail, at]) => ({ tail, at }));
+  const none = firsts();
+
+  it('is the name its own tail carries, first', () => {
+    const named = new Map<string, string | undefined>([
+      [TAIL, y],
+      [OTHER, undefined],
+    ]);
+    expect(recordToWriteUnder(TAIL, named, firsts([OTHER, '2026-01-01T00:00:00.000Z']))).toEqual({
+      name: y,
+    });
+  });
+
+  it('is the name the other tails carry, when its own carries none', () => {
+    const named = new Map<string, string | undefined>([
+      [TAIL, undefined],
+      [OTHER, y],
+      [THIRD, undefined],
+    ]);
+    expect(recordToWriteUnder(TAIL, named, firsts([TAIL, '2020-01-01T00:00:00.000Z']))).toEqual({
+      name: y,
+    });
+  });
+
+  it('is the name of the genesis tail when no tail carries one', () => {
+    const named = new Map<string, string | undefined>([
+      [TAIL, undefined],
+      [OTHER, undefined],
+    ]);
+    expect(
+      recordToWriteUnder(
+        TAIL,
+        named,
+        firsts([TAIL, '2026-10-29T10:00:00.000Z'], [OTHER, '2026-10-28T10:00:00.000Z']),
+      ),
+    ).toEqual({ name: y });
+  });
+
+  it('is the name of its own tail in a directory none of whose tails holds an entry', () => {
+    expect(recordToWriteUnder(TAIL, new Map([[TAIL, undefined]]), none)).toEqual({ name: x });
+    expect(recordToWriteUnder(TAIL, new Map(), none)).toEqual({ name: x });
+  });
+
+  it('refuses where the other tails name two records, even one its own tail names', () => {
+    const named = new Map<string, string | undefined>([
+      [TAIL, x],
+      [OTHER, y],
+      [THIRD, x],
+    ]);
+    expect(recordToWriteUnder(TAIL, named, none)).toEqual({
+      refused: 'several',
+      groups: [
+        { name: x, tails: [THIRD] },
+        { name: y, tails: [OTHER] },
+      ].sort((a, b) => (a.name < b.name ? -1 : 1)),
+    });
+    const two = new Map<string, string | undefined>([
+      [TAIL, undefined],
+      [OTHER, y],
+      [THIRD, x],
+    ]);
+    expect(recordToWriteUnder(TAIL, two, none)).toEqual({
+      refused: 'several',
+      groups: [
+        { name: x, tails: [THIRD] },
+        { name: y, tails: [OTHER] },
+      ].sort((a, b) => (a.name < b.name ? -1 : 1)),
+    });
+  });
+
+  it('refuses where its own tail names one record and every other named tail another', () => {
+    const named = new Map<string, string | undefined>([
+      [TAIL, x],
+      [OTHER, y],
+      [THIRD, undefined],
+    ]);
+    expect(recordToWriteUnder(TAIL, named, none)).toEqual({
+      refused: 'foreign',
+      own: x,
+      record: y,
+    });
+  });
+
+  it('asks for the first entries only when it applies the genesis rule', () => {
+    let asked = 0;
+    const counted = () => {
+      asked += 1;
+      return [];
+    };
+    recordToWriteUnder(TAIL, new Map([[TAIL, x]]), counted);
+    recordToWriteUnder(
+      TAIL,
+      new Map<string, string | undefined>([
+        [TAIL, undefined],
+        [OTHER, y],
+      ]),
+      counted,
+    );
+    expect(asked).toBe(0);
+    recordToWriteUnder(TAIL, new Map([[TAIL, undefined]]), counted);
+    expect(asked).toBe(1);
   });
 });

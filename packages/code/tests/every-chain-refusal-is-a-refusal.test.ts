@@ -64,6 +64,10 @@ function classesCarryingACode(): string[] {
  * arguments are the one thing this file cannot find by itself.
  */
 const BUILT_WITH: Readonly<Record<string, readonly unknown[]>> = {
+  AnotherRecordError: [
+    'f'.repeat(64),
+    { refused: 'foreign', own: 'a'.repeat(64), record: 'b'.repeat(64) },
+  ],
   TailBusyError: ['/tmp/x.lock', 4242, 2000],
   TailDamagedError: ['f'.repeat(64), 6, 5],
   UnwrittenInstallationIdError: ['/tmp/x.inst', 2000],

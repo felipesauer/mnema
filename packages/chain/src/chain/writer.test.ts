@@ -45,6 +45,7 @@ import type { Entry } from './entry.js';
 import { generateKeyPair } from './keys.js';
 import { KeyMadeMeanwhileError, loadOrCreateKeyPair, persistKeyPair } from './keystore.js';
 import { type ChainLayout, checkpointsPath, segmentPath, tailDir } from './layout.js';
+import { recordName } from './record-name.js';
 import {
   lastTailCheckpoint,
   orderedSegments,
@@ -601,7 +602,10 @@ describe('the writer does not write over a tail cut inside what a checkpoint sig
 });
 
 describe('the bytes a checkpoint signs did not change', () => {
-  /** What the previous implementation signed: a re-read of the whole tail, filtered to the range. */
+  /**
+   * What the previous implementation signed: a re-read of the whole tail, filtered to the range,
+   * under the name of the record this tail is the genesis of (a new record names itself).
+   */
   function signFromAReReadOfTheTail(fromSeq: number, toSeq: number, prev: string | null) {
     const events = readTailEntries(layout(), tailIdOf(), upcasters)
       .filter((e) => e.link.seq >= fromSeq && e.link.seq <= toSeq)
@@ -612,6 +616,7 @@ describe('the bytes a checkpoint signs did not change', () => {
       events,
       prev,
       keyPair: loadOrCreateKeyPair({ root }),
+      record: recordName(tailIdOf()),
     });
   }
 
