@@ -10,7 +10,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -205,6 +205,31 @@ describe('a record written before records were named', () => {
         [tail, recordName(OLD_TAIL)],
       ]),
     );
+  });
+});
+
+describe('what a tail names, to the writer', () => {
+  const NAMED = 'named-by-its-genesis';
+  const GENESIS = `8d6995a429f1ab61489f0b8391e9ae3ced5ff165eac004ee4572d56e1cad0616-${'0a'.repeat(16)}`;
+  const NAME = '56eec5ae4b56a9fdf558ae394e62838f4574c424b096e16f1eb59ac91656925e';
+
+  it('is the record its last checkpoint names under a tail proof of the first scheme', () => {
+    const root = copyOf(NAMED, 'named');
+    const named = namesOfTails({ root });
+    expect(named.get(GENESIS)).toBe(NAME);
+    expect([...named.values()]).toEqual([NAME, NAME]);
+  });
+
+  it('is nothing where that checkpoint does not verify under the key its tail names', () => {
+    const root = copyOf(NAMED, 'forged');
+    const path = checkpointsPath({ root }, GENESIS);
+    const lines = readFileSync(path, 'utf-8').trimEnd().split('\n');
+    const last = JSON.parse(lines.at(-1) as string) as Record<string, unknown>;
+    // Another name in the same signed line: canonical still, and its signature no longer holds.
+    const forged = { ...last, record: 'ab'.repeat(32) };
+    const canonical = JSON.stringify(Object.fromEntries(Object.entries(forged).sort()));
+    writeFileSync(path, `${[...lines.slice(0, -1), canonical].join('\n')}\n`);
+    expect(namesOfTails({ root }).get(GENESIS)).toBeUndefined();
   });
 });
 
