@@ -1189,6 +1189,52 @@ def checkpoint_signed_under_the_first_scheme_after_a_named_proof(root: str) -> t
     return True, "the proof names the tail's record and its checkpoint is /1"
 
 
+def checkpoint_signed_under_the_first_scheme_after_a_named_checkpoint(
+    root: str,
+) -> tuple[bool, str]:
+    """A tail whose proof is `/1`, whose first checkpoint `/2` names its record, and whose second
+    checkpoint, chained to the first, is signed under `/1` (section 6.10): no proof names the
+    record, the earlier checkpoint does, and both readers refuse it as scheme-downgrade."""
+    template = _last_event(root)
+    for name in ("tails", "keys"):
+        shutil.rmtree(os.path.join(root, name), ignore_errors=True)
+    tail = _tail_name(UNENROLLED_SECRET, "ab")
+    _found_tail(
+        root, UNENROLLED_SECRET, tail, template["at"], "a tail that went back to /1 later",
+        None, None,
+    )
+    fingerprint, _ = _unenrolled_public(UNENROLLED_SECRET)
+    bodies = [
+        canonical_bytes(strict_loads(line.decode("utf-8"))["event"])
+        for line in _read_lines(_segment(root))
+    ]
+    first = {
+        "contentRoot": content_root(bodies[:1]),
+        "fromSeq": 0,
+        "prev": None,
+        "signerFp": fingerprint,
+        "tail": tail,
+        "toSeq": 0,
+    }
+    named = {**first, "record": record_name(tail), "scheme": NAMED_CHECKPOINT_SCHEME}
+    second = {
+        "contentRoot": content_root(bodies[1:]),
+        "fromSeq": 1,
+        "prev": hashlib.sha256(signed_message(named, NAMED_CHECKPOINT_KEYS)).hexdigest(),
+        "signerFp": fingerprint,
+        "tail": tail,
+        "toSeq": 1,
+    }
+    _write_lines(
+        _checkpoints(root),
+        [
+            _signed_checkpoint(first, UNENROLLED_SECRET, record_name(tail)),
+            _signed_checkpoint(second, UNENROLLED_SECRET, None),
+        ],
+    )
+    return True, "cp[0..0] names the tail's record and cp[1..1], chained to it, is /1"
+
+
 def unnamed_tail_beside_named_ones(root: str) -> tuple[bool, str]:
     """A named record, and a second tail beside it written under the first schemes, naming no
     record: what a colleague's tail written before 0.1.5 looks like. Both readers verify it and
@@ -1650,6 +1696,9 @@ MUTATIONS = {
     "tail-names-two-records": tail_names_two_records,
     "checkpoint-signed-under-the-first-scheme-after-a-named-proof": (
         checkpoint_signed_under_the_first_scheme_after_a_named_proof
+    ),
+    "checkpoint-signed-under-the-first-scheme-after-a-named-checkpoint": (
+        checkpoint_signed_under_the_first_scheme_after_a_named_checkpoint
     ),
     "unnamed-tail-beside-named-ones": unnamed_tail_beside_named_ones,
     "refounded-record": refounded_record,

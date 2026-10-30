@@ -908,6 +908,15 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    name: 'checkpoint-signed-under-the-first-scheme-after-a-named-checkpoint',
+    refusals: 1,
+    section: '6.10',
+    says: '(scheme-downgrade)',
+    productSays: '(scheme-downgrade)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'tail-proof-removed',
     refusals: 1,
     section: '6.1',

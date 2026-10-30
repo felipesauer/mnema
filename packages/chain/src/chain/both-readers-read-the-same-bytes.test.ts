@@ -554,6 +554,17 @@ const AGREEMENTS: readonly Agreement[] = [
       refusals: 1,
     },
   },
+  {
+    name: 'checkpoint-signed-under-the-first-scheme-after-a-named-checkpoint',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(scheme-downgrade)' },
+    second: {
+      section: '6.10',
+      says: '(scheme-downgrade)',
+      where: TAIL_OF_A_REFOUNDED_RECORD,
+      refusals: 1,
+    },
+  },
 ];
 
 describe('the two readers reach the same verdict on the same bytes, and name the same cause', () => {
