@@ -637,7 +637,10 @@ function reportSince(io: CliIo, render: Render, since: SinceReading): void {
       ),
     );
   }
-  const there = since.arrived.records.map((name) => `${name.slice(0, 12)}...`).join(' and ');
+  const there =
+    since.arrived.records.length === 0
+      ? 'unnamed, with no genesis tail found'
+      : since.arrived.records.map((name) => `${name.slice(0, 12)}...`).join(' and ');
   for (const { name, tails } of since.arrived.foreign) {
     const which = `${tails.length === 1 ? 'tail' : 'tails'} ${tails.join(', ')}`;
     io.err(

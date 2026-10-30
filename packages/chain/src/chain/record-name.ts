@@ -181,8 +181,11 @@ export interface Arrivals {
  * with the other tails of that record, and one that names no record (a tail written before
  * records were named, which is how a tail grafted from such a record arrives) is named where a
  * tail of the base names the record, and only noted where none does, the record having no name
- * yet to hold it to. A tail the base already held is not asked: an unnamed one stays the census
- * note it was.
+ * yet to hold it to. A tail the base already held is not asked again, an unnamed one staying the
+ * census note it was, unless it held no name there and names a record now: that name is held to
+ * the base's record (where no tail of the base names it, the name its genesis tail derives, which
+ * is the one a writer gives a record written before records were named), and another name, or
+ * a base whose genesis is not found, puts it with the tails of another record.
  */
 export function arrivedSince(
   base: ReadonlyMap<string, string | undefined>,
@@ -199,12 +202,16 @@ export function arrivedSince(
   const noted: string[] = [];
   const foreign = new Map<string, string[]>();
   for (const [tail, name] of here) {
-    if (base.has(tail)) continue;
+    // A tail the base held is asked again only where it held no name and names a record now: a
+    // name it took since, held to the base's record like a tail that arrived, and refused where
+    // the base gives no name to hold it to.
+    const held = base.has(tail);
+    if (held && (base.get(tail) !== undefined || name === undefined)) continue;
     if (name === undefined) {
       (carried ? unnamed : noted).push(tail);
       continue;
     }
-    if (named.size === 0 || named.has(name)) continue;
+    if (named.has(name) || (!held && named.size === 0)) continue;
     const tails = foreign.get(name);
     if (tails === undefined) foreign.set(name, [tail]);
     else tails.push(tail);

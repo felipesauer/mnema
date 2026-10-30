@@ -19,7 +19,15 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -35,6 +43,14 @@ const WRITTEN_BEFORE = join(
 
 /** Another record written before records were named, by another key: its one tail names none. */
 const WITNESSED_BEFORE = join(ROOT, 'packages/chain/src/chain/__fixtures__/witnessed-record');
+
+/**
+ * A record whose genesis tail was born before records were named and took its name later, by a
+ * checkpoint of the second scheme after one of the first: cut back to that first checkpoint, the
+ * tail names no record; whole, it names the record its own genesis derives.
+ */
+const NAMED_LATER = join(ROOT, 'packages/chain/src/chain/__fixtures__/named-by-its-genesis');
+const NAMED_LATER_TAIL = `8d6995a429f1ab61489f0b8391e9ae3ced5ff165eac004ee4572d56e1cad0616-${'0a'.repeat(16)}`;
 
 let sandbox: string;
 let repo: string;
@@ -232,6 +248,62 @@ describe('verify --since holds a tail that arrived to the record the base is', (
     const note = ran.out.split('\n').find((line) => line.includes(`tail ${arrived}`));
     expect(note).toContain('arrived since and names no record');
     expect(note).toContain('the record has no name yet');
+  });
+
+  /**
+   * A repository whose base holds `NAMED_LATER_TAIL` as it was before it took a name (its entries
+   * up to its first checkpoint, and that checkpoint), beside the tails of `others`, and whose head
+   * holds the tail whole.
+   */
+  function namedSince(dir: string, ...others: string[]): string {
+    const at = join(sandbox, dir);
+    mkdirSync(at);
+    git(at, 'init', '-q');
+    for (const other of others) graft(other, at);
+    const tail = join(at, '.mnema', 'tails', NAMED_LATER_TAIL);
+    cpSync(join(NAMED_LATER, 'tails', NAMED_LATER_TAIL), tail, { recursive: true });
+    for (const key of readdirSync(join(NAMED_LATER, 'keys'))) {
+      cpSync(join(NAMED_LATER, 'keys', key), join(at, '.mnema', 'keys', key));
+    }
+    const whole = (file: string) => readFileSync(join(tail, file), 'utf-8');
+    const [first] = whole('checkpoints.jsonl').split('\n');
+    const covered = (JSON.parse(first as string) as { toSeq: number }).toSeq;
+    const lines = whole('000001.jsonl').split('\n');
+    const segment = whole('000001.jsonl');
+    const checkpoints = whole('checkpoints.jsonl');
+    writeFileSync(join(tail, '000001.jsonl'), `${lines.slice(0, covered + 1).join('\n')}\n`);
+    writeFileSync(join(tail, 'checkpoints.jsonl'), `${first}\n`);
+    git(at, 'add', '.mnema');
+    git(at, 'commit', '-q', '-m', 'the tail before it took a name');
+    const base = git(at, 'rev-parse', 'HEAD');
+    writeFileSync(join(tail, '000001.jsonl'), segment);
+    writeFileSync(join(tail, 'checkpoints.jsonl'), checkpoints);
+    git(at, 'add', '.mnema');
+    git(at, 'commit', '-q', '-m', 'the tail named');
+    return base;
+  }
+
+  it('passes a tail the base held unnamed that names now the record its genesis derives', () => {
+    const at = namedSince('named-as-its-genesis');
+    const ran = mnema(
+      'first',
+      join(sandbox, 'named-as-its-genesis'),
+      'verify',
+      '--require=signed',
+      '--since',
+      at,
+    );
+    expect(ran.status, ran.err).toBe(0);
+    expect(ran.out).toContain('the record only grew');
+  });
+
+  it('refuses a tail the base held unnamed that names now another record than its genesis, by its id', () => {
+    const at = namedSince('named-otherwise', WITNESSED_BEFORE);
+    const ran = mnema('first', join(sandbox, 'named-otherwise'), 'verify', '--since', at);
+    const said = ran.err.split('\n').find((line) => line.includes(`tail ${NAMED_LATER_TAIL}`));
+    expect(said, ran.err).toContain('arrived since and names record 56eec5ae4b56...');
+    expect(said).toContain('(another-record)');
+    expect(ran.status).toBe(1);
   });
 
   it('leaves an unnamed tail the base already held to the census', () => {

@@ -340,6 +340,33 @@ describe('the tails that arrived since a base', () => {
     });
   });
 
+  it('holds a tail the base held unnamed that names a record now to the name of the base genesis', () => {
+    const base = named([TAIL, undefined], [OTHER, undefined]);
+    const older = firsts([TAIL, '2026-01-01T00:00:00.000Z'], [OTHER, '2026-02-01T00:00:00.000Z']);
+    expect(arrivedSince(base, older, named([TAIL, undefined], [OTHER, x]))).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [],
+      foreign: [],
+    });
+    expect(arrivedSince(base, older, named([TAIL, undefined], [OTHER, y]))).toEqual({
+      records: [x],
+      unnamed: [],
+      noted: [],
+      foreign: [{ name: y, tails: [OTHER] }],
+    });
+  });
+
+  it('refuses a tail the base held unnamed that names a record now, where no genesis is found', () => {
+    const base = named([TAIL, undefined]);
+    expect(arrivedSince(base, none, named([TAIL, x]))).toEqual({
+      records: [],
+      unnamed: [],
+      noted: [],
+      foreign: [{ name: x, tails: [TAIL] }],
+    });
+  });
+
   it('asks for the first entries only where no tail of the base names a record', () => {
     let asked = 0;
     const counted = () => {
