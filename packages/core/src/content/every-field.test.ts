@@ -394,18 +394,22 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
   'skill.consulted': (ctx, text) =>
     recordConsultation(ctx, { skill: text('subject'), which: text('which'), run: text('run') }),
 
-  'tail.pruned': (ctx, text) =>
+  'tail.pruned': (ctx, text) => {
     // The only kind whose setup is another MACHINE: a waiver may not name the tail it
     // is written to, so this puts a second tail in the tree first. Its `tail`,
     // `throughHash` and subject are all read off that tail by the operation, so the
     // only value this drives is the reason, and the sweep's other half is what
     // checks the three it did not touch came through untouched.
-    authorizeTailPrune(ctx, {
-      tail: aSecondTailIn(ctx.layout.root),
+    const tail = aSecondTailIn(ctx.layout.root);
+    return authorizeTailPrune(ctx, {
+      tail,
+      // The second tail founded one key, the one its id begins with, and a cut names it.
+      loseKeys: [tail.slice(0, tail.lastIndexOf('-'))],
       reason: text('payload.reason'),
       which: text('which'),
       run: text('run'),
-    }),
+    });
+  },
 
   'channel.switched': (ctx, text) =>
     // The CHANNEL is the subject and it is a caller's string, so it goes through the

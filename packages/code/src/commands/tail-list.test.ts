@@ -27,6 +27,12 @@ import { cloneTheRecord } from '../../tests/support/a-tail-from-another-machine.
 import { runInit } from './init.js';
 import { runTailList } from './tail-list.js';
 import { runTailPrune } from './tail-prune.js';
+
+/** The one key a foreign tail founded: the fingerprint its id begins with. */
+function foreignKey(tail: string): string {
+  return tail.slice(0, tail.lastIndexOf('-'));
+}
+
 import { runTask } from './task.js';
 
 let sandbox: string;
@@ -162,6 +168,7 @@ describe('mnema tail list', () => {
     const authorized = runTailPrune(ctx, {
       tail: foreign.tail,
       reason: 'the person asked to be taken out of the record',
+      loseKeys: [foreignKey(foreign.tail)],
     });
     expect(authorized.ok, JSON.stringify(authorized)).toBe(true);
 
@@ -190,7 +197,11 @@ describe('mnema tail list', () => {
     );
 
     expect(
-      runTailPrune(ctx, { tail: foreign.tail, reason: 'this machine is being wiped' }).ok,
+      runTailPrune(ctx, {
+        tail: foreign.tail,
+        reason: 'this machine is being wiped',
+        loseKeys: [foreignKey(foreign.tail)],
+      }).ok,
     ).toBe(true);
 
     const rows = runTailList(ctx).tails.filter((held) => held.tail === foreign.tail);

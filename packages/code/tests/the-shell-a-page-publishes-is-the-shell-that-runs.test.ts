@@ -218,7 +218,7 @@ export const PAGES: Readonly<Record<string, number>> = {
   'README.md': 5,
   'docs/agent-hosts.md': 3,
   // 65 since the reference's blocks on stacks and on `mnema report`.
-  'docs/cli-reference.md': 73,
+  'docs/cli-reference.md': 74,
   'docs/convergence.md': 8,
   'docs/first-record.md': 6,
   'docs/how-it-works.md': 1,

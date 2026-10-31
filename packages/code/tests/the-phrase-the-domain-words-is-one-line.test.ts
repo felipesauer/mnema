@@ -2238,6 +2238,36 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the tail `--tail` named: the refusal `a-refusal-is-one-line.test.ts` named as this slice’s',
     },
+  '@mnema/core workflow/prune-operations.ts «Tail {} introduces {} key(s) that nothing revokes, and the record » held.length #1':
+    {
+      verdict: 'minted',
+      why: 'how many keys the tail introduces: a count',
+    },
+  '@mnema/core workflow/prune-operations.ts «Tail {} introduces {} key(s) that nothing revokes, and the record » oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail `--tail` named, on the branch where it holds keys the record needs',
+    },
+  "@mnema/core workflow/prune-operations.ts «depends on it for them:\\n{}\\n» held .map((key) => ` ${key.fp} (${key.how}) ${whatBecomesOf(key)}`) .join('\\n') #1":
+    {
+      verdict: 'minted',
+      why: 'one line per key: a fingerprint read off the record, the word for how the tail introduced it, and one of two sentences this module words',
+    },
+  '@mnema/core workflow/prune-operations.ts «mnema tail prune {} --reason <why> --lose-keys {}» list #1':
+    {
+      verdict: 'minted',
+      why: 'the fingerprints of the keys, read off the record and joined by a comma',
+    },
+  '@mnema/core workflow/prune-operations.ts «mnema tail prune {} --reason <why> --lose-keys {}» oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the same tail, in the command the refusal hands over',
+    },
+  '@mnema/core workflow/prune-operations.ts «of it.{} To authorize the cut anyway, name every one of those keys: » wrongly #1':
+    {
+      verdict: 'minted',
+      why: 'a sentence of this module, or nothing, when keys were named that do not match',
+    },
   '@mnema/core workflow/prune-operations.ts «No tail {} holds events in this tree. A waiver is written BEFORE the » oneLine(input.tail) #1':
     {
       verdict: 'collapsed',
@@ -2306,6 +2336,9 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
  * appears has to be declared, and a declaration whose template went away has to leave.
  */
 const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
+  "@mnema/core workflow/prune-operations.ts «Keys lost: {}. » held.map((key) => `${key.fp} (${key.how}, ${key.breaks ? 'breaks' : 'stranded'})`).join(', ')":
+    'the start of the cut\u2019s reason, not a refusal: a list of fingerprints read off the record with ' +
+    'two closed words each, written in the waiver so the loss is in the record.',
   '@mnema/core a-reason-states-something.ts «^{}$» MARKER.source':
     'the pattern of a WHOLE marker, built from the shape a marker takes so the two cannot ' +
     'drift apart. It is a regular expression, never printed.',
@@ -2390,9 +2423,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(355);
+    expect(SITES.length).toBe(361);
     expect(FOUND[0]?.sites.length).toBe(157);
-    expect(FOUND[1]?.sites.length).toBe(198);
+    expect(FOUND[1]?.sites.length).toBe(204);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -2442,11 +2475,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(238);
-    expect(count('minted')).toBe(89);
+    expect(count('collapsed')).toBe(240);
+    expect(count('minted')).toBe(93);
     expect(count('composed')).toBe(28);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      238,
+      240,
     );
   });
 

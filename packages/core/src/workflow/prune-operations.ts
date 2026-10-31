@@ -56,7 +56,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { oneLine } from '../one-line.js';
-import { type AppendRefusal, appendFact } from './append.js';
+import { type AppendRefusal, appendFact, askTheDoor } from './append.js';
 import { authorizingAnchor } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
 
@@ -179,6 +179,40 @@ export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneO
     };
   }
 
+  const who = authorizingAnchor(ctx);
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
+
+  /** The fact, built for the reason given: asked of the door first and appended after. */
+  const build =
+    (words: string, run: string | undefined) =>
+    ({ at }: { at: string }) =>
+      tailPruned(
+        {
+          at,
+          who,
+          signerFp: ctx.writer.signerFingerprint,
+          // The anchor the cut tail served: the identity the fact is filed under, read
+          // from the record and never handed in.
+          subject: standing.who,
+          ...(which !== undefined ? { which } : {}),
+          ...(run !== undefined ? { run } : {}),
+        },
+        {
+          tail: input.tail,
+          throughHash: standing.throughHash,
+          eventCount: standing.eventCount,
+          // The screened text, never `input.reason`.
+          reason: words,
+        },
+      );
+
+  // What the door says of the fact as the caller worded it comes first: a reason that says
+  // nothing is refused as that, and not hidden behind the keys the cut would lose.
+  const asked = askTheDoor(ctx, (stamp) => build(early.fields.reason, early.fields.run)(stamp));
+  if (asked !== undefined) return asked;
+
   // The keys this tail introduces and nothing revokes: read off every tail of the tree, because
   // whether the cut breaks them is a question about the tails that stay. The writer's own tail
   // stays, and it is where the waiver lands.
@@ -197,35 +231,11 @@ export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneO
       ? `Keys lost: ${held.map((key) => `${key.fp} (${key.how}, ${key.breaks ? 'breaks' : 'stranded'})`).join(', ')}. `
       : '';
 
-  const content = screenContent({ reason: `${lostReason}${input.reason}`, run: input.run });
+  // The reason as it will be written, screened once more for the size the list adds.
+  const content = screenContent({ reason: lostReason + input.reason, run: input.run });
   if (!content.ok) return content;
 
-  const who = authorizingAnchor(ctx);
-  const agent = resolveExecutingAgent(who, input.which);
-  if (!agent.ok) return agent;
-  const which = agent.which;
-
-  const appended = appendFact(ctx, ({ at }) =>
-    tailPruned(
-      {
-        at,
-        who,
-        signerFp: ctx.writer.signerFingerprint,
-        // The anchor the cut tail served: the identity the fact is filed under, read
-        // from the record and never handed in.
-        subject: standing.who,
-        ...(which !== undefined ? { which } : {}),
-        ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
-      },
-      {
-        tail: input.tail,
-        throughHash: standing.throughHash,
-        eventCount: standing.eventCount,
-        // The screened text, never `input.reason`.
-        reason: content.fields.reason,
-      },
-    ),
-  );
+  const appended = appendFact(ctx, build(content.fields.reason, content.fields.run));
   if (!appended.ok) return appended;
   return {
     ok: true,
