@@ -306,6 +306,18 @@
       }
     },
     {
+      "kind": "tail.relinked",
+      "v": 1,
+      "payload": {
+        "tail": "string",
+        "from": "string",
+        "into": "string",
+        "throughHash": "string",
+        "eventCount": "count",
+        "reason": "string"
+      }
+    },
+    {
       "kind": "task.created",
       "v": 1,
       "payload": {

@@ -71,6 +71,7 @@ import {
   stackAdopted,
   stackRemoved,
   tailPruned,
+  tailRelinked,
   taskCreated,
   taskTransitioned,
 } from './build.js';
@@ -111,6 +112,10 @@ export const VECTOR_NEW_FP = '33333333333333333333333333333333333333333333333333
  */
 const VECTOR_THROUGH_HASH = '4444444444444444444444444444444444444444444444444444444444444444';
 const VECTOR_INSTALLATION = '55555555555555555555555555555555';
+
+/** The two records a relink names: the one its tail was born in, and the one it joins. */
+const VECTOR_FROM_RECORD = '6666666666666666666666666666666666666666666666666666666666666666';
+const VECTOR_INTO_RECORD = '7777777777777777777777777777777777777777777777777777777777777777';
 
 /**
  * The minted ids the vectors refer to.
@@ -410,6 +415,19 @@ export const CANONICAL_VECTORS: {
         throughHash: VECTOR_THROUGH_HASH,
         eventCount: 402,
         reason: 'the machine was decommissioned',
+      }),
+    },
+  ],
+  'tail.relinked': [
+    {
+      name: 'tail.relinked (a whole tail, by its own key, into the record it joins)',
+      event: tailRelinked(person(VECTOR_WHO), {
+        tail: `${VECTOR_SIGNER_FP}-${VECTOR_INSTALLATION}`,
+        from: VECTOR_FROM_RECORD,
+        into: VECTOR_INTO_RECORD,
+        throughHash: VECTOR_THROUGH_HASH,
+        eventCount: 402,
+        reason: 'two inits on two branches, joined by a merge',
       }),
     },
   ],

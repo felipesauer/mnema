@@ -1655,6 +1655,211 @@ def _flip_payload(payload: object) -> object:
     return {"edited": "yes"}
 
 
+# THE RELINK (section 6.11): a record Y founded by RFC 8032's first key, a tail T of another record
+# X written by its second key, and the relink of T by that second key, in a tail of its own that
+# names Y. Every signature is real, so what each mutation varies is the one thing it names.
+
+# RFC 8032 section 7.1's third test key: a third party, for a relink by a key that is not T's.
+THIRD_SECRET = bytes.fromhex("c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7")
+
+
+def _later(at: str, seconds: int) -> str:
+    """`at` moved forward by whole seconds, in the instant's own form (section 4)."""
+    import datetime
+
+    when = datetime.datetime.strptime(at, "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(
+        seconds=seconds
+    )
+    return when.strftime("%Y-%m-%dT%H:%M:%S.") + f"{when.microsecond // 1000:03d}Z"
+
+
+def _anchor(secret: bytes) -> str:
+    fingerprint, _ = _unenrolled_public(secret)
+    return "mnid:" + hashlib.sha256(fingerprint.encode("ascii")).hexdigest()
+
+
+def _event(secret: bytes, at: str, kind: str, subject: str, payload: dict, who: str | None = None) -> dict:
+    fingerprint, _ = _unenrolled_public(secret)
+    return {
+        "at": at,
+        "kind": kind,
+        "payload": payload,
+        "signerFp": fingerprint,
+        "subject": subject,
+        "v": 1,
+        "who": who if who is not None else _anchor(secret),
+    }
+
+
+def _write_tail(
+    root: str, secret: bytes, tail: str, events: list[dict], names: str, covered: int | None = None
+) -> list[str]:
+    """One tail of `events`, its proof and one checkpoint over seq 0..`covered` (all by default),
+    both `/2` naming `names`, genuinely signed by `secret`. Returns the entry hashes."""
+    fingerprint = _commit_the_unenrolled_key(root, secret)
+    lines: list[bytes] = []
+    hashes: list[str] = []
+    previous: str | None = None
+    for seq, body in enumerate(events):
+        digest = entry_hash(canonical_bytes(body), tail, seq, previous)
+        lines.append(
+            canonical_bytes({"event": body, "link": {"hash": digest, "prev": previous, "seq": seq, "tail": tail}})
+        )
+        hashes.append(digest)
+        previous = digest
+    last = len(events) - 1 if covered is None else covered
+    stored = {
+        "contentRoot": content_root([canonical_bytes(body) for body in events[: last + 1]]),
+        "fromSeq": 0,
+        "prev": None,
+        "signerFp": fingerprint,
+        "tail": tail,
+        "toSeq": last,
+    }
+    tail_dir = os.path.join(root, "tails", tail)
+    os.makedirs(tail_dir)
+    _write_lines(os.path.join(tail_dir, "000001.jsonl"), lines)
+    _write_lines(os.path.join(tail_dir, "checkpoints.jsonl"), [_signed_checkpoint(stored, secret, names)])
+    _write_lines(os.path.join(tail_dir, "tailproof.json"), [_signed_proof(tail, fingerprint, secret, names)])
+    return hashes
+
+
+def _relinked(
+    root: str,
+    *,
+    enrolled: bool = True,
+    founds_itself: bool = False,
+    signer: bytes = CHECKER_SECRET,
+    claim: dict | None = None,
+    covered: bool = True,
+    grows: bool = False,
+    twice: bool = False,
+    host_relinked: bool = False,
+) -> str:
+    """Y, T and the relink, varied by one knob at a time; returns what was built."""
+    at = _last_event(root)["at"]
+    for name in ("tails", "keys"):
+        shutil.rmtree(os.path.join(root, name), ignore_errors=True)
+    owner = CHECKER_SECRET
+    y_tail = _tail_name(UNENROLLED_SECRET, "ab")
+    t_tail = _tail_name(owner, "cd")
+    record_y, record_x = record_name(y_tail), record_name(t_tail)
+    anchor_y = _anchor(UNENROLLED_SECRET)
+    owner_fp, _ = _unenrolled_public(owner)
+    # Y: founded by the first key, a note, and (by default) the owner's key enrolled into it.
+    y_events = [
+        _event(UNENROLLED_SECRET, at, "identity.founded", anchor_y, {"foundingFp": _unenrolled_public(UNENROLLED_SECRET)[0]}),
+        _event(UNENROLLED_SECRET, at, "memory.captured", "01a02d24-730d-7000-988d-ac7784b4a4a3", {"content": "a note of Y"}),
+    ]
+    if enrolled:
+        y_events.append(
+            _event(
+                UNENROLLED_SECRET, _later(at, 1), "key.enrolled", anchor_y,
+                {"newFp": owner_fp, "reverseSig": sign(owner, enrolment_message(anchor_y, owner_fp)).hex()},
+            )
+        )
+    _write_tail(root, UNENROLLED_SECRET, y_tail, y_events, record_y)
+    # T: the owner's tail of record X, founded and holding a note (a third event when it grew).
+    t_events = [
+        _event(owner, at, "identity.founded", _anchor(owner), {"foundingFp": owner_fp}),
+        _event(owner, at, "memory.captured", ANOTHER_NOTE, {"content": "a note of X"}),
+    ]
+    if grows:
+        t_events.append(_event(owner, at, "memory.captured", "01a02d24-730d-7000-988d-ac7784b4a4a5", {"content": "written after"}))
+    t_hashes = _write_tail(root, owner, t_tail, t_events, record_x)
+    frozen = 2
+    signer_who = anchor_y if signer == owner and not founds_itself else _anchor(signer)
+    payload = {
+        "eventCount": frozen,
+        "from": record_x,
+        "into": record_y,
+        "reason": "two inits joined by a merge",
+        "tail": t_tail,
+        "throughHash": t_hashes[frozen - 1],
+        **(claim or {}),
+    }
+    relink = _event(signer, _later(at, 2), "tail.relinked", _anchor(owner), payload, signer_who)
+    h_events: list[dict] = []
+    if founds_itself:
+        h_events.append(_event(signer, _later(at, 2), "identity.founded", _anchor(signer), {"foundingFp": _unenrolled_public(signer)[0]}))
+    if not covered:
+        h_events.append(_event(signer, _later(at, 2), "memory.captured", "01a02d24-730d-7000-988d-ac7784b4a4a6", {"content": "covered"}, signer_who))
+    h_events.append(relink)
+    if twice:
+        h_events.append(relink)
+    h_tail = _tail_name(signer, "ef")
+    h_hashes = _write_tail(root, signer, h_tail, h_events, record_y, None if covered else len(h_events) - 2)
+    if host_relinked:
+        # The host H relinked in its turn, by its own key, from a third tail that names Y.
+        again = _event(
+            signer, _later(at, 3), "tail.relinked", anchor_y,
+            {"eventCount": len(h_events), "from": record_y, "into": record_y, "reason": "again",
+             "tail": h_tail, "throughHash": h_hashes[-1]},
+            signer_who,
+        )
+        _write_tail(root, signer, _tail_name(signer, "12"), [again], record_y)
+    return f"tail {t_tail[:12]}... of record {record_x[:12]}... relinked into {record_y[:12]}... at {h_tail[:12]}..."
+
+
+def relinked_tail(root: str) -> tuple[bool, str]:
+    """Section 6.11, honest: the owner of a tail of another record, enrolled into this record's
+    identity by its founder, relinks that tail by its own key from a tail that names this record,
+    covered by that tail's checkpoint. Both readers verify, and say the relink."""
+    return True, _relinked(root)
+
+
+def relinked_by_a_key_that_founded_itself_here(root: str) -> tuple[bool, str]:
+    """Section 6.11, as the rule reads: the owner, enrolled by nobody here, founds its own identity
+    in the host tail and relinks there. Its key is a member of an identity of this record at the
+    relink's point, so both readers count the relink."""
+    return True, _relinked(root, enrolled=False, founds_itself=True)
+
+
+def relink_by_another_key(root: str) -> tuple[bool, str]:
+    """A relink of the owner's tail signed by a third key, in that key's own tail."""
+    return True, _relinked(root, signer=THIRD_SECRET)
+
+
+def relink_uncovered(root: str) -> tuple[bool, str]:
+    """The owner's relink above its host's last checkpoint: chained only, it counts for nothing."""
+    return True, _relinked(root, covered=False)
+
+
+def relinked_tail_grew(root: str) -> tuple[bool, str]:
+    """The relinked tail holds an entry past the head its relink froze it at."""
+    return True, _relinked(root, grows=True)
+
+
+def relink_head_mismatch(root: str) -> tuple[bool, str]:
+    """A relink naming a head the relinked tail does not end at."""
+    return True, _relinked(root, claim={"throughHash": "9" * 64})
+
+
+def relink_from_mismatch(root: str) -> tuple[bool, str]:
+    """A relink saying the tail comes from a record it does not name."""
+    return True, _relinked(root, claim={"from": record_name("another-genesis")})
+
+
+def relink_conflict(root: str) -> tuple[bool, str]:
+    """Two covered relinks of one tail by its owner."""
+    return True, _relinked(root, twice=True)
+
+
+def relink_into_a_name_no_tail_holds(root: str) -> tuple[bool, str]:
+    """A relink into a record its host does not name, and no tail here does."""
+    return True, _relinked(root, claim={"into": record_name("another-genesis")})
+
+
+def relink_hosted_by_a_relinked_tail(root: str) -> tuple[bool, str]:
+    """A relink written in a tail that its owner relinked in turn."""
+    return True, _relinked(root, host_relinked=True)
+
+
+def relink_by_a_key_no_identity_here_holds(root: str) -> tuple[bool, str]:
+    """The owner relinks with no enrolment into this record, and founds nothing here."""
+    return True, _relinked(root, enrolled=False)
+
+
 MUTATIONS = {
     "edited-event": edited_event,
     "edited-event-chain-repaired": edited_event_chain_repaired,
@@ -1727,6 +1932,17 @@ MUTATIONS = {
     "event-by-another-enrolled-key-above-the-checkpoint": (
         event_by_another_enrolled_key_above_the_checkpoint
     ),
+    "relinked-tail": relinked_tail,
+    "relinked-by-a-key-that-founded-itself-here": relinked_by_a_key_that_founded_itself_here,
+    "relink-by-another-key": relink_by_another_key,
+    "relink-uncovered": relink_uncovered,
+    "relinked-tail-grew": relinked_tail_grew,
+    "relink-head-mismatch": relink_head_mismatch,
+    "relink-from-mismatch": relink_from_mismatch,
+    "relink-conflict": relink_conflict,
+    "relink-into-a-name-no-tail-holds": relink_into_a_name_no_tail_holds,
+    "relink-hosted-by-a-relinked-tail": relink_hosted_by_a_relinked_tail,
+    "relink-by-a-key-no-identity-here-holds": relink_by_a_key_no_identity_here_holds,
 }
 
 

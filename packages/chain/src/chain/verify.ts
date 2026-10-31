@@ -139,7 +139,7 @@ import {
 import type { UnreadableLineError } from './lines.js';
 import { illegalMoves } from './moves.js';
 import { entriesBetween } from './range.js';
-import { type RecordNaming, recordOf } from './record-name.js';
+import { type RecordNaming, type RelinkRead, recordOf, relinkedNaming } from './record-name.js';
 import {
   type CommittedKeys,
   committedKeys,
@@ -221,7 +221,48 @@ export type CensusNote =
   | AttestedWhichNote
   | DeclaredWhichNote
   | UnannouncedWhichNote
-  | UnnamedTailNote;
+  | UnnamedTailNote
+  | RelinkedTailNote
+  | RelinkUncoveredNote
+  | RelinkedTailAbsentNote;
+
+/**
+ * A tail its owner relinked into this record, and the relink counts (FORMAT.md section 6.11):
+ * `tail` is read under this record's name from here on, its own artifacts still naming the record
+ * it was born in. Said, never a break: what it changes is the record the tail counts in.
+ */
+export interface RelinkedTailNote {
+  readonly kind: 'relinked-tail';
+  /** The relinked tail. */
+  readonly tail: string;
+  /** The relink: where it sits and what it says. */
+  readonly relink: RelinkRead;
+  readonly detail: string;
+}
+
+/**
+ * A relink above its host tail's last verified checkpoint (FORMAT.md section 6.11): chained only,
+ * which a party with no key can append, so it counts for nothing, at every level.
+ */
+export interface RelinkUncoveredNote {
+  readonly kind: 'relink-uncovered';
+  /** The tail it would relink. */
+  readonly tail: string;
+  readonly relink: RelinkRead;
+  readonly detail: string;
+}
+
+/**
+ * A covered relink, by its owner, of a tail that is not in this directory (FORMAT.md section
+ * 6.11): moved away or cut since. It names nothing here.
+ */
+export interface RelinkedTailAbsentNote {
+  readonly kind: 'relinked-tail-absent';
+  /** The tail it relinks. */
+  readonly tail: string;
+  readonly relink: RelinkRead;
+  readonly detail: string;
+}
 
 /**
  * A tail that names no record, in a record whose other tails name one (FORMAT.md section 6.10).
@@ -1092,13 +1133,29 @@ function verifyReading(
   // Every tail's issues, the uncounted ones included: an empty tail whose ownership proof
   // fails is a refusal like any other, and leaving it out of the count must not hide it.
   // And, when no tail is counted at all, the one issue about the record as a whole.
-  // Which record the counted tails belong to (section 6.10), once every tail was read.
-  const record = recordOf(namedByTail);
+  // Which record the counted tails belong to (section 6.10), once every tail was read, and once the
+  // relinks that count have named the tails they move (section 6.11): the one rule, whose identity
+  // check is this fold over the tails that name the record joined.
+  const relinks = relinkedNaming(
+    namedByTail,
+    entriesByTail,
+    checkpointedByTail,
+    (entries, covered) => resolveIdentity(layout, entries, covered, keys).issues,
+  );
+  const record = recordOf(relinks.named);
   const allIssues: TailIssue[] = [
     ...keyFilesWithoutAKey(committedFingerprints, keys),
     ...misnamedKeys(committedFingerprints, keys),
     ...(counted.length === 0 ? [noTailHeld(layout, tails)] : []),
     ...(record.state === 'several' ? [anotherRecord(record.groups)] : []),
+    ...relinks.refused.map(
+      ({ relink, detail }): TailIssue => ({
+        tail: relink.host,
+        layer: 'T2/T4',
+        seq: relink.seq,
+        detail,
+      }),
+    ),
     ...tails.flatMap((tail) => issuesByTail.get(tail) ?? []),
   ];
 
@@ -1132,6 +1189,30 @@ function verifyReading(
     ...clocksBehind(identity.citations),
     ...agentsNamed(identity.agents),
     ...(record.state === 'named' ? record.unnamed.map(unnamedTail) : []),
+    ...relinks.counted.map(
+      ({ relink, detail }): RelinkedTailNote => ({
+        kind: 'relinked-tail',
+        tail: relink.tail,
+        relink,
+        detail,
+      }),
+    ),
+    ...relinks.uncovered.map(
+      (relink): RelinkUncoveredNote => ({
+        kind: 'relink-uncovered',
+        tail: relink.tail,
+        relink,
+        detail: `tail ${oneLine(relink.host)} holds a relink of tail ${oneLine(relink.tail)} at seq ${relink.seq}, above its last verified checkpoint: chained only, it counts for nothing (relink-uncovered)`,
+      }),
+    ),
+    ...relinks.absent.map(
+      (relink): RelinkedTailAbsentNote => ({
+        kind: 'relinked-tail-absent',
+        tail: relink.tail,
+        relink,
+        detail: `tail ${oneLine(relink.host)} relinks tail ${oneLine(relink.tail)} at seq ${relink.seq}, and that tail is not here: the relink names nothing in this directory`,
+      }),
+    ),
   ];
 
   const ok = allIssues.length === 0;
@@ -2544,6 +2625,12 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => str
     `${count} agent name(s) no MCP client announced in a handshake (see census: informational, not a break)`,
   'unnamed-tail': (count) =>
     `${count} tail(s) that name no record, written before 0.1.5 (see census: informational, not a break)`,
+  'relinked-tail': (count) =>
+    `${count} tail(s) relinked into this record by their own key (see census: informational, not a break)`,
+  'relink-uncovered': (count) =>
+    `${count} relink(s) above their tail's last checkpoint, which count for nothing (see census: informational, not a break)`,
+  'relinked-tail-absent': (count) =>
+    `${count} relink(s) of a tail that is not here (see census: informational, not a break)`,
 };
 
 /** One clause per kind of note present, in the order the kinds are declared in. */

@@ -16,6 +16,7 @@
 
 import { closeSync, existsSync, openSync, readFileSync, readSync } from 'node:fs';
 
+import { catalogUpcasters } from '../events/registry.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { checkpointSignatureHolds, NAMED_SCHEME } from './checkpoint.js';
 import { parseEntry } from './entry.js';
@@ -32,6 +33,7 @@ import {
 } from './record-name.js';
 import { committedKeys, lastTailCheckpoint, listTails, orderedSegments } from './store.js';
 import { NAMED_TAILPROOF_SCHEME, parseTailProof, verifyTailProof } from './tailproof.js';
+import { verifyChain } from './verify.js';
 
 /** What every tail of the directory names, by its id: `undefined` for a tail that names none. */
 export function namesOfTails(layout: ChainLayout): Map<string, string | undefined> {
@@ -86,13 +88,23 @@ export function arrivalsSince(
  * directory of two records governs, and a surface that says what governs says why from `several`
  * (`code/tests/a-directory-of-two-records-governs-nothing.test.ts`).
  *
+ * WHERE ITS TAILS WOULD NAME TWO RECORDS AND ONE OF THEM HOLDS A RELINK (FORMAT.md section 6.11),
+ * the directory is named as `verify` names it: a relink that counts moves its tail into the record
+ * it joins, and a surface that read nothing there would fail closed where both readers verify. The
+ * rule is the readers' own (`relinkedNaming`, `record-name.ts`), asked through `verify` because what
+ * it needs is what a verification reads: every event, the checkpoints that cover them, and the
+ * identity fold of the record joined. A directory with no relink line is never verified here
+ * (`second-reader-agrees-on-a-relink.test.ts`, "the namer of the surfaces").
+ *
  * WHAT IT COSTS: nothing more than `listTails` for a directory of one tail. Else what
  * {@link namesOfTails} costs, a small file, the last checkpoint line and an Ed25519 verification
  * per tail, at each catch-up of the projection, which is each write a hook gates. The projection
  * keeps what its catch-up found (`ProjectionCache.severalRecords`), so a surface asking reads
  * nothing again. Measured on the built binary, the rules pushed at a write, median of 15, base and
  * head alternated: one tail +0 ms, 8 tails +7 ms, 32 tails +18 ms, about 0.6 ms per tail (before the
- * surfaces took the catch-up's answer it was about 1 ms: 8 tails +11 ms, 32 tails +32 ms).
+ * surfaces took the catch-up's answer it was about 1 ms: 8 tails +11 ms, 32 tails +32 ms). Only a
+ * directory whose tails name two records pays more: the bytes of its segments, read once for a
+ * relink line, and, where one is there, a verification of the whole record.
  */
 export function tailsReadAt(layout: ChainLayout): TheRecordRead {
   const tails = listTails(layout);
@@ -103,7 +115,26 @@ export function tailsReadAt(layout: ChainLayout): TheRecordRead {
       named.set(tail, undefined);
     }
   }
-  return tailsReadAsOneRecord(named);
+  const reading = tailsReadAsOneRecord(named);
+  if (reading.several.length === 0 || !holdsARelink(layout, tails)) return reading;
+  const record = verifyChain(layout, catalogUpcasters()).record;
+  return record.state === 'several'
+    ? { read: [], several: record.groups }
+    : { read: [...named.keys()], several: [] };
+}
+
+/**
+ * The bytes a relink's stored line holds wherever it is: its kind, as the canonical form writes
+ * it. A line that holds the kind in any other spelling is not canonical, and both readers refuse
+ * it, so it can name nothing.
+ */
+const RELINK_BYTES = Buffer.from('"kind":"tail.relinked"', 'utf-8');
+
+/** Whether a segment of any of `tails` holds a relink's line, read as bytes. */
+function holdsARelink(layout: ChainLayout, tails: readonly string[]): boolean {
+  return tails.some((tail) =>
+    orderedSegments(layout, tail).some((segment) => readFileSync(segment).includes(RELINK_BYTES)),
+  );
 }
 
 /**

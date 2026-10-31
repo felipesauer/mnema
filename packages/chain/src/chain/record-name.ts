@@ -25,7 +25,9 @@
  * ({@link tailsReadAsOneRecord}); they refuse nothing, which stays the readers'.
  */
 
+import type { Entry } from './entry.js';
 import { framedTextDigest } from './hash.js';
+import { tailFingerprint } from './layout.js';
 
 /** The domain tag of a record's name. Exported because FORMAT.md names it. */
 export const RECORD_DOMAIN = 'mnema.record.v1';
@@ -273,4 +275,282 @@ export function arrivedSince(
       .map(([name, tails]) => ({ name, tails }))
       .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),
   };
+}
+
+/** The name both readers refuse a relink by that another key than the relinked tail's signed. */
+export const RELINK_NOT_THE_OWNER = 'relink-not-the-owner';
+/** The name both readers refuse a tail by that two covered relinks of its owner name. */
+export const RELINK_CONFLICT = 'relink-conflict';
+/** The name both readers refuse a relink by whose host tail is itself relinked. */
+export const RELINK_HOSTED_BY_A_RELINKED_TAIL = 'relink-hosted-by-a-relinked-tail';
+/** The name both readers refuse a relink by whose host does not name `into` by its own artifacts. */
+export const RELINK_INTO_MISMATCH = 'relink-into-mismatch';
+/** The name both readers refuse a relink by whose `from` is not the name the tail carries. */
+export const RELINK_FROM_MISMATCH = 'relink-from-mismatch';
+/** The name both readers refuse a relink by whose tail holds entries past the head it froze. */
+export const RELINKED_TAIL_GREW = 'relinked-tail-grew';
+/** The name both readers refuse a relink by whose head or count is not the tail's. */
+export const RELINK_HEAD_MISMATCH = 'relink-head-mismatch';
+/** The name both readers refuse a relink by whose key is no member of the record it joins then. */
+export const RELINK_NOT_A_MEMBER = 'relink-not-a-member';
+
+/** A `tail.relinked` as a reader found it: where it sits, who signed it, and what it says. */
+export interface RelinkRead {
+  /** The tail it is written in. */
+  readonly host: string;
+  readonly seq: number;
+  readonly signerFp: string;
+  /** The relinked tail. */
+  readonly tail: string;
+  readonly from: string;
+  readonly into: string;
+  readonly throughHash: string;
+  readonly eventCount: number;
+}
+
+/** A relink both readers refuse, by its token, in the words they say it in. */
+export interface RelinkRefused {
+  readonly token:
+    | typeof RELINK_NOT_THE_OWNER
+    | typeof RELINK_CONFLICT
+    | typeof RELINK_HOSTED_BY_A_RELINKED_TAIL
+    | typeof RELINK_INTO_MISMATCH
+    | typeof RELINK_FROM_MISMATCH
+    | typeof RELINKED_TAIL_GREW
+    | typeof RELINK_HEAD_MISMATCH
+    | typeof RELINK_NOT_A_MEMBER;
+  readonly relink: RelinkRead;
+  /** The sentence, ending in the token between parentheses. */
+  readonly detail: string;
+}
+
+/** A relink that counts: the tail is read under `into`. */
+export interface RelinkCounted {
+  readonly relink: RelinkRead;
+  /** How many events the relinked tail holds. */
+  readonly events: number;
+  /** The `at` of its first entry. */
+  readonly firstAt: string;
+  /** The census line both readers say. */
+  readonly detail: string;
+}
+
+/** What {@link relinkedNaming} read of the relinks a directory holds. */
+export interface RelinksRead {
+  /** What each tail names once the relinks that count are applied. */
+  readonly named: ReadonlyMap<string, string | undefined>;
+  readonly counted: readonly RelinkCounted[];
+  readonly refused: readonly RelinkRefused[];
+  /** Relinks above their host's last verified checkpoint: chained only, counted for nothing. */
+  readonly uncovered: readonly RelinkRead[];
+  /** Covered relinks by the owner of a tail that is not in the directory: they name nothing. */
+  readonly absent: readonly RelinkRead[];
+}
+
+/** One entry as the rule reads it. */
+type EntryRead = Entry;
+
+/**
+ * Where the identity fold refused an event, by tail and seq, over the tails it is handed: what
+ * the rule asks of `resolveIdentity` (`enrollment.ts`). Handed in rather than imported, so this
+ * module reads nothing and the rule can be asked of any fold, a test's included.
+ */
+export type FoldRefusals = (
+  entriesByTail: ReadonlyMap<string, readonly EntryRead[]>,
+  coveredThrough: ReadonlyMap<string, number>,
+) => readonly { readonly tail: string; readonly seq: number }[];
+
+/**
+ * THE NAME A RELINK GIVES A TAIL (FORMAT.md section 6.11, ADR-155): the one rule both readers
+ * apply, after every tail is read and named by its own artifacts (`named`) and before the
+ * record's agreement ({@link recordOf}). `verify.ts` asks it; the namer of the surfaces asks
+ * `verify` where a directory would hold two records and one of its tails holds a relink
+ * (`tail-names.ts`); the second reader mirrors it check for check (`record.py`,
+ * `_check_relinks`). Held in `record-name.test.ts` check by check, and over records both readers
+ * read in `second-reader-agrees-on-a-relink.test.ts`.
+ *
+ * A `tail.relinked` in tail H, about tail T, counts when, in this order:
+ *
+ * 1. a verified checkpoint of H covers it (`coveredThrough`); above it the relink is chained
+ *    only, a party with no key can append one there, and it is said and counts for nothing;
+ * 2. it is signed by the key T's id names, which is H's key too (`relink-not-the-owner`);
+ * 3. no other covered relink by that key names T (`relink-conflict`, once for the tail);
+ * 4. H is not itself the tail of such a relink (`relink-hosted-by-a-relinked-tail`);
+ * 5. H names `into` by its own artifacts (`relink-into-mismatch`);
+ * 6. T is in the directory (else the relink is said, and names nothing) and names `from` by its
+ *    own artifacts (`relink-from-mismatch`);
+ * 7. T ends at `throughHash` with `eventCount` entries: more, through that head, is
+ *    `relinked-tail-grew`, anything else `relink-head-mismatch`;
+ * 8. the key is a member not revoked of an identity of `into` at the relink's point: the fold
+ *    (`fold`) over the tails that name `into` by their own artifacts and that their owner did not
+ *    relink refuses nothing at the relink (`relink-not-a-member`).
+ *
+ * The tails the last check folds are named by their artifacts alone, so the fold never reads a
+ * tail whose name the rule is deciding, and the rule never waits on itself.
+ *
+ * A relink that counts names T `into`. T's own artifacts still name `from`, and they are not
+ * compared with that name: `record-mismatch` stays a question among T's own artifacts. Nothing
+ * else moves: a tail of `from` left behind keeps naming `from`, and {@link recordOf} says so.
+ */
+export function relinkedNaming(
+  named: ReadonlyMap<string, string | undefined>,
+  entriesByTail: ReadonlyMap<string, readonly EntryRead[]>,
+  coveredThrough: ReadonlyMap<string, number>,
+  fold: FoldRefusals,
+): RelinksRead {
+  const found: { readonly relink: RelinkRead; readonly covered: boolean }[] = [];
+  for (const [host, entries] of entriesByTail) {
+    for (const entry of entries) {
+      const event = entry.event;
+      if (event.kind !== 'tail.relinked') continue;
+      found.push({
+        relink: {
+          host,
+          seq: entry.link.seq,
+          signerFp: event.signerFp,
+          tail: event.payload.tail,
+          from: event.payload.from,
+          into: event.payload.into,
+          throughHash: event.payload.throughHash,
+          eventCount: event.payload.eventCount,
+        },
+        covered: entry.link.seq <= (coveredThrough.get(host) ?? -1),
+      });
+    }
+  }
+  if (found.length === 0) return { named, counted: [], refused: [], uncovered: [], absent: [] };
+
+  const uncovered = found.filter((one) => !one.covered).map((one) => one.relink);
+  const refused: RelinkRefused[] = [];
+  const refuse = (token: RelinkRefused['token'], relink: RelinkRead, detail: string): void => {
+    refused.push({ token, relink, detail: `${detail} (${token})` });
+  };
+
+  // Steps 1 and 2: the covered relinks the relinked tail's own key signed, by the tail they name.
+  const byTail = new Map<string, RelinkRead[]>();
+  for (const { relink, covered } of found) {
+    if (!covered) continue;
+    const owner = tailFingerprint(relink.tail);
+    if (relink.signerFp !== owner || tailFingerprint(relink.host) !== owner) {
+      refuse(
+        RELINK_NOT_THE_OWNER,
+        relink,
+        `${where(relink)} relinks tail ${relink.tail}, signed by ${relink.signerFp.slice(0, 12)}..., not the key that tail's id names`,
+      );
+      continue;
+    }
+    const relinks = byTail.get(relink.tail);
+    if (relinks === undefined) byTail.set(relink.tail, [relink]);
+    else relinks.push(relink);
+  }
+
+  const absent: RelinkRead[] = [];
+  const admitted: RelinkRead[] = [];
+  for (const [tail, relinks] of byTail) {
+    const relink = relinks[0] as RelinkRead;
+    if (relinks.length > 1) {
+      refuse(
+        RELINK_CONFLICT,
+        relink,
+        `tail ${tail} is relinked ${relinks.length} times (${relinks.map(where).join(', ')}): a tail is relinked once`,
+      );
+      continue;
+    }
+    if (byTail.has(relink.host)) {
+      refuse(
+        RELINK_HOSTED_BY_A_RELINKED_TAIL,
+        relink,
+        `${where(relink)} relinks tail ${tail}, and is itself relinked: a relink counts only from a tail that names its record by its own artifacts`,
+      );
+      continue;
+    }
+    const hostNames = named.get(relink.host);
+    if (hostNames !== relink.into) {
+      refuse(
+        RELINK_INTO_MISMATCH,
+        relink,
+        `${where(relink)} relinks tail ${tail} into record ${relink.into.slice(0, 12)}..., and names ${recordSaid(hostNames)} itself`,
+      );
+      continue;
+    }
+    if (!named.has(tail)) {
+      absent.push(relink);
+      continue;
+    }
+    const tailNames = named.get(tail);
+    if (tailNames !== relink.from) {
+      refuse(
+        RELINK_FROM_MISMATCH,
+        relink,
+        `${where(relink)} relinks tail ${tail} from record ${relink.from.slice(0, 12)}..., and that tail names ${recordSaid(tailNames)}`,
+      );
+      continue;
+    }
+    const entries = entriesByTail.get(tail) ?? [];
+    const head = entries.at(-1)?.link.hash;
+    if (head !== relink.throughHash || entries.length !== relink.eventCount) {
+      if (
+        entries.length > relink.eventCount &&
+        entries[relink.eventCount - 1]?.link.hash === relink.throughHash
+      ) {
+        refuse(
+          RELINKED_TAIL_GREW,
+          relink,
+          `tail ${tail} holds ${entries.length} event(s), and the relink at ${where(relink)} froze it at ${relink.eventCount}`,
+        );
+      } else {
+        refuse(
+          RELINK_HEAD_MISMATCH,
+          relink,
+          `tail ${tail} ends at ${(head ?? 'nothing').slice(0, 12)}... with ${entries.length} event(s), not at the head ${relink.throughHash.slice(0, 12)}... with ${relink.eventCount} the relink at ${where(relink)} names`,
+        );
+      }
+      continue;
+    }
+    admitted.push(relink);
+  }
+
+  // Step 8, once per record joined: the fold over the tails that name it by their own artifacts
+  // and that their owner did not relink.
+  const refusedIn = new Map<string, ReadonlySet<string>>();
+  for (const into of new Set(admitted.map((relink) => relink.into))) {
+    const tails = [...named.keys()].filter((tail) => named.get(tail) === into && !byTail.has(tail));
+    const refusals = fold(
+      new Map(tails.map((tail) => [tail, entriesByTail.get(tail) ?? []])),
+      new Map(tails.map((tail) => [tail, coveredThrough.get(tail) ?? -1])),
+    );
+    refusedIn.set(into, new Set(refusals.map((one) => `${one.tail}#${one.seq}`)));
+  }
+  const relinkedNamed = new Map(named);
+  const counted: RelinkCounted[] = [];
+  for (const relink of admitted) {
+    if (refusedIn.get(relink.into)?.has(`${relink.host}#${relink.seq}`)) {
+      refuse(
+        RELINK_NOT_A_MEMBER,
+        relink,
+        `${where(relink)} relinks tail ${relink.tail}, and its key is no member of an identity of record ${relink.into.slice(0, 12)}... at that point, as the tails that name that record say`,
+      );
+      continue;
+    }
+    relinkedNamed.set(relink.tail, relink.into);
+    const entries = entriesByTail.get(relink.tail) ?? [];
+    const firstAt = entries[0]?.event.at ?? '';
+    counted.push({
+      relink,
+      events: entries.length,
+      firstAt,
+      detail: `tail ${relink.tail}, record ${relink.from.slice(0, 12)}..., relinked into this record by its own key at ${where(relink)}: ${entries.length} event(s), the first at ${firstAt}`,
+    });
+  }
+  return { named: relinkedNamed, counted, refused, uncovered, absent };
+}
+
+/** Where a relink sits, as both readers say it. */
+function where(relink: RelinkRead): string {
+  return `tail ${relink.host} seq ${relink.seq}`;
+}
+
+/** A record's name as a sentence says it, or that there is none. */
+function recordSaid(name: string | undefined): string {
+  return name === undefined ? 'no record' : `record ${name.slice(0, 12)}...`;
 }

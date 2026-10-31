@@ -107,6 +107,9 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   // The waiver a cut is authorized by. The census that reads it reads the CHAIN, not
   // this cache.
   'tail.pruned': [...EVERY_KIND_FEEDS],
+  // The relink of a tail: what it changes is the record a tail is read in, which the readers and
+  // the namer read off the CHAIN (FORMAT.md section 6.11), not this cache.
+  'tail.relinked': [...EVERY_KIND_FEEDS],
   'channel.switched': [...EVERY_KIND_FEEDS, 'channel_switches'],
   // The two facts a channel records about itself. They move no entity's state, and
   // the reads that ask what a channel did ask the reference index.
