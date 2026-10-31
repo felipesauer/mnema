@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -6,6 +6,7 @@ import {
   type ChainWriter,
   catalogUpcasters,
   openChainForWriting,
+  taskCreated,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { adrCollisions, projectDecisions } from '../projections/decision.js';
@@ -201,8 +202,10 @@ describe('the frozen number does not slip when a concurrent decision merges in',
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-decision-b-'));
     roots.push(rootB);
 
-    // Clone A: two decisions, ADR-1 then ADR-2 (the cited one).
+    // Clone A: two decisions, ADR-1 then ADR-2 (the cited one), after a first line B clones.
     const a = openChainForWriting(root, { keyRoot: root });
+    begin(a);
+    cloneRecord(root, rootB);
     const ca = fixedClock();
     const ctxA = contextFor(a, root, ca.clock);
     const first = mustRecord(ctxA, { title: 'a', rationale: 'r' });
@@ -216,7 +219,7 @@ describe('the frozen number does not slip when a concurrent decision merges in',
     const concurrent = mustRecord(contextFor(b, rootB, cb.clock), { title: 'b', rationale: 'r' });
 
     // Offline merge: B's tail and key land in A's chain.
-    cpSync(join(rootB, 'tails'), join(root, 'tails'), { recursive: true });
+    cpSync(join(rootB, 'tails', b.tail), join(root, 'tails', b.tail), { recursive: true });
     cpSync(join(rootB, 'keys'), join(root, 'keys'), { recursive: true });
 
     // After the merge the cited decision is STILL ADR-2: the citation did not
@@ -231,13 +234,15 @@ describe('the frozen number does not slip when a concurrent decision merges in',
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-decision-b-'));
     roots.push(rootB);
     const a = openChainForWriting(root, { keyRoot: root });
+    begin(a);
+    cloneRecord(root, rootB);
     const onA = mustRecord(contextFor(a, root, fixedClock().clock), { title: 'a', rationale: 'r' });
     const b = openChainForWriting(rootB, { keyRoot: rootB });
     const onB = mustRecord(contextFor(b, rootB, fixedClock().clock), {
       title: 'b',
       rationale: 'r',
     });
-    cpSync(join(rootB, 'tails'), join(root, 'tails'), { recursive: true });
+    cpSync(join(rootB, 'tails', b.tail), join(root, 'tails', b.tail), { recursive: true });
     cpSync(join(rootB, 'keys'), join(root, 'keys'), { recursive: true });
 
     // Both minted ADR-1 offline: the ids stay distinct (no merge), and the clash
@@ -246,6 +251,36 @@ describe('the frozen number does not slip when a concurrent decision merges in',
     expect(collisions).toEqual([{ adr: 'ADR-1', ids: [onA.id, onB.id].sort() }]);
   });
 });
+
+/**
+ * Makes `into` a clone of the record at `from` before its first write: the tails and the public
+ * keys, as `git clone` brings them, never a private key. Its writer then names the record `from`'s
+ * tails name (FORMAT.md section 6.10). Two chains each begun on their own are two records, and a
+ * merge of those is a directory every reading reads nothing of. `from` must hold a tail: a record is
+ * cloned once something is written in it.
+ */
+function cloneRecord(from: string, into: string): void {
+  cpSync(join(from, 'tails'), join(into, 'tails'), { recursive: true });
+  mkdirSync(join(into, 'keys'), { recursive: true });
+  for (const key of readdirSync(join(from, 'keys'))) {
+    if (key.endsWith('.pub')) cpSync(join(from, 'keys', key), join(into, 'keys', key));
+  }
+}
+
+/** A's first line, a task and no decision, so that a clone of A begins with no decision numbered. */
+function begin(a: ChainWriter): void {
+  a.append(
+    taskCreated(
+      {
+        at: '2026-01-01T00:00:00.000Z',
+        who: a.anchor,
+        signerFp: a.signerFingerprint,
+        subject: 't-begin',
+      },
+      { title: 'begin' },
+    ),
+  );
+}
 
 describe('the decision transitions are gated against the chain', () => {
   it('accepts a proposed decision, requiring a note', () => {

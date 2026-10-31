@@ -3750,16 +3750,21 @@ describe('mnema CLI: brief, the record as the file an agent reads', () => {
     // the only way one chain holds two `ADR-1`s: a second decision on ONE machine is
     // `ADR-2`, so a hand-made pair would be a record the product cannot produce.
     await run(['init'], capture().io);
+    // The second working copy is a clone of this repository as `init` left it: its committed
+    // `.mnema/`, not the `locks/` this machine keeps. A second `init` would begin another
+    // record (FORMAT.md section 6.10), of which every reading reads nothing once merged.
+    const clone = join(sandbox, 'clone');
+    cpSync(join(repo, '.mnema'), join(clone, '.mnema'), {
+      recursive: true,
+      filter: (source) => !source.split(/[\\/]/).includes('locks'),
+    });
     const ours = await accept('Round the tax once, over the invoice total');
 
-    const clone = join(sandbox, 'clone');
-    mkdirSync(clone, { recursive: true });
     const mine = { home: process.env.HOME };
     process.env.HOME = join(sandbox, 'clone-home');
     process.chdir(clone);
     let yours: string;
     try {
-      await run(['init'], capture().io);
       yours = await accept('Round the tax per line, then sum');
     } finally {
       process.env.HOME = mine.home;
@@ -3767,9 +3772,13 @@ describe('mnema CLI: brief, the record as the file an agent reads', () => {
     }
     // What a pull brings: the tails and the public key material. The signing key lives
     // in each machine's key root and never in a tree.
-    for (const part of ['tails', 'keys']) {
-      cpSync(join(clone, '.mnema', part), join(repo, '.mnema', part), { recursive: true });
+    for (const tail of readdirSync(join(clone, '.mnema', 'tails'))) {
+      if (existsSync(join(repo, '.mnema', 'tails', tail))) continue;
+      cpSync(join(clone, '.mnema', 'tails', tail), join(repo, '.mnema', 'tails', tail), {
+        recursive: true,
+      });
     }
+    cpSync(join(clone, '.mnema', 'keys'), join(repo, '.mnema', 'keys'), { recursive: true });
 
     const document = await output(['brief']);
     // Both rules are printed, both still labelled `ADR-1`: nothing was renumbered, which

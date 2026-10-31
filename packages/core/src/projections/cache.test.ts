@@ -1,6 +1,7 @@
 import {
   appendFileSync,
   cpSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -190,10 +191,17 @@ describe('ProjectionCache: multi-tail materialization', () => {
     try {
       const a = openChainForWriting(chainRoot, { keyRoot: chainRoot });
       writeTaskMovedTo(a, 't-a', 'CANCELED');
+      // B is a clone of A's record (its tails and public key, never a private key): two chains
+      // begun apart are two records, and nothing of a merge of those is read.
+      cpSync(join(chainRoot, 'tails'), join(rootB, 'tails'), { recursive: true });
+      mkdirSync(join(rootB, 'keys'), { recursive: true });
+      for (const key of readdirSync(join(chainRoot, 'keys'))) {
+        if (key.endsWith('.pub')) cpSync(join(chainRoot, 'keys', key), join(rootB, 'keys', key));
+      }
       const b = openChainForWriting(rootB, { keyRoot: rootB });
       writeTaskMovedTo(b, 't-b', 'READY');
-      // Offline merge: copy B's tail and key into A's chain.
-      cpSync(join(rootB, 'tails'), join(chainRoot, 'tails'), { recursive: true });
+      // Offline merge: copy B's own tail and its key into A's chain.
+      cpSync(join(rootB, 'tails', b.tail), join(chainRoot, 'tails', b.tail), { recursive: true });
       cpSync(join(rootB, 'keys'), join(chainRoot, 'keys'), { recursive: true });
 
       const cache = openCache();
@@ -204,6 +212,44 @@ describe('ProjectionCache: multi-tail materialization', () => {
     } finally {
       rmSync(rootB, { recursive: true, force: true });
     }
+  });
+});
+
+describe('ProjectionCache: a directory that holds tails of two records', () => {
+  it('reads none of them, and says which records it holds, before and after a replay', () => {
+    const rootB = mkdtempSync(join(tmpdir(), 'mnema-cache-two-'));
+    try {
+      const a = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+      writeTaskMovedTo(a, 't-a', 'CANCELED');
+      // Another record, begun on its own, grafted in with its public key.
+      const b = openChainForWriting(rootB, { keyRoot: rootB });
+      writeTaskMovedTo(b, 't-b', 'READY');
+      cpSync(join(rootB, 'tails', b.tail), join(chainRoot, 'tails', b.tail), { recursive: true });
+      for (const key of readdirSync(join(rootB, 'keys'))) {
+        if (key.endsWith('.pub')) cpSync(join(rootB, 'keys', key), join(chainRoot, 'keys', key));
+      }
+
+      const cache = openCache();
+      // Nothing read yet: asked of the disk.
+      const held = cache.severalRecords();
+      expect(held.flatMap((group) => group.tails).sort()).toEqual([a.tail, b.tail].sort());
+      cache.rebuild();
+      // After the replay: what it found, and no task of either record.
+      expect(cache.severalRecords()).toEqual(held);
+      expect(cache.listTasks()).toEqual([]);
+    } finally {
+      rmSync(rootB, { recursive: true, force: true });
+    }
+  });
+
+  it('holds no record apart where the tails name one', () => {
+    const a = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeTaskMovedTo(a, 't-a', 'CANCELED');
+    const cache = openCache();
+    expect(cache.severalRecords()).toEqual([]);
+    cache.rebuild();
+    expect(cache.severalRecords()).toEqual([]);
+    expect(cache.listTasks()).toHaveLength(1);
   });
 });
 

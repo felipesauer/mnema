@@ -86,6 +86,7 @@ const EMPTY_BRIEF: Brief = {
   collisions: [],
   divergent: [],
   disputed: [],
+  severalRecords: [],
   addressed: 0,
   asking: 0,
   refusing: 0,

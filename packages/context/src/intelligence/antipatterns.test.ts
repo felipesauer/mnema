@@ -6,6 +6,7 @@ import {
   birthDecision,
   birthSkill,
   birthTask,
+  cloneOf,
   deprecateSkill,
   makeBench,
   mergeTailInto,
@@ -157,8 +158,8 @@ describe('antipatterns: a label that names two rules', () => {
     // shape that produces it: two clones, each numbering its first decision from the
     // chain it could see, and the tails meeting afterwards.
     const here = bench();
-    const clone = bench();
     birthDecision(here, 'dec-here', 'Round the tax over the total', 'proposed', 'ADR-1');
+    const clone = cloneOf(here);
     birthDecision(clone, 'dec-clone', 'Round the tax per line', 'proposed', 'ADR-1');
     mergeTailInto(here, clone);
 
@@ -178,8 +179,8 @@ describe('antipatterns: a label that names two rules', () => {
     // answers to the number it was given, and a person citing it in a review gets two
     // answers. The document filters to what it PRINTS; the record's audit does not.
     const here = bench();
-    const clone = bench();
     birthDecision(here, 'dec-live', 'What we settled', 'proposed', 'ADR-1');
+    const clone = cloneOf(here);
     birthDecision(clone, 'dec-dead', 'What the clone refused', 'rejected', 'ADR-1');
     mergeTailInto(here, clone);
     const merged = here.events();
@@ -216,13 +217,13 @@ describe('antipatterns: a label that names two rules', () => {
     // that nobody can reconcile. The order is by label then by the first id, so the same
     // record always reports the same way.
     const publicA = bench();
-    const publicB = bench();
     const privateA = bench();
-    const privateB = bench();
     birthDecision(publicA, 'dec-p2', 'Public two', 'proposed', 'ADR-1');
+    const publicB = cloneOf(publicA);
     birthDecision(publicB, 'dec-p1', 'Public one', 'proposed', 'ADR-1');
     mergeTailInto(publicA, publicB);
     birthDecision(privateA, 'dec-m2', 'Private two', 'proposed', 'ADR-1');
+    const privateB = cloneOf(privateA);
     birthDecision(privateB, 'dec-m1', 'Private one', 'proposed', 'ADR-1');
     mergeTailInto(privateA, privateB);
 
@@ -313,8 +314,8 @@ describe('antipatterns: a decision two machines moved out of one state', () => {
     // move is stamped after the birth it had pulled: on the same instant, the tie would go
     // by tail id, and a move sorted before its subject's birth is one no reader applies.
     const here = bench();
-    const clone = bench();
     birthDecision(here, 'dec', 'Round the tax over the total');
+    const clone = cloneOf(here);
     moveDecision(here, 'dec', 'proposed', 'accepted', 'accept');
     moveDecisionAt(clone, 'dec', '2026-01-01T00:00:00.500Z', 'proposed', 'rejected', 'reject');
     mergeTailInto(here, clone);

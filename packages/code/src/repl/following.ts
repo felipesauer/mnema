@@ -67,8 +67,8 @@ import {
   catalogUpcasters,
   chainExtent,
   type Entry,
-  listTails,
   readTailTip,
+  tailsReadAt,
   type UpcasterRegistry,
 } from '@mnema/chain';
 
@@ -135,7 +135,9 @@ export function followingTheRecord(roots: readonly string[]): Following {
     // the reading may not have reached.
     const extent = chainExtent(layout);
     const accounted = new Map<string, number>();
-    for (const tail of listTails(layout)) {
+    // The tails of the record, as every reading of it takes them (`tailsReadAt`): none of a
+    // directory that holds tails of more than one record, of which nothing happened here.
+    for (const tail of tailsReadAt(layout).read) {
       accounted.set(tail, lastAccounted(layout, tail, upcasters, NOTHING_ACCOUNTED));
     }
     return { layout, extent, accounted };
@@ -149,7 +151,7 @@ export function followingTheRecord(roots: readonly string[]): Following {
         // NOTHING MOVED, AND THAT IS THE ANSWER MOST OF THE TIME. No tail is opened, no
         // line is parsed, and what it cost is the question.
         if (extent === tree.extent) continue;
-        for (const tail of listTails(tree.layout)) {
+        for (const tail of tailsReadAt(tree.layout).read) {
           const accounted = tree.accounted.get(tail) ?? NOTHING_ACCOUNTED;
           // The boundary entry the walk stops on is at or below what is accounted for,
           // and it is the one entry the tip may hold that is not new: the walk's own

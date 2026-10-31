@@ -17,6 +17,8 @@ import {
   type LinkBreak,
   listTails,
   projectionCachePath,
+  type RecordGroup,
+  tailsReadAt,
   type UpcasterRegistry,
   unannouncedRunsOf,
 } from '@mnema/chain';
@@ -250,6 +252,8 @@ export class ProjectionCache {
    * `code/tests/the-write-says-what-it-landed-on.test.ts` holds the new end-to-end.
    */
   private breaks: readonly LinkBreak[] = [];
+  /** What the last replay or catch-up found of the records the tree holds: {@link severalRecords}. */
+  private several: readonly RecordGroup[] | undefined;
   /**
    * The generation of the cache file this instance last agreed with. A file other processes
    * write moves it, and an instance that finds the file ahead of it takes the frontier the
@@ -464,6 +468,7 @@ export class ProjectionCache {
           this.replay();
           return;
         }
+        this.several = arrived.several;
         if (arrived.events.length === 0) return;
         const from = this.frontier.events;
         const expected = this.generation;
@@ -526,6 +531,7 @@ export class ProjectionCache {
     this.untouched = false;
     this.frontier = replay.frontier;
     this.breaks = replay.linkBreaks;
+    this.several = replay.several;
   }
 
   /** Writes what the cache says about itself, in the transaction that changed the tables. */
@@ -899,6 +905,17 @@ export class ProjectionCache {
    */
   divergentMoves(): DivergentMove[] {
     return readDivergences(this.db);
+  }
+
+  /**
+   * The records this tree holds tails of, where it holds two or more, of which every reading reads
+   * nothing (`tailsReadAt`, asked by the replay and the catch-up in `order.ts`): what the last of
+   * them found, kept so that a surface saying why nothing governs reads the tails no second time,
+   * and asked of the disk where nothing was read yet. Empty for a tree of one record, which is
+   * every tree one `init` began and nobody grafted into.
+   */
+  severalRecords(): readonly RecordGroup[] {
+    return this.several ?? tailsReadAt(this.layout).several;
   }
 
   /**

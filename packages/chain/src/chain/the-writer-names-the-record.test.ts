@@ -10,7 +10,16 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,10 +30,22 @@ import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
 import { NAMED_SCHEME } from './checkpoint.js';
 import { keptHeadPath } from './kept-head.js';
-import { checkpointsPath, installationIdPath, publicKeyPath, tailProofPath } from './layout.js';
+import {
+  checkpointsPath,
+  installationIdPath,
+  publicKeyPath,
+  tailDir,
+  tailProofPath,
+} from './layout.js';
 import { recordName } from './record-name.js';
 import { listTails } from './store.js';
-import { firstEntries, namesOfTails, recordNamedIn } from './tail-names.js';
+import {
+  firstEntries,
+  namesOfTails,
+  nameTheGenesisDerives,
+  recordNamedIn,
+  tailsReadAt,
+} from './tail-names.js';
 import { NAMED_TAILPROOF_SCHEME } from './tailproof.js';
 import { ensureTree } from './tree.js';
 import { AnotherRecordError, type ChainWriter } from './writer.js';
@@ -355,5 +376,66 @@ describe('a write into tails of two records', () => {
     expect((thrown as AnotherRecordError).message).toContain('holds tails of two records');
     expect(readFileSync(checkpointsPath({ root: a }, bTail), 'utf-8')).toBe(lines);
     expect(listTails({ root: a })).toHaveLength(2);
+  });
+});
+
+describe('the tails a reading of the record reads off the disk (tailsReadAt)', () => {
+  it('reads the one tail of a record without asking what it names', () => {
+    const root = aRecord('alone');
+    const tail = write(root, 'alice', 'one');
+    expect(tailsReadAt({ root })).toEqual({ read: [tail], several: [] });
+  });
+
+  it('reads every tail of a record whose tails name one record', () => {
+    const root = aRecord('one');
+    const first = write(root, 'alice', 'one');
+    const second = write(root, 'bob', 'two');
+    expect(tailsReadAt({ root })).toEqual({ read: [first, second].sort(), several: [] });
+  });
+
+  it('reads no tail of a directory whose tails name two records, and names both', () => {
+    const root = aRecord('here');
+    const ours = write(root, 'alice', 'ours');
+    const other = aRecord('there');
+    const theirs = write(other, 'bob', 'theirs');
+    cpSync(join(other, 'tails', theirs), join(root, 'tails', theirs), { recursive: true });
+    for (const key of readdirSync(join(other, 'keys'))) {
+      if (key.endsWith('.pub')) cpSync(join(other, 'keys', key), join(root, 'keys', key));
+    }
+    const read = tailsReadAt({ root });
+    expect(read.read).toEqual([]);
+    expect(read.several).toEqual(
+      [
+        { name: recordName(ours), tails: [ours] },
+        { name: recordName(theirs), tails: [theirs] },
+      ].sort((a, b) => (a.name < b.name ? -1 : 1)),
+    );
+  });
+
+  it('counts a tail that holds no segment toward no name, as both readers count it', () => {
+    const root = aRecord('empty-graft');
+    const ours = write(root, 'alice', 'ours');
+    const other = aRecord('elsewhere');
+    const theirs = write(other, 'bob', 'theirs');
+    // Only the proof of the other record's tail, and its key: a tail that holds nothing.
+    mkdirSync(tailDir({ root }, theirs), { recursive: true });
+    cpSync(tailProofPath({ root: other }, theirs), tailProofPath({ root }, theirs));
+    for (const key of readdirSync(join(other, 'keys'))) {
+      if (key.endsWith('.pub')) cpSync(join(other, 'keys', key), join(root, 'keys', key));
+    }
+    expect(namesOfTails({ root }).get(theirs)).toBe(recordName(theirs));
+    expect(tailsReadAt({ root })).toEqual({ read: [ours, theirs].sort(), several: [] });
+  });
+});
+
+describe('the name the genesis of a record derives (nameTheGenesisDerives)', () => {
+  it('is the name of the tail whose first entry is the oldest', () => {
+    expect(nameTheGenesisDerives({ root: copyOf(OLD, 'old') }, catalogUpcasters())).toBe(
+      recordName(OLD_TAIL),
+    );
+  });
+
+  it('is none where no tail holds a first entry', () => {
+    expect(nameTheGenesisDerives({ root: aRecord('nothing') }, catalogUpcasters())).toBeUndefined();
   });
 });

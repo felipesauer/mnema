@@ -159,6 +159,21 @@ describe('judge', () => {
     expect(seen.comments[0]?.onlyIfThere).toBe(false);
   });
 
+  it('says the directory holds more than one record, even where no changed file is governed', () => {
+    return (async () => {
+      const held = { name: 'a'.repeat(64), tails: ['tail-of-a'] };
+      const { world, seen } = worldWith({
+        files: ['src/a.ts'],
+        rules: {
+          'src/a.ts': { rules: [], severalRecords: [held, { ...held, name: 'b'.repeat(64) }] },
+        },
+      });
+      await judge(world, pr);
+      expect(seen.comments[0]?.body).toContain('This directory holds tails of 2 records');
+      expect(seen.comments[0]?.body).toContain('- record `aaaaaaaaaaaa`: `tail-of-a`');
+    })();
+  });
+
   it('fails the check when the record does not verify as signed', async () => {
     const { world, seen } = worldWith({ verify: { passed: false, said: 'checkpoint missing' } });
     const verdict = await judge(world, pr);

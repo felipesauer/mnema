@@ -134,6 +134,7 @@ function documentWith(editPush: ChannelState, asksAPerson: ChannelState): string
     collisions: [],
     divergent: [],
     disputed: [],
+    severalRecords: [],
     addressed: 1,
     asking: 0,
     refusing: 0,

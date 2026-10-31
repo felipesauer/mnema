@@ -76,6 +76,7 @@
  * on the record is a verb of its own.
  */
 
+import type { RecordGroup } from '@mnema/chain';
 import {
   acceptedAgainstRetired,
   type DivergentMove,
@@ -393,4 +394,22 @@ export function movedApartSentence(move: DivergentMove): string {
   // neither, and says so in the one line every reading of the rules gives (ADR-121).
   if (acceptedAgainstRetired(move)) return `this decision: ${divergenceSentence(move)}.`;
   return `this ${move.kind} left ${oneLine(move.from)} more than once: to ${oneLine(move.to.join(', then '))}, by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.`;
+}
+
+/**
+ * THE ONE SENTENCE FOR A DIRECTORY THAT HOLDS TAILS OF MORE THAN ONE RECORD, for every surface that
+ * says what governs: the brief, `rules` and `governing_rules`, the rules pushed at a write,
+ * `bootstrap`, and the Action through `rules --json`. Its tails name two records or more, so a
+ * reading of it reads no tail (`tailsReadAt`, `@mnema/chain`) and nothing in it governs; a reading
+ * that said nothing would read as a record with no rules. It names each record by the first twelve
+ * characters of its name, with its tails, says that `verify` refuses the directory, and that
+ * nothing governs until it holds one record
+ * (`code/tests/a-directory-of-two-records-governs-nothing.test.ts`).
+ */
+export function severalRecordsSentence(groups: readonly RecordGroup[]): string {
+  const each = groups.map(
+    (group) =>
+      `${oneLine(group.name.slice(0, 12))} (${group.tails.length === 1 ? 'tail' : 'tails'} ${group.tails.map(oneLine).join(', ')})`,
+  );
+  return `This directory holds tails of ${groups.length} records: ${each.join('; ')}. \`mnema verify\` refuses it (another-record), and nothing in it governs here until it holds one record.`;
 }

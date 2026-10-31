@@ -34,6 +34,7 @@ import {
   catalogUpcasters,
   contractNotHeldIn,
   GOVERNS_RELATION,
+  nameTheGenesisDerives,
   REFUSES_A_WRITE_RELATION,
   type VerifyResult,
   verify,
@@ -113,6 +114,17 @@ export type InheritedReading =
       readonly pointer: Pointer;
       readonly decisions: readonly InheritedRule[];
       readonly addressing: AddressingRules;
+      /**
+       * The name of the record at the commit, as its verified tails carry it (FORMAT.md section
+       * 6.10); absent for a record none of whose tails names one, written before records were
+       * named. The commit fixes it: the same bytes name the same record.
+       */
+      readonly record?: string;
+      /**
+       * For a record that names none, the name its genesis tail derives (FORMAT.md section 6.10):
+       * the one name a later commit of the same record may take.
+       */
+      readonly derives?: string;
     }
   | { readonly state: 'unverified'; readonly pointer: Pointer; readonly why: string }
   | { readonly state: 'unavailable'; readonly pointer: Pointer; readonly why: string }
@@ -292,6 +304,8 @@ type RecordRead =
       readonly ok: true;
       readonly decisions: readonly InheritedRule[];
       readonly addressing: AddressingRules;
+      readonly record?: string;
+      readonly derives?: string;
     }
   | { readonly ok: false; readonly why: string };
 
@@ -368,7 +382,16 @@ function verifyAndRead(root: string): RecordRead {
         },
       };
     });
-    return { ok: true, decisions, addressing };
+    // A record that verifies names one record or none: two names are refused (`another-record`).
+    const record = verdict.record.state === 'named' ? verdict.record.name : undefined;
+    const derives = record === undefined ? nameTheGenesisDerives({ root }, upcasters) : undefined;
+    return {
+      ok: true,
+      decisions,
+      addressing,
+      ...(record !== undefined ? { record } : {}),
+      ...(derives !== undefined ? { derives } : {}),
+    };
   } catch (error) {
     return { ok: false, why: (error as Error).message };
   }
@@ -406,6 +429,8 @@ function readAt(
           pointer,
           decisions: read.decisions,
           addressing: read.addressing,
+          ...(read.record !== undefined ? { record: read.record } : {}),
+          ...(read.derives !== undefined ? { derives: read.derives } : {}),
         },
         root,
       }

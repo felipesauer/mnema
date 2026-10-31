@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { approvedByAnotherPerson, isGoverned, needingAPerson, rulesInForce } from './governed.js';
+import {
+  approvedByAnotherPerson,
+  bothReadings,
+  isGoverned,
+  needingAPerson,
+  recordsHeldBy,
+  rulesInForce,
+} from './governed.js';
 
 const hit = (rule: string, state: string, kind = 'decision') => ({
   rule,
@@ -85,5 +92,26 @@ describe('needingAPerson', () => {
     const a = rulesInForce('a', { refuses: [hit('d', 'accepted')] });
     const b = rulesInForce('b', { refuses: [hit('d', 'superseded')] });
     expect(needingAPerson([a, b]).map((f) => f.path)).toEqual(['a']);
+  });
+});
+
+describe('the records a directory holds, where it holds more than one', () => {
+  const held = { name: 'a'.repeat(64), tails: ['tail-a'] };
+
+  it('are read off `severalRecords` in the answer, whatever the file, and never make it governed', () => {
+    const file = rulesInForce('src/a.ts', {
+      rules: [],
+      severalRecords: [held, { name: 1, tails: [] }, { name: 'b', tails: [2] }, 'x'],
+    });
+    expect(file.severalRecords).toEqual([held]);
+    expect(isGoverned(file)).toBe(false);
+    expect(rulesInForce('src/a.ts', { rules: [] }).severalRecords).toEqual([]);
+  });
+
+  it('are named once across files and across the two readings of one file', () => {
+    const a = rulesInForce('a', { severalRecords: [held] });
+    const b = rulesInForce('b', { severalRecords: [held] });
+    expect(recordsHeldBy([a, b])).toEqual([held]);
+    expect(bothReadings(a, rulesInForce('a', {})).severalRecords).toEqual([held]);
   });
 });

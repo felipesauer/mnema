@@ -17,6 +17,7 @@ import {
   birthSkill,
   birthTask,
   capture,
+  cloneOf,
   deprecateSkill,
   link,
   makeBench,
@@ -154,6 +155,7 @@ describe('brief: everything that governs the work here', () => {
       collisions: [],
       divergent: [],
       disputed: [],
+      severalRecords: [],
       addressed: 0,
       asking: 0,
       refusing: 0,
@@ -353,6 +355,7 @@ describe('brief: everything that governs the work here', () => {
       'editPush',
       'refusesAWrite',
       'refusing',
+      'severalRecords',
       'skills',
       'skillsAwaiting',
     ]);
@@ -622,8 +625,8 @@ describe('brief: everything that governs the work here', () => {
     // single chain the product wrote would have numbered the second decision `ADR-2`,
     // so a hand-made pair would be a record the product cannot produce.
     const here = bench();
-    const clone = bench();
     accept(here, 'dec-here', 'Round the tax over the invoice total', 'ADR-1');
+    const clone = cloneOf(here);
     accept(clone, 'dec-clone', 'Round the tax per line', 'ADR-1');
     mergeTailInto(here, clone);
 
@@ -645,10 +648,13 @@ describe('brief: everything that governs the work here', () => {
     // the clone and here: moved apart, in force, printed, and the document owes its reader the
     // other move. `dec-out` was rejected on both: moved apart too, and not printed, so it is the
     // audit's answer and not this file's.
+    // The clone is taken once both are born, before either machine moved them.
     const here = bench();
-    const clone = bench();
-    accept(here, 'dec-apart', 'Use SQLite');
-    reject(here, 'dec-out', 'Use Postgres');
+    birthDecision(here, 'dec-apart', 'Use SQLite', 'proposed');
+    birthDecision(here, 'dec-out', 'Use Postgres', 'proposed');
+    const clone = cloneOf(here);
+    moveDecision(here, 'dec-apart', 'proposed', 'accepted', 'accept');
+    moveDecision(here, 'dec-out', 'proposed', 'rejected', 'reject');
     moveDecisionAt(
       clone,
       'dec-apart',
@@ -675,10 +681,13 @@ describe('brief: everything that governs the work here', () => {
     // `dec-won` is accepted here AFTER the clone rejected it, so the fold leaves it accepted;
     // `dec-lost` is accepted here BEFORE the clone rejected it, so the fold leaves it rejected.
     // Neither is in force: a clock decides nothing (ADR-121). Both are named, with the line.
+    // The clone is taken once both are born, before either machine moved them.
     const here = bench();
-    const clone = bench();
-    accept(here, 'dec-won', 'Use SQLite');
-    accept(here, 'dec-lost', 'Use Postgres');
+    birthDecision(here, 'dec-won', 'Use SQLite', 'proposed');
+    birthDecision(here, 'dec-lost', 'Use Postgres', 'proposed');
+    const clone = cloneOf(here);
+    moveDecision(here, 'dec-won', 'proposed', 'accepted', 'accept');
+    moveDecision(here, 'dec-lost', 'proposed', 'accepted', 'accept');
     moveDecisionAt(clone, 'dec-won', '2026-01-01T00:00:00.500Z', 'proposed', 'rejected', 'reject');
     moveDecisionAt(clone, 'dec-lost', '2026-12-31T00:00:00.000Z', 'proposed', 'rejected', 'reject');
     mergeTailInto(here, clone);
@@ -705,9 +714,9 @@ describe('brief: everything that governs the work here', () => {
     // report: `ADR-2` is held twice, by two calls that were both refused, and the
     // document says nothing about it. That is the audit's answer, over the record.
     const here = bench();
-    const clone = bench();
     accept(here, 'dec-in-force', 'What the team settled', 'ADR-1');
     reject(here, 'dec-refused-here', 'What the team turned down', 'ADR-2');
+    const clone = cloneOf(here);
     reject(clone, 'dec-refused-clone', 'What the clone turned down', 'ADR-1');
     reject(clone, 'dec-refused-too', 'What the clone also turned down', 'ADR-2');
     mergeTailInto(here, clone);
@@ -753,6 +762,7 @@ describe('brief: everything that governs the work here', () => {
       collisions: [],
       divergent: [],
       disputed: [],
+      severalRecords: [],
       addressed: 0,
       asking: 0,
       refusing: 0,
@@ -768,6 +778,7 @@ describe('brief: everything that governs the work here', () => {
       collisions: [],
       divergent: [],
       disputed: [],
+      severalRecords: [],
       addressed: 0,
       asking: 0,
       refusing: 0,
@@ -789,6 +800,7 @@ describe('brief: everything that governs the work here', () => {
       collisions: [],
       divergent: [],
       disputed: [],
+      severalRecords: [],
       addressed: 0,
       asking: 0,
       refusing: 0,

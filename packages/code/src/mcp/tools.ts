@@ -186,7 +186,11 @@ import {
   type SwitchableChannel,
   TOOL_CALL_COUNT_CHANNEL,
 } from '../record-framing.js';
-import { movedApartSentence, type ScopedLinkBreak } from '../record-integrity.js';
+import {
+  movedApartSentence,
+  type ScopedLinkBreak,
+  severalRecordsSentence,
+} from '../record-integrity.js';
 import {
   type FellIn,
   forwardReplacement,
@@ -2784,6 +2788,30 @@ export function governingRulesMovedApart(
     ...answer.refuses.map((one) => ({ id: one.rule })),
   ]);
   return line === undefined ? [] : [line];
+}
+
+/**
+ * The line a reading of what governs owes beside its payload for each tree that holds tails of more
+ * than one record, of which nothing was read (`severalRecordsSentence`): the trees
+ * `governing_rules` reads for the one, the session's own for `bootstrap`. None for a record of one
+ * name, which is every record nobody grafted into.
+ */
+export function severalRecordsNotes(caches: readonly ProjectionCache[]): readonly string[] {
+  const said = caches
+    .map((cache) => cache.severalRecords())
+    .filter((groups) => groups.length > 0)
+    .map(severalRecordsSentence);
+  return said.length === 0 ? [] : [said.join('\n')];
+}
+
+/** {@link severalRecordsNotes} over the trees `governing_rules` reads. */
+export function governingRulesOfSeveralRecords(session: Session): readonly string[] {
+  return severalRecordsNotes(governanceCaches(session).map((source) => source.cache));
+}
+
+/** {@link severalRecordsNotes} over the trees the opening context is read from. */
+export function bootstrapOfSeveralRecords(session: Session): readonly string[] {
+  return severalRecordsNotes(sessionCaches(session));
 }
 
 /**

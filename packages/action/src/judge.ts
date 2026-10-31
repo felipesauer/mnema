@@ -16,6 +16,7 @@ import {
   type GovernedFile,
   isGoverned,
   needingAPerson,
+  recordsHeldBy,
   rulesInForce,
 } from './governed.js';
 import { decisionLabels, eventsAdded, readEvents, whatItDoes } from './record.js';
@@ -122,19 +123,21 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
   // very files it edits; a rule it adds counts as well, since it can only add protection. A base
   // with no record has no rules to read.
   const atBase = baseTexts.length > 0 ? world.mnema.rulesAt(pr.baseSha) : undefined;
-  let governed: GovernedFile[];
+  let read: GovernedFile[];
   try {
-    governed = asked
-      .map(({ path, rename }) => {
-        const here = rulesInForce(path, world.mnema.rules(path));
-        const both =
-          atBase === undefined ? here : bothReadings(rulesInForce(path, atBase.rules(path)), here);
-        return rename === undefined ? both : { ...both, rename };
-      })
-      .filter(isGoverned);
+    read = asked.map(({ path, rename }) => {
+      const here = rulesInForce(path, world.mnema.rules(path));
+      const both =
+        atBase === undefined ? here : bothReadings(rulesInForce(path, atBase.rules(path)), here);
+      return rename === undefined ? both : { ...both, rename };
+    });
   } finally {
     atBase?.close();
   }
+  const governed = read.filter(isGoverned);
+  // A directory of more than one record was read for nothing: the comment says so, whether or
+  // not a changed file was addressed, or the silence would read as files no rule addresses.
+  const severalRecords = recordsHeldBy(read);
 
   let approval: { asking: GovernedFile[]; approved: boolean } | undefined;
   if (pr.requireApprovalForAsks) {
@@ -167,6 +170,7 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
     verification,
     record,
     governed,
+    severalRecords,
     notAsked: changed.length - asked.length,
     rulesFromBase: atBase === undefined ? undefined : pr.baseSha,
     approval,

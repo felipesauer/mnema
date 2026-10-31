@@ -7,6 +7,7 @@ import {
   recordName,
   recordOf,
   recordToWriteUnder,
+  tailsReadAsOneRecord,
 } from './record-name.js';
 
 const TAIL = `${'ab'.repeat(32)}-${'cd'.repeat(16)}`;
@@ -375,5 +376,44 @@ describe('the tails that arrived since a base', () => {
     };
     arrivedSince(named([TAIL, x], [OTHER, undefined]), counted, named([TAIL, x], [THIRD, y]));
     expect(asked).toBe(0);
+  });
+});
+
+describe('the tails a reading of the record reads (tailsReadAsOneRecord)', () => {
+  const THIRD = `${'12'.repeat(32)}-${'34'.repeat(16)}`;
+  const B = recordName(TAIL);
+  const A = recordName(OTHER);
+
+  it('are every tail where no tail names a record', () => {
+    const named = new Map<string, string | undefined>([
+      [OTHER, undefined],
+      [TAIL, undefined],
+    ]);
+    expect(tailsReadAsOneRecord(named)).toEqual({ read: [OTHER, TAIL], several: [] });
+  });
+
+  it('are every tail where the named tails name one record, an unnamed one among them', () => {
+    const named = new Map<string, string | undefined>([
+      [OTHER, undefined],
+      [TAIL, B],
+    ]);
+    expect(tailsReadAsOneRecord(named)).toEqual({ read: [OTHER, TAIL], several: [] });
+  });
+
+  it('are none where the named tails name two records, whichever holds the genesis, and the records are said', () => {
+    // TAIL derives B and names it: B holds its genesis. OTHER derives A and names it: so does A.
+    // The genesis by `at` is not asked: a directory alone cannot tell which record it is.
+    const named = new Map<string, string | undefined>([
+      [OTHER, A],
+      [TAIL, B],
+      [THIRD, undefined],
+    ]);
+    expect(tailsReadAsOneRecord(named)).toEqual({
+      read: [],
+      several: [
+        { name: A, tails: [OTHER] },
+        { name: B, tails: [TAIL] },
+      ].sort((x, y) => (x.name < y.name ? -1 : 1)),
+    });
   });
 });

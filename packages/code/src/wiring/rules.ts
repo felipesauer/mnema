@@ -48,8 +48,22 @@ export function registerRules(program: Command, wiring: Wiring): Declared {
       const { fact } = await import('../presentation/detail.js');
       const notRead = inheritedNotReadLine(result.inherited);
       if (notRead !== undefined) io.err(render(fact(notRead)));
+      // A directory of more than one record was read for nothing: said on the same stream, and,
+      // for `--json`, in the answer itself, which is what the Action reads.
+      const { severalRecordsSentence } = await import('../record-integrity.js');
+      if (result.severalRecords.length > 0) {
+        io.err(render(fact(severalRecordsSentence(result.severalRecords))));
+      }
       if (opts.json === true) {
-        io.out(JSON.stringify(result.governed, null, 2));
+        io.out(
+          JSON.stringify(
+            result.severalRecords.length === 0
+              ? result.governed
+              : { ...result.governed, severalRecords: result.severalRecords },
+            null,
+            2,
+          ),
+        );
         return;
       }
       writeLines(io, rulesReport(render, result.governed));

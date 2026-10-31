@@ -116,6 +116,7 @@ import {
   type DivergentMove,
   type ProjectionCache,
   REFUSES_A_WRITE_RELATION,
+  type RecordGroup,
   type Scope,
 } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
@@ -209,6 +210,13 @@ export interface Brief {
    * count under the heading is the rules that govern and these are a paragraph of their own.
    */
   readonly disputed: readonly DisputedDecision[];
+  /**
+   * The records a tree that travels holds tails of, where it holds two or more: nothing of that
+   * tree was read, so nothing of it is above, and the document says the directory holds more than
+   * one record (`ProjectionCache.severalRecords`). Empty in the ordinary case, which keeps the
+   * document's bytes what they were.
+   */
+  readonly severalRecords: readonly RecordGroup[];
   /**
    * How many of the rules above have an ADDRESS: a path they were linked to with
    * `rel: "governs"` in a tree that travels.
@@ -410,6 +418,7 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
     collisions: printedCollisions(travels, decisions),
     divergent: printedDivergences(travels, [...decisions, ...skills]),
     disputed: decisionsDisputed(travels),
+    severalRecords: travels.flatMap((cache) => cache.severalRecords()),
     addressed: countAddressed(travels, [...decisions, ...skills]),
     // Asked of the COMMITTED sources alone, for the reason the whole answer is: a switch
     // this file could not carry would make the document claim a mechanism is on when the

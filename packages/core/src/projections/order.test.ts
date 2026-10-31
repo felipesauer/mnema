@@ -1,6 +1,8 @@
 import {
   appendFileSync,
   cpSync,
+  existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -41,10 +43,30 @@ afterEach(() => {
 const upcasters = catalogUpcasters();
 const env = (subject: string, at: string) => ({ at, who: 'felipe', signerFp: 'fp-1', subject });
 
-/** Copies tail B's directory and public key into A's chain (an offline merge). */
+/**
+ * Copies the tails B holds that A does not, and B's public key, into A's chain (an offline
+ * merge). A tail A already holds is A's own, read on from where it stands.
+ */
 function mergeTails(from: string, into: string): void {
-  cpSync(join(from, 'tails'), join(into, 'tails'), { recursive: true });
+  for (const tail of readdirSync(join(from, 'tails'))) {
+    if (existsSync(join(into, 'tails', tail))) continue;
+    cpSync(join(from, 'tails', tail), join(into, 'tails', tail), { recursive: true });
+  }
   cpSync(join(from, 'keys'), join(into, 'keys'), { recursive: true });
+}
+
+/**
+ * Makes `into` a clone of the record at `from` before its first write: the tails and the public
+ * keys, as `git clone` brings them, never a private key. Its writer then names the record `from`'s
+ * tails name (FORMAT.md section 6.10). Two chains each begun on their own are two records, and a
+ * merge of those is a directory every reading reads nothing of.
+ */
+function cloneRecord(from: string, into: string): void {
+  cpSync(join(from, 'tails'), join(into, 'tails'), { recursive: true });
+  mkdirSync(join(into, 'keys'), { recursive: true });
+  for (const key of readdirSync(join(from, 'keys'))) {
+    if (key.endsWith('.pub')) cpSync(join(from, 'keys', key), join(into, 'keys', key));
+  }
 }
 
 describe('orderedEvents: single tail preserves seq order', () => {
@@ -63,6 +85,7 @@ describe('orderedEvents: multi-tail is total and deterministic', () => {
     const a = openChainForWriting(rootA, { keyRoot: rootA });
     a.append(taskCreated(env('a-1', '2026-07-21T00:00:00.000Z'), { title: 'a1' }));
     a.append(taskCreated(env('a-2', '2026-07-21T00:00:02.000Z'), { title: 'a2' }));
+    cloneRecord(rootA, rootB);
     const b = openChainForWriting(rootB, { keyRoot: rootB });
     b.append(taskCreated(env('b-1', '2026-07-21T00:00:01.000Z'), { title: 'b1' }));
     mergeTails(rootB, rootA);
@@ -78,6 +101,7 @@ describe('orderedEvents: multi-tail is total and deterministic', () => {
     const sameAt = '2026-07-21T00:00:00.000Z';
     const a = openChainForWriting(rootA, { keyRoot: rootA });
     a.append(taskCreated(env('a-1', sameAt), { title: 'a1' }));
+    cloneRecord(rootA, rootB);
     const b = openChainForWriting(rootB, { keyRoot: rootB });
     b.append(taskCreated(env('b-1', sameAt), { title: 'b1' }));
     mergeTails(rootB, rootA);
@@ -158,6 +182,7 @@ describe('orderedEventsOfRecord: the same tails, ordered two ways, read once', (
       // A second tail of the SAME chain: another installation's key, its own file.
       const otherRoot = mkdtempSync(join(tmpdir(), `mnema-order-${prefix}-2nd-`));
       try {
+        cloneRecord(root, otherRoot);
         const second = openChainForWriting(otherRoot, { keyRoot: otherRoot });
         second.append(taskCreated(env(`${prefix}-3`, sameAt), { title: '3' }));
         mergeTails(otherRoot, root);

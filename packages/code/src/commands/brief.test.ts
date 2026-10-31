@@ -13,6 +13,7 @@
 import { createHash } from 'node:crypto';
 import {
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -69,9 +70,27 @@ function setup(name = 'repo'): { repo: string; env: DiscoveryEnv } {
  * produce, and the whole slice would be tested against a fiction.
  */
 function merge(from: string, into: string): void {
-  for (const part of ['tails', 'keys']) {
-    cpSync(join(from, '.mnema', part), join(into, '.mnema', part), { recursive: true });
+  // The tails `into` does not hold: one it holds is its own, read on from where it stands.
+  for (const tail of readdirSync(join(from, '.mnema', 'tails'))) {
+    if (existsSync(join(into, '.mnema', 'tails', tail))) continue;
+    cpSync(join(from, '.mnema', 'tails', tail), join(into, '.mnema', 'tails', tail), {
+      recursive: true,
+    });
   }
+  cpSync(join(from, '.mnema', 'keys'), join(into, '.mnema', 'keys'), { recursive: true });
+}
+
+/**
+ * `to` as a clone of the repository at `from`, as `git clone` gives one: its committed `.mnema/`
+ * (not the `locks/` a machine keeps beside it). Two projects each begun by their own `init` are
+ * two records (FORMAT.md section 6.10), and every reading reads nothing of a merge
+ * of those; two clones of one share its genesis.
+ */
+function cloneProject(from: string, to: string): void {
+  cpSync(join(from, '.mnema'), join(to, '.mnema'), {
+    recursive: true,
+    filter: (source) => !source.split(/[\\/]/).includes('locks'),
+  });
 }
 
 /**
@@ -241,7 +260,7 @@ describe('mnema brief (what governs the work here)', () => {
     const mine = setup();
     const theirs = setup('clone');
     runInit({ cwd: mine.repo, env: mine.env });
-    runInit({ cwd: theirs.repo, env: theirs.env });
+    cloneProject(mine.repo, theirs.repo);
     const here = { cwd: mine.repo, env: mine.env };
     const there = { cwd: theirs.repo, env: theirs.env };
     const ours = accepted(here, 'Round the tax once, over the invoice total', 'public');
@@ -335,6 +354,7 @@ describe('mnema brief (what governs the work here)', () => {
         collisions: [],
         divergent: [],
         disputed: [],
+        severalRecords: [],
         addressed: 0,
         asking: 0,
         refusing: 0,

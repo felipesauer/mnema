@@ -20,7 +20,16 @@ import type { UpcasterRegistry } from '../events/upcaster.js';
 import { checkpointSignatureHolds, NAMED_SCHEME } from './checkpoint.js';
 import { parseEntry } from './entry.js';
 import { type ChainLayout, tailFingerprint, tailProofPath } from './layout.js';
-import { type Arrivals, arrivedSince, type RecordNaming, recordOf } from './record-name.js';
+import {
+  type Arrivals,
+  arrivedSince,
+  genesisTail,
+  type RecordNaming,
+  recordName,
+  recordOf,
+  type TheRecordRead,
+  tailsReadAsOneRecord,
+} from './record-name.js';
 import { committedKeys, lastTailCheckpoint, listTails, orderedSegments } from './store.js';
 import { NAMED_TAILPROOF_SCHEME, parseTailProof, verifyTailProof } from './tailproof.js';
 
@@ -63,6 +72,52 @@ export function arrivalsSince(
   upcasters: UpcasterRegistry,
 ): Arrivals {
   return arrivedSince(namesOfTails(base), () => firstEntries(base, upcasters), namesOfTails(here));
+}
+
+/**
+ * THE TAILS OF THE RECORD AT `layout`, beside {@link listTails}: what a reading of the record reads,
+ * and, where the directory holds tails of two records or more, those records, of which it reads
+ * nothing ({@link tailsReadAsOneRecord}). Each tail is named as the writer names it
+ * ({@link namesOfTails}); a tail with no segment holds nothing and counts toward no name, as both
+ * readers count it. A directory of one tail or none is read without asking.
+ *
+ * Every reading that folds the record's events asks this, not `listTails`: the projection's replay
+ * and its catch-up (`@mnema/core`, `projections/order.ts`) and the console's feed, so nothing of a
+ * directory of two records governs, and a surface that says what governs says why from `several`
+ * (`code/tests/a-directory-of-two-records-governs-nothing.test.ts`).
+ *
+ * WHAT IT COSTS: nothing more than `listTails` for a directory of one tail. Else what
+ * {@link namesOfTails} costs, a small file, the last checkpoint line and an Ed25519 verification
+ * per tail, at each catch-up of the projection, which is each write a hook gates. The projection
+ * keeps what its catch-up found (`ProjectionCache.severalRecords`), so a surface asking reads
+ * nothing again. Measured on the built binary, the rules pushed at a write, median of 15, base and
+ * head alternated: one tail +0 ms, 8 tails +7 ms, 32 tails +18 ms, about 0.6 ms per tail (before the
+ * surfaces took the catch-up's answer it was about 1 ms: 8 tails +11 ms, 32 tails +32 ms).
+ */
+export function tailsReadAt(layout: ChainLayout): TheRecordRead {
+  const tails = listTails(layout);
+  if (tails.length < 2) return { read: tails, several: [] };
+  const named = namesOfTails(layout);
+  for (const tail of tails) {
+    if (named.get(tail) !== undefined && orderedSegments(layout, tail).length === 0) {
+      named.set(tail, undefined);
+    }
+  }
+  return tailsReadAsOneRecord(named);
+}
+
+/**
+ * The name the genesis tail of the record at `layout` derives (FORMAT.md section 6.10): the name a
+ * writer from 0.1.5 on gives a record written before records were named, and the one
+ * {@link arrivalsSince} holds a tail to where no tail of the base names one. Undefined where no
+ * tail holds a first entry.
+ */
+export function nameTheGenesisDerives(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+): string | undefined {
+  const genesis = genesisTail(firstEntries(layout, upcasters));
+  return genesis === undefined ? undefined : recordName(genesis);
 }
 
 /** The record one tail names, as checked here, or `undefined`. */

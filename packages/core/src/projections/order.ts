@@ -1,6 +1,14 @@
 /**
- * Reading every tail of a chain into ONE deterministic, total order of events:
+ * Reading every tail of a chain's RECORD into ONE deterministic, total order of events:
  * the input a projection replays.
+ *
+ * IT SAID "every tail of a chain", and the directory held more than its record. A tail of
+ * another record, copied with its key into this directory, verified on its own and was read as
+ * this record's: its decisions governed here. Both readers refuse such a directory
+ * (`another-record`), but a projection runs over one nobody verified, so the tails it reads are
+ * the ones `tailsReadAt` (`@mnema/chain`) gives: every tail of a directory whose tails name one
+ * record or none, and NONE of a directory whose tails name two, in the order, the frontier and the
+ * catch-up alike (`code/tests/a-directory-of-two-records-governs-nothing.test.ts`).
  *
  * The chain is per-tail by design: each machine appends to its own tail, and
  * there is NO global order across tails (that is what makes an offline merge a
@@ -57,12 +65,13 @@ import {
   firstLinkBreakFrom,
   illegalMoves,
   type LinkBreak,
-  listTails,
   orderedSegments,
   precedesItsText,
+  type RecordGroup,
   readTail,
   readTailSince,
   type TailBoundary,
+  tailsReadAt,
   type UpcasterRegistry,
 } from '@mnema/chain';
 
@@ -111,7 +120,7 @@ interface TailStream {
 }
 
 /**
- * Reads all tails and merges them into one total, deterministic order. This is
+ * Reads the record's tails and merges them into one total, deterministic order. This is
  * the single bridge from the chain to a projection: a projection consumes this
  * ordered stream and never reads tails itself.
  */
@@ -225,10 +234,16 @@ export interface ChainReplay {
    * product writes on its own.
    */
   readonly linkBreaks: readonly LinkBreak[];
+  /**
+   * The records the directory holds tails of, where it holds two or more (`tailsReadAt`): then
+   * nothing was read. Empty for a directory of one record. It rides on the replay so a surface
+   * that says why nothing governs asks no second reading of the tails.
+   */
+  readonly several: readonly RecordGroup[];
 }
 
 /**
- * Reads all tails, merges them, AND reports how far the reading reached.
+ * Reads the record's tails, merges them, AND reports how far the reading reached.
  *
  * The frontier is a by-product rather than a second pass: each tail's last `seq`
  * is in hand the moment its entries are parsed, so learning it costs nothing.
@@ -236,7 +251,8 @@ export interface ChainReplay {
  * one reading, one order, so a caller that wants both cannot get two.
  */
 export function chainReplay(layout: ChainLayout, upcasters: UpcasterRegistry): ChainReplay {
-  const streams = streamsOf(layout, upcasters, 0);
+  const reading = tailsReadAt(layout);
+  const streams = streamsOf(layout, upcasters, 0, reading.read);
   const tails = new Map<string, TailReach>();
   for (const stream of streams) {
     // One `readdir` per tail beside the reading of it. A replay parses every line of
@@ -254,7 +270,12 @@ export function chainReplay(layout: ChainLayout, upcasters: UpcasterRegistry): C
   const linkBreaks = streams
     .map((stream) => stream.linkBreak)
     .filter((broken): broken is LinkBreak => broken !== undefined);
-  return { events, frontier: { tails, events: events.length, unresolved }, linkBreaks };
+  return {
+    events,
+    frontier: { tails, events: events.length, unresolved },
+    linkBreaks,
+    several: reading.several,
+  };
 }
 
 /** What a chain holds beyond a frontier, when that can be said as a suffix. */
@@ -266,6 +287,8 @@ export type ChainArrivals =
       readonly events: readonly CatalogEvent[];
       /** How far the chain reaches now: the frontier a caller records after using these. */
       readonly frontier: ChainFrontier;
+      /** As {@link ChainReplay.several}: empty, since a directory of two records reads no tail. */
+      readonly several: readonly RecordGroup[];
     }
   | {
       /** No suffix describes the difference: the whole order has to be read again. */
@@ -390,7 +413,10 @@ export function chainArrivals(
   upcasters: UpcasterRegistry,
   frontier: ChainFrontier,
 ): ChainArrivals {
-  const tails = listTails(layout);
+  // The tails of the record, not every tail of the directory: none of a directory of two records
+  // (`tailsReadAt`), so a frontier that held tails reads them as gone and the replay is whole.
+  const reading = tailsReadAt(layout);
+  const tails = reading.read;
   const present = new Set(tails);
   const unresolved = new Set(frontier.unresolved);
   for (const tail of frontier.tails.keys()) {
@@ -523,6 +549,7 @@ export function chainArrivals(
       events: frontier.events + events.length,
       unresolved: frontier.unresolved,
     },
+    several: reading.several,
   };
 }
 
@@ -637,7 +664,9 @@ export function orderedEventsOfRecord(
   layouts: readonly ChainLayout[],
   upcasters: UpcasterRegistry,
 ): RecordOrder {
-  const perChain = layouts.map((layout, index) => streamsOf(layout, upcasters, index));
+  const perChain = layouts.map((layout, index) =>
+    streamsOf(layout, upcasters, index, tailsReadAt(layout).read),
+  );
   // A move is judged inside its own chain, as a citation resolves there: what each chain leaves
   // out is left out of the union too, so the two views never disagree about one move.
   const chains = perChain.map((streams) => mergeStreams(streams));
@@ -654,8 +683,13 @@ export function orderedEventsOfRecord(
  * from different trees never tie on their key even when they share a tail id. A single
  * chain is tree 0, which leaves the single-chain order the tail id's alone.
  */
-function streamsOf(layout: ChainLayout, upcasters: UpcasterRegistry, tree: number): TailStream[] {
-  return listTails(layout).map((tail) => {
+function streamsOf(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+  tree: number,
+  read: readonly string[],
+): TailStream[] {
+  return read.map((tail) => {
     // `readTail` rather than `readTailEntries`: the same bytes, plus what the read
     // had to notice about them. A reading that took only the entries is how a chain
     // the verifier refuses was served by every read with no word about it.

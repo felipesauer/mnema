@@ -20,7 +20,9 @@
  * The name lives only inside what is already signed: the tail proof and the checkpoint under
  * their second schemes (tailproof.ts, checkpoint.ts). A reader never recomputes it as an
  * authority. It asks {@link recordOf} whether the named tails of a directory agree, and names the
- * genesis tail, as information, when one of them hashes to the name.
+ * genesis tail, as information, when one of them hashes to the name. The readings that say what
+ * governs ask {@link recordOf} too, and read nothing of a directory whose tails name two records
+ * ({@link tailsReadAsOneRecord}); they refuse nothing, which stays the readers'.
  */
 
 import { framedTextDigest } from './hash.js';
@@ -158,6 +160,45 @@ export function recordToWriteUnder(
   }
   if (others.state === 'named') return { name: others.name };
   return { name: continues() ?? recordName(genesisTail(firsts()) ?? tail) };
+}
+
+/** One record a directory holds tails of: its name, and those tails. */
+export interface RecordGroup {
+  readonly name: string;
+  readonly tails: readonly string[];
+}
+
+/** What a reading of the record reads in a directory: {@link tailsReadAsOneRecord}. */
+export interface TheRecordRead {
+  /** The tails read, in the order given: none where the directory holds tails of two records. */
+  readonly read: readonly string[];
+  /**
+   * The records the directory holds tails of, by name, where it holds two or more: then nothing
+   * is read. Empty where its tails name one record or none.
+   */
+  readonly several: readonly RecordGroup[];
+}
+
+/**
+ * THE TAILS A READING OF THE RECORD READS, from what each tail of the directory names (`named`,
+ * `undefined` for a tail that names none). Where {@link recordOf} finds no name or one, every tail
+ * is read: an unnamed tail in a named record stays what `verify` keeps it, a census note. Where the
+ * named tails name two records or more, no tail is read, named or not, and the records are said:
+ * a directory alone cannot tell which of them it is (FORMAT.md section 6.10 says why both readers
+ * refuse it, `another-record`), so nothing in it governs until it holds one
+ * (`record-name.test.ts`, "the tails a reading of the record reads").
+ *
+ * IT USED TO READ the record that held the genesis, by `at`, and leave the others out. A tail
+ * grafted from a record older than this one then became the record read and this one's tails
+ * the ones left out; the maintainer chose failing closed instead (ADR-148).
+ */
+export function tailsReadAsOneRecord(
+  named: ReadonlyMap<string, string | undefined>,
+): TheRecordRead {
+  const naming = recordOf(named);
+  return naming.state === 'several'
+    ? { read: [], several: naming.groups }
+    : { read: [...named.keys()], several: [] };
 }
 
 /** What arrived in a directory since a base, as {@link arrivedSince} reads it. */

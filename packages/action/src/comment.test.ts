@@ -5,6 +5,7 @@ const quiet: Report = {
   verification: { passed: true, said: '' },
   record: { total: 0, byKind: [], decisions: [] },
   governed: [],
+  severalRecords: [],
   notAsked: 0,
   approval: undefined,
 };
@@ -26,6 +27,7 @@ const busy: Report = {
       asks: [],
       refuses: [],
       apart: [],
+      severalRecords: [],
     },
   ],
 };
@@ -46,6 +48,7 @@ describe('renderComment checks', () => {
       asks: [],
       refuses: [],
       apart: [],
+      severalRecords: [],
     }));
     const text = renderComment({ ...busy, governed });
     expect(text.length).toBeLessThanOrEqual(65536);
@@ -85,6 +88,7 @@ describe('renderComment', () => {
               divergence: 'divergence between the accept and the rejection',
             },
           ],
+          severalRecords: [],
         },
       ],
     });
@@ -136,6 +140,26 @@ describe('renderComment', () => {
     expect(
       renderComment({ ...quiet, verification: { passed: true, said: 'census [x] y' } }),
     ).not.toContain('```');
+  });
+
+  it('says the directory holds more than one record, that verify refuses it and nothing governs, and is worth a comment for it', () => {
+    const tail = `${'ab'.repeat(32)}-${'cd'.repeat(16)}`;
+    const several = {
+      ...quiet,
+      severalRecords: [
+        { name: 'e'.repeat(64), tails: ['tail-e'] },
+        { name: 'f'.repeat(64), tails: [tail] },
+      ],
+    };
+    expect(worthSaying(several)).toBe(true);
+    const text = renderComment(several);
+    expect(text).toContain(
+      'This directory holds tails of 2 records, so none of its rules was read',
+    );
+    expect(text).toContain('nothing in it governs until it holds one record');
+    expect(text).toContain(`- record \`ffffffffffff\`: \`${tail}\``);
+    expect(renderComment(quiet)).not.toContain('This directory holds tails of');
+    expect(worthSaying(quiet)).toBe(false);
   });
 
   it('says how many changed files were not asked about', () => {
@@ -198,6 +222,7 @@ describe('plain', () => {
           asks: [],
           refuses: [],
           apart: [],
+          severalRecords: [],
         },
       ],
     });

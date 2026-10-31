@@ -9,7 +9,7 @@
  * context package itself writes nothing (see boundaries.test.ts).
  */
 
-import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -679,18 +679,40 @@ export function link(b: Bench, subject: string, target: string, rel = 'relates-t
 }
 
 /**
+ * A clone of `of`'s repository, on a machine of its own (its own home, so its own key): a bench
+ * whose tree begins as a copy of `of`'s tails and public keys, as `git clone` gives one, taken
+ * before the clone writes anything. Its first write then signs under the record `of`'s tail names
+ * (FORMAT.md section 6.10), which is what makes it the same record.
+ *
+ * IT USED TO BE A SECOND `makeBench`, a record of its own, and a merge of two of those is a
+ * directory of two records: both readers refuse it (`another-record`), and every reading of the
+ * record now reads nothing of it. Two clones of one
+ * repository share the genesis, so `of` must have written before it is cloned.
+ */
+export function cloneOf(of: Bench): Bench {
+  const clone = makeBench();
+  cpSync(join(of.root, 'tails'), join(clone.root, 'tails'), { recursive: true });
+  cpSync(join(of.root, 'keys'), join(clone.root, 'keys'), { recursive: true });
+  return clone;
+}
+
+/**
  * Lands another bench's tail in this one's tree: the offline merge two clones of a
- * repository produce when their branches meet.
+ * repository produce when their branches meet ({@link cloneOf}).
  *
  * It is the only way a chain comes to hold two `ADR-1`s: each bench numbered its own
  * first decision from the chain IT could see, and neither write could have known about
  * the other. Copying the tail and the public key material is what a clone brings; the
- * signing key never lives in a tree.
+ * signing key never lives in a tree. A tail this tree already holds is its own, read on
+ * from where it stands, so only the tails it does not hold are copied.
  *
  * The merged-into bench keeps reading through its own root, so `events()` and
  * `cache()` now see both tails.
  */
 export function mergeTailInto(into: Bench, from: Bench): void {
-  cpSync(join(from.root, 'tails'), join(into.root, 'tails'), { recursive: true });
+  for (const tail of readdirSync(join(from.root, 'tails'))) {
+    if (existsSync(join(into.root, 'tails', tail))) continue;
+    cpSync(join(from.root, 'tails', tail), join(into.root, 'tails', tail), { recursive: true });
+  }
   cpSync(join(from.root, 'keys'), join(into.root, 'keys'), { recursive: true });
 }

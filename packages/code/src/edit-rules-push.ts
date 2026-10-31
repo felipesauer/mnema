@@ -147,6 +147,7 @@ import {
 } from './presentation/within-a-hook.js';
 import { DERIVED_FROM } from './provenance.js';
 import { recordFramingBlock } from './record-framing.js';
+import { severalRecordsSentence } from './record-integrity.js';
 import { movedApartLine } from './what-a-write-meets.js';
 
 /**
@@ -269,7 +270,15 @@ export function readThePush(
           `Not in force: \`${oneLine(one.id)}\` (${oneLine(one.name)}) addresses this path: ${one.divergence}.`,
       )
     : [];
-  const lines = [movedApartLine(own, at.rules), ...out].filter((line) => line !== undefined);
+  // A tree that holds tails of more than one record was read for nothing: the push says so, in the
+  // words every surface says it in, or a write there would read as one no rule addresses.
+  const foreign = addressed
+    .map((source) => source.cache.severalRecords())
+    .filter((groups) => groups.length > 0)
+    .map(severalRecordsSentence);
+  const lines = [movedApartLine(own, at.rules), ...out, ...foreign].filter(
+    (line) => line !== undefined,
+  );
   return { at, apart: lines.length === 0 ? undefined : lines.join('\n') };
 }
 

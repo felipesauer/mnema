@@ -127,6 +127,7 @@ describe('the brief prints one line per rule', () => {
     collisions: [],
     divergent: [],
     disputed: [],
+    severalRecords: [],
     decisionsAwaiting: 0,
     skillsAwaiting: 0,
     addressed: 0,
@@ -212,6 +213,11 @@ describe('the brief prints one line per rule', () => {
       adr: `ADR-x${i}`,
       title: `tx-${i}`,
       divergence: `dv-${i}`,
+    })),
+    // The line for a directory of more than one record is a line of the document too.
+    severalRecords: brief.severalRecords.map((g, i) => ({
+      name: `rc-${i}`,
+      tails: g.tails.map((_t, j) => `tl-${i}-${j}`),
     })),
     addressed: brief.addressed,
     asking: brief.asking,
