@@ -1,11 +1,12 @@
 {
   "schema": 1,
-  "revision": 4,
+  "revision": 5,
   "supersedes_revision": {
-    "sha256": "db4db6270b95313726444a9ae698dbc262adcddc86114c567e5a9e626ea4c5f5",
-    "kit_commit": "42c87aab5fd7e43a8e10a2a28d8b002b22db3681",
-    "committed_as": "94623e9",
-    "note": "revision 3 had the live part of 30 October (the Codex cost probe at 2 per request and the edit check of the four hosts). Revision 4 adds the 4th step: the web search test (codex_web_search_test: without its web_search tool a Codex request costs 1 and Codex fits), the second reader of the transcripts (llm_reader.second_reader), the day counted in units, and the dry runs redone under the code that is frozen. Nothing counted has run under any revision: no counted session."
+    "sha256": "3ce3d259f1bc9fe3fd0e1f804f724594e2be9a5f67ad420fe670655c69fe4edb",
+    "kit_commit": "6597be030d462e05fbdc238dd637015795a6324b",
+    "committed_as": "283a7d5",
+    "published": "measurements/free-block-2026-10/prereg.json in felipesauer/mnema (#1081), cited by ADR-138",
+    "note": "revision 4 was the manifest ADR-138 accepted and #1081 published. Revision 5 is the eve catalog snapshot its snapshot_policy asked for, taken on 30 October 2026 at 23:13:53Z before any counted session: the primary and the reserve project to the same sha256 as on 29 October (the same model, provider, context and price), so only the catalog file, its hash and the kit commit change. Nothing counted has run under any revision: no counted session."
   },
   "earlier_revisions": [
     {
@@ -26,7 +27,7 @@
   ],
   "title": "Pre-registration of the free block of the comparison after 0.1.4",
   "decision": "ADR-119 (01a187e7-3f61-7000-8c52-5babaec74f0d), which supersedes ADR-106",
-  "frozen_at": "2026-10-30T11:55:25.365Z",
+  "frozen_at": "2026-10-30T23:15:29.908Z",
   "what_this_is": "The manifest the public pre-registration cites by its sha256. Anything below changed after the first counted session is a new decision that supersedes the earlier one, with its reason; the result cites the hash it ran under.",
   "rulings_of_the_maintainer": {
     "source": "observation 01a1897f-99c4-7000-8339-195800c9f316 on ADR-119, 29 October 2026",
@@ -57,8 +58,8 @@
       "provider_tag": "nvidia",
       "endpoint_name": "Nvidia | nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
       "context_length": 1000000,
-      "endpoints_file": "freeze/endpoints-nvidia_nemotron-3-ultra-550b-a55b_free-20261029.json",
-      "endpoints_raw_sha256": "f6e0c267b2eca3360e1e2a3db8e0d13aba47da63b28e31625056b34b3497ee08",
+      "endpoints_file": "freeze/endpoints-nvidia_nemotron-3-ultra-550b-a55b_free-20261030.json",
+      "endpoints_raw_sha256": "99c7eacd860b81ae2a73e99fde65e68033335f4550b594f843da564aa5d6fde0",
       "projection_sha256": "bce8b3c4c9b58a3297eb01204ede4057fc6e7268acf48e137092c5175351f981",
       "created": 1780551208,
       "created_iso": "2026-06-04T05:33:28.000Z",
@@ -81,7 +82,7 @@
       "provider_tag": "google-ai-studio",
       "endpoint_name": "Google AI Studio | google/gemma-4-31b-it-20260402:free",
       "context_length": 262144,
-      "endpoints_file": "freeze/endpoints-google_gemma-4-31b-it_free-20261029.json",
+      "endpoints_file": "freeze/endpoints-google_gemma-4-31b-it_free-20261030.json",
       "endpoints_raw_sha256": "f6eaf8b4458cbde2e75694c29f770d4839ea9c7c4b352c1a79164f2bf980b3d0",
       "projection_sha256": "b834d5d5d7542f8e7271fc55e0e05c2f79d9fc36a9d1b0934c2413a850464e3f",
       "created": 1775148486,
@@ -129,10 +130,10 @@
   },
   "catalog": {
     "snapshot": {
-      "file": "freeze/models-20261029.json",
-      "taken_at": "2026-10-29T20:58:15Z",
-      "bytes": 767339,
-      "raw_sha256": "738751ffa8892ed916147f5724fb60774966c537fc7045fba2c2df7109374e3d"
+      "file": "freeze/models-20261030.json",
+      "taken_at": "2026-10-30T23:13:53Z",
+      "bytes": 810075,
+      "raw_sha256": "5819341f0f32e96c44ee8b11beb5ced6835203847d3a9fcfe76bdb2d0e9956c7"
     },
     "projection_command": "curl -s https://openrouter.ai/api/v1/models/<id>/endpoints | jq -S -c '{id:.data.id,created:.data.created,endpoints:[.data.endpoints[]|{name,tag,context_length,pricing,quantization,supported_parameters,supports_tool_choice}]}' | sha256sum",
     "snapshot_policy": "taken at the start and at the end of the round (design.md 4.1); the one here was taken before any counted session and is retaken on the eve of the first one, which then replaces this value (a revised manifest, a new hash)",
@@ -230,8 +231,8 @@
     "plugin_tree_sha256": "0449de9ffb847d8bfb40f1fadf1df4bf6974690da5f6b310047104d3bc3a6ecc"
   },
   "kit": {
-    "commit": "6597be030d462e05fbdc238dd637015795a6324b",
-    "tree": "ece1e95cad96f9fbee79161f87f21f2dece5b08f",
+    "commit": "eb38f2c7a2bb154757fc9377c3928e4dd98a54a8",
+    "tree": "caa729059dda7fd38006b0309d6fff650988380e",
     "files_sha256": {
       ".gitignore": "41d0be9f3bdbd9835aac1a1cacca2542a2388ba03638d44f8192cbca6a1cf758",
       "README.md": "c1a2216d633ddec3269c93ba57614089a23be4e9287f8b7a79cff72cc5698340",
@@ -258,7 +259,7 @@
       "editcheck/edit-check.mjs": "db62f30b73ac0e65b1f2e84085c2b2304ccab133c63c492de146b11d8a805058",
       "editcheck/edit-check.test.mjs": "75495652f26271b872a6e7c873c3f82ac826f3729f3c59c260127c39a3c6315f",
       "freeze/make-freeze.mjs": "b8a351082f76b4793e37f17aa2aebe127582b27c719c261e8d0055910eed353d",
-      "freeze/make-prereg.mjs": "ee5073c9e0293ad8f6b5aa1978e541f8498746049fc647376fd98c279006094f",
+      "freeze/make-prereg.mjs": "1249d5e2337f105800ed5278b9c5979615d3365ebe763372421bb8001d347598",
       "freeze/verify-prereg.mjs": "2abee4cbef516040cec61ee33aa9eac4a6f7fc8f23f2a3064d804c4439f9a0f6",
       "hosts/adapters.mjs": "6927f6f042600d25c0cef446ff6b8ac07ed8ebba2c3bdada9c246e8709823722",
       "hosts/codex-trust.mjs": "3c02995b3072e4f3f114ff3215d69c59d84c09e8c1c6588f2f879c6ddc7b257e",
@@ -297,7 +298,7 @@
       "seed/parity/provenance.json": "8efd74100772f1e1861cc3a3b912f0ee713438d676d7ed28a10519667963ffb5"
     },
     "node": "v24.22.1",
-    "freeze_json_sha256": "7d45495764c3cce87e6635ef117669e0331683ef492a31e17f800e6ed5b295dc",
+    "freeze_json_sha256": "0f915d03eef8b9b048b2a72fd88e814195b47849f7c4e5c1461d6c8c323c4476",
     "kit_json_sha256": "63bed1abdf69a2b7df51d1a9a9fd2b80069c875c5e2a005b3379fc3aa6a9402e"
   },
   "measured_session_repository": {
@@ -954,7 +955,9 @@
     "sha256": "38a89dc74471f37fa53e206b32c118c78b36c96ac28c7430c2dbd26e3082acd3",
     "kit_commit": "6597be030d462e05fbdc238dd637015795a6324b",
     "kit_tree_clean": true,
-    "files_of_the_frozen_commit_that_differ_from_the_dry_run_commit": [],
+    "files_of_the_frozen_commit_that_differ_from_the_dry_run_commit": [
+      "freeze/make-prereg.mjs"
+    ],
     "that_means": "the runner, the analysis, the edit check, the probe and the host adapters of the dry runs are byte for byte those of the frozen commit; only the freeze scripts (which make and check this manifest) may differ",
     "runs": 12,
     "codex_cost_probe_dry": "results/dry-runs/codex-cost-dry.json",
@@ -1140,10 +1143,9 @@
   },
   "built_in_revision_2": "the runner, the analysis, the LLM reader's prompt, the edit check and the cost probe: their files and hashes are in the sections above, and in kit.files_sha256 at the kit commit",
   "not_done_yet": [
-    "the catalog snapshot of the eve of the first counted session (snapshot_policy)",
     "any counted session",
     "any call of the second reader (the readers run after the sessions, with a config directory made then)",
-    "the maintainer's acceptance of this pre-registration"
+    "the maintainer's acceptance of this revision (revision 4 was accepted as ADR-138)"
   ],
   "open_points_for_the_maintainer": [
     "Codex: with its web search tool a request costs 2 (the first probe), without it 1 (the 4th step). The protocol runs Codex WITHOUT web search (web_search = \"disabled\"), so it fits the free quota like the others and its session is labelled 'without web search'. If you want the session with the tool, it would be 'does not fit the free quota' (the runner refuses it without --allow-does-not-fit)",
