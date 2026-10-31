@@ -89,6 +89,9 @@ export function tailReport(
           `the tail of ${held.standing.who}`,
           '·',
           held.authorized ? AUTHORIZED : NOT_AUTHORIZED,
+          ...(held.holds.length > 0
+            ? [`holds ${held.holds.length} key(s) the record needs (prune refuses it)`]
+            : []),
         ]),
       ),
     ),

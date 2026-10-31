@@ -105,6 +105,9 @@ function publicRoot(): string {
  * the tail it is written to), so this is the only fixture a successful `prune` can
  * be driven over.
  */
+/** The key the last foreign tail founded: a cut of that tail has to name it. */
+let foreignKey = '';
+
 function mergeAForeignTail(): string {
   const machine = join(sandbox, 'other-machine');
   mkdirSync(machine, { recursive: true });
@@ -124,6 +127,7 @@ function mergeAForeignTail(): string {
   for (const key of readdirSync(join(machine, 'keys'))) {
     if (key.endsWith('.pub')) cpSync(join(machine, 'keys', key), join(into, 'keys', key));
   }
+  foreignKey = writer.signerFingerprint;
   return writer.tail;
 }
 
@@ -181,6 +185,8 @@ describe('mnema tail list', () => {
       idOn(row),
       '--reason',
       'the person asked to be taken out of the record',
+      '--lose-keys',
+      foreignKey,
     );
     expect(authorized.failed, authorized.err.join(' / ')).toBe(false);
     expect(authorized.out.join('\n')).toContain(`Authorized the cut of tail ${foreign}`);
@@ -193,6 +199,13 @@ describe('mnema tail list', () => {
     expect(listedRows(again).filter((line) => line.includes('cut authorized'))).toHaveLength(1);
   });
 
+  it('says which tails hold keys the record needs, and not the ones that hold none', async () => {
+    const foreign = mergeAForeignTail();
+    const listed = await mnema('tail', 'list');
+    const row = listedRows(listed).find((line) => idOn(line) === foreign) as string;
+    expect(row).toContain('holds 1 key(s) the record needs (prune refuses it)');
+  });
+
   it('says the same events and head `prune` reports when it authorizes the cut', async () => {
     // The two numbers exist on this line so a person can decide BEFORE authorizing.
     // If they disagreed with what the waiver goes on to claim, the list would be
@@ -201,7 +214,15 @@ describe('mnema tail list', () => {
     const listed = await mnema('tail', 'list');
     const row = listedRows(listed).find((line) => idOn(line) === foreign) as string;
 
-    const authorized = await mnema('tail', 'prune', foreign, '--reason', 'a machine being wiped');
+    const authorized = await mnema(
+      'tail',
+      'prune',
+      foreign,
+      '--reason',
+      'a machine being wiped',
+      '--lose-keys',
+      foreignKey,
+    );
     const claim = authorized.out
       .map((line) => line.match(/(\d+) event\(s\) through ([0-9a-f]+)/))
       .find((found) => found !== null) as RegExpMatchArray;

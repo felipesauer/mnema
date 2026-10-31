@@ -56,6 +56,8 @@
 
 import {
   type CatalogEvent,
+  type KeyATailHolds,
+  keysATailHolds,
   listTails,
   readTailEntries,
   standingOf,
@@ -286,6 +288,8 @@ export interface HeldTail {
    * would report an authorization the record cannot use.
    */
   readonly authorized: boolean;
+  /** The keys this tail founded or enrolled that nothing revokes: what a cut would lose. */
+  readonly holds: readonly KeyATailHolds[];
 }
 
 /**
@@ -322,7 +326,13 @@ function* tailsHeldIn(trees: ResolvedTrees, upcasters: UpcasterRegistry): Genera
     for (const [tail, entries] of entriesByTail) {
       const standing = standingOf(entries);
       if (standing === undefined) continue;
-      yield { scope, tail, standing, authorized: authorized.has(tail) };
+      yield {
+        scope,
+        tail,
+        standing,
+        authorized: authorized.has(tail),
+        holds: keysATailHolds(entriesByTail, tail),
+      };
     }
   }
 }

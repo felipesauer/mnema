@@ -40,7 +40,14 @@
  * destructive. It is authorized by a person at a shell, or not at all.
  */
 
-import { tailPruned, tailStanding } from '@mnema/chain';
+import {
+  type KeyATailHolds,
+  keysATailHolds,
+  listTails,
+  readTailEntries,
+  tailPruned,
+  tailStanding,
+} from '@mnema/chain';
 import {
   type ScreenedWrite,
   type ScreenRefusal,
@@ -76,7 +83,37 @@ export type PruneError =
   | ScreenRefusal
   | AppendRefusal
   | { readonly ok: false; readonly code: 'UNKNOWN_TAIL'; readonly message: string }
-  | { readonly ok: false; readonly code: 'TAIL_IS_OWN'; readonly message: string };
+  | { readonly ok: false; readonly code: 'TAIL_IS_OWN'; readonly message: string }
+  | { readonly ok: false; readonly code: 'KEYS_WOULD_BE_LOST'; readonly message: string };
+
+/** What the cut does to one key, in the words the refusal and the waiver's reason share. */
+function whatBecomesOf(key: KeyATailHolds): string {
+  return key.breaks
+    ? 'breaks: events it signed in tails that stay stop verifying (T2/T4), and its next write is refused'
+    : 'is stranded: nothing of it stays to fail verify, but its next write is refused, or an enrolled key founds an identity of its own';
+}
+
+/** The refusal of a cut that would leave keys without the tail that founded or enrolled them. */
+function keysWouldBeLost(
+  tail: string,
+  held: readonly KeyATailHolds[],
+  named: string[],
+): PruneError {
+  const list = held.map((key) => key.fp).join(',');
+  const wrongly = named.length > 0 ? ' The keys named do not match the ones it introduces.' : '';
+  return {
+    ok: false,
+    code: 'KEYS_WOULD_BE_LOST',
+    message:
+      `Tail ${oneLine(tail)} introduces ${held.length} key(s) that nothing revokes, and the record ` +
+      `depends on it for them:\n${held
+        .map((key) => `  ${key.fp} (${key.how}) ${whatBecomesOf(key)}`)
+        .join('\n')}\n` +
+      `The identity lives only in the tail that founded or enrolled it, and the cut carries none ` +
+      `of it.${wrongly} To authorize the cut anyway, name every one of those keys: ` +
+      `mnema tail prune ${oneLine(tail)} --reason <why> --lose-keys ${list}`,
+  };
+}
 
 /** What the caller asks to authorize. */
 export interface PruneInput {
@@ -88,6 +125,11 @@ export interface PruneInput {
   readonly which?: string;
   /** The run this belongs to, if any. */
   readonly run?: string;
+  /**
+   * The fingerprints of every key the tail introduces that nothing revokes, to cut it anyway:
+   * the cut is authorized only when this names exactly the keys {@link keysATailHolds} finds.
+   */
+  readonly loseKeys?: readonly string[];
 }
 
 /**
@@ -107,8 +149,8 @@ export interface PruneInput {
  * tree its public half and a tail; `workflow/operations.ts` says where that is measured.
  */
 export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneOk | PruneError {
-  const content = screenContent({ reason: input.reason, run: input.run });
-  if (!content.ok) return content;
+  const early = screenContent({ reason: input.reason, run: input.run });
+  if (!early.ok) return early;
 
   if (input.tail === ctx.writer.tail) {
     return {
@@ -136,6 +178,27 @@ export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneO
         'with no events has nothing to account for.',
     };
   }
+
+  // The keys this tail introduces and nothing revokes: read off every tail of the tree, because
+  // whether the cut breaks them is a question about the tails that stay. The writer's own tail
+  // stays, and it is where the waiver lands.
+  const entriesByTail = new Map(
+    listTails(ctx.layout).map(
+      (id) => [id, readTailEntries(ctx.layout, id, ctx.upcasters)] as const,
+    ),
+  );
+  const held = keysATailHolds(entriesByTail, input.tail, ctx.writer.tail);
+  const named = (input.loseKeys ?? []).map((fp) => fp.toLowerCase());
+  const holds = new Set(held.map((key) => key.fp));
+  const matches = named.length === holds.size && named.every((fp) => holds.has(fp));
+  if (held.length > 0 && !matches) return keysWouldBeLost(input.tail, held, named);
+  const lostReason =
+    held.length > 0
+      ? `Keys lost: ${held.map((key) => `${key.fp} (${key.how}, ${key.breaks ? 'breaks' : 'stranded'})`).join(', ')}. `
+      : '';
+
+  const content = screenContent({ reason: `${lostReason}${input.reason}`, run: input.run });
+  if (!content.ok) return content;
 
   const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);

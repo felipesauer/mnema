@@ -157,6 +157,7 @@ export {
   type TailSince,
 } from './chain/store.js';
 export { subjectEvents } from './chain/subject-events.js';
+export { type KeyATailHolds, type KeyIntroduction, keysATailHolds } from './chain/tail-keys.js';
 export { DEFAULT_WAIT_MS, TailBusyError } from './chain/tail-lock.js';
 export {
   arrivalsSince,

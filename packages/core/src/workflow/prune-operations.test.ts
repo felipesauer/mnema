@@ -42,7 +42,7 @@ function contextIn(chainRoot: string): WriteContext {
 }
 
 /** A second machine's tail, merged in the way an offline copy is: its files, its key. */
-function secondMachine(): { tail: string; anchor: string } {
+function secondMachine(): { tail: string; anchor: string; key: string } {
   const ctx = contextIn(elsewhere);
   const created = createTask(ctx, { title: 'work another machine did' });
   expect(created.ok, JSON.stringify(created)).toBe(true);
@@ -61,7 +61,7 @@ function secondMachine(): { tail: string; anchor: string } {
     if (!key.endsWith('.pub')) continue;
     writeFileSync(join(root, 'keys', key), readFileSync(join(elsewhere, 'keys', key), 'utf-8'));
   }
-  return { tail: ctx.writer.tail, anchor: ctx.writer.anchor };
+  return { tail: ctx.writer.tail, anchor: ctx.writer.anchor, key: ctx.writer.signerFingerprint };
 }
 
 /** The `tail.pruned` on the record, or a failure saying what was there instead. */
@@ -82,6 +82,7 @@ describe('authorizing a cut reads its claims off the record', () => {
     const done = authorizeTailPrune(ctx, {
       tail: other.tail,
       reason: 'the person asked to be taken out of the record',
+      loseKeys: [other.key],
     });
     expect(done.ok, JSON.stringify(done)).toBe(true);
     if (!done.ok) return;
@@ -94,7 +95,9 @@ describe('authorizing a cut reads its claims off the record', () => {
     expect(waiver.payload.tail).toBe(other.tail);
     expect(waiver.payload.eventCount).toBe(done.eventCount);
     expect(waiver.payload.throughHash).toBe(done.throughHash);
-    expect(waiver.payload.reason).toBe('the person asked to be taken out of the record');
+    expect(waiver.payload.reason).toBe(
+      `Keys lost: ${other.key} (founded, stranded). the person asked to be taken out of the record`,
+    );
     // The SUBJECT is the anchor that tail served; the `who` is whoever authorized the
     // cut. On one machine authorizing another's tail these differ, and the record
     // keeps both.
@@ -108,11 +111,53 @@ describe('authorizing a cut reads its claims off the record', () => {
     const done = authorizeTailPrune(ctx, {
       tail: other.tail,
       reason: 'rotating out, key was AKIAIOSFODNN7EXAMPLE',
+      loseKeys: [other.key],
     });
     expect(done.ok, JSON.stringify(done)).toBe(true);
     if (!done.ok) return;
     expect(done.replaced).toEqual(['aws-access-key']);
-    expect(waiverOn(ctx).payload.reason).toBe('rotating out, key was <SECRET:aws-access-key>');
+    expect(waiverOn(ctx).payload.reason).toBe(
+      `Keys lost: ${other.key} (founded, stranded). rotating out, key was <SECRET:aws-access-key>`,
+    );
+  });
+});
+
+describe('a tail that founded a key nothing revokes is not cut without naming the key', () => {
+  it('refuses, names the key and what becomes of it, and writes nothing', () => {
+    const ctx = contextIn(root);
+    const other = secondMachine();
+    const before = orderedEvents(ctx.layout, upcasters).length;
+
+    const refused = authorizeTailPrune(ctx, { tail: other.tail, reason: 'asked out' });
+    expect(refused.ok).toBe(false);
+    if (refused.ok) return;
+    expect(refused.code).toBe('KEYS_WOULD_BE_LOST');
+    expect(refused.message).toContain(`${other.key} (founded) is stranded`);
+    // The ready command carries the whole fingerprint of the one key.
+    expect(refused.message).toContain(`--lose-keys ${other.key}`);
+    expect(orderedEvents(ctx.layout, upcasters).length).toBe(before);
+  });
+
+  it('refuses a list that is not exactly the keys the tail introduces', () => {
+    const ctx = contextIn(root);
+    const other = secondMachine();
+    const stranger = 'f'.repeat(64);
+    for (const loseKeys of [[], [stranger], [other.key, stranger]]) {
+      const refused = authorizeTailPrune(ctx, { tail: other.tail, reason: 'asked out', loseKeys });
+      expect(refused.ok, JSON.stringify(loseKeys)).toBe(false);
+      if (!refused.ok) expect(refused.code).toBe('KEYS_WOULD_BE_LOST');
+    }
+  });
+
+  it('accepts the fingerprints in capitals, as a person may type them', () => {
+    const ctx = contextIn(root);
+    const other = secondMachine();
+    const done = authorizeTailPrune(ctx, {
+      tail: other.tail,
+      reason: 'asked out',
+      loseKeys: [other.key.toUpperCase()],
+    });
+    expect(done.ok, JSON.stringify(done)).toBe(true);
   });
 });
 

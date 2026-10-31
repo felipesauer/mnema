@@ -91,7 +91,7 @@ function tailDirectory(tail: string): string {
  * is also the case the fact was designed around: one person asking to be taken out of
  * a record, another authorizing it.
  */
-function mergeAForeignTail(): { tail: string; anchor: string } {
+function mergeAForeignTail(): { tail: string; anchor: string; key: string } {
   const elsewhere = mkdtempSync(join(sandbox, 'other-machine-'));
   // A clone of the record first, so its tail names this record (FORMAT.md section 6.10).
   cloneTheRecord(publicRoot(), elsewhere);
@@ -110,7 +110,7 @@ function mergeAForeignTail(): { tail: string; anchor: string } {
     if (!key.endsWith('.pub')) continue;
     cpSync(join(elsewhere, 'keys', key), join(publicRoot(), 'keys', key));
   }
-  return { tail: writer.tail, anchor: writer.anchor };
+  return { tail: writer.tail, anchor: writer.anchor, key: writer.signerFingerprint };
 }
 
 /** Every file under a directory, by relative path, with its bytes. */
@@ -172,6 +172,8 @@ describe('the record names the cut, and the verb is what writes it', () => {
       foreign.tail,
       '--reason',
       'the person asked to be taken out of the record',
+      '--lose-keys',
+      foreign.key,
     );
     expect(authorized.failed, authorized.text).toBe(false);
     expect(authorized.out[0]).toBe(`Authorized the cut of tail ${foreign.tail}`);
@@ -211,6 +213,8 @@ describe('the record names the cut, and the verb is what writes it', () => {
       foreign.tail,
       '--reason',
       'the person asked to be taken out of the record',
+      '--lose-keys',
+      foreign.key,
     );
     expect(authorized.failed, authorized.text).toBe(false);
 
@@ -234,6 +238,8 @@ describe('the record names the cut, and the verb is what writes it', () => {
       foreign.tail,
       '--reason',
       'the person asked to be taken out of the record',
+      '--lose-keys',
+      foreign.key,
     );
 
     // The measurement, not a caution: deleting a committed tail leaves the content in

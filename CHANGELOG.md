@@ -85,14 +85,30 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   or earlier that arrives in a change is refused; upgrade, take the tail out, and record its work again
   (`docs/cli-reference.md`).
 
+- **`tail prune` refuses to authorize the cut of a tail that founded or enrolled a key nothing revokes, unless `--lose-keys`
+  names every one of them.** An identity lives only in the tail that wrote it (`identity.founded`, `key.enrolled`,
+  `agent.enrolled`, `checker.enrolled`), and the waiver carries none of it. Measured with the binary: in an identity of two
+  keys, cutting the founder's tail leaves the second key's events failing T2/T4 in both readers and its next write refused
+  (`STALE_ANCHOR`); cutting the tail of a founder whose enrolled key never wrote leaves `verify` green and the key without its
+  identity, and that key's next write founds an identity of its own with no refusal. The refusal (`KEYS_WOULD_BE_LOST`) names
+  each key and says whether the cut breaks it (events of it stay in tails that stay) or only strands it, and prints the command
+  with `--lose-keys <fp>[,<fp>]`; the cut's reason then starts with `Keys lost:` and the list, and nothing in the format
+  changed. A key a `key.revoked`, `agent.retired` or `checker.retired` takes out does not count; the disk cannot tell a key
+  whose machine is gone from one that will write, so any other counts. `tail list` marks the tails that hold such keys. The
+  tail of a key that was only enrolled, and holds none, is cut as before; cutting a record's genesis, which holds the
+  founder, now needs the option. Carrying an identity out of a cut tail stays a format study for later. Held by
+  `packages/code/tests/a-tail-that-holds-keys-is-not-cut-without-naming-them.test.ts` (the binary, both readers) and
+  `packages/chain/src/chain/tail-keys.test.ts`.
+
 - **A cut of the record's genesis tail made with the `tail prune` verb keeps the record's name, and the two ways a record can
   still take two names are said.** The name derives from the genesis tail, and the waiver `tail prune` writes before the cut
   lives on the pruner's own tail, which names the record from that genesis: every later write takes the name from it, and a
   branch made before the cut merges into a record of one name. Nothing in the format changed; a test with the built binary
   holds it, its writers being keys other than the cut tail's: both readers verify the merge there. The cut keeps the name,
-  not the identity the cut tail founded, if it founded one: measured and not yet held by a test, a later write signed by
-  that tail's key is refused (`STALE_ANCHOR`), and its writes on a branch made before the cut fail T2/T4 in both readers
-  once merged. **The cost, declared:** the genesis removed by hand, or cut by mnema 0.1.4 (whose waiver lives
+  not the identity the cut tail founded: this entry first said the merge verifies wherever every later write is by another
+  key, which was true of the merge and false of the record, because a cut of a tail that founded or enrolled a key leaves
+  that key's events failing T2/T4 and its next write refused (`STALE_ANCHOR`); the verb now refuses such a cut unless the
+  keys are named (the entry below). **The cost, declared:** the genesis removed by hand, or cut by mnema 0.1.4 (whose waiver lives
   on a tail that names no record), leaves no tail carrying the name, so the next write names the record from the tails
   still there; and a tail written by 0.1.4 whose first entry is older than the genesis (a clock that ran behind), brought
   by a branch where a 0.1.5 writer named the record after it, does the same. Merged, either leaves a directory of two names

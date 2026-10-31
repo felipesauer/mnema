@@ -1050,16 +1050,32 @@ the one this machine writes to.
 the cut.** The name derives from the record's genesis tail (FORMAT.md section 6.10), and
 the waiver is written before the cut on this machine's own tail, which names the record
 from that genesis; every later write takes the name from it, and a branch made before the
-cut merges into a record of one name. The cut keeps the name, not the identity the cut tail
-founded, if it founded one (as a record's first tail usually did): a later write signed by that
-tail's key is refused (`STALE_ANCHOR`), and its writes on a branch made before the cut fail
-`verify` once merged (T2/T4). So the merge verifies where every write after the cut is
-signed by another key, which is what the test holds; the rest is measured, not yet held by
-one. Removing the genesis with no waiver, or with a waiver written
+cut merges into a record of one name, and both readers verify that merge where the writers
+are keys other than the cut tail's (`the-record-name-survives-a-cut-of-its-genesis.test.ts`). The cut
+keeps the name, not the identity: the genesis founded one, so cutting it needs `--lose-keys`
+(below). Removing the genesis with no waiver, or with a waiver written
 by mnema 0.1.4 (on a tail that names no record), leaves no tail carrying the name: the next
 write names the record from the tails still there, and a branch that had named it from the
 old genesis leaves two names once merged, which `verify` refuses (`another-record`).
 `verify --since` refuses that branch before the merge.
+
+**A tail that founded or enrolled a key is not cut without naming it.** An identity lives only
+in the tail that wrote it, and the waiver carries none of it: cut the founder's tail of an
+identity of two keys and the second key's events fail `verify` (T2/T4) in both readers and its
+next write is refused (`STALE_ANCHOR`); cut the tail of a founder whose enrolled key never wrote
+and `verify` stays green while that key is left without its identity. So `tail prune` refuses
+(`KEYS_WOULD_BE_LOST`) a tail that introduces a key nothing revokes (`key.revoked`,
+`agent.retired` or `checker.retired`), names each key and says whether the cut **breaks** it (its
+events stay in tails that stay) or only **strands** it, and prints the command:
+
+```sh
+mnema tail prune <tail> --reason "<why>" --lose-keys <fingerprint>[,<fingerprint>]
+```
+
+`--lose-keys` takes the whole fingerprints, every one of them and no other, and the waiver's
+reason then starts with `Keys lost:` and that list. The disk cannot say whether a key's machine
+still exists, so a key not revoked counts. `tail list` marks the tails that hold such keys. The
+tail of a key that was only enrolled holds none and is cut as before.
 
 And it does **not** promise forgetting. Once the record is committed and pushed, the
 events are in the git history, on the remote and in every clone; reaching those takes
