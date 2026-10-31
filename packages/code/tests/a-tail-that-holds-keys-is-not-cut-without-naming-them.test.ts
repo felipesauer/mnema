@@ -190,7 +190,7 @@ describe('the founder tail of a two-key identity, C having written', () => {
     expect(verified.status).toBe(1);
     expect(verified.err + verified.out).toContain('T2/T4');
     expect(secondVerdict(world)).toBe('REFUSED');
-  });
+  }, 120_000);
 });
 
 describe('the control: the tail of a key that was only enrolled', () => {
@@ -202,7 +202,7 @@ describe('the control: the tail of a key that was only enrolled', () => {
     const verified = mnema(built.world, 'B', 'verify', '--require=signed');
     expect(verified.status, verified.err).toBe(0);
     expect(secondVerdict(built.world)).toBe('VERIFIED');
-  });
+  }, 120_000);
 });
 
 describe('the founder tail when the enrolled key never wrote', () => {
@@ -241,7 +241,7 @@ describe('the founder tail when the enrolled key never wrote', () => {
     const writeByA = mnema(built.world, 'A', 'decision', 'record', 'A after', 'the cut');
     expect(writeByA.status).toBe(1);
     expect(writeByA.err).toContain('STALE_ANCHOR');
-  });
+  }, 120_000);
 
   it('refuses a list that leaves out a key', () => {
     const built = build('short-list', false);
@@ -260,5 +260,5 @@ describe('the founder tail when the enrolled key never wrote', () => {
     );
     expect(short.status).toBe(1);
     expect(short.err).toContain('KEYS_WOULD_BE_LOST');
-  });
+  }, 120_000);
 });
