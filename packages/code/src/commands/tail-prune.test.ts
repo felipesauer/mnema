@@ -53,7 +53,10 @@ function rootOf(repo: string, env: DiscoveryEnv, scope: Scope): string {
  * The tail a waiver names is always somebody else's (the door refuses one naming the
  * tail it is written to), so this is the only fixture that can reach the happy path.
  */
-function mergeAForeignTail(into: string, label: string): { tail: string; anchor: string } {
+function mergeAForeignTail(
+  into: string,
+  label: string,
+): { tail: string; anchor: string; lose: string[] } {
   const machine = join(sandbox, label);
   mkdirSync(machine, { recursive: true });
   // A clone of the record first, so its tail names this record (FORMAT.md section 6.10).
@@ -71,7 +74,8 @@ function mergeAForeignTail(into: string, label: string): { tail: string; anchor:
   for (const key of readdirSync(join(machine, 'keys'))) {
     if (key.endsWith('.pub')) cpSync(join(machine, 'keys', key), join(into, 'keys', key));
   }
-  return { tail: writer.tail, anchor: writer.anchor };
+  // The one key that tail founded: cutting it needs the key named (ADR-154).
+  return { tail: writer.tail, anchor: writer.anchor, lose: [writer.signerFingerprint] };
 }
 
 /** The one `tail.pruned` on a tree, or a failure naming what was there instead. */
@@ -92,7 +96,11 @@ describe('mnema tail prune', () => {
 
     const result = runTailPrune(
       { cwd: repo, env },
-      { tail: foreign.tail, reason: 'the person asked to be taken out of the record' },
+      {
+        tail: foreign.tail,
+        reason: 'the person asked to be taken out of the record',
+        loseKeys: foreign.lose,
+      },
     );
     expect(result.ok, JSON.stringify(result)).toBe(true);
     if (!result.ok) return;
@@ -129,7 +137,7 @@ describe('mnema tail prune', () => {
 
     const result = runTailPrune(
       { cwd: repo, env },
-      { tail: foreign.tail, reason: 'this machine is being wiped' },
+      { tail: foreign.tail, reason: 'this machine is being wiped', loseKeys: foreign.lose },
     );
     expect(result.ok, JSON.stringify(result)).toBe(true);
     if (!result.ok) return;
@@ -157,6 +165,7 @@ describe('mnema tail prune', () => {
       {
         tail: foreign.tail,
         reason: 'the person asked to be taken out of the record',
+        loseKeys: foreign.lose,
         which: 'agent-alpha',
         run: '01980000-0000-7000-8000-000000000001',
       },
@@ -164,7 +173,9 @@ describe('mnema tail prune', () => {
     expect(result.ok, JSON.stringify(result)).toBe(true);
 
     const waiver = waiverOn(publicRoot);
-    expect(waiver.payload.reason).toBe('the person asked to be taken out of the record');
+    expect(waiver.payload.reason).toBe(
+      `Keys lost: ${foreign.lose[0]} (founded, stranded). the person asked to be taken out of the record`,
+    );
     expect(waiver.which).toBe('agent-alpha');
     expect(waiver.run).toBe('01980000-0000-7000-8000-000000000001');
   });
@@ -176,13 +187,17 @@ describe('mnema tail prune', () => {
 
     const result = runTailPrune(
       { cwd: repo, env },
-      { tail: foreign.tail, reason: 'rotating out, key was AKIAIOSFODNN7EXAMPLE' },
+      {
+        tail: foreign.tail,
+        reason: 'rotating out, key was AKIAIOSFODNN7EXAMPLE',
+        loseKeys: foreign.lose,
+      },
     );
     expect(result.ok, JSON.stringify(result)).toBe(true);
     if (!result.ok) return;
     expect(result.replaced).toEqual(['aws-access-key']);
     expect(waiverOn(publicRoot).payload.reason).toBe(
-      'rotating out, key was <SECRET:aws-access-key>',
+      `Keys lost: ${foreign.lose[0]} (founded, stranded). rotating out, key was <SECRET:aws-access-key>`,
     );
   });
 

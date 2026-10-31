@@ -908,7 +908,12 @@ describe('every write path leaves the record fully signed', () => {
           foreignTail = mergeAForeignTail(publicRoot);
           void ok(
             'tail prune',
-            runTailPrune(ctx, { tail: foreignTail, reason: 'the person asked to be taken out' }),
+            runTailPrune(ctx, {
+              tail: foreignTail,
+              reason: 'the person asked to be taken out',
+              // The foreign tail founded one key, the one its id begins with.
+              loseKeys: [foreignTail.slice(0, foreignTail.lastIndexOf('-'))],
+            }),
           );
         },
       },

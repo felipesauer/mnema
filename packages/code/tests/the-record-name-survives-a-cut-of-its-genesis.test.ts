@@ -42,6 +42,10 @@ const EARLIER = join(FIXTURES, 'witnessed-record');
 const GENESIS =
   '7e5a72fd0ea237237651690087e4a87133dab8b78847efadde778f633214cca4-05e27e636158e547a09e594545603717';
 
+/** The key the genesis founded and the one it enrolled: what cutting it loses. */
+const GENESIS_KEYS =
+  '7e5a72fd0ea237237651690087e4a87133dab8b78847efadde778f633214cca4,6bc98177967e959aefddb48f3e757e4358c6fb30910f44d5aa75247e05cdbc10';
+
 let sandbox: string;
 
 function git(dir: string, ...args: string[]): string {
@@ -128,7 +132,22 @@ function branchThenCut(repo: string, withTheVerb: boolean): string {
   git(repo, 'commit', '-q', '-m', 'feature');
   git(repo, 'switch', '-q', 'main');
   if (withTheVerb) {
-    written('pruner', repo, 'tail', 'prune', GENESIS, '--reason', 'Asked to be taken out');
+    // The genesis founded a key and enrolled another, and nothing revokes them: the verb refuses
+    // the cut until both are named (the keys are the fixture's, read off its tail).
+    const refused = mnema('pruner', repo, 'tail', 'prune', GENESIS, '--reason', 'Asked out');
+    expect(refused.status).toBe(1);
+    expect(refused.err).toContain('Refused (KEYS_WOULD_BE_LOST)');
+    written(
+      'pruner',
+      repo,
+      'tail',
+      'prune',
+      GENESIS,
+      '--reason',
+      'Asked to be taken out',
+      '--lose-keys',
+      GENESIS_KEYS,
+    );
     git(repo, 'add', '.mnema');
   }
   git(repo, 'rm', '-rq', join('.mnema', 'tails', GENESIS));

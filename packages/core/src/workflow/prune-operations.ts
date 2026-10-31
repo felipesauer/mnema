@@ -40,7 +40,14 @@
  * destructive. It is authorized by a person at a shell, or not at all.
  */
 
-import { tailPruned, tailStanding } from '@mnema/chain';
+import {
+  type KeyATailHolds,
+  keysATailHolds,
+  listTails,
+  readTailEntries,
+  tailPruned,
+  tailStanding,
+} from '@mnema/chain';
 import {
   type ScreenedWrite,
   type ScreenRefusal,
@@ -49,7 +56,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { oneLine } from '../one-line.js';
-import { type AppendRefusal, appendFact } from './append.js';
+import { type AppendRefusal, appendFact, askTheDoor } from './append.js';
 import { authorizingAnchor } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
 
@@ -76,7 +83,50 @@ export type PruneError =
   | ScreenRefusal
   | AppendRefusal
   | { readonly ok: false; readonly code: 'UNKNOWN_TAIL'; readonly message: string }
-  | { readonly ok: false; readonly code: 'TAIL_IS_OWN'; readonly message: string };
+  | { readonly ok: false; readonly code: 'TAIL_IS_OWN'; readonly message: string }
+  | { readonly ok: false; readonly code: 'KEYS_WOULD_BE_LOST'; readonly message: string }
+  | { readonly ok: false; readonly code: 'NO_KEYS_TO_LOSE'; readonly message: string };
+
+const QUOTE = String.fromCharCode(39);
+const BACKSLASH = String.fromCharCode(92);
+
+/** `text` as one word for a POSIX shell: in single quotes, a single quote closed, escaped and reopened. */
+function shellQuote(text: string): string {
+  return QUOTE + text.split(QUOTE).join(QUOTE + BACKSLASH + QUOTE + QUOTE) + QUOTE;
+}
+
+/** What the cut does to one key, in the words the refusal and the waiver's reason share. */
+function whatBecomesOf(key: KeyATailHolds): string {
+  return key.breaks
+    ? 'breaks: events it signed in tails that stay stop verifying (T2/T4), and its next write is refused'
+    : 'is stranded: nothing of it stays to fail verify, but its next write is refused, or an enrolled key founds an identity of its own';
+}
+
+/** The refusal of a cut that would leave keys without the tail that founded or enrolled them. */
+function keysWouldBeLost(
+  tail: string,
+  held: readonly KeyATailHolds[],
+  named: readonly string[],
+  asked: { readonly reason: string; readonly which: string | undefined },
+): PruneError {
+  const list = held.map((key) => key.fp).join(',');
+  const wrongly = named.length > 0 ? ' The keys named do not match the ones it introduces.' : '';
+  // The command as the shell will read it: the reason the caller gave, in single quotes.
+  const quoted = shellQuote(asked.reason);
+  const agent = asked.which !== undefined ? ` --which ${shellQuote(asked.which)}` : '';
+  return {
+    ok: false,
+    code: 'KEYS_WOULD_BE_LOST',
+    message:
+      `Tail ${oneLine(tail)} introduces ${held.length} key(s) the record still depends on:\n${held
+        .map((key) => `  ${key.fp} (${key.how}) ${whatBecomesOf(key)}`)
+        .join('\n')}\n` +
+      `The identity lives only in the tail that founded or enrolled it, and the cut carries none ` +
+      `of it.${wrongly} To authorize the cut anyway, name every one of those keys, with the ` +
+      `command as it stands: mnema tail prune ${oneLine(tail)} --reason ${quoted}${agent} ` +
+      `--lose-keys ${list}`,
+  };
+}
 
 /** What the caller asks to authorize. */
 export interface PruneInput {
@@ -88,6 +138,11 @@ export interface PruneInput {
   readonly which?: string;
   /** The run this belongs to, if any. */
   readonly run?: string;
+  /**
+   * The fingerprints of every key the tail introduces that nothing revokes, to cut it anyway:
+   * the cut is authorized only when this names exactly the keys {@link keysATailHolds} finds.
+   */
+  readonly loseKeys?: readonly string[];
 }
 
 /**
@@ -107,8 +162,8 @@ export interface PruneInput {
  * tree its public half and a tail; `workflow/operations.ts` says where that is measured.
  */
 export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneOk | PruneError {
-  const content = screenContent({ reason: input.reason, run: input.run });
-  if (!content.ok) return content;
+  const early = screenContent({ reason: input.reason, run: input.run });
+  if (!early.ok) return early;
 
   if (input.tail === ctx.writer.tail) {
     return {
@@ -142,27 +197,72 @@ export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneO
   if (!agent.ok) return agent;
   const which = agent.which;
 
-  const appended = appendFact(ctx, ({ at }) =>
-    tailPruned(
-      {
-        at,
-        who,
-        signerFp: ctx.writer.signerFingerprint,
-        // The anchor the cut tail served: the identity the fact is filed under, read
-        // from the record and never handed in.
-        subject: standing.who,
-        ...(which !== undefined ? { which } : {}),
-        ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
-      },
-      {
-        tail: input.tail,
-        throughHash: standing.throughHash,
-        eventCount: standing.eventCount,
-        // The screened text, never `input.reason`.
-        reason: content.fields.reason,
-      },
+  /** The fact, built for the reason given: asked of the door first and appended after. */
+  const build =
+    (words: string, run: string | undefined) =>
+    ({ at }: { at: string }) =>
+      tailPruned(
+        {
+          at,
+          who,
+          signerFp: ctx.writer.signerFingerprint,
+          // The anchor the cut tail served: the identity the fact is filed under, read
+          // from the record and never handed in.
+          subject: standing.who,
+          ...(which !== undefined ? { which } : {}),
+          ...(run !== undefined ? { run } : {}),
+        },
+        {
+          tail: input.tail,
+          throughHash: standing.throughHash,
+          eventCount: standing.eventCount,
+          // The screened text, never `input.reason`.
+          reason: words,
+        },
+      );
+
+  // What the door says of the fact as the caller worded it comes first: a reason that says
+  // nothing is refused as that, and not hidden behind the keys the cut would lose.
+  const asked = askTheDoor(ctx, (stamp) => build(early.fields.reason, early.fields.run)(stamp));
+  if (asked !== undefined) return asked;
+
+  // The keys this tail introduces and nothing revokes: read off every tail of the tree, because
+  // whether the cut breaks them is a question about the tails that stay. The writer's own tail
+  // stays, and it is where the waiver lands.
+  const entriesByTail = new Map(
+    listTails(ctx.layout).map(
+      (id) => [id, readTailEntries(ctx.layout, id, ctx.upcasters)] as const,
     ),
   );
+  const held = keysATailHolds(entriesByTail, input.tail, ctx.writer.tail);
+  const named = [...new Set((input.loseKeys ?? []).map((fp) => fp.toLowerCase()))];
+  const holds = new Set(held.map((key) => key.fp));
+  if (held.length === 0 && named.length > 0) {
+    return {
+      ok: false,
+      code: 'NO_KEYS_TO_LOSE',
+      message:
+        `Tail ${oneLine(input.tail)} introduces no key the record depends on, so there is nothing ` +
+        'for --lose-keys to name: cut it without the option.',
+    };
+  }
+  const matches = named.length === holds.size && named.every((fp) => holds.has(fp));
+  if (held.length > 0 && !matches) {
+    return keysWouldBeLost(input.tail, held, named, {
+      reason: early.fields.reason,
+      which: input.which,
+    });
+  }
+  const lostReason =
+    held.length > 0
+      ? `Keys lost: ${held.map((key) => `${key.fp} (${key.how}, ${key.breaks ? 'breaks' : 'stranded'})`).join(', ')}. `
+      : '';
+
+  // The reason as it will be written, screened once more for the size the list adds.
+  const content = screenContent({ reason: lostReason + input.reason, run: input.run });
+  if (!content.ok) return content;
+
+  const appended = appendFact(ctx, build(content.fields.reason, content.fields.run));
   if (!appended.ok) return appended;
   return {
     ok: true,

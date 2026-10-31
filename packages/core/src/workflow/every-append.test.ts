@@ -625,7 +625,13 @@ describe('every write refuses what no read could accept', () => {
           rmSync(machine, { recursive: true, force: true });
           foreignTail = other.tail;
         },
-        drive: () => authorizeTailPrune(ctx, { tail: foreignTail, reason: '' }),
+        drive: () =>
+          authorizeTailPrune(ctx, {
+            tail: foreignTail,
+            // The foreign tail founded one key, the one its id begins with.
+            loseKeys: [foreignTail.slice(0, foreignTail.lastIndexOf('-'))],
+            reason: '',
+          }),
       },
     ];
   }

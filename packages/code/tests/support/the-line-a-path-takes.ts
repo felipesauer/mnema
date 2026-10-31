@@ -248,6 +248,11 @@ export function lineFor(routed: Routed, fixture: Fixture): string[] {
     words.push(option.long as string, value(option.name(), closedSet(option)));
   }
   words.push(...(ALSO_NEEDS[routed.path] ?? []));
+  // A cut of a tail that founded a key names the key (ADR-154): the foreign tail founded the one
+  // its id begins with.
+  if (routed.path === 'tail prune') {
+    words.push('--lose-keys', fixture.foreignTail.slice(0, fixture.foreignTail.lastIndexOf('-')));
+  }
   return words;
 }
 

@@ -92,7 +92,13 @@ export type CutRefused =
  */
 export function runTailPrune(
   ctx: TailPruneContext,
-  input: { tail: string; reason: string; which?: string; run?: string },
+  input: {
+    tail: string;
+    reason: string;
+    which?: string;
+    run?: string;
+    loseKeys?: readonly string[];
+  },
 ): CutAuthorized | CutRefused {
   const upcasters = catalogUpcasters();
   const writing = treesToWrite(ctx);
@@ -119,6 +125,7 @@ export function runTailPrune(
         reason: input.reason,
         ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
+        ...(input.loseKeys !== undefined ? { loseKeys: input.loseKeys } : {}),
       },
     );
     // Checkpoint so the waiver is signature-covered at once. It matters more here than

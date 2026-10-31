@@ -5,8 +5,11 @@ import {
   anchorPath,
   catalogUpcasters,
   deriveAnchor,
+  keysATailHolds,
+  listTails,
   openChainForWriting,
   publicKeyPath,
+  readTailEntries,
   signerAt,
   writeAnchor,
 } from '@mnema/chain';
@@ -390,11 +393,24 @@ describe('a checkout the key left writes nothing, through every write of the sur
       // A waiver names another installation's tail: each side names the other's.
       op: 'authorizeTailPrune',
       refusedBy: 'the anchor',
-      drive: (as, who, s) =>
-        authorizeTailPrune(as, {
-          tail: who === 'left' ? s.member.writer.tail : s.left.writer.tail,
+      drive: (as, who, s) => {
+        const tail = who === 'left' ? s.member.writer.tail : s.left.writer.tail;
+        // The founder's tail holds the keys it founded and enrolled, and a cut names them.
+        const held = keysATailHolds(
+          new Map(
+            listTails(as.layout).map(
+              (id) => [id, readTailEntries(as.layout, id, as.upcasters)] as const,
+            ),
+          ),
+          tail,
+          as.writer.tail,
+        );
+        return authorizeTailPrune(as, {
+          tail,
+          loseKeys: held.map((key) => key.fp),
           reason: 'r',
-        }),
+        });
+      },
     },
     {
       op: 'enrollKey',

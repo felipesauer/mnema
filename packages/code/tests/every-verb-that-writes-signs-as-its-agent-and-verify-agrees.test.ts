@@ -30,7 +30,13 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
+import {
+  type CatalogEvent,
+  catalogUpcasters,
+  keysATailHolds,
+  listTails,
+  readTailEntries,
+} from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/program.js';
@@ -299,8 +305,26 @@ const VERBS: Record<string, readonly Verb[]> = {
   ],
   'tail-prune.ts': [
     {
-      argv: () => ['tail', 'prune', ids.tail as string, '--reason', 'r'],
-      named: () => ['tail', 'prune', ids.tail as string, '--reason', 'r', '--which', 'bot'],
+      argv: () => [
+        'tail',
+        'prune',
+        ids.tail as string,
+        '--reason',
+        'r',
+        '--lose-keys',
+        ids.lose as string,
+      ],
+      named: () => [
+        'tail',
+        'prune',
+        ids.tail as string,
+        '--reason',
+        'r',
+        '--lose-keys',
+        ids.lose as string,
+        '--which',
+        'bot',
+      ],
     },
   ],
   'task.ts': [
@@ -397,6 +421,14 @@ beforeAll(async () => {
   )?.[1] as string;
   const listing = await did('tail', 'list');
   ids.tail = listing.match(/\b[0-9a-f]{64}-[0-9a-zA-Z-]+\b/)?.[0] as string;
+  // That tail founded keys, and a cut names them: read off the record, as the refusal would print.
+  const layout = { root: trees().projectPublic as string };
+  const entries = new Map(
+    listTails(layout).map((id) => [id, readTailEntries(layout, id, catalogUpcasters())] as const),
+  );
+  ids.lose = keysATailHolds(entries, ids.tail as string)
+    .map((key) => key.fp)
+    .join(',');
 
   // From here the machine holds the agent's folder and no key of a person's.
   rmSync(join(home, '.mnema', 'identity'), { recursive: true, force: true });

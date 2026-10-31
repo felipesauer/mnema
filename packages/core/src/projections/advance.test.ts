@@ -294,7 +294,14 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
   'tail.pruned': {
     setup: (ctx) => aSecondTailIn(ctx.layout.root),
     emit: (ctx, tail) =>
-      landed(authorizeTailPrune(ctx, { tail: tail as string, reason: 'it served its purpose' })),
+      landed(
+        authorizeTailPrune(ctx, {
+          tail: tail as string,
+          // The second tail founded one key, the one its id begins with.
+          loseKeys: [(tail as string).slice(0, (tail as string).lastIndexOf('-'))],
+          reason: 'it served its purpose',
+        }),
+      ),
   },
   'channel.switched': {
     emit: (ctx) => landed(switchChannel(ctx, { channel: 'a-channel-that-arrived', on: false })),

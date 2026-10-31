@@ -262,7 +262,13 @@ describe('every kind says where its why is, and the door asks it there', () => {
           rmSync(machine, { recursive: true, force: true });
           foreignTail = other.tail;
         },
-        drive: (said) => authorizeTailPrune(ctx, { tail: foreignTail, reason: said }),
+        drive: (said) =>
+          authorizeTailPrune(ctx, {
+            tail: foreignTail,
+            // The other machine founded one key, the one its tail id begins with.
+            loseKeys: [foreignTail.slice(0, foreignTail.lastIndexOf('-'))],
+            reason: said,
+          }),
       },
       {
         kind: 'checker.retired',

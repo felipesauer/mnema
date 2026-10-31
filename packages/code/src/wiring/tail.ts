@@ -85,6 +85,8 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
         '  The tree is where a waiver over that tail has to land, so `prune` writes there.',
         '  The events and the head are what a waiver would claim; `prune` reads them again.',
         '  `cut authorized` means a waiver in that same tree already authorizes the cut.',
+        '  `holds N key(s) the record needs` means the tail founded or enrolled keys the record still depends on: `prune` refuses it',
+        '  unless `--lose-keys` names them, and says for each whether the cut breaks it or strands it.',
         '  Nothing here removes anything, and a cut this lists is still yours to carry out.',
       ].join('\n'),
     )
@@ -107,51 +109,61 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
         'waiver always follows the tail to the tree that holds it.',
       declaredAgent,
     )
+    .option(
+      '--lose-keys <fingerprints>',
+      'cut a tail that founded or enrolled keys the record still depends on, naming every one of them ' +
+        '(comma-separated, whole): the refusal prints the list and the command. Those keys ' +
+        "stop verifying or cannot write, and the cut's reason starts with them",
+      (value: string) => value.split(',').map((fp) => fp.trim()),
+    )
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action(async (named: string, opts: { reason: string; which?: string }) => {
-      const { runTailPrune } = await import('../commands/tail-prune.js');
-      const run = pinnedRun();
-      if (run === PIN_REFUSED) {
-        io.fail();
-        return;
-      }
-      const result = runTailPrune(hereWriting(wiring), {
-        tail: named,
-        reason: opts.reason,
-        ...(opts.which !== undefined ? { which: opts.which } : {}),
-        ...(run !== undefined ? { run } : {}),
-      });
-      if (!result.ok) {
-        reportRefusal(wiring, result, { UNKNOWN_TAIL: noSuchRecord('tail', named) });
-        return;
-      }
-      // What was recorded, then where the files still are, then how far a cut
-      // reaches. The order is the order a reader acts in.
-      io.out(`Authorized the cut of tail ${result.tail}`);
-      io.out(
-        render(
-          fact(
-            `${result.eventCount} event(s) through ${result.throughHash}, the tail of ${result.anchor}`,
+    .action(
+      async (named: string, opts: { reason: string; which?: string; loseKeys?: string[] }) => {
+        const { runTailPrune } = await import('../commands/tail-prune.js');
+        const run = pinnedRun();
+        if (run === PIN_REFUSED) {
+          io.fail();
+          return;
+        }
+        const result = runTailPrune(hereWriting(wiring), {
+          tail: named,
+          reason: opts.reason,
+          ...(opts.which !== undefined ? { which: opts.which } : {}),
+          ...(run !== undefined ? { run } : {}),
+          ...(opts.loseKeys !== undefined ? { loseKeys: opts.loseKeys } : {}),
+        });
+        if (!result.ok) {
+          reportRefusal(wiring, result, { UNKNOWN_TAIL: noSuchRecord('tail', named) });
+          return;
+        }
+        // What was recorded, then where the files still are, then how far a cut
+        // reaches. The order is the order a reader acts in.
+        io.out(`Authorized the cut of tail ${result.tail}`);
+        io.out(
+          render(
+            fact(
+              `${result.eventCount} event(s) through ${result.throughHash}, the tail of ${result.anchor}`,
+            ),
           ),
-        ),
-      );
-      io.out(render(fact(`authorized by ${result.authorizedBy}`)));
-      reportRecorded(result, io);
-      // Said plainly, because this is the moment somebody assumes otherwise: the
-      // waiver is what makes the cut legible, and the cut itself is theirs to make.
-      // The three values above are the record's own: an event count, a hash, an
-      // anchor, a tail this run MATCHED against the record before it got here. This one
-      // is a PATH, built under the project root, so it is the one line of this verb
-      // that can carry a break in from a directory name (see {@link onOneLine}).
-      io.out(
-        render(
-          fact(
-            onOneLine`The tail is still on disk at ${result.tailDirectory}: nothing was removed.`,
+        );
+        io.out(render(fact(`authorized by ${result.authorizedBy}`)));
+        reportRecorded(result, io);
+        // Said plainly, because this is the moment somebody assumes otherwise: the
+        // waiver is what makes the cut legible, and the cut itself is theirs to make.
+        // The three values above are the record's own: an event count, a hash, an
+        // anchor, a tail this run MATCHED against the record before it got here. This one
+        // is a PATH, built under the project root, so it is the one line of this verb
+        // that can carry a break in from a directory name (see {@link onOneLine}).
+        io.out(
+          render(
+            fact(
+              onOneLine`The tail is still on disk at ${result.tailDirectory}: nothing was removed.`,
+            ),
           ),
-        ),
-      );
-      io.out(render(fact(CUT_LIMIT)));
-    });
+        );
+        io.out(render(fact(CUT_LIMIT)));
+      },
+    );
 
   return mutatesTheRecord(tail);
 }

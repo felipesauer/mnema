@@ -825,6 +825,7 @@ complete -c mnema -f -n '__mnema_at "tail list"' -l color -x -a 'auto always nev
 # mnema tail prune
 complete -c mnema -f -n '__mnema_at "tail prune"' -l reason -r
 complete -c mnema -f -n '__mnema_at "tail prune"' -l which -r
+complete -c mnema -f -n '__mnema_at "tail prune"' -l lose-keys -r
 complete -c mnema -f -n '__mnema_at "tail prune"' -s h -l help
 complete -c mnema -f -n '__mnema_at "tail prune"' -s V -l version
 complete -c mnema -f -n '__mnema_at "tail prune"' -l color -x -a 'auto always never'

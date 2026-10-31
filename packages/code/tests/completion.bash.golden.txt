@@ -119,7 +119,7 @@ _mnema_flags() {
     'key unprotect') echo '-h --help -V --version --color' ;;
     'tail') echo '-h --help -V --version --color' ;;
     'tail list') echo '-h --help -V --version --color' ;;
-    'tail prune') echo '--reason --which -h --help -V --version --color' ;;
+    'tail prune') echo '--reason --which --lose-keys -h --help -V --version --color' ;;
     'doctor') echo '--fix --dry-run -h --help -V --version --color' ;;
     'report') echo '--decline --off --on -h --help -V --version --color' ;;
     'completion') echo '-h --help -V --version --color' ;;

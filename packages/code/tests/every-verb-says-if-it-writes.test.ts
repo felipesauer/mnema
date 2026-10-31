@@ -257,7 +257,16 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   check: { argv: (f) => ['check', 'declare', f.rule, 'node', '--', '-e', 'process.exit(0)'] },
   key: { argv: (f) => ['key', 'revoke', f.backupKey, '--reason', 'it left this machine'] },
   tail: {
-    argv: (f) => ['tail', 'prune', f.foreignTail, '--reason', 'the person asked to be taken out'],
+    // The foreign tail founded the key its id begins with, and a cut of it names that key.
+    argv: (f) => [
+      'tail',
+      'prune',
+      f.foreignTail,
+      '--reason',
+      'the person asked to be taken out',
+      '--lose-keys',
+      f.foreignTail.slice(0, f.foreignTail.lastIndexOf('-')),
+    ],
   },
   // The one verb of this surface that would REACH SOMEBODY ELSE, and the row is chosen
   // so that it does not: `upgrade` over a record nothing has been asked about skips
