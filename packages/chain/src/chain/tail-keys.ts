@@ -10,8 +10,9 @@
  * elsewhere breaks nothing at `verify` and is still left without its identity, and an enrolled key
  * that writes next founds an identity of its own with no refusal.
  *
- * THE RULE, ONE FUNCTION: a key is held by the tail when the tail founds it or enrolls it and no
- * entry anywhere revokes or retires it. It BREAKS when a tail that would remain after the cut
+ * THE RULE, ONE FUNCTION: a key is held by the tail when the tail founds it or enrolls it and either
+ * no entry anywhere revokes or retires it, or it is revoked but signed events in a tail that
+ * stays (its revocation, when it sits in the cut tail, goes with the cut as well). It BREAKS when a tail that would remain after the cut
  * carries its fingerprint (its events would fail to verify); otherwise it is only STRANDED. A
  * tail that already has a waiver counts as cut, and so does the tail being cut. The writer's own
  * tail, where the waiver about to be written lands, counts as remaining even when it holds no
@@ -31,7 +32,7 @@ import { tailWaiversIn } from './waiver.js';
 /** How the tail introduces the key. */
 export type KeyIntroduction = 'founded' | 'enrolled' | 'agent' | 'checker';
 
-/** One key a tail introduces and nothing revokes. */
+/** One key a tail introduces that the record still depends on. */
 export interface KeyATailHolds {
   /** The key's fingerprint, whole. */
   readonly fp: string;
@@ -42,7 +43,7 @@ export interface KeyATailHolds {
 }
 
 /**
- * The keys `tail` introduces that nothing revokes, in the order the tail introduces them.
+ * The keys `tail` introduces that the record still depends on, in the order the tail introduces them.
  *
  * `writerTail`, when given, is the tail a waiver about to be written lands on.
  */
@@ -78,9 +79,13 @@ export function keysATailHolds(
     else if (event.kind === 'agent.enrolled') [fp, how] = [event.payload.agentFp, 'agent'];
     else if (event.kind === 'checker.enrolled') [fp, how] = [event.payload.checkerFp, 'checker'];
     else continue;
-    if (revoked.has(fp) || seen.has(fp)) continue;
+    if (seen.has(fp)) continue;
     seen.add(fp);
-    held.push({ fp, how, breaks: remaining.has(fp) });
+    const breaks = remaining.has(fp);
+    // A key something revokes is out unless it signed events in a tail that stays: its
+    // enrollment goes with the cut, and so do its events' proof of authorship (T2/T4).
+    if (revoked.has(fp) && !breaks) continue;
+    held.push({ fp, how, breaks });
   }
   return held;
 }

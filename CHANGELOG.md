@@ -93,8 +93,11 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   identity, and that key's next write founds an identity of its own with no refusal. The refusal (`KEYS_WOULD_BE_LOST`) names
   each key and says whether the cut breaks it (events of it stay in tails that stay) or only strands it, and prints the command
   with `--lose-keys <fp>[,<fp>]`; the cut's reason then starts with `Keys lost:` and the list, and nothing in the format
-  changed. A key a `key.revoked`, `agent.retired` or `checker.retired` takes out does not count; the disk cannot tell a key
-  whose machine is gone from one that will write, so any other counts. `tail list` marks the tails that hold such keys. The
+  changed. A key a `key.revoked`, `agent.retired` or `checker.retired` takes out does not count, unless it signed events in a
+  tail that stays: those fail T2/T4 once the cut takes its enrollment, so it breaks. The disk cannot tell a key whose
+  machine is gone from one that will write, so any other counts. `--lose-keys` is compared as a set (a key named twice is
+  one), is refused on a tail that holds no key (`NO_KEYS_TO_LOSE`), and the command the refusal prints carries the reason
+  the caller gave, quoted for a shell, so it runs as printed. `tail list` marks the tails that hold such keys. The
   tail of a key that was only enrolled, and holds none, is cut as before; cutting a record's genesis, which holds the
   founder, now needs the option. Carrying an identity out of a cut tail stays a format study for later. Held by
   `packages/code/tests/a-tail-that-holds-keys-is-not-cut-without-naming-them.test.ts` (the binary, both readers) and
@@ -104,7 +107,7 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   still take two names are said.** The name derives from the genesis tail, and the waiver `tail prune` writes before the cut
   lives on the pruner's own tail, which names the record from that genesis: every later write takes the name from it, and a
   branch made before the cut merges into a record of one name. Nothing in the format changed; a test with the built binary
-  holds it, its writers being keys other than the cut tail's: both readers verify the merge there. The cut keeps the name,
+  holds it, its writers being keys of identities founded elsewhere than the cut tail (none that tail founded or enrolled): both readers verify the merge there. The cut keeps the name,
   not the identity the cut tail founded: this entry first said the merge verifies wherever every later write is by another
   key, which was true of the merge and false of the record, because a cut of a tail that founded or enrolled a key leaves
   that key's events failing T2/T4 and its next write refused (`STALE_ANCHOR`); the verb now refuses such a cut unless the

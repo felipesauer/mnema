@@ -97,6 +97,24 @@ describe('keys a tail introduces', () => {
     expect(keysATailHolds(entries, TAIL_A).map((key) => key.fp)).toEqual([A]);
   });
 
+  it('keeps a revoked key that signed events in a tail that stays, as one that breaks', () => {
+    const entries = record({
+      [TAIL_A]: [founded(A), enrolled(C), entry('key.revoked', { revokedFp: C, reason: 'r' })],
+      [TAIL_C]: [entry('decision.recorded', {})],
+    });
+    expect(keysATailHolds(entries, TAIL_A).map((key) => [key.fp, key.breaks])).toEqual([
+      [A, false],
+      [C, true],
+    ]);
+    // Revoked in another tail, and its own tail cut already: nothing of it stays.
+    const gone = record({
+      [TAIL_A]: [founded(A), enrolled(C)],
+      [TAIL_C]: [entry('key.revoked', { revokedFp: C, reason: 'r' })],
+      [`${B}-one`]: [waiver(TAIL_C)],
+    });
+    expect(keysATailHolds(gone, TAIL_A).map((key) => key.fp)).toEqual([A]);
+  });
+
   it('names a key once, and names none for a tail that introduces none or is absent', () => {
     expect(
       keysATailHolds(record({ [TAIL_A]: [founded(A), enrolled(A)] }), TAIL_A).map((k) => k.how),

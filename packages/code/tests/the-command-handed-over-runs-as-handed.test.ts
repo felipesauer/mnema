@@ -853,7 +853,6 @@ export const HANDED_OVER: Readonly<
   'packages/core/src/identity/roster.ts': { line: 6 },
   'packages/core/src/topology/routing.ts': { line: 5 },
   'packages/core/src/workflow/identity-operations.ts': { name: 1 },
-  'packages/core/src/workflow/prune-operations.ts': { line: 1 },
   'packages/sdk/README.md': { line: 2, name: 4 },
   'packages/stacks/README.md': { line: 1, name: 2 },
   'packages/vscode/CHANGELOG.md': { name: 1 },

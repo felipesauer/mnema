@@ -85,7 +85,7 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
         '  The tree is where a waiver over that tail has to land, so `prune` writes there.',
         '  The events and the head are what a waiver would claim; `prune` reads them again.',
         '  `cut authorized` means a waiver in that same tree already authorizes the cut.',
-        '  `holds N key(s) the record needs` means the tail founded or enrolled keys nothing revokes: `prune` refuses it',
+        '  `holds N key(s) the record needs` means the tail founded or enrolled keys the record still depends on: `prune` refuses it',
         '  unless `--lose-keys` names them, and says for each whether the cut breaks it or strands it.',
         '  Nothing here removes anything, and a cut this lists is still yours to carry out.',
       ].join('\n'),
@@ -111,7 +111,7 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--lose-keys <fingerprints>',
-      'cut a tail that founded or enrolled keys nothing revokes, naming every one of them ' +
+      'cut a tail that founded or enrolled keys the record still depends on, naming every one of them ' +
         '(comma-separated, whole): the refusal prints the list and the command. Those keys ' +
         "stop verifying or cannot write, and the cut's reason starts with them",
       (value: string) => value.split(',').map((fp) => fp.trim()),

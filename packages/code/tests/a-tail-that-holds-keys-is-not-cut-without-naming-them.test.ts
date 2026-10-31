@@ -54,6 +54,20 @@ function written(world: string, machine: string, ...args: string[]): Ran {
   return ran;
 }
 
+/** The command the refusal printed, run through a shell as printed, with `mnema` being the binary. */
+function shellRun(world: string, machine: string, refusal: string): Ran {
+  const printed = /^.*mnema tail prune [^\n]*$/m.exec(refusal)?.[0] ?? '';
+  const line = printed
+    .slice(printed.indexOf('mnema tail prune'))
+    .replace(/^mnema/, `node '${BINARY}'`);
+  const ran = spawnSync('sh', ['-c', line], {
+    cwd: join(world, 'repo'),
+    encoding: 'utf-8',
+    env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: join(world, machine) },
+  });
+  return { status: ran.status ?? -1, out: ran.stdout, err: ran.stderr };
+}
+
 function secondVerdict(world: string): string {
   const run = spawnSync(
     'python3',
@@ -92,7 +106,10 @@ function bytesUnderTails(world: string): Map<string, string> {
  * A world: A founded an identity (its tail `founder`) and B founded another; C asked to join A and
  * was enrolled by A. With `cWrites`, C has written once (its tail `joined`).
  */
-function build(name: string, cWrites: boolean): { world: string; founder: string; joined: string } {
+function build(
+  name: string,
+  cWrites: boolean,
+): { world: string; founder: string; joined: string; cKey: string } {
   const world = join(sandbox, name);
   mkdirSync(join(world, 'repo'), { recursive: true });
   for (const machine of ['A', 'B', 'C']) mkdirSync(join(world, machine));
@@ -111,7 +128,8 @@ function build(name: string, cWrites: boolean): { world: string; founder: string
     written(world, 'C', 'decision', 'record', 'C decides', 'C reason');
     joined = tailsOf(world).find((tail) => !before.has(tail)) as string;
   }
-  return { world, founder, joined };
+  const cKey = /[0-9a-f]{64}/.exec(request.out)?.[0] as string;
+  return { world, founder, joined, cKey };
 }
 
 beforeAll(() => {
@@ -173,6 +191,13 @@ describe('the founder tail of a two-key identity, C having written', () => {
       named,
     );
     expect(done.status, done.err).toBe(0);
+
+    // Once the cut is authorized the list stops saying the verb refuses it.
+    const after = mnema(world, 'C', 'tail', 'list').out.split('\n');
+    const row = after.find((line) => line.trim().startsWith(founder)) as string;
+    expect(row).toContain('cut authorized');
+    expect(row).toContain('held 3 key(s)');
+    expect(row).not.toContain('prune refuses');
 
     const waiver = tailsOf(world)
       .map((tail) => textOf(world, tail))
@@ -260,5 +285,96 @@ describe('the founder tail when the enrolled key never wrote', () => {
     );
     expect(short.status).toBe(1);
     expect(short.err).toContain('KEYS_WOULD_BE_LOST');
+  }, 120_000);
+});
+
+describe('a key the tail introduces that was revoked', () => {
+  it('breaks when it wrote, as the refusal says, and the forced cut then fails both readers', () => {
+    const built = build('revoked-wrote', true);
+    const { world, founder, joined } = built;
+    const cKey = joined.slice(0, joined.lastIndexOf('-'));
+    written(world, 'A', 'key', 'revoke', cKey, '--reason', 'the key was lost');
+    const refused = mnema(world, 'B', 'tail', 'prune', founder, '--reason', 'A asked out');
+    expect(refused.status).toBe(1);
+    expect(refused.err).toContain(`${cKey} (enrolled) breaks`);
+    const done = shellRun(world, 'B', refused.err);
+    expect(done.status, done.err).toBe(0);
+    rmSync(join(world, 'repo', '.mnema', 'tails', founder), { recursive: true });
+    const verified = mnema(world, 'B', 'verify', '--require=signed');
+    expect(verified.status).toBe(1);
+    expect(verified.err + verified.out).toContain('T2/T4');
+    expect(secondVerdict(world)).toBe('REFUSED');
+  }, 120_000);
+
+  it('is not named when it never wrote outside the tail', () => {
+    const built = build('revoked-never-wrote', false);
+    written(built.world, 'A', 'key', 'revoke', built.cKey, '--reason', 'the key was lost');
+    const refused = mnema(
+      built.world,
+      'B',
+      'tail',
+      'prune',
+      built.founder,
+      '--reason',
+      'A asked out',
+    );
+    expect(refused.status).toBe(1);
+    expect(refused.err).toContain('introduces 2 key(s)');
+    expect(refused.err).not.toContain(built.cKey);
+  }, 120_000);
+});
+
+describe('what --lose-keys is held to', () => {
+  it('counts the keys named as a set, and refuses a tail that holds none', () => {
+    const built = build('set-of-keys', true);
+    const { world, founder, joined } = built;
+    const first = mnema(world, 'B', 'tail', 'prune', founder, '--reason', 'r');
+    const keys = (/--lose-keys (\S+)/.exec(first.err)?.[1] ?? '').split(',');
+    expect(keys).toHaveLength(3);
+    for (const named of [`${keys[0]},${keys[0]},${keys[0]}`, `${keys[0]},${keys[1]},${keys[0]}`]) {
+      const refused = mnema(
+        world,
+        'B',
+        'tail',
+        'prune',
+        founder,
+        '--reason',
+        'r',
+        '--lose-keys',
+        named,
+      );
+      expect(refused.status, named).toBe(1);
+      expect(refused.err).toContain('KEYS_WOULD_BE_LOST');
+    }
+    const none = mnema(
+      world,
+      'A',
+      'tail',
+      'prune',
+      joined,
+      '--reason',
+      'r',
+      '--lose-keys',
+      keys[0] as string,
+    );
+    expect(none.status).toBe(1);
+    expect(none.err).toContain('NO_KEYS_TO_LOSE');
+  }, 120_000);
+
+  it('prints a command that authorizes the cut when the shell runs it as printed', () => {
+    const built = build('printed-command', false);
+    const refused = mnema(
+      built.world,
+      'B',
+      'tail',
+      'prune',
+      built.founder,
+      '--reason',
+      "it's A's ask",
+    );
+    expect(refused.status).toBe(1);
+    const done = shellRun(built.world, 'B', refused.err);
+    expect(done.status, done.err).toBe(0);
+    expect(done.out).toContain(`Authorized the cut of tail ${built.founder}`);
   }, 120_000);
 });

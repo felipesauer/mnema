@@ -84,7 +84,16 @@ export type PruneError =
   | AppendRefusal
   | { readonly ok: false; readonly code: 'UNKNOWN_TAIL'; readonly message: string }
   | { readonly ok: false; readonly code: 'TAIL_IS_OWN'; readonly message: string }
-  | { readonly ok: false; readonly code: 'KEYS_WOULD_BE_LOST'; readonly message: string };
+  | { readonly ok: false; readonly code: 'KEYS_WOULD_BE_LOST'; readonly message: string }
+  | { readonly ok: false; readonly code: 'NO_KEYS_TO_LOSE'; readonly message: string };
+
+const QUOTE = String.fromCharCode(39);
+const BACKSLASH = String.fromCharCode(92);
+
+/** `text` as one word for a POSIX shell: in single quotes, a single quote closed, escaped and reopened. */
+function shellQuote(text: string): string {
+  return QUOTE + text.split(QUOTE).join(QUOTE + BACKSLASH + QUOTE + QUOTE) + QUOTE;
+}
 
 /** What the cut does to one key, in the words the refusal and the waiver's reason share. */
 function whatBecomesOf(key: KeyATailHolds): string {
@@ -97,21 +106,25 @@ function whatBecomesOf(key: KeyATailHolds): string {
 function keysWouldBeLost(
   tail: string,
   held: readonly KeyATailHolds[],
-  named: string[],
+  named: readonly string[],
+  asked: { readonly reason: string; readonly which: string | undefined },
 ): PruneError {
   const list = held.map((key) => key.fp).join(',');
   const wrongly = named.length > 0 ? ' The keys named do not match the ones it introduces.' : '';
+  // The command as the shell will read it: the reason the caller gave, in single quotes.
+  const quoted = shellQuote(asked.reason);
+  const agent = asked.which !== undefined ? ` --which ${shellQuote(asked.which)}` : '';
   return {
     ok: false,
     code: 'KEYS_WOULD_BE_LOST',
     message:
-      `Tail ${oneLine(tail)} introduces ${held.length} key(s) that nothing revokes, and the record ` +
-      `depends on it for them:\n${held
+      `Tail ${oneLine(tail)} introduces ${held.length} key(s) the record still depends on:\n${held
         .map((key) => `  ${key.fp} (${key.how}) ${whatBecomesOf(key)}`)
         .join('\n')}\n` +
       `The identity lives only in the tail that founded or enrolled it, and the cut carries none ` +
-      `of it.${wrongly} To authorize the cut anyway, name every one of those keys: ` +
-      `mnema tail prune ${oneLine(tail)} --reason <why> --lose-keys ${list}`,
+      `of it.${wrongly} To authorize the cut anyway, name every one of those keys, with the ` +
+      `command as it stands: mnema tail prune ${oneLine(tail)} --reason ${quoted}${agent} ` +
+      `--lose-keys ${list}`,
   };
 }
 
@@ -222,10 +235,24 @@ export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneO
     ),
   );
   const held = keysATailHolds(entriesByTail, input.tail, ctx.writer.tail);
-  const named = (input.loseKeys ?? []).map((fp) => fp.toLowerCase());
+  const named = [...new Set((input.loseKeys ?? []).map((fp) => fp.toLowerCase()))];
   const holds = new Set(held.map((key) => key.fp));
+  if (held.length === 0 && named.length > 0) {
+    return {
+      ok: false,
+      code: 'NO_KEYS_TO_LOSE',
+      message:
+        `Tail ${oneLine(input.tail)} introduces no key the record depends on, so there is nothing ` +
+        'for --lose-keys to name: cut it without the option.',
+    };
+  }
   const matches = named.length === holds.size && named.every((fp) => holds.has(fp));
-  if (held.length > 0 && !matches) return keysWouldBeLost(input.tail, held, named);
+  if (held.length > 0 && !matches) {
+    return keysWouldBeLost(input.tail, held, named, {
+      reason: early.fields.reason,
+      which: input.which,
+    });
+  }
   const lostReason =
     held.length > 0
       ? `Keys lost: ${held.map((key) => `${key.fp} (${key.how}, ${key.breaks ? 'breaks' : 'stranded'})`).join(', ')}. `

@@ -149,6 +149,63 @@ describe('a tail that founded a key nothing revokes is not cut without naming th
     }
   });
 
+  it('prints a command that runs as it stands: the reason given, in single quotes', () => {
+    const ctx = contextIn(root);
+    const other = secondMachine();
+    const refused = authorizeTailPrune(ctx, {
+      tail: other.tail,
+      reason: "it's asked out",
+      which: undefined,
+    });
+    expect(refused.ok).toBe(false);
+    if (refused.ok) return;
+    expect(refused.message).toContain(
+      `mnema tail prune ${other.tail} --reason 'it'\\''s asked out' --lose-keys ${other.key}`,
+    );
+  });
+
+  it('counts the keys named as a set: a key named twice is one key', () => {
+    const ctx = contextIn(root);
+    const other = secondMachine();
+    const done = authorizeTailPrune(ctx, {
+      tail: other.tail,
+      reason: 'asked out',
+      loseKeys: [other.key, other.key],
+    });
+    expect(done.ok, JSON.stringify(done)).toBe(true);
+  });
+
+  it('refuses --lose-keys on a tail that introduces no key, and cuts it without', () => {
+    const ctx = contextIn(root);
+    const other = secondMachine();
+    // The same key from a second installation: its tail holds no founding.
+    for (const file of readdirSync(join(elsewhere, 'keys'))) {
+      if (file.endsWith('.anchor') || file.endsWith('.inst')) {
+        rmSync(join(elsewhere, 'keys', file), { force: true });
+        rmSync(join(root, 'keys', file), { force: true });
+      }
+    }
+    const second = contextIn(elsewhere);
+    expect(createTask(second, { title: 'work from a second installation' }).ok).toBe(true);
+    expect(second.writer.tail).not.toBe(other.tail);
+    for (const file of readdirSync(join(elsewhere, 'tails', second.writer.tail))) {
+      mkdirSync(join(root, 'tails', second.writer.tail), { recursive: true });
+      writeFileSync(
+        join(root, 'tails', second.writer.tail, file),
+        readFileSync(join(elsewhere, 'tails', second.writer.tail, file), 'utf-8'),
+      );
+    }
+    const refused = authorizeTailPrune(ctx, {
+      tail: second.writer.tail,
+      reason: 'asked out',
+      loseKeys: [other.key],
+    });
+    expect(refused.ok).toBe(false);
+    if (!refused.ok) expect(refused.code).toBe('NO_KEYS_TO_LOSE');
+    const done = authorizeTailPrune(ctx, { tail: second.writer.tail, reason: 'asked out' });
+    expect(done.ok, JSON.stringify(done)).toBe(true);
+  });
+
   it('accepts the fingerprints in capitals, as a person may type them', () => {
     const ctx = contextIn(root);
     const other = secondMachine();
