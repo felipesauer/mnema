@@ -155,7 +155,6 @@ describe('a tail that founded a key nothing revokes is not cut without naming th
     const refused = authorizeTailPrune(ctx, {
       tail: other.tail,
       reason: "it's asked out",
-      which: undefined,
     });
     expect(refused.ok).toBe(false);
     if (refused.ok) return;
