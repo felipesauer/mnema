@@ -76,6 +76,7 @@ import {
   readVerdict,
   TOOLTIP_COMMANDS,
   type Verdict,
+  versionNotice,
 } from './status.js';
 import { pathOfQuery, WHY_SCHEME, whyArgs, whyDocument, whyPath, whyQuery } from './why.js';
 
@@ -245,6 +246,8 @@ interface OutputChannelLike {
 interface Session {
   /** What the last look at `mnema --version` said; undefined before the first. */
   cli: CliState | undefined;
+  /** The version `mnema --version` printed when the command line was usable. */
+  cliVersion: string | undefined;
   /** What the last run of `mnema verify` and `mnema switch` said, and when. */
   bar:
     | {
@@ -295,7 +298,7 @@ function badgeFor(total: number | undefined): BadgeLike | undefined {
 
 /** Starts the extension against one workspace folder: the first one open. */
 export function activate(
-  context: { subscriptions: Disposable[] },
+  context: { subscriptions: Disposable[]; extension?: { packageJSON?: { version?: unknown } } },
   api: VscodeApi,
   options: { run?: Run; makeRun?: (command: string, cwd: string) => Run } = {},
 ): { readonly shown: () => Shown } | undefined {
@@ -329,6 +332,7 @@ export function activate(
   };
   const session: Session = {
     cli: undefined,
+    cliVersion: undefined,
     bar: undefined,
     stacksStale: true,
     known: new Map(),
@@ -401,13 +405,22 @@ export function activate(
   function paintBar(): void {
     const { cli, bar: read } = session;
     if (cli?.kind !== 'ready' || read === undefined) return;
-    applyBar(describeBar({ cli, ...read, awaiting: session.total }));
+    applyBar(describeBar({ cli, ...read, awaiting: session.total, notice: versionNoticeNow() }));
+  }
+
+  /** The sentence for a command line on another version than the extension; nothing when they agree. */
+  function versionNoticeNow(): string | undefined {
+    const own = context.extension?.packageJSON?.version;
+    if (session.cliVersion === undefined || typeof own !== 'string') return undefined;
+    return versionNotice(session.cliVersion, own);
   }
 
   /** `mnema --version`: whether the command line can be run at all, kept for the reads that follow. */
   async function lookAtCli(): Promise<CliState> {
-    const cli = readCli(await read(['--version']));
+    const answer = await read(['--version']);
+    const cli = readCli(answer);
     session.cli = cli;
+    session.cliVersion = cli.kind === 'ready' ? answer.stdout.trim().split('\n')[0] : undefined;
     void api.commands.executeCommand('setContext', 'mnema.cliMissing', cli.kind === 'missing');
     return cli;
   }
