@@ -13,10 +13,10 @@
  *      branch it asks the one rule the merge driver asks ({@link joinGrownTail}): one side must be
  *      the start of the other. A fork, or any other file of a tail that differs, is refused before
  *      anything is written, naming each file (`NOT_A_PREFIX`).
- *   3. A tail file git does not track yet (a tail opened here) that the upstream branch also holds
- *      would stop the pull ("untracked working tree files would be overwritten"), and the autostash
- *      does not carry untracked files: it is kept aside in the repository's git directory, and put
- *      back after the pull when it is the longer side.
+ *   3. A file of the record git does not track yet (a tail opened here, the key that writes it)
+ *      that the upstream branch also holds would stop the pull ("untracked working tree files would
+ *      be overwritten"), and the autostash does not carry untracked files: it is kept aside in the
+ *      repository's git directory, and put back after the pull when it is the longer side.
  *   4. It runs `git pull --autostash` with the merge driver handed on that one command line
  *      (`git -c merge.mnema-tail.driver=...`): the stash of the local events is put back through the
  *      driver, which keeps the longer side. NO GIT CONFIGURATION IS WRITTEN
@@ -33,6 +33,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { dirname, join } from 'node:path';
 import type { LevelRequirement } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { oneLine } from '../one-line.js';
 import { forkSentence, joinGrownTail, MERGE_DRIVER } from './record-merge-tail.js';
 import { runVerify, type VerifyDone } from './verify.js';
 
@@ -156,7 +157,7 @@ export function runRecordPull(ctx: RecordPullContext): RecordPullDone | RecordPu
     // A rename or a copy carries its old path as the next entry.
     if (code.includes('R') || code.includes('C')) i++;
     if (code === '??') {
-      if (path.startsWith(tails)) untracked.push(path);
+      if (path.startsWith(recordDir)) untracked.push(path);
       continue;
     }
     if (!path.startsWith(recordDir)) outside.push(path);
@@ -190,7 +191,7 @@ export function runRecordPull(ctx: RecordPullContext): RecordPullDone | RecordPu
     } else if (!ours.equals(theirs)) {
       found.push({
         path,
-        said: `${path}: holds other bytes than ${upstream}'s, and a file of a tail other than its segments and checkpoints is never rewritten, so it is not joined.`,
+        said: `${oneLine(path)}: holds other bytes than on ${oneLine(upstream)}, and only a tail's segments and checkpoints grow, so it is not joined.`,
       });
     }
     if (untracked.includes(path)) aside.push(path);
