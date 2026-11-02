@@ -370,7 +370,7 @@ describe('a write in a directory of two records', () => {
     const message = (thrown as IdentityUnavailableError).message;
     expect((thrown as IdentityUnavailableError).code).toBe('STALE_ANCHOR');
     expect(message).toContain('this directory holds tails of 2 records');
-    expect(message).toContain('`mnema tail relink <tail>`');
+    expect(message).toContain('`mnema tail relink <tail> --reason "<why>"`');
     expect(message).not.toContain('delete ');
   });
 });

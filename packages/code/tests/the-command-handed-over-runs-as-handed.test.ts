@@ -406,6 +406,18 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
 export const NAMES_THAT_NEED_MORE: Readonly<
   Record<string, { readonly times: number; readonly why: string }>
 > = {
+  'CHANGELOG.md: mnema tail prune': {
+    times: 1,
+    why: 'the verb named in prose, as the cut the new refusal of a host tail is about; the reference hands the whole line over',
+  },
+  'CHANGELOG.md: mnema tail relink': {
+    times: 2,
+    why: 'the new verb named in prose, in its entry and in the sentence of the refusal that points at it; the reference hands the whole line over',
+  },
+  'docs/cli-reference.md: mnema tail relink': {
+    times: 2,
+    why: 'the verb named in prose, in the passage on `verify` and in the doctor’s; its own section hands the whole line over',
+  },
   'packages/action/README.md: mnema rules': {
     times: 2,
     why: 'the read named in prose, as what the Action asks about each changed file; the same page hands the whole line over, with its path and `--json`',
@@ -485,6 +497,22 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   'docs/packages.md: mnema stack add': {
     times: 1,
     why: 'the verb named as why the stacks package is released; its `--help` hands the source and the --expect it needs',
+  },
+  'packages/chain/FORMAT.md: mnema tail relink': {
+    times: 1,
+    why: 'the verb named in prose, as what of this product writes the kind; the reference hands the line over',
+  },
+  'packages/chain/src/chain/relink-plan.ts: mnema tail prune': {
+    times: 1,
+    why: 'the verb named in a refusal, as the way a second person’s tail leaves the record instead; its own refusal hands the line over',
+  },
+  'packages/code/src/commands/doctor.ts: mnema tail prune': {
+    times: 1,
+    why: 'the verb named in the doctor’s refusal, as the way out for a tail whose key is on another machine',
+  },
+  'packages/core/src/identity/membership.ts: mnema tail prune': {
+    times: 1,
+    why: 'the verb named in the refusal of a write in a directory of two records, as the other way out beside the relink it hands over whole',
   },
   'packages/stacks/README.md: mnema stack add': {
     times: 2,
@@ -631,8 +659,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'names the verb whose printed id the variable holds',
   },
   'packages/code/src/wiring/tail.ts: mnema tail prune': {
-    times: 1,
-    why: 'the help that says what each line of the listing is for, naming the verb the id is for',
+    times: 2,
+    why: 'the help that says what each line of the listing is for, naming the verb the id is for; and the line a relink prints of a record left beside it, naming the cut as the other way out',
   },
   'packages/context/src/intelligence/pattern-moves.ts: mnema show': {
     times: 1,
@@ -736,7 +764,7 @@ export const HANDED_OVER: Readonly<
   '.claude/rules/mnema-instructions.md': { line: 2 },
   '.github/instructions/mnema-instructions.instructions.md': { line: 2 },
   'AGENTS.md': { line: 2, name: 1 },
-  'CHANGELOG.md': { line: 78, name: 152, flag: 4 },
+  'CHANGELOG.md': { line: 81, name: 155, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
@@ -760,11 +788,12 @@ export const HANDED_OVER: Readonly<
   'examples/rules/README.md': { line: 1, name: 1 },
   'packages/action/README.md': { line: 14, name: 12 },
   'packages/action/src/comment.ts': { name: 1 },
-  'packages/chain/FORMAT.md': { line: 4, name: 2 },
+  'packages/chain/FORMAT.md': { line: 5, name: 3 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
+  'packages/chain/src/chain/relink-plan.ts': { name: 4 },
   'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 4 },
-  'docs/cli-reference.md': { line: 123, name: 150, flag: 2 },
+  'docs/cli-reference.md': { line: 124, name: 152, flag: 2 },
   'packages/code/README.md': { line: 8, name: 14 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
@@ -772,7 +801,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/commands/brief.ts': { name: 1 },
   'packages/code/src/commands/check.ts': { line: 1 },
   'packages/code/src/commands/commit-hook.ts': { line: 1, name: 2 },
-  'packages/code/src/commands/doctor.ts': { line: 8, name: 12 },
+  'packages/code/src/commands/doctor.ts': { line: 8, name: 13 },
   'packages/code/src/commands/handback.ts': { line: 1 },
   'packages/code/src/commands/instructions.ts': { line: 1, name: 5 },
   'packages/code/src/commands/key-enroll.ts': { line: 3 },
@@ -838,7 +867,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/wiring/skill.ts': { line: 1 },
   'packages/code/src/wiring/stack.ts': { line: 1 },
   'packages/code/src/wiring/switch.ts': { name: 2 },
-  'packages/code/src/wiring/tail.ts': { name: 1 },
+  'packages/code/src/wiring/tail.ts': { name: 4 },
   'packages/code/src/wiring/tally.ts': { line: 2 },
   'packages/code/src/wiring/usage.ts': { line: 1 },
   'packages/code/src/wiring/verify.ts': { line: 5, name: 7 },
@@ -848,11 +877,12 @@ export const HANDED_OVER: Readonly<
   'packages/context/src/intelligence/promotion.ts': { flag: 1 },
   'packages/core/src/checks/operations.ts': { line: 4 },
   'packages/core/src/identity/handshake.ts': { line: 1 },
-  'packages/core/src/identity/membership.ts': { line: 7 },
+  'packages/core/src/identity/membership.ts': { line: 8, name: 2 },
   'packages/core/src/identity/restore.ts': { line: 3 },
   'packages/core/src/identity/roster.ts': { line: 6 },
   'packages/core/src/topology/routing.ts': { line: 5 },
   'packages/core/src/workflow/identity-operations.ts': { name: 1 },
+  'packages/core/src/workflow/prune-operations.ts': { line: 1, name: 1 },
   'packages/sdk/README.md': { line: 2, name: 4 },
   'packages/stacks/README.md': { line: 1, name: 2 },
   'packages/vscode/CHANGELOG.md': { name: 1 },

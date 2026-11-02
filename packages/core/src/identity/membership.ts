@@ -444,13 +444,10 @@ export function staleAnchorRefusal(
   const several = tailsReadAt(layout).several;
   if (several.length > 1) {
     const records = several
-      .map(
-        (group) =>
-          `${oneLine(group.name.slice(0, 12))}... (${group.tails.map(oneLine).join(', ')})`,
-      )
+      .map((group) => `${group.name.slice(0, 12)}... (${group.tails.join(', ')})`)
       .join(' and ');
     return stale(
-      `this directory holds tails of ${several.length} records, ${records}, and no reading of the record reads either until it holds one (another-record), so the identity this checkout records cannot be found in it: the anchor is not what is wrong, and deleting it would only reach the refusal of writing into two records. Each tail of one record is relinked into the other by the key its id names, with \`mnema tail relink <tail>\` (\`mnema tail list\` spells the ids), or cut with \`mnema tail prune\``,
+      `this directory holds tails of ${several.length} records, ${oneLine(records)}, and no reading of the record reads either until it holds one (another-record), so the identity this checkout records cannot be found in it: the anchor is not what is wrong, and deleting it would only reach the refusal of writing into two records. Each tail of one record is relinked into the other by the key its id names, with \`mnema tail relink <tail> --reason "<why>"\` (\`mnema tail list\` spells the ids), or cut with \`mnema tail prune\``,
     );
   }
 

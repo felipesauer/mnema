@@ -99,11 +99,6 @@ function readAll(
   return { entries, named, where };
 }
 
-/** A record's name as the pages print it: its first twelve characters. */
-function said(record: string): string {
-  return `${oneLine(record.slice(0, 12))}...`;
-}
-
 /**
  * The relinks of `tails` into `into` (or into the one other record the directory names), read off
  * `layouts`, or the first refusal met, tail by tail in the order given.
@@ -114,11 +109,6 @@ export function planRelinks(
   asked: { readonly tails: readonly string[]; readonly into?: string },
 ): { readonly ok: true; readonly relinks: readonly PlannedRelink[] } | RelinkRefusal {
   const { entries, named, where } = readAll(layouts, upcasters);
-  const refuse = (code: RelinkRefusal['code'], message: string): RelinkRefusal => ({
-    ok: false,
-    code,
-    message,
-  });
   // The tails some relink on disk already names, and the tails that hold one.
   const relinkedOnDisk = new Map<string, string>();
   for (const [host, held] of entries) {
@@ -135,20 +125,24 @@ export function planRelinks(
     const last = held.at(-1);
     const first = held[0];
     if (last === undefined || first === undefined) {
-      return refuse(
-        'UNKNOWN_TAIL',
-        `No tail ${oneLine(tail)} holds events here: a relink names a tail on disk, whole, ` +
+      return {
+        ok: false,
+        code: 'UNKNOWN_TAIL',
+        message:
+          `Tail ${oneLine(tail)} holds no events here: a relink names a tail on disk, whole, ` +
           'and binds every entry it holds (`mnema tail list` spells the ids).',
-      );
+      };
     }
     const from = named.get(tail);
     if (from === undefined) {
-      return refuse(
-        'TAIL_NAMES_NO_RECORD',
-        `Tail ${oneLine(tail)} names no record (it was written before records were named, and ` +
+      return {
+        ok: false,
+        code: 'TAIL_NAMES_NO_RECORD',
+        message:
+          `Tail ${oneLine(tail)} names no record (it was written before records were named, and ` +
           'no checkpoint of the second scheme binds it): `mnema verify` reads it as a census ' +
           'note already, and there is nothing to move.',
-      );
+      };
     }
     // The records the directory's other tails name by their own artifacts, the tails being
     // relinked and the tails a relink names left out: the ones a relink could join.
@@ -165,19 +159,23 @@ export function planRelinks(
     if (into === undefined) {
       const names = [...others.keys()];
       if (names.length === 0) {
-        return refuse(
-          'NO_RECORD_TO_JOIN',
-          `Tail ${oneLine(tail)} names record ${said(from)}, and no other tail here names another ` +
+        return {
+          ok: false,
+          code: 'NO_RECORD_TO_JOIN',
+          message:
+            `Tail ${oneLine(tail)} names record ${oneLine(from.slice(0, 12))}..., and no other tail here names another ` +
             'record: a relink joins a tail to a record a tail of the directory already names.',
-        );
+        };
       }
       if (names.length > 1) {
-        return refuse(
-          'INTO_REQUIRED',
-          `The tails here name ${names.length + 1} records (${[from, ...names].map(said).join(', ')}): ` +
+        return {
+          ok: false,
+          code: 'INTO_REQUIRED',
+          message:
+            `The tails here name ${names.length + 1} records (${oneLine([from, ...names].map((name) => name.slice(0, 12)).join('..., '))}...): ` +
             'say which one tail ' +
             `${oneLine(tail)} joins, with --into <record> (the record's name as \`mnema verify\` prints it, whole).`,
-        );
+        };
       }
       into = names[0] as string;
     }
@@ -190,19 +188,23 @@ export function planRelinks(
           name !== undefined && (name === ask || (ask.length >= 12 && name.startsWith(ask))),
       ) ?? ask;
     if (whole === from) {
-      return refuse(
-        'ALREADY_IN_THAT_RECORD',
-        `Tail ${oneLine(tail)} already names record ${said(whole)}: a relink moves a tail between two ` +
+      return {
+        ok: false,
+        code: 'ALREADY_IN_THAT_RECORD',
+        message:
+          `Tail ${oneLine(tail)} already names record ${oneLine(whole.slice(0, 12))}...: a relink moves a tail between two ` +
           'records, and one into the record it names would only freeze it (relink-into-its-own-record).',
-      );
+      };
     }
     if (!others.has(whole)) {
-      return refuse(
-        'NO_TAIL_NAMES_INTO',
-        `No tail here names record ${oneLine(ask)} by its own artifacts, other than a tail a relink ` +
+      return {
+        ok: false,
+        code: 'NO_TAIL_NAMES_INTO',
+        message:
+          `No tail here names record ${oneLine(ask)} by its own artifacts, other than a tail a relink ` +
           'names: a relink joins a tail to a record the directory holds, and one into a name no ' +
           'tail holds would be a rename, not a join.',
-      );
+      };
     }
     into = whole;
     const layout = where.get(tail) as ChainLayout;
@@ -213,28 +215,34 @@ export function planRelinks(
     }
     const broken = verdict.issues.find((issue) => issue.tail === tail);
     if (broken !== undefined) {
-      return refuse(
-        'TAIL_DOES_NOT_VERIFY',
-        `Tail ${oneLine(tail)} does not verify: ${oneLine(broken.detail)}. A relink binds every ` +
+      return {
+        ok: false,
+        code: 'TAIL_DOES_NOT_VERIFY',
+        message:
+          `Tail ${oneLine(tail)} does not verify: ${oneLine(broken.detail)}. A relink binds every ` +
           'entry of the tail, so it would bind a broken history: nothing was written.',
-      );
+      };
     }
     if (held.some((entry) => entry.event.kind === 'tail.relinked')) {
-      return refuse(
-        'TAIL_HOSTS_A_RELINK',
-        `Tail ${oneLine(tail)} holds a relink of another tail: a relink counts only from a tail ` +
+      return {
+        ok: false,
+        code: 'TAIL_HOSTS_A_RELINK',
+        message:
+          `Tail ${oneLine(tail)} holds a relink of another tail: a relink counts only from a tail ` +
           'that names its record by its own artifacts, so relinking this one would undo it ' +
           '(relink-hosted-by-a-relinked-tail).',
-      );
+      };
     }
     const already = relinkedOnDisk.get(tail);
     if (already !== undefined) {
-      return refuse(
-        'TAIL_ALREADY_RELINKED',
-        `Tail ${oneLine(tail)} is named by the relink at ${oneLine(already)} already: a tail is ` +
+      return {
+        ok: false,
+        code: 'TAIL_ALREADY_RELINKED',
+        message:
+          `Tail ${oneLine(tail)} is named by the relink at ${oneLine(already)} already: a tail is ` +
           'relinked once, and a second relink of it counts for neither (relink-conflict). If that ' +
           'relink is not covered yet, a checkpoint of its tail by its writer covers it.',
-      );
+      };
     }
     relinks.push({
       tail,

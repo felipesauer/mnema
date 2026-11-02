@@ -145,7 +145,7 @@ describe('one person’s two inits, merged', () => {
     const wrote = mnema('person', repo, 'decision', 'record', 'After', 'Into two records.');
     expect(wrote.status).toBe(1);
     expect(wrote.err).toContain('Refused (STALE_ANCHOR): this directory holds tails of 2 records');
-    expect(wrote.err).toContain('`mnema tail relink <tail>`');
+    expect(wrote.err).toContain('`mnema tail relink <tail> --reason "<why>"`');
     expect(wrote.err).not.toContain('delete ');
     expect(anchors).toHaveLength(1);
     expect(existsSync(join(repo, '.mnema', 'keys', anchors[0] as string))).toBe(true);
