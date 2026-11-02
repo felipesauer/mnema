@@ -169,6 +169,11 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
   setting needs no reload. A command that did not answer `--version` within 60 seconds is reported as
   not answering, in the tooltip, not as not found. The error mark of the bar follows `record.ok` in
   `mnema verify --json`, the verdict whose failure makes `mnema verify` exit 1.
+- **A command line on another version than the extension is said in the tooltip.** The `--version` it already asks is
+  compared with the extension's own version by major, minor and patch (a pre-release suffix is ignored). A command
+  line older than the extension gets a line that says to update it (the install page) or to set `mnema.command` to a
+  newer one; a newer one, a line that says to update the extension; the same version, nothing. It is a line of the
+  tooltip, never a notification, and it asks no network.
 - **Few processes per reading.** Reading the record after a change starts one `mnema status --json` (and the `search`
   only when `status` cut its list); `--version` is not asked again while the command is there. `mnema verify`, `mnema verify
   --json` and `mnema switch` run when the extension starts, on Refresh, after a judgment or a stack act of yours and when the

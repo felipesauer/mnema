@@ -32,6 +32,15 @@ with its own changelog.
   write in Claude Code (they run in parallel) 36 ms against 4.4 ms; a VS Code read, which starts six, 44 ms against 7.7 ms.
   (The same run at a load of 29: 49, 43, 71 and 74 ms.)
 
+
+- **An agent working through the MCP server is told, in the reply of the tool that wrote, that the writer opened a new
+  tail.** The sentence (`mnema: wrote to a new tail, ...`) went to standard error from the writer, which the command line
+  shows and an MCP server wrote to the host's log, so the agent whose write went to another tail was the one party not
+  told. Every tool that writes now carries it in its reply, once, beside what the write founded, in the same words the
+  command line prints (the chain's `describeNewTail`, one source), and the log hears it as before; a refusal that comes
+  after the tail was opened (`STALE_ANCHOR`) carries it in a block beside its own words, which are unchanged. The
+  closing of the connection's run, which has no reply, says it in the log alone. The command line is unchanged
+  (`packages/code/tests/an-mcp-agent-is-told-of-a-new-tail.test.ts`).
 - **Nothing governs in a directory whose tails name two records, and every reading of what governs says so.** Both
   readers refuse such a directory (`another-record`), but the readings that say what governs run over a directory
   nobody verified, and read a tail grafted from another record as this one's: its decisions were listed in force in the
@@ -179,9 +188,28 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   follow the same entry`, and `a fork in the sequence` under section 3. No byte of the format changes (`FORMAT.md` section 3).
 - `mnema verify --against-sigstore` and the signature line of a stack being added no longer print `1970-01-01` as the time a Rekor v2 entry was logged. A v2 entry carries no `integratedTime`, so the time now comes from the timestamp authority the Sigstore library verified, and says so; a bundle with no verified time says "time not carried", never a date made up. In `verify --json`, `sigstore.findings[].reading.loggedAt` can now be absent (it always came, even as 1970) and `loggedAtBy` (`"rekor"` or `"timestamp-authority"`) is new; the text line reads `logged in Rekor, timestamped by the timestamp authority at <time>` for a timestamp authority's time.
 
+### Added
+
+- **The release lists the server in the official MCP Registry, as `io.github.felipesauer/mnema`.** `@mnema/code` now
+  carries `mcpName` (the field the registry reads in the version already on npm, which is why 0.1.4 cannot be listed), and
+  `server.json` at the root is made by `pnpm release:prepare` from the one version number (schema 2025-12-11; description
+  and title inside its 100 characters; the package `@mnema/code`, stdio, started as `mnema mcp`).
+  `the-registry-entry-is-what-the-package-says` holds that the file is what the generator returns for the root version,
+  that its name is the package's `mcpName`, and the shape of the new `publish-registry` job of `release.yml`: it runs
+  after the tag and the release (so after npm), asks for the `npm` environment (a person approves it), holds
+  `id-token: write` and no secret, installs and builds nothing, and runs a registry publisher pinned by tag and by
+  SHA-256 with `login github-oidc`. It is the third job of the workflow that can ask for the OIDC token. Nothing has run
+  against the registry: the first listing is the first release that carries `mcpName`.
+
 ## [0.1.4] - 2026-10-29
 
 ### Added
+
+- **The VS Code extension says in its status bar tooltip when the command line it calls is on another version than
+  the extension.** It compares the version the command line already prints with its own by major,
+  minor and patch (a pre-release suffix is ignored). An older command line gets "update the command line" with a
+  link to the install page, or "set `mnema.command` to a newer one"; a newer one gets "update the extension"; the
+  same version gets nothing. No notification, no network (`versionNotice`, `packages/vscode/src/status.ts`).
 
 - **`mnema init` asks, at a terminal, which files an agent host reads the mnema instructions are written into.** The question
   comes before the founding and lists `AGENTS.md` and the three rule files of mnema's own (Claude Code, the `.github/instructions`

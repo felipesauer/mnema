@@ -22,6 +22,7 @@
     "accountability",
     "local-first"
   ],
+  "mcpName": "io.github.felipesauer/mnema",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
   "type": "module",

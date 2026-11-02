@@ -66,6 +66,20 @@ attestations; `npm audit signatures --json --include-attestations` names each, a
 `@mnema/*` package carries an SLSA provenance attestation. The registry serves one tarball per
 version, so this checks the same package a global install of that version fetches.
 
+<!-- not-on-the-site -->
+## In the MCP Registry
+
+From the release after 0.1.4, the release workflow lists the server in the
+[official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.felipesauer/mnema`,
+after npm has the version and behind the same approval. The registry only holds the entry
+([`server.json`](../server.json), made from the version number by `pnpm release:prepare`); the
+package is still the one on npm, and a client that reads the registry starts it as `mnema mcp`, over
+stdio. The registry lists a package only if the version on npm carries `mcpName` equal to the entry's
+name, which `@mnema/code` has from that release, so 0.1.4 is not listed. Nothing here is a run of the
+registry's: it is held by the file's own test (`the-registry-entry-is-what-the-package-says`), not by a
+listing.
+<!-- /not-on-the-site -->
+
 ## Then the plugin for your host
 
 One line for each host. The rung is how far the host takes the record, one rung at a time: (a) the MCP

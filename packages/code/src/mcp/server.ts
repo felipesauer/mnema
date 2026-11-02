@@ -2535,6 +2535,8 @@ function replied(
       // AND WHAT THE CONTENT DOOR REPLACED IN WHAT THE CONNECTION RECORDED ON ITS OWN: its run,
       // the edit hook's facts, which no tool's own reply acknowledges (`ReplacementsOwed`).
       ...session.replacementsOwed.take(),
+      // AND THE TAIL THE WRITER OPENED FOR THE WRITE (`NewTailsOwed`), which a model never read in the host's log.
+      ...session.newTails.take(),
       ...after,
     ].map(block),
   };
@@ -2605,6 +2607,7 @@ function refused(
       `Refused (${refusal.code}): ${refusal.message}`,
       ...session.founding.take(),
       ...session.replacementsOwed.take(),
+      ...session.newTails.take(),
     ].map(block),
   };
 }

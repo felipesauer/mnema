@@ -2209,6 +2209,12 @@ which, after the write, and does not refuse it. A write that landed in the globa
 went to another project of the workspace whose tree does not enrol that agent, the reply adds a line
 saying the person's key signed it and the agent it names is declared, not attested
 (`tests/a-write-the-person-signs-for-an-agent-says-so.test.ts`).
+A write that the writer sent to a new tail, because the tail of this installation no longer ends where it left it (a
+branch switch, a merge, a restored backup, a copied checkout), says so in its reply, in the sentence the command line
+prints on standard error (`mnema: wrote to a new tail, ...`), once, and the connection's log hears it too
+(`tests/an-mcp-agent-is-told-of-a-new-tail.test.ts`). A refusal that comes after the tail was opened carries it beside the
+refusal's own words, which are not changed (`tests/the-checkout-a-key-left.test.ts`). A write that the connection makes on
+its own, the closing of its run, has no reply to carry it and says it in the log alone.
 
 A record that two machines moved out of one state without seeing each other (the state shown is the last
 move in the record's order) is said so beside the answer, in the words the `show` verb uses, by `read_record`
