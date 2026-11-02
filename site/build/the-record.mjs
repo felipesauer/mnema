@@ -1,6 +1,7 @@
 // /record/: the verifier page of THIS repository's record, written by `mnema site` of the binary built from
 // the same commit. The site holds no copy of the record and no second reader: the page is what the command
-// writes, and the build stops when the record does not verify, so a page that says "this does not verify"
+// writes (its head is completed by `withTheHeadOfTheSite`: the binary's title is the same for every record, and a
+// search engine reads this site's copy), and the build stops when the record does not verify, so a page that says "this does not verify"
 // is never published as the site's own.
 
 import { spawnSync } from 'node:child_process';

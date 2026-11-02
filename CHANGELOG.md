@@ -12,6 +12,18 @@ with its own changelog.
 
 ### Changed
 
+- **Every page of the site says what it is, and the places a stranger first reads point at the site.** The site's
+  configuration set one meta description for the whole site and it beat the one in each page, so every page said the
+  same thing; now each page of `docs/` is described by its own first paragraph of prose (`descriptionOf`), the landing
+  by the description of `@mnema/code` and the 404 by its own line, and `/record/` has a title, a description, a canonical
+  address and structured data of its own (`withTheHeadOfTheSite`) and is in the sitemap, which Astro wrote before the
+  page existed. The landing and `/record/` carry JSON-LD of a `WebSite` and a `SoftwareApplication`, built from the
+  package's name, description, version and licence, and naming where the software is found (the repository, npm and the
+  two extension stores), with no rating and no review. The `homepage` of the published packages, the extension and the
+  four plugin manifests is the site, and the private tools keep the repository. A case over every built page fails on a
+  missing, repeated or foreign title, description or canonical, on a sitemap that is not the pages, and on structured
+  data that is not the facts (`every-page-of-the-site-says-what-it-is.test.ts`). The site reaches the public with the
+  next release, since it is deployed only at one.
 - **Nothing governs in a directory whose tails name two records, and every reading of what governs says so.** Both
   readers refuse such a directory (`another-record`), but the readings that say what governs run over a directory
   nobody verified, and read a tail grafted from another record as this one's: its decisions were listed in force in the

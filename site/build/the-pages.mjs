@@ -71,19 +71,26 @@ export function withoutWhatIsNotOnTheSite(markdown, from) {
 }
 
 /** What the root `package.json` and the package of the binary say, which the site is built around. */
-export function factsOf({ rootPackage, codePackage, sha }) {
+export function factsOf({ rootPackage, codePackage, extensionPackage, sha }) {
   const repo = /github\.com[/:]([^/]+)\/([^/.]+)/.exec(rootPackage.repository?.url ?? rootPackage.homepage ?? '');
-  if (!repo) throw new Error('package.json names no GitHub repository');
-  const [, owner, name] = repo;
+  const [, owner, name] = repo ?? [];
+  if (owner === undefined || name === undefined) throw new Error('package.json names no GitHub repository');
   return {
     version: codePackage.version,
     description: codePackage.description,
     owner,
     name,
     sha,
+    license: codePackage.license,
     repoUrl: `https://github.com/${owner}/${name}`,
     siteUrl: `https://${owner}.github.io`,
     base: `/${name}`,
+    // The address the site is read at, the one every manifest points its `homepage` at.
+    homeUrl: `https://${owner}.github.io/${name}/`,
+    npmUrl: `https://www.npmjs.com/package/${codePackage.name}`,
+    // The extension's id in the stores is `<publisher>.<name>`, and the packer names it after the display name
+    // (`packages/vscode/build/package-vsix.mjs`), since the workspace name is scoped and a store refuses a scoped one.
+    extensionId: `${extensionPackage.publisher}.${String(extensionPackage.displayName).toLowerCase()}`,
   };
 }
 
@@ -148,7 +155,8 @@ export function pageOf({ name, markdown: source, facts, docs }) {
         }),
   ).replace(/^\n+/, '');
   const editUrl = `${facts.repoUrl}/edit/main/docs/${name}.md`;
-  const front = `---\ntitle: ${JSON.stringify(title)}\neditUrl: ${JSON.stringify(editUrl)}\n---\n\n`;
+  const description = descriptionOf(markdown, `docs/${name}.md`);
+  const front = `---\ntitle: ${JSON.stringify(title)}\ndescription: ${JSON.stringify(description)}\neditUrl: ${JSON.stringify(editUrl)}\n---\n\n`;
   return front + rewriteLinks(body, `docs/${name}.md`, facts, docs);
 }
 
@@ -338,7 +346,7 @@ export function pictureAsTwoImages(html) {
 /**
  * A page the site writes from a template (`landing.md` for the landing, `not-found.md` for the 404): the template is
  * tracked, so the guards that read every Markdown page reach it, and each directive is replaced by what a source says:
- *   {{pitch.title}} {{pitch.body}} {{pitch.bannerAlt}} {{description}} {{version}}
+ *   {{pitch.title}} {{pitch.body}} {{pitch.bannerAlt}} {{description}} {{version}} {{jsonld}}
  *   {{section Heading of the README}}  the section, under its own heading, links rewritten
  *   {{link Label of the README's Docs}} the site address of that link
  *   {{label Label of the README's Docs}} that label as the README writes it (the build stops when it is not there)
@@ -364,6 +372,7 @@ export function templateOf({
     description: facts.description,
     version: facts.version,
     record: `${facts.base}/record/`,
+    jsonld: jsonLdOf(structuredDataOf(facts)),
   };
   const label = (name) => {
     for (const g of groups) for (const item of g.items) if (item.label === name) return item;
@@ -540,4 +549,111 @@ export function llmsTxt({ readme, facts }) {
     lines.push('');
   }
   return `${lines.join('\n').replace(/\n+$/, '')}\n`;
+}
+
+/** The most characters of a page's own description: what a search result shows of it before it cuts it. */
+export const DESCRIPTION_CHARS = 160;
+
+/** A line of Markdown as the words a reader reads: links by their text, no emphasis, no code marks. */
+function plainOf(markdown) {
+  return markdown
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*|`/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * What a page of `docs/` says of itself: its first paragraph of prose (a heading, a code fence, a table, a list, a
+ * quotation and a line of HTML are not one), as plain words, cut at the last whole sentence that fits
+ * `DESCRIPTION_CHARS`, or at the last whole word with an ellipsis when no sentence of a useful length does. Read from
+ * the page, never typed, so a page that changes changes what a search result says of it.
+ */
+export function descriptionOf(markdown, from) {
+  let paragraph = null;
+  outsideFences(markdown, (text) => {
+    for (const block of text.split(/\n\s*\n/)) {
+      const trimmed = block.trim();
+      if (paragraph === null && trimmed !== '' && !/^(#|[-*+] |\d+\. |\||>|<)/.test(trimmed)) paragraph = plainOf(trimmed);
+    }
+    return text;
+  });
+  if (paragraph === null) throw new Error(`${from} has no paragraph of prose to describe it`);
+  if (paragraph.length <= DESCRIPTION_CHARS) return paragraph;
+  const head = paragraph.slice(0, DESCRIPTION_CHARS);
+  const sentence = /^(.{60,}[.!?])\s/s.exec(head);
+  if (sentence?.[1] !== undefined) return sentence[1];
+  return `${head.slice(0, head.lastIndexOf(' ')).replace(/[,;:]$/, '')}…`;
+}
+
+/**
+ * @typedef {{ name: string, description: string, version: string, license: string, repoUrl: string, homeUrl: string,
+ *   npmUrl: string, extensionId: string }} FactsOfTheSite what the structured data and the head of /record/ read
+ */
+
+/**
+ * The structured data of the site, built from facts the repository holds: the name, the description, the version and
+ * the licence of `@mnema/code`, the site's own address, and where the same software is found (the repository, npm and
+ * the two extension stores). It carries no rating and no review: nothing here is a number somebody gave.
+ * @param {FactsOfTheSite} facts
+ */
+export function structuredDataOf(facts) {
+  const [publisher, extension] = facts.extensionId.split('.');
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      { '@type': 'WebSite', '@id': `${facts.homeUrl}#website`, name: facts.name, url: facts.homeUrl, description: facts.description },
+      {
+        '@type': 'SoftwareApplication',
+        '@id': `${facts.homeUrl}#software`,
+        name: facts.name,
+        url: facts.homeUrl,
+        description: facts.description,
+        softwareVersion: facts.version,
+        applicationCategory: 'DeveloperApplication',
+        license: `https://spdx.org/licenses/${facts.license}.html`,
+        sameAs: [
+          facts.repoUrl,
+          facts.npmUrl,
+          `https://marketplace.visualstudio.com/items?itemName=${facts.extensionId}`,
+          `https://open-vsx.org/extension/${publisher}/${extension}`,
+        ],
+      },
+    ],
+  };
+}
+
+/** JSON for the body of a `<script type="application/ld+json">`: a `<` is escaped, so no text can close the element. */
+export function jsonLdOf(data) {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
+const escapeAttribute = (text) =>
+  text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * `/record/` as the site serves it: the page `mnema site` wrote, with its head given what a search engine reads of
+ * any page (a title of its own, a description, the canonical address and the structured data) and nothing else of it
+ * changed. The binary writes the verifier and its title is "The record", the same for every record in the world, so
+ * the head of THIS site's copy is completed here, and the guard compares the served bytes to this function's output.
+ * @param {{ html: string, title: string, description: string, facts: FactsOfTheSite }} options
+ */
+export function withTheHeadOfTheSite({ html, title, description, facts }) {
+  const given = '<title>The record</title>';
+  if (html.split(given).length !== 2) throw new Error(`the page of the record has not exactly one ${given}`);
+  return html.replace(
+    given,
+    () =>
+      `<title>${escapeAttribute(title)}</title>\n<meta name="description" content="${escapeAttribute(description)}">\n` +
+      `<link rel="canonical" href="${escapeAttribute(`${facts.homeUrl}record/`)}">\n` +
+      `<script type="application/ld+json">${jsonLdOf(structuredDataOf(facts))}</script>`,
+  );
+}
+
+/** The sitemap with one address more, the one a page the build writes after Astro is at; it stops if it is already there. */
+export function sitemapWith(xml, address) {
+  const entry = `<url><loc>${address}</loc></url>`;
+  if (!xml.includes('</urlset>')) throw new Error('the sitemap is not the shape the site reads');
+  if (xml.includes(entry)) throw new Error(`the sitemap already lists ${address}`);
+  return xml.replace('</urlset>', () => `${entry}</urlset>`);
 }

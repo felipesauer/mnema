@@ -18,7 +18,9 @@ import {
   stepsOf,
   templateOf,
   themeCss,
+  sitemapWith,
   verifyCommandOf,
+  withTheHeadOfTheSite,
   withoutWhatIsNotOnTheSite,
 } from './the-pages.mjs';
 import { theVerdictOfTheCommit } from './the-record.mjs';
@@ -48,7 +50,12 @@ export function sizeOfGif(bytes) {
 export function theFacts(root = ROOT) {
   const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   const json = (path) => JSON.parse(readFileSync(join(root, path), 'utf8'));
-  return factsOf({ rootPackage: json('package.json'), codePackage: json('packages/code/package.json'), sha });
+  return factsOf({
+    rootPackage: json('package.json'),
+    codePackage: json('packages/code/package.json'),
+    extensionPackage: json('packages/vscode/package.json'),
+    sha,
+  });
 }
 
 /** Writes the pages, the pictures, the colour and the build's facts under `site/`. */
@@ -97,6 +104,8 @@ export async function prepare({ root = ROOT, site = SITE } = {}) {
   }
   const recording = { ...recordingOf({ readme, path: RECORDING, facts, docs }), ...sizeOfGif(gif), src: `${facts.base}/${RECORDING}` };
   const caption = copy('verdict-caption');
+  // What /record/ says of itself in a search result: two entries of the microcopy, kept for the step after Astro.
+  writeFileSync(into('src/generated/record.json'), `${JSON.stringify({ title: copy('record-title'), description: copy('record-description') })}\n`);
   writeFileSync(
     into('src/generated/proof.json'),
     `${JSON.stringify({ command, output, sha: facts.sha, repoUrl: facts.repoUrl, caption, recording, copyTaken: [...taken].sort() }, null, 2)}\n`,
@@ -143,6 +152,19 @@ export async function writeTheCard({ root = ROOT, out = join(SITE, 'dist') } = {
   const png = await sharp(Buffer.from(socialCard({ blocks: THE_BLOCKS, pitch }))).png().toBuffer();
   writeFileSync(join(out, 'og.png'), png);
   return png;
+}
+
+/**
+ * What /record/ needs after `mnema site` wrote it: its head (`withTheHeadOfTheSite`) and its line in the sitemap, which
+ * Astro wrote before the page existed. The page's words are the two entries `prepare` read from `site/copy.md`.
+ */
+export function completeTheRecord({ root = ROOT, site = SITE, out = join(SITE, 'dist') } = {}) {
+  const facts = theFacts(root);
+  const { title, description } = JSON.parse(readFileSync(join(site, 'src/generated/record.json'), 'utf8'));
+  const page = join(out, 'record/index.html');
+  writeFileSync(page, withTheHeadOfTheSite({ html: readFileSync(page, 'utf8'), title, description, facts }));
+  const map = join(out, 'sitemap-0.xml');
+  writeFileSync(map, sitemapWith(readFileSync(map, 'utf8'), `${facts.homeUrl}record/`));
 }
 
 /** What goes beside the built pages: `llms.txt` and `robots.txt`, from the same sources. */

@@ -7,6 +7,10 @@ head:
     attrs:
       property: og:type
       content: website
+  - tag: script
+    attrs:
+      type: application/ld+json
+    content: {{jsonld}}
 hero:
   tagline: {{pitch.body}}
   image:
