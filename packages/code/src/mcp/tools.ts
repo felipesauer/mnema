@@ -2968,7 +2968,11 @@ function rulesBeforeAnEdit(
     const unrecorded = recorded.ok ? [] : [unrecordedCharge('refuse', recorded.why)];
     for (const line of unrecorded) session.log(line);
     // What the write founded rides in the reason, the one field of the reply that reaches a model.
-    const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
+    const founded = [
+      ...session.founding.take(),
+      ...session.replacementsOwed.take(),
+      ...session.newTails.take(),
+    ];
     const refusal = [reasonTold(met, session.told), ...unrecorded, ...founded].join('\n\n');
     return {
       ok: true,
@@ -3036,7 +3040,11 @@ function rulesBeforeAnEdit(
   // this path, which nobody asked for and nobody reads the output of, is not silent about it.
   // And what the content door replaced in those facts, for the same reason and by the same
   // field: the path the host named is screened on its way into `channel.asked`.
-  const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
+  const founded = [
+    ...session.founding.take(),
+    ...session.replacementsOwed.take(),
+    ...session.newTails.take(),
+  ];
   // A RULE MOVED APART IS SAID IN ONE LINE beside the rules, where the asking has not said it already
   // (its reason carries the line): the push shows the state the record leaves, and not that it was disputed.
   if (pushed?.apart !== undefined) founded.push(pushed.apart);

@@ -308,7 +308,7 @@ function stdinOf(command: string, at: string): string {
     });
   }
   // The write after which a note of the host's memory would be copied: outside the project, so the
-  // shell in front passes it, and the directory it is in is no project's here, so nothing is copied.
+  // handler's own filter passes it, and the directory it is in is no project's here, so nothing is copied.
   if (handlerOf(command) === AFTER_A_WRITE_HOOK) {
     return JSON.stringify({
       hook_event_name: 'PostToolUse',

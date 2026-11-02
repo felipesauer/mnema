@@ -20,7 +20,7 @@ home (so the launcher is the one npm writes there, `mnema.cmd` on Windows), and 
   payloads, and OpenCode's module and Gemini's extension are separate files: none of those was run.
 
 Not run there: the test suite (about ten minutes on Linux, and it leans on `sh`, a pty and `unshare`, so it runs
-on Linux only), the `sh` lines of the plugin's `hooks.json` (a host's shell runs them), the Python reader on any
+on Linux only), the commands of the plugin's `hooks.json` as a host starts them (they are `node` and a handler, no shell line), the Python reader on any
 version but 3.9, and any host itself. A rule addressed at a folder that is not on disk yet is matched by its
 letters as written, so on a case-insensitive volume a write that spells that folder in other case goes round it.
 

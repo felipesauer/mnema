@@ -338,22 +338,20 @@ describe('the plugin command VS Code runs', () => {
   }
 
   it('names, in its matcher and in its filter, exactly the tools the verb reads: both ways', () => {
-    // FOUR PLACES HOLD ONE LIST: the verb's table, the matcher Claude Code and Cursor apply and
-    // never match, the filter in the shell in front of the process that VS Code, which ignores the
-    // matcher, runs on every tool, and the tools the handler checks again, so they are reconciled
+    // THREE PLACES HOLD ONE LIST: the verb's table, the matcher Claude Code and Cursor apply and
+    // never match, and the tools the command hands the handler (`--tools`), which is the filter for
+    // VS Code, which ignores the matcher and runs the command on every tool. They are reconciled
     // here in both directions. A tool missing from a filter is a write never asked about, in silence.
     const tools = [...writeToolsOf('vscode')].sort();
     const { matcher, command } = declared();
     expect(/^\^\((.*)\)\$$/.exec(matcher)?.[1]?.split('|').sort()).toEqual(tools);
-    const filtered = [...command.matchAll(/\*'"([a-z_]+)"'\*/g)].map((m) => m[1]).sort();
-    expect(filtered).toEqual(tools);
     const checked = (/ --tools ([a-z_,]+)/.exec(command)?.[1] ?? '').split(',').sort();
     expect(checked).toEqual(tools);
     // And the host the command declares is one the verb takes.
     expect(HOOK_HOSTS.filter((host) => command.includes(` --host ${host} `))).toEqual(['vscode']);
   });
 
-  it('reaches the verb on a write and asks; on a read it starts no process at all', () => {
+  it('reaches the verb on a write and asks; on a read it starts no mnema', () => {
     const bin = join(sandbox, 'bin');
     mkdirSync(bin);
     const calls = join(sandbox, 'calls.txt');
@@ -405,24 +403,60 @@ describe('the plugin command VS Code runs', () => {
     ]);
   });
 
-  it('starts no process at all, not even node, on a VS Code read, or for a write outside Cursor', () => {
-    // VS Code runs EVERY command of the plugin on every tool call, whatever the matcher says, so a
-    // read meets both gates; Claude Code runs Cursor's gate at each of its own writes. A filter in
-    // the handler would still start `node` each time, so the shell the hooks file generates in
-    // front of each gate is what this holds: `node` itself is a shim here, and it is never called.
+  it('still asks where another host leaves its variable behind: VS Code yields to no one', () => {
+    // A terminal opened in Cursor or Qwen Code carries that host's variable into VS Code's. VS Code's
+    // gate was never behind a variable check, so it answers; it is Cursor's gate that yields.
     const bin = join(sandbox, 'bin');
     mkdirSync(bin);
     const calls = join(sandbox, 'calls.txt');
-    for (const name of ['node', 'mnema']) {
-      const real = name === 'node' ? process.execPath : `${process.execPath}" "${CLI}`;
-      writeFileSync(
-        join(bin, name),
-        ['#!/bin/sh', `printf '%s\\n' "${name} $*" >> "$CALLS"`, `exec "${real}" "$@"`, ''].join(
-          '\n',
-        ),
-      );
-      chmodSync(join(bin, name), 0o755);
-    }
+    writeFileSync(
+      join(bin, 'mnema'),
+      [
+        '#!/bin/sh',
+        'printf \'%s\\n\' "$*" >> "$MNEMA_CALLS"',
+        `exec "${process.execPath}" "${CLI}" "$@"`,
+        '',
+      ].join('\n'),
+    );
+    chmodSync(join(bin, 'mnema'), 0o755);
+    expect(declared().command).not.toContain('--unless');
+    const write = spawnSync('sh', ['-c', declared().command], {
+      cwd: repo,
+      input: createFile('src/billing/invoice.ts'),
+      encoding: 'utf-8',
+      env: {
+        HOME: join(sandbox, 'home'),
+        PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
+        MNEMA_CALLS: calls,
+        CLAUDE_PLUGIN_ROOT: PLUGIN,
+        CURSOR_VERSION: '2026.09.18',
+        QWEN_PROJECT_DIR: '/tmp/a-qwen-project',
+      },
+    });
+    expect(write.status).toBe(0);
+    expect(decided(JSON.parse(write.stdout) as Record<string, unknown>).value).toBe('ask');
+    expect(readFileSync(calls, 'utf-8')).toContain('before-a-write --host vscode');
+  });
+
+  it('starts no mnema on a VS Code read, or for a write outside Cursor and Qwen Code', () => {
+    // VS Code runs EVERY command of the plugin on every tool call, whatever the matcher says, so a
+    // read meets all three gates; Claude Code runs Cursor's and Qwen Code's at each of its own
+    // writes. The command is one program and its arguments, with no shell in front, so `node`
+    // starts each time and the handler ends before it starts `mnema`: `mnema` is a shim here, and
+    // it is never called.
+    const bin = join(sandbox, 'bin');
+    mkdirSync(bin);
+    const calls = join(sandbox, 'calls.txt');
+    writeFileSync(
+      join(bin, 'mnema'),
+      [
+        '#!/bin/sh',
+        `printf '%s\\n' "mnema $*" >> "$CALLS"`,
+        `exec "${process.execPath}" "${CLI}" "$@"`,
+        '',
+      ].join('\n'),
+    );
+    chmodSync(join(bin, 'mnema'), 0o755);
     const config = JSON.parse(readFileSync(HOOKS, 'utf-8')) as {
       hooks: Record<string, { hooks: { type: string; command?: string }[] }[]>;
     };
@@ -437,7 +471,7 @@ describe('the plugin command VS Code runs', () => {
         encoding: 'utf-8',
         env: {
           HOME: join(sandbox, 'home'),
-          PATH: `${bin}:/usr/bin:/bin`,
+          PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
           CALLS: calls,
           CLAUDE_PLUGIN_ROOT: PLUGIN,
         },
@@ -455,7 +489,7 @@ describe('the plugin command VS Code runs', () => {
     // NON-VACUITY: the shim is on the path the gates use; a VS Code write does start it.
     const vscode = gates.find((command) => command.includes('edit-asks-a-person.mjs')) ?? '';
     host(vscode, createFile('src/other/ledger.ts'));
-    expect(readFileSync(calls, 'utf-8')).toContain('node ');
+    expect(readFileSync(calls, 'utf-8')).toContain('mnema ');
   });
 
   it('refuses a host it does not know, rather than reading a payload in the wrong shape', () => {

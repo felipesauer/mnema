@@ -1015,10 +1015,12 @@ describe.each(BY_THEIR_VARIABLE)('the command $name runs from the plugin', (one)
     const tooled = (config.hooks['PreToolUse'] ?? []).find((group) =>
       group.hooks.some((hook) => hook.type === 'mcp_tool'),
     );
-    // Cursor applies the matcher and names its write tool as Claude Code does; the shell then
-    // keeps the process from starting anywhere that is not Cursor, and the handler checks again.
+    // Cursor applies the matcher and names its write tool as Claude Code does; the command hands
+    // the handler the variable that says it is the host, and the handler ends where it is unset.
+    // The command is one program and its arguments: no shell variable, no `&&`, no `exit`.
     expect(declared().matcher).toBe(tooled?.matcher);
-    expect(declared().command).toContain(`[ -n "$${one.variable}" ] && node `);
+    expect(declared().command).toMatch(/^node "\$\{CLAUDE_PLUGIN_ROOT\}\/hooks\/[a-z-]+\.mjs" /);
+    expect(declared().command).not.toMatch(/[;&|]|\$\(|\$[A-Z]/);
     expect(declared().command).toContain(` --where ${one.variable}`);
     expect(HOOK_HOSTS.filter((host) => declared().command.includes(` --host ${host} `))).toEqual([
       one.host,
@@ -1068,6 +1070,54 @@ describe.each(BY_THEIR_VARIABLE)('the command $name runs from the plugin', (one)
       `before-a-write --host ${one.host} --agent-key ${one.host}`,
     ]);
     expect(refusals()).toEqual([`${refusing} @ src/billing/invoice.ts by ${one.host}`]);
+  });
+});
+
+describe("the command Cursor's gate yields to Qwen Code's", () => {
+  it('starts no mnema where both hosts say they are the host: a terminal leaves a variable behind', () => {
+    const config = JSON.parse(readFileSync(join(PLUGIN, 'hooks', 'hooks.json'), 'utf-8')) as {
+      hooks: Record<string, { hooks: { type: string; command?: string }[] }[]>;
+    };
+    const commands = (config.hooks['PreToolUse'] ?? []).flatMap((group) =>
+      group.hooks.flatMap((hook) =>
+        hook.command?.includes(' --host cursor ') ? [hook.command] : [],
+      ),
+    );
+    expect(commands).toHaveLength(1);
+    const bin = join(sandbox, 'bin');
+    mkdirSync(bin);
+    const calls = join(sandbox, 'calls.txt');
+    writeFileSync(
+      join(bin, 'mnema'),
+      [
+        '#!/bin/sh',
+        'printf \'%s\\n\' "$*" >> "$MNEMA_CALLS"',
+        `exec "${process.execPath}" "${CLI}" "$@"`,
+        '',
+      ].join('\n'),
+    );
+    chmodSync(join(bin, 'mnema'), 0o755);
+    const host = (extra: Record<string, string>) =>
+      spawnSync('sh', ['-c', commands[0] ?? ''], {
+        cwd: repo,
+        input: payloadFor('cursor', 'src/billing/invoice.ts'),
+        encoding: 'utf-8',
+        env: {
+          HOME: join(sandbox, 'home'),
+          PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
+          MNEMA_CALLS: calls,
+          CLAUDE_PLUGIN_ROOT: PLUGIN,
+          CLAUDE_PROJECT_DIR: repo,
+          ...extra,
+        },
+      });
+    const both = host({ CURSOR_VERSION: '2026.09.18', QWEN_PROJECT_DIR: '/tmp/a-qwen-project' });
+    expect(both.status).toBe(0);
+    expect(both.stdout).toBe('');
+    expect(existsSync(calls)).toBe(false);
+    // NON-VACUITY: the same call without Qwen Code's variable is refused.
+    const alone = host({ CURSOR_VERSION: '2026.09.18' });
+    expect(decided(JSON.parse(alone.stdout) as Record<string, unknown>).value).toBe('deny');
   });
 });
 
