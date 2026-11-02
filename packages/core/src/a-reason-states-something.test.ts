@@ -9,7 +9,13 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { agentEnrolled, catalogUpcasters, LATEST_VERSION, openChainForWriting } from '@mnema/chain';
+import {
+  agentEnrolled,
+  catalogUpcasters,
+  LATEST_VERSION,
+  namesOfTails,
+  openChainForWriting,
+} from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   isMarker,
@@ -49,6 +55,7 @@ import { gate } from './workflow/gate.js';
 import { ensureFounded, linkAccount, retireAgent } from './workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from './workflow/operations.js';
 import { authorizeTailPrune } from './workflow/prune-operations.js';
+import { relinkTails } from './workflow/relink-operations.js';
 import { startRun } from './workflow/session-operations.js';
 import { skillGate } from './workflow/skill-gate.js';
 import { createSkill, reviewSkill } from './workflow/skill-operations.js';
@@ -161,6 +168,7 @@ describe('every kind says where its why is, and the door asks it there', () => {
     let secondKey = '';
     let checkerKey = '';
     let foreignTail = '';
+    let relinkedTail = '';
     return [
       {
         kind: 'decision.recorded',
@@ -316,6 +324,43 @@ describe('every kind says where its why is, and the door asks it there', () => {
         },
         drive: (said) =>
           retractLink(ctx, { subject: note, target: 'src/a', rel: 'governs', reason: said }),
+      },
+      {
+        // LAST: it leaves the directory two records, of which nothing is read, so the count around
+        // it reads nothing either way; the bytes of a refused relink are held unchanged in
+        // `workflow/relink-operations.test.ts`.
+        kind: 'tail.relinked',
+        site: 'reason',
+        prepare: () => {
+          const elsewhere = mkdtempSync(join(tmpdir(), 'mnema-reason-elsewhere-'));
+          const other = openChainForWriting(elsewhere, { keyRoot: root });
+          const did = createTask(
+            { writer: other, layout: { root: elsewhere }, upcasters },
+            { title: 'work of another record' },
+          );
+          if (!did.ok) throw new Error('the other record holds nothing to relink');
+          cpSync(join(elsewhere, 'tails', other.tail), join(root, 'tails', other.tail), {
+            recursive: true,
+          });
+          rmSync(elsewhere, { recursive: true, force: true });
+          relinkedTail = other.tail;
+        },
+        drive: (said) => {
+          const fingerprint = ctx.writer.signerFingerprint;
+          return relinkTails(
+            {
+              layouts: [ctx.layout],
+              upcasters,
+              keys: new Map([[fingerprint, { fingerprint, keyRoot: root }]]),
+              openWriter: (_key, joins) => openChainForWriting(root, { keyRoot: root, joins }),
+            },
+            {
+              tails: [relinkedTail],
+              into: namesOfTails(ctx.layout).get(ctx.writer.tail) as string,
+              reason: said,
+            },
+          );
+        },
       },
     ];
   }

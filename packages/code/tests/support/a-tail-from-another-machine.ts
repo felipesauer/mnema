@@ -70,6 +70,31 @@ export function mergeAForeignTail(into: string, machine: string): string {
 }
 
 /**
+ * A tail of THIS machine's key, written in a record of its own at `elsewhere` and merged into the
+ * tree at `into`: what one person's two `mnema init` leave once merged, and the one kind of tail
+ * `tail relink` relinks (FORMAT.md section 6.11). The directory then holds two records until the
+ * relink, so a caller merges it only where the relink is the next write.
+ */
+export function aTailOfThisKeyInAnotherRecord(
+  into: string,
+  elsewhere: string,
+  keyRoot: string,
+): string {
+  const writer = openChainForWriting(elsewhere, { keyRoot });
+  const created = createTask(
+    { writer, layout: { root: elsewhere }, upcasters: catalogUpcasters() },
+    { title: 'work of another record' },
+  );
+  if (!created.ok) throw new Error(`fixture: the other record holds nothing: ${created.code}`);
+  writer.checkpoint();
+  cpSync(join(elsewhere, 'tails', writer.tail), join(into, 'tails', writer.tail), {
+    recursive: true,
+  });
+  rmSync(elsewhere, { recursive: true, force: true });
+  return writer.tail;
+}
+
+/**
  * What another machine holds of the record at `from` before it writes: its tails and the public
  * keys beside them, as a clone carries them. Its tail then names the record those tails name
  * (FORMAT.md section 6.10); a machine that never saw them would begin a record of its own, which

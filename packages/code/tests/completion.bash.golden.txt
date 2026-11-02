@@ -22,7 +22,7 @@ _mnema_commands() {
     'audit') echo 'accountability antipatterns exposure help' ;;
     'commit-hook') echo 'install uninstall suggest help' ;;
     'key') echo 'restore request enroll github sigstore revoke protect unprotect help' ;;
-    'tail') echo 'list prune help' ;;
+    'tail') echo 'list prune relink help' ;;
     'run') echo 'start end help' ;;
     *) echo ;;
   esac
@@ -120,6 +120,7 @@ _mnema_flags() {
     'tail') echo '-h --help -V --version --color' ;;
     'tail list') echo '-h --help -V --version --color' ;;
     'tail prune') echo '--reason --which --lose-keys -h --help -V --version --color' ;;
+    'tail relink') echo '--into --reason -h --help -V --version --color' ;;
     'doctor') echo '--fix --dry-run -h --help -V --version --color' ;;
     'report') echo '--decline --off --on -h --help -V --version --color' ;;
     'completion') echo '-h --help -V --version --color' ;;
@@ -268,6 +269,7 @@ _mnema_values() {
     'tail:--color') echo 'auto always never' ;;
     'tail list:--color') echo 'auto always never' ;;
     'tail prune:--color') echo 'auto always never' ;;
+    'tail relink:--color') echo 'auto always never' ;;
     'doctor:--color') echo 'auto always never' ;;
     'report:--color') echo 'auto always never' ;;
     'completion:--color') echo 'auto always never' ;;
