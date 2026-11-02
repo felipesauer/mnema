@@ -31,6 +31,9 @@ name: Release
 # that is no longer untried, and a run does not prove the next one. It needs no npm token and
 # no secret for the packages; the release is created with the job's own `github.token`.
 #
+# THE REGISTRY. After the release, a last job lists the server in the MCP Registry (`publish-registry`), behind the
+# same approval, with `mcp-publisher login github-oidc` and no secret. It is the third job that can ask for the OIDC token.
+#
 # THE EXTENSION. After the release, the VS Code extension is packed once without a secret, checked, installed
 # into a real VS Code, attached to the release and published, the same file, to the Visual Studio Marketplace
 # and to Open VSX by two jobs that a person approves in the `extension-stores` environment: the Marketplace's
@@ -479,3 +482,63 @@ jobs:
           set -euo pipefail
           echo "Open VSX answers $(curl -sS -o /dev/null -w '%{http_code}' "https://open-vsx.org/api/mnema/mnema/$VERSION" || true) for mnema.mnema@$VERSION (200 means it has it)"
           "$GITHUB_WORKSPACE/.github/release-tools/node_modules/.bin/ovsx" publish --skip-duplicate "$RUNNER_TEMP/vsix/mnema-$VERSION.vsix"
+
+  # THE SERVER IN THE MCP REGISTRY. It runs only after the tag and the release, which wait for the five on npm and
+  # are behind a person's approval of the `npm` environment, and it asks for that environment too, so nothing
+  # is sent to the registry without an approval. It holds no secret: `mcp-publisher login github-oidc` trades the
+  # `id-token` below for a registry token, and the registry accepts the name `io.github.felipesauer/mnema` because
+  # the workflow runs in this account's repository. The registry lists a package only if the version on npm carries
+  # `mcpName` equal to the entry's name, so the job asks npm for it before it logs in, and checks that the
+  # `server.json` it sends is the version the plan named. It builds nothing and installs nothing: the publisher is
+  # one release of the registry's, downloaded by its tag and checked against the SHA-256 written here (the digest
+  # the registry's own release lists for that file), not against a file that travels with it, and it is the
+  # only program that runs while the job can ask for the token. A version the registry already has is refused by
+  # it, so a run of this job again after it succeeded fails; run it again only if it did not.
+  publish-registry:
+    name: list the server in the MCP Registry
+    needs: [plan, release]
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
+    runs-on: ubuntu-24.04
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.7
+      MCP_PUBLISHER_SHA256: 00b21004149a4ce66f0782508ae4a2bce67d1bea395a8da0bd8028159fb59579
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: server.json
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Check that the entry is this version and that npm names the server
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          entry="$(node -p "const e = JSON.parse(require('fs').readFileSync('server.json', 'utf8')); [e.version, e.packages[0].version, e.name].join(' ')")"
+          [ "$entry" = "$VERSION $VERSION io.github.felipesauer/mnema" ] || { echo "::error::server.json says '$entry', not the version $VERSION the plan named"; exit 1; }
+          named="$(npm view "@mnema/code@$VERSION" mcpName)"
+          [ "$named" = "io.github.felipesauer/mnema" ] || { echo "::error::@mnema/code@$VERSION on npm has mcpName '$named': the registry would refuse it"; exit 1; }
+
+      - name: Download the publisher and check it against the SHA-256 written here
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/modelcontextprotocol/registry/releases/download/$MCP_PUBLISHER_VERSION/$archive"
+          have="$(sha256sum "$RUNNER_TEMP/$archive" | cut -d' ' -f1)"
+          [ "$have" = "$MCP_PUBLISHER_SHA256" ] || { echo "::error::$archive is not the file whose SHA-256 is written in this workflow"; exit 1; }
+          tar xzf "$RUNNER_TEMP/$archive" mcp-publisher
+
+      - name: Log in to the MCP Registry with the workflow's OIDC token
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish the entry
+        run: ./mcp-publisher publish

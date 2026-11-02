@@ -89,6 +89,7 @@ describe('the release workflow publishes without a token', () => {
       'attach-vsix',
       'publish-marketplace',
       'publish-open-vsx',
+      'publish-registry',
     ]);
     for (const name of names) {
       const text = job(name);
@@ -97,7 +98,7 @@ describe('the release workflow publishes without a token', () => {
       }
     }
     const asking = names.filter((name) => /^ {6}id-token: write$/m.test(job(name)));
-    expect(asking).toEqual(['publish', 'publish-marketplace']);
+    expect(asking).toEqual(['publish', 'publish-marketplace', 'publish-registry']);
     expect(job('publish-open-vsx')).not.toMatch(/id-token|--oidc/);
     expect(job('pack')).toMatch(/^ {6}contents: read$/m);
     expect(job('pack')).toContain('pnpm install --frozen-lockfile');
