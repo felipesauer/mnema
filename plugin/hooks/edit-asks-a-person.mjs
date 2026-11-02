@@ -11,13 +11,14 @@
  * Code alone: it sits under a matcher of VS Code's own tool names, which Claude Code and Cursor
  * apply and never match (measured in both), and which VS Code does not read at all.
  *
- * THAT LAST FACT IS WHY THERE IS A FILTER IN FRONT OF IT. VS Code runs a plugin's command on every
+ * THAT LAST FACT IS WHY THIS HANDLER FILTERS BY THE TOOL. VS Code runs a plugin's command on every
  * tool call (a read, a search, a terminal) whatever its matcher says (measured: a matcher that
- * names no tool still ran). So `hooks.json`, generated from the host table, passes the payload here
- * only when it names one of the tools that write, in the shell and before any process starts;
- * everything else costs a shell. It also hands this handler its host and those tools (`--host
- * vscode --tools …`), and the handler checks them again before it runs `mnema`
- * (`hand-over.mjs`, `whatTheGateAnswers`): a second line, not the first.
+ * names no tool still ran). The hooks file's command is one program and its arguments, with no
+ * shell in front (a shell with `$(cat)` and a `case` was there until the plugin was made ready for
+ * Anthropic's directory, whose checklist blocks a variable other than `${CLAUDE_PLUGIN_ROOT}` and a
+ * command substitution in a plugin that lives in a subfolder), so the process starts for a read too
+ * and ends before it starts `mnema`: the hooks file hands it its host and the tools that write
+ * (`--host vscode --tools …`), and `hand-over.mjs`, `whatTheGateAnswers`, turns the others away.
  *
  * IT DECIDES NOTHING, AND IT CARRIES NO TEXT OF ITS OWN. The payload goes to `mnema
  * before-a-write --host <host>` byte for byte and its answer comes back byte for byte; which rules
@@ -32,8 +33,9 @@
  * reads silence as a write that may go on, and a record with a rule at an address is what brought
  * this process to life. Where there is no `mnema` at all, no project, or no rule that refuses a write or asks for a person at the path,
  * nothing refuses: silence and exit 0, as before (`without-mnema-the-hooks-fail-open.test.ts`).
- * The same checks the hooks file's shell made hold in the refusal: where the host's variable is
- * unset, or the tool is not one that writes, nothing is refused.
+ * The same checks hold in the refusal: where the host's variable is unset, where a host that has a
+ * handler of its own says it is there (`--unless`), or where the tool is not one that writes, nothing
+ * is refused.
  */
 
 /**
@@ -69,11 +71,13 @@ try {
     argv.includes(flag) ? argv[argv.indexOf(flag) + 1] : undefined;
   const where = flagValue('--where');
   const tools = flagValue('--tools');
+  const unless = flagValue('--unless');
+  const yields = unless?.split(',').some((variable) => (process.env[variable] ?? '') !== '');
   let tool = '';
   try {
     // Where the fault came before the payload was read, and the call is only this handler's if the
     // tool is one that writes, the payload is read now.
-    if (handed === '' && !(where !== undefined && (process.env[where] ?? '') === '')) {
+    if (handed === '' && !yields && !(where !== undefined && (process.env[where] ?? '') === '')) {
       const chunks = [];
       for await (const chunk of process.stdin) chunks.push(chunk);
       handed = Buffer.concat(chunks).toString('utf-8');
@@ -83,6 +87,7 @@ try {
     // No payload that names a tool: the filter below then has nothing to turn the call away by.
   }
   const startsNothing =
+    yields === true ||
     (where !== undefined && (process.env[where] ?? '') === '') ||
     (tools !== undefined && !tools.split(',').includes(tool));
   // ... and only where a rule that refuses the write or asks for a person at it addresses the path, read

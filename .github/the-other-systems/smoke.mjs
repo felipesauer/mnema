@@ -14,9 +14,9 @@
 // workspace hides. It touches nothing outside the temporary directory it makes. Run it from the
 // root of a built workspace: `node .github/the-other-systems/smoke.mjs`.
 //
-// WHAT IT DOES NOT PROVE: the plugin's `hooks.json` commands that are shell lines (`[ -n ... ] &&`,
-// `IN=$(cat)`) are run by the host's shell, which this script is not; their handlers are run
-// directly. The vitest suite does not run here; it runs on Linux.
+// WHAT IT DOES NOT PROVE: that a host starts the plugin's `hooks.json` commands (`node`, the handler
+// from `${CLAUDE_PLUGIN_ROOT}` and its arguments): the handlers are run directly here, with the
+// arguments the file gives them. The vitest suite does not run here; it runs on Linux.
 
 import { spawnSync } from 'node:child_process';
 import {
