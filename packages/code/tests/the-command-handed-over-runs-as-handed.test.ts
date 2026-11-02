@@ -748,7 +748,7 @@ export const HANDED_OVER: Readonly<
   'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 2 },
   'docs/hosts.md': { line: 2, name: 4 },
-  'docs/install.md': { line: 3, name: 1 },
+  'docs/install.md': { line: 3, name: 2 },
   'docs/packages.md': { line: 2, name: 3 },
   'docs/platforms.md': { line: 1, name: 3 },
   'docs/rule-arrival.md': { line: 1 },
