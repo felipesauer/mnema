@@ -169,6 +169,7 @@ export { type KeyATailHolds, type KeyIntroduction, keysATailHolds } from './chai
 export { DEFAULT_WAIT_MS, TailBusyError } from './chain/tail-lock.js';
 export {
   arrivalsSince,
+  namesOfTails,
   nameTheGenesisDerives,
   recordNamedIn,
   tailsReadAt,
