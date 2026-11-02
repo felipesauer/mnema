@@ -12,6 +12,25 @@ with its own changelog.
 
 ### Changed
 
+- **Every hook command of the Claude Code plugin is `node`, the handler and plain arguments, with no shell in front.**
+  `plugin/hooks/hooks.json` carried five shell lines (`[ -n "$CURSOR_VERSION" ] && ...; exit 0`, `IN=$(cat); case ...`, the
+  path read out of the payload by parameter expansion) that turned a call away before any `mnema` started, and the
+  checklist of Anthropic's directory blocks, for a plugin that lives in a subfolder of its repository, a hook command
+  that holds a variable other than `${CLAUDE_PLUGIN_ROOT}` or a command substitution
+  (https://claude.com/docs/plugins/pre-submission-checklist; `${CLAUDE_PLUGIN_ROOT}` is the variable
+  https://code.claude.com/docs/en/hooks documents for a plugin's paths). The handlers turn the call away now, from
+  arguments the generated file hands them: `--tools` (the payload names none of those tools: the hook after a question,
+  after a dispatch, and VS Code's gate), `--where` (the variable that says the host is that host is unset: Cursor's and
+  Qwen Code's gates) and the new `--unless` (the variable of a host that has a handler of its own is set: Cursor's gate
+  yields to Qwen Code's, and the hook after a write to both), and `after-a-write.mjs` reads the path out of the payload
+  and ends for a path that can be neither a note of the host's memory nor a file of decisions, before it loads the rest
+  or starts `mnema`. What each handler answers is unchanged (held by `the-hooks-file-runs-no-shell.test.ts` and the
+  tests of each hook, and, in the real Claude Code 2.1.310, by `a-note-of-the-hosts-memory-is-copied.test.ts` and
+  `a-settled-choice-reaches-the-model.test.ts`). **The cost, measured**: a `node` start where a shell line stood, base and
+  head alternated, 30 rounds, on a machine at load 29 where an empty `node` takes 31 ms: the hook after a write 49 ms
+  against 3 ms, a gate that turns the call away 43 ms against 2 ms, and the three commands that start at a write in
+  Claude Code (they run in parallel) 71 ms against 8 ms; a VS Code read, which starts six, 74 ms against 11 ms.
+
 - **Nothing governs in a directory whose tails name two records, and every reading of what governs says so.** Both
   readers refuse such a directory (`another-record`), but the readings that say what governs run over a directory
   nobody verified, and read a tail grafted from another record as this one's: its decisions were listed in force in the
@@ -132,6 +151,16 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   level and the exit are what they were. The fold is unchanged, so `show` still prints the state of the last move and a record
   reads as it did before; what changes is what "in force" means for these decisions. Two accepts, or two retirements, are a
   divergence and are still in or out of force by their state (FORMAT.md section 6.7; `docs/convergence.md`).
+
+### Added
+
+- **The plugin has an icon for Anthropic's directory and the stores**: a 512 by 512 PNG,
+  `.claude-plugin/icon.png` in `plugin/` and in `plugin-server-only/`, named by `icon` in each manifest (a field the
+  directory reads and Claude Code ignores). It is the mark the VS Code extension already has (the M of the console's
+  wordmark, on the banner's page, in the accent), drawn by the same `icon.mjs` at 512 pixels instead of 128 with
+  `node:zlib` alone, so no raster tool and no binary is needed, here or on a runner. `node
+  .github/the-plugin-icon/make.mjs` writes both files after `pnpm build`, and `--check` says which is not what the
+  drawing makes (`the-plugin-icon-is-the-mark-it-names.test.ts`). The 128 pixel icon is the bytes it was.
 
 ### Fixed
 
