@@ -1,3 +1,5 @@
 # Managed by mnema: this file governs only mnema's own tree.
 # The record is signed bytes: never rewrite its line ends on checkout.
 * -text
+# A tail only grows: merge its files with the mnema-tail driver where git has it configured.
+tails/*/*.jsonl merge=mnema-tail

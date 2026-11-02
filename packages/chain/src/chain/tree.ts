@@ -83,16 +83,29 @@ const GITATTRIBUTES_CONTENT = [
   "# Managed by mnema: this file governs only mnema's own tree.",
   '# The record is signed bytes: never rewrite its line ends on checkout.',
   '* -text',
+  '# A tail only grows: merge its files with the mnema-tail driver where git has it configured.',
+  'tails/*/*.jsonl merge=mnema-tail',
   '',
 ].join('\n');
 
 const NO_EOL_LINE = '* -text';
 
 /**
+ * The name of the merge driver the line below names for a tail's segments and its
+ * `checkpoints.jsonl`: `mnema record merge-tail` keeps the longer side when one is the start of
+ * the other, and stops on a fork. The attribute travels with the tree; the driver behind the name
+ * is a setting of git's own configuration, which a committed file cannot carry, so a clone without
+ * it merges these files as text, as git does any file.
+ */
+export const TAIL_MERGE_DRIVER = 'mnema-tail';
+
+const MERGE_LINE = `tails/*/*.jsonl merge=${TAIL_MERGE_DRIVER}`;
+
+/**
  * Ensures a PROJECT tree exists at `layout.root` and carries its own `.gitignore` and
  * `.gitattributes`. Creates the tree directory if absent and writes each file only if it
  * is not already there; an older `.gitignore` that lacks the `/locks/` or the `/site/` line,
- * or a `.gitattributes` that lacks `* -text`, gets that line appended and nothing else, which
+ * or a `.gitattributes` that lacks `* -text` or the merge driver's line, gets that line appended and nothing else, which
  * is how a tree made before any of those lines existed gets it, at its next write. Idempotent:
  * safe to call before every write. Returns true if it wrote the `.gitignore` this call (it
  * was absent), false if one already existed (even if a line was appended to it).
@@ -104,6 +117,13 @@ export function ensureTree(layout: ChainLayout): boolean {
     GITATTRIBUTES_CONTENT,
     (l) => l === NO_EOL_LINE,
     NO_EOL_LINE,
+  );
+  // A tree made before the merge driver existed gets its line the same way, at its next write.
+  ensureLine(
+    gitattributesPath(layout),
+    GITATTRIBUTES_CONTENT,
+    (l) => l === MERGE_LINE,
+    MERGE_LINE,
   );
   // A tree made before the writers' lock directory existed has no line for it, and a lock left
   // by a killed holder would be committed.

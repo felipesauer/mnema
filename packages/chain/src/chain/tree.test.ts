@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { gitignorePath } from './layout.js';
-import { ensureTree } from './tree.js';
+import { ensureTree, TAIL_MERGE_DRIVER } from './tree.js';
 
 /**
  * The file that turns git's automatic maintenance off, handed to every git a test starts to
@@ -174,7 +174,40 @@ describe('ensureTree: a .gitattributes that keeps git from rewriting line ends',
     const rules = readFileSync(attributes(), 'utf-8')
       .split('\n')
       .filter((l) => l.length > 0 && !l.startsWith('#'));
-    expect(rules).toEqual(['* -text']);
+    expect(rules).toEqual(['* -text', 'tails/*/*.jsonl merge=mnema-tail']);
+  });
+
+  it('names the merge driver for the segments and the checkpoints of every tail, and git reads it so', () => {
+    // The attribute is what git looks up when it merges a tail file; the driver behind the name is
+    // a setting git keeps in its own configuration, which this file cannot carry.
+    const work = mkdtempSync(join(tmpdir(), 'mnema-merge-attribute-'));
+    try {
+      execFileSync('git', ['init', '-q', work], {
+        env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
+      });
+      ensureTree({ root: join(work, '.mnema') });
+      const asked = execFileSync(
+        'git',
+        [
+          'check-attr',
+          'merge',
+          '--',
+          '.mnema/tails/ffff-0001/000001.jsonl',
+          '.mnema/tails/ffff-0001/checkpoints.jsonl',
+          '.mnema/tails/ffff-0001/tailproof.json',
+          '.mnema/keys/ffff.pub',
+        ],
+        { cwd: work, encoding: 'utf-8', env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1' } },
+      );
+      expect(asked.trim().split('\n')).toEqual([
+        `.mnema/tails/ffff-0001/000001.jsonl: merge: ${TAIL_MERGE_DRIVER}`,
+        `.mnema/tails/ffff-0001/checkpoints.jsonl: merge: ${TAIL_MERGE_DRIVER}`,
+        '.mnema/tails/ffff-0001/tailproof.json: merge: unspecified',
+        '.mnema/keys/ffff.pub: merge: unspecified',
+      ]);
+    } finally {
+      rmSync(work, { recursive: true, force: true });
+    }
   });
 
   it('is, byte for byte, the file the record this repository keeps carries', () => {
@@ -192,14 +225,20 @@ describe('ensureTree: a .gitattributes that keeps git from rewriting line ends',
     writeFileSync(gitignorePath({ root }), ignore, 'utf-8');
     expect(ensureTree({ root })).toBe(false);
     expect(readFileSync(attributes(), 'utf-8')).toContain('\n* -text\n');
+    expect(readFileSync(attributes(), 'utf-8')).toContain('\ntails/*/*.jsonl merge=mnema-tail\n');
     expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(ignore);
   });
 
   it('adds only the missing line to a .gitattributes of the person, and leaves one that has it', () => {
     writeFileSync(attributes(), '*.md diff', 'utf-8');
     ensureTree({ root });
-    expect(readFileSync(attributes(), 'utf-8')).toBe('*.md diff\n* -text\n');
-    for (const body of ['* -text\n', '*.md diff\r\n* -text\r\n']) {
+    expect(readFileSync(attributes(), 'utf-8')).toBe(
+      '*.md diff\n* -text\ntails/*/*.jsonl merge=mnema-tail\n',
+    );
+    for (const body of [
+      '* -text\ntails/*/*.jsonl merge=mnema-tail\n',
+      '*.md diff\r\n* -text\r\ntails/*/*.jsonl merge=mnema-tail\r\n',
+    ]) {
       writeFileSync(attributes(), body, 'utf-8');
       ensureTree({ root });
       expect(readFileSync(attributes(), 'utf-8')).toBe(body);

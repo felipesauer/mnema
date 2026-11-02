@@ -262,6 +262,7 @@ import { registerSkill } from './skill.js';
 import { registerStack } from './stack.js';
 import { registerStatus } from './status.js';
 import { registerSwitch } from './switch.js';
+import { registerRecord } from './record.js';
 import { registerTail } from './tail.js';
 import { registerTally } from './tally.js';
 import { registerTask } from './task.js';
@@ -339,7 +340,14 @@ export const GROUPS: readonly Group[] = [
   },
   {
     heading: 'The git log:',
-    verbs: [registerWhy, registerCommits, registerAging, registerTrailer, registerCommitHook],
+    verbs: [
+      registerWhy,
+      registerCommits,
+      registerAging,
+      registerTrailer,
+      registerCommitHook,
+      registerRecord,
+    ],
   },
   {
     heading: 'This machine:',
