@@ -267,6 +267,8 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     'The finder of the test files that carry the line which puts them in the fast run. The vitest config for that run reads it before any test exists, so it is plain ESM under .github/, outside the packages/ walk either corpus makes, and the scanner follows only a .ts specifier.',
   'packages/code/tests/what-the-suite-left-behind.test.ts -> ../../../.github/what-the-suite-left-behind/sweep.mjs':
     'The sweep that reports which sandboxes under the machine temp directory outlived a run of the suite. It answers from OUTSIDE the suite, with no worker alive, which is the one place the before-and-after listing is not a race, so it can be neither a package nor reachable by a walk of one.',
+  'packages/code/tests/the-registry-entry-is-what-the-package-says.test.ts -> ../../../.github/release-prepare/server-json.mjs':
+    'The module that makes the server.json the MCP Registry is sent from the one version number. It is plain ESM under .github/ beside the script that writes it with the rest of the release, outside the packages/ walk either corpus makes, and the case importing it asserts the file on disk is what it returns, so the specifier is the proof of the entry and not a dependency the scanner could follow.',
   'packages/vscode/src/the-page-the-stores-show.test.ts -> ../build/icon.mjs':
     'The build script that draws the extension icon, a plain module outside the package sources the coverage universe covers. The cases importing it assert the PNG it returns (its signature, its size, the same bytes on a second drawing, the pixels of the banner M), so the specifier is the proof of the icon and not a dependency the scanner could follow.',
   'packages/vscode/src/the-font-the-status-bar-shows.test.ts -> ../build/icon-font.mjs':
@@ -1348,6 +1350,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-refusal-names-the-way-out.test.ts': 14,
   'packages/code/tests/the-refusal-of-an-unenrolled-agent-says-why-the-persons-key-cannot-sign.test.ts': 11,
   'packages/code/tests/the-refused-run-is-refused-everywhere.test.ts': 13,
+  'packages/code/tests/the-registry-entry-is-what-the-package-says.test.ts': 5,
   'packages/code/tests/the-release-prepare-writes-every-number.test.ts': 7,
   'packages/code/tests/the-release-workflow-publishes-without-a-token.test.ts': 4,
   'packages/code/tests/the-replaced-decision-is-named-where-it-is-read.test.ts': 17,
@@ -2216,8 +2219,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows; a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(22);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(22);
+    expect(unresolved.length).toBe(23);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(23);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);
