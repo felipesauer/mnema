@@ -604,6 +604,223 @@ type Verdict = 'collapsed' | 'minted' | 'composed';
  * the part that rots (which values exist, and whether each is collapsed) is derived.
  */
 const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = {
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}... into the same record: a relink moves a tail between two records\u00bb oneLine(relink.source.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the record name a relink claims to leave, a payload string',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}... into the same record: a relink moves a tail between two records\u00bb oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}... into the same record: a relink moves a tail between two records\u00bb oneLine(where(relink)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'where a relink sits: the directory name of its tail, which anyone who can write the tree makes, and its seq',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {} ends at {}... with {} event(s), not at the head {}... with {} the relink at {} names\u00bb entries.length #1':
+    {
+      verdict: 'minted',
+      why: 'how many entries the relinked tail holds, a whole number this reader counted',
+    },
+  "@mnema/chain chain/record-name.ts \u00abtail {} ends at {}... with {} event(s), not at the head {}... with {} the relink at {} names\u00bb oneLine((head ?? 'nothing').slice(0, 12)) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the head of the stored entry hash the relinked tail ends at, or a word typed here',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {} ends at {}... with {} event(s), not at the head {}... with {} the relink at {} names\u00bb oneLine(relink.throughHash.slice(0, 12)) #1':
+    { verdict: 'collapsed', why: 'the head of the entry hash a relink claims, a payload string' },
+  '@mnema/chain chain/record-name.ts \u00abtail {} ends at {}... with {} event(s), not at the head {}... with {} the relink at {} names\u00bb oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {} ends at {}... with {} event(s), not at the head {}... with {} the relink at {} names\u00bb oneLine(where(relink)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'where a relink sits: the directory name of its tail, which anyone who can write the tree makes, and its seq',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {} ends at {}... with {} event(s), not at the head {}... with {} the relink at {} names\u00bb relink.eventCount #1':
+    {
+      verdict: 'minted',
+      why: 'the count a relink claims, a whole number the catalog requires (`count`)',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {} holds {} event(s), and the relink at {} froze it at {}\u00bb entries.length #1':
+    {
+      verdict: 'minted',
+      why: 'how many entries the relinked tail holds, a whole number this reader counted',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {} holds {} event(s), and the relink at {} froze it at {}\u00bb oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {} holds {} event(s), and the relink at {} froze it at {}\u00bb oneLine(where(relink)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'where a relink sits: the directory name of its tail, which anyone who can write the tree makes, and its seq',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {} holds {} event(s), and the relink at {} froze it at {}\u00bb relink.eventCount #1':
+    {
+      verdict: 'minted',
+      why: 'the count a relink claims, a whole number the catalog requires (`count`)',
+    },
+  "@mnema/chain chain/record-name.ts \u00abtail {} is relinked {} times ({}): a tail is relinked once\u00bb oneLine(relinks.map(where).join(', ')) #1":
+    {
+      verdict: 'collapsed',
+      why: 'where each relink of one tail sits: directory names anyone who can write the tree makes',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {} is relinked {} times ({}): a tail is relinked once\u00bb oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {} is relinked {} times ({}): a tail is relinked once\u00bb relinks.length #1':
+    {
+      verdict: 'minted',
+      why: 'how many covered relinks name one tail, a whole number this reader counted',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {}, record {}..., relinked into this record by its own key at {}: {} event(s), the first at {}\u00bb entries.length #1':
+    {
+      verdict: 'minted',
+      why: 'how many entries the relinked tail holds, a whole number this reader counted',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {}, record {}..., relinked into this record by its own key at {}: {} event(s), the first at {}\u00bb oneLine(firstAt) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the `at` of the first entry of the relinked tail, a field of a stored line',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {}, record {}..., relinked into this record by its own key at {}: {} event(s), the first at {}\u00bb oneLine(relink.source.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the record name a relink claims to leave, a payload string',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {}, record {}..., relinked into this record by its own key at {}: {} event(s), the first at {}\u00bb oneLine(relink.tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00abtail {}, record {}..., relinked into this record by its own key at {}: {} event(s), the first at {}\u00bb oneLine(where(relink)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'where a relink sits: the directory name of its tail, which anyone who can write the tree makes, and its seq',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} ({})\u00bb detail #1': {
+    verdict: 'composed',
+    why: 'the sentence a check of the relink rule words, every value in it a site of its own',
+  },
+  '@mnema/chain chain/record-name.ts \u00ab{} ({})\u00bb token #1': {
+    verdict: 'minted',
+    why: 'the name a relink is refused by, one of the constants of the module',
+  },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}..., and that tail names {}\u00bb oneLine(recordSaid(tailNames)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the record name the relinked tail signed, a string whoever signed it chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}..., and that tail names {}\u00bb oneLine(relink.source.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the record name a relink claims to leave, a payload string',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}..., and that tail names {}\u00bb oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}..., and that tail names {}\u00bb oneLine(where(relink)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'where a relink sits: the directory name of its tail, which anyone who can write the tree makes, and its seq',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} into record {}..., and names {} itself\u00bb oneLine(recordSaid(hostNames)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the record name the host tail signed, a string whoever signed it chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} into record {}..., and names {} itself\u00bb oneLine(relink.into.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the record name a relink claims to join, a payload string',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} into record {}..., and names {} itself\u00bb oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} into record {}..., and names {} itself\u00bb oneLine(where(relink)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'where a relink sits: the directory name of its tail, which anyone who can write the tree makes, and its seq',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {}, and is itself relinked: a relink counts only from a tail that names its record by its own artifacts\u00bb oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {}, and is itself relinked: a relink counts only from a tail that names its record by its own artifacts\u00bb oneLine(where(relink)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'where a relink sits: the directory name of its tail, which anyone who can write the tree makes, and its seq',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {}, and its key holds no membership record {}... gave it at that point: the founding of its genesis identity, or an enrolment by a member that founding took in\u00bb oneLine(relink.into.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the record name a relink claims to join, a payload string',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {}, and its key holds no membership record {}... gave it at that point: the founding of its genesis identity, or an enrolment by a member that founding took in\u00bb oneLine(relink.tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {}, and its key holds no membership record {}... gave it at that point: the founding of its genesis identity, or an enrolment by a member that founding took in\u00bb oneLine(where(relink)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'where a relink sits: the directory name of its tail, which anyone who can write the tree makes, and its seq',
+    },
+  "@mnema/chain chain/record-name.ts \u00ab{} relinks tail {}, signed by {}..., not the key that tail's id names\u00bb oneLine(relink.signerFp.slice(0, 12)) #1":
+    { verdict: 'collapsed', why: 'the head of the signer fingerprint a stored entry carries' },
+  "@mnema/chain chain/record-name.ts \u00ab{} relinks tail {}, signed by {}..., not the key that tail's id names\u00bb oneLine(relink.tail) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  "@mnema/chain chain/record-name.ts \u00ab{} relinks tail {}, signed by {}..., not the key that tail's id names\u00bb oneLine(where(relink)) #1":
+    {
+      verdict: 'collapsed',
+      why: 'where a relink sits: the directory name of its tail, which anyone who can write the tree makes, and its seq',
+    },
+  '@mnema/chain chain/verify.ts \u00abtail {} holds a relink of tail {} at seq {}, above its last verified checkpoint: chained only, it counts for nothing (relink-uncovered)\u00bb oneLine(relink.host) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the directory name of the tail the relink sits in: anyone who can write the tree makes one',
+    },
+  '@mnema/chain chain/verify.ts \u00abtail {} holds a relink of tail {} at seq {}, above its last verified checkpoint: chained only, it counts for nothing (relink-uncovered)\u00bb oneLine(relink.tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/verify.ts \u00abtail {} holds a relink of tail {} at seq {}, above its last verified checkpoint: chained only, it counts for nothing (relink-uncovered)\u00bb relink.seq #1':
+    {
+      verdict: 'minted',
+      why: 'the seq of the relink in its tail, a whole number the catalog requires',
+    },
+  '@mnema/chain chain/verify.ts \u00abtail {} relinks tail {} at seq {}, and that tail is not here: the relink names nothing in this directory\u00bb oneLine(relink.host) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the directory name of the tail the relink sits in: anyone who can write the tree makes one',
+    },
+  '@mnema/chain chain/verify.ts \u00abtail {} relinks tail {} at seq {}, and that tail is not here: the relink names nothing in this directory\u00bb oneLine(relink.tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/verify.ts \u00abtail {} relinks tail {} at seq {}, and that tail is not here: the relink names nothing in this directory\u00bb relink.seq #1':
+    {
+      verdict: 'minted',
+      why: 'the seq of the relink in its tail, a whole number the catalog requires',
+    },
   '@mnema/core a-reason-states-something.ts «the {} "{}" has no letter and no digit in it, so it says nothing: » field #1':
     {
       verdict: 'minted',
@@ -2398,6 +2615,12 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} tail(s) that name no record, written before 0.1.5 (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} tail(s) relinked into this record by their own key (see census: informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
+  "@mnema/chain chain/verify.ts «{} relink(s) above their tail's last checkpoint, which count for nothing (see census: informational, not a break)» count":
+    'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} relink(s) of a tail that is not here (see census: informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «the checkpoint at seq {}» cp.fromSeq':
     'a phrase a refusal of two records in one tail is worded around: a whole number the catalog ' +
     'requires of a checkpoint, and the refusal carries it as one value',
@@ -2440,8 +2663,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(364);
-    expect(FOUND[0]?.sites.length).toBe(157);
+    expect(SITES.length).toBe(409);
+    expect(FOUND[0]?.sites.length).toBe(202);
     expect(FOUND[1]?.sites.length).toBe(207);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2454,7 +2677,7 @@ describe('every value the domain puts in a sentence is classified', () => {
     // refusal of a checkout whose recorded identity no longer counts its key
     // (`staleAnchorRefusal`): its five sentences go through it, and without it they would
     // be templates this walk never read as sentences at all.
-    expect(FOUND[0]?.sinks).toEqual(['push', 'ruled']);
+    expect(FOUND[0]?.sinks).toEqual(['push', 'refuse', 'ruled']);
     expect(FOUND[1]?.sinks).toEqual(['err', 'stale']);
     expect(FOUND[0]?.producers).toContain('keyWithoutTailDetail');
     expect(FOUND[0]?.producers).toContain('coverageClause');
@@ -2492,11 +2715,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(241);
-    expect(count('minted')).toBe(93);
-    expect(count('composed')).toBe(30);
+    expect(count('collapsed')).toBe(276);
+    expect(count('minted')).toBe(102);
+    expect(count('composed')).toBe(31);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      241,
+      276,
     );
   });
 

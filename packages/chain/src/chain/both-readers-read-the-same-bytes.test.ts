@@ -520,6 +520,137 @@ const AGREEMENTS: readonly Agreement[] = [
   { name: 'refounded-record', verdict: 'accepted' },
   { name: 'named-record', verdict: 'accepted' },
   { name: 'unnamed-tail-beside-named-ones', verdict: 'accepted' },
+  // ADR-155 and ADR-157: the owner's relink, honest and refused. The relink's token is the first
+  // cause both readers name, and the directory left two records the second.
+  { name: 'relinked-tail', verdict: 'accepted' },
+  { name: 'relinked-by-the-genesis-founder', verdict: 'accepted' },
+  {
+    name: 'relink-uncovered',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(another-record)' },
+    second: { section: '6.10', says: '(another-record)', where: 'tails/', refusals: 1 },
+  },
+  {
+    name: 'relink-by-another-key',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-not-the-owner)' },
+    second: {
+      section: '6.11',
+      says: '(relink-not-the-owner)',
+      where: '8d39ba50abe50f77b6bb... seq 0',
+      refusals: 3,
+    },
+  },
+  {
+    name: 'relinked-tail-grew',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relinked-tail-grew)' },
+    second: {
+      section: '6.11',
+      says: '(relinked-tail-grew)',
+      where: 'deb2ded39dc26fce0e60... seq 0',
+      refusals: 2,
+    },
+  },
+  {
+    name: 'relink-head-mismatch',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-head-mismatch)' },
+    second: {
+      section: '6.11',
+      says: '(relink-head-mismatch)',
+      where: 'deb2ded39dc26fce0e60... seq 0',
+      refusals: 2,
+    },
+  },
+  {
+    name: 'relink-from-mismatch',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-from-mismatch)' },
+    second: {
+      section: '6.11',
+      says: '(relink-from-mismatch)',
+      where: 'deb2ded39dc26fce0e60... seq 0',
+      refusals: 2,
+    },
+  },
+  {
+    name: 'relink-into-its-own-record',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-into-its-own-record)' },
+    second: {
+      section: '6.11',
+      says: '(relink-into-its-own-record)',
+      where: 'deb2ded39dc26fce0e60... seq 0',
+      refusals: 2,
+    },
+  },
+  {
+    name: 'relink-conflict',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-conflict)' },
+    second: {
+      section: '6.11',
+      says: '(relink-conflict)',
+      where: 'deb2ded39dc26fce0e60... seq 0',
+      refusals: 2,
+    },
+  },
+  {
+    name: 'relink-into-a-name-no-tail-holds',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-into-mismatch)' },
+    second: {
+      section: '6.11',
+      says: '(relink-into-mismatch)',
+      where: 'deb2ded39dc26fce0e60... seq 0',
+      refusals: 2,
+    },
+  },
+  {
+    name: 'relink-hosted-by-a-relinked-tail',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-hosted-by-a-relinked-tail)' },
+    second: {
+      section: '6.11',
+      says: '(relink-hosted-by-a-relinked-tail)',
+      where: 'deb2ded39dc26fce0e60... seq 0',
+      refusals: 2,
+    },
+  },
+  {
+    name: 'relinked-by-a-key-that-founded-itself-here',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-not-a-member)' },
+    second: {
+      section: '6.11',
+      says: '(relink-not-a-member)',
+      where: 'deb2ded39dc26fce0e60... seq 1',
+      refusals: 2,
+    },
+  },
+  {
+    name: 'relinked-by-a-key-a-stranger-enrolled',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-not-a-member)' },
+    second: {
+      section: '6.11',
+      says: '(relink-not-a-member)',
+      where: 'deb2ded39dc26fce0e60... seq 0',
+      refusals: 2,
+    },
+  },
+  {
+    name: 'relink-by-a-key-no-identity-here-holds',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-not-a-member)' },
+    second: {
+      section: '6.11',
+      says: '(relink-not-a-member)',
+      where: 'deb2ded39dc26fce0e60... seq 0',
+      refusals: 3,
+    },
+  },
   // ADR-134: a tail of another record, a tail naming two, a /1 checkpoint under a named proof.
   {
     name: 'tail-of-another-record',

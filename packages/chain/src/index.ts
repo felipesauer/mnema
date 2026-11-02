@@ -327,6 +327,7 @@ export {
   type StackAdoptedV1,
   type StackRemovedV1,
   type TailPrunedV1,
+  type TailRelinkedV1,
   type TaskCreatedV1,
   type TaskTransitionedV1,
   type TransitionFields,

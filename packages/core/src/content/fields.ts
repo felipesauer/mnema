@@ -290,6 +290,9 @@ export const SUBJECT_TEXT = {
   // DERIVED from the record: the anchor a waiver names is read off the pruned
   // tail's own last event, never handed in. No caller can put anything in it.
   'tail.pruned': 'identifier',
+  // DERIVED from the record, as the waiver's: the anchor the relinked tail's own last event
+  // spoke for.
+  'tail.relinked': 'identifier',
   // DERIVED: the anchor of the key that signs it, never handed in; an identity names
   // only its own account.
   'account.linked': 'identifier',
@@ -397,6 +400,15 @@ export const PAYLOAD_TEXT = {
   // `reason` is the caller's, and it is a body. (`eventCount` is a number and is no
   // field of this table: there is nothing textual to screen.)
   'tail.pruned': { tail: 'identifier', throughHash: 'identifier', reason: 'body' },
+  // The waiver's fields, and the two names: each is a record's name, read off a signed artifact
+  // and compared byte for byte by both readers, so a scrubber would break the relink.
+  'tail.relinked': {
+    tail: 'identifier',
+    from: 'identifier',
+    into: 'identifier',
+    throughHash: 'identifier',
+    reason: 'body',
+  },
   // Only `reason`: `on` is a boolean and is no field of this table, by the same rule
   // that keeps `eventCount` out of it: there is nothing textual to screen. The channel
   // itself is the SUBJECT, answered above.

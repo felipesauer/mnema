@@ -1030,6 +1030,11 @@ function censusLocus(note: CensusNote): string {
     case 'clock-behind-what-it-read':
     case 'unnamed-tail':
       return note.tail;
+    // A relink is about the tail it moves: the relinked tail, whose events it reads in this record.
+    case 'relinked-tail':
+    case 'relink-uncovered':
+    case 'relinked-tail-absent':
+      return note.tail;
     case 'foreign-retraction':
     case 'foreign-rewrite':
       return note.note;

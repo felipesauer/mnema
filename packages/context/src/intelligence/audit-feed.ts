@@ -222,7 +222,7 @@ interface AuditMapping {
  *
  * `handoff.recorded`'s subject is the TASK the handoff is about, not the handoff, so the
  * entity type says `task`. `tail.pruned`'s subject is the ANCHOR whose tail was cut, which
- * is why it is one of the four `User` rows and not a `tail`.
+ * is why it is a `User` row and not a `tail`, and so is `tail.relinked`'s.
  */
 export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
   'run.started': { activity: ACTIVITY.activate, entityTypeId: ENTITY_OTHER, entityType: 'run' },
@@ -284,6 +284,8 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
   'skill.consulted': { activity: ACTIVITY.read, entityTypeId: ENTITY_OTHER, entityType: 'skill' },
   // The subject is the anchor the cut tail spoke for, not the tail.
   'tail.pruned': { activity: ACTIVITY.delete, entityTypeId: ENTITY_USER, entityType: 'identity' },
+  // The subject is the anchor the relinked tail spoke for; what moves is the record it is read in.
+  'tail.relinked': { activity: ACTIVITY.update, entityTypeId: ENTITY_USER, entityType: 'identity' },
   'channel.switched': {
     activity: ACTIVITY.update,
     entityTypeId: ENTITY_OTHER,

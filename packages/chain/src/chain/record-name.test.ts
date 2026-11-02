@@ -1,12 +1,26 @@
 import { describe, expect, it } from 'vitest';
 
+import { identityFounded, memoryCaptured, tailRelinked } from '../events/build.js';
+import type { CatalogEvent } from '../events/catalog.js';
+import { type Entry, sealEntry } from './entry.js';
+import { deriveAnchor } from './keys.js';
 import {
   arrivedSince,
   genesisTail,
   RECORD_DOMAIN,
+  RELINK_CONFLICT,
+  RELINK_FROM_MISMATCH,
+  RELINK_HEAD_MISMATCH,
+  RELINK_HOSTED_BY_A_RELINKED_TAIL,
+  RELINK_INTO_ITS_OWN_RECORD,
+  RELINK_INTO_MISMATCH,
+  RELINK_NOT_A_MEMBER,
+  RELINK_NOT_THE_OWNER,
+  RELINKED_TAIL_GREW,
   recordName,
   recordOf,
   recordToWriteUnder,
+  relinkedNaming,
   tailsReadAsOneRecord,
 } from './record-name.js';
 
@@ -414,6 +428,305 @@ describe('the tails a reading of the record reads (tailsReadAsOneRecord)', () =>
         { name: A, tails: [OTHER] },
         { name: B, tails: [TAIL] },
       ].sort((x, y) => (x.name < y.name ? -1 : 1)),
+    });
+  });
+});
+
+describe('the name a relink gives a tail (relinkedNaming, FORMAT.md section 6.11)', () => {
+  // One key (K) wrote T in record X and H in record Y; another key wrote E in record Y.
+  const K = 'ab'.repeat(32);
+  const T = `${K}-${'01'.repeat(16)}`;
+  const H = `${K}-${'02'.repeat(16)}`;
+  const E = `${'ef'.repeat(32)}-${'03'.repeat(16)}`;
+  const X = recordName(T);
+  const Y = recordName(E);
+  const AT = '2026-10-31T00:00:00.000Z';
+  const who = `mnid:${'11'.repeat(32)}`;
+
+  /** A tail of `count` notes signed by `fp`, then the events `extra` gives, sealed in order. */
+  function tail(id: string, fp: string, count: number, extra: CatalogEvent[] = []): Entry[] {
+    const entries: Entry[] = [];
+    const events = [
+      ...Array.from({ length: count }, (_, i) =>
+        memoryCaptured({ at: AT, who, signerFp: fp, subject: `n-${id}-${i}` }, { content: 'a' }),
+      ),
+      ...extra,
+    ];
+    for (const event of events) {
+      entries.push(
+        sealEntry({
+          event,
+          tail: id,
+          seq: entries.length,
+          prev: entries.at(-1)?.link.hash ?? null,
+        }),
+      );
+    }
+    return entries;
+  }
+
+  /** The relink of `of` (as it stands) by `signer`, saying what `claim` overrides. */
+  function relink(of: readonly Entry[], signer = K, claim: Partial<Record<string, unknown>> = {}) {
+    return tailRelinked({ at: AT, who, signerFp: signer, subject: who }, {
+      tail: T,
+      from: X,
+      into: Y,
+      throughHash: of.at(-1)?.link.hash ?? '',
+      eventCount: of.length,
+      reason: 'two inits joined',
+      ...claim,
+    } as Parameters<typeof tailRelinked>[1]);
+  }
+
+  const noIssue = () => [];
+  const t = tail(T, K, 3);
+  const e = tail(E, 'ef'.repeat(32), 2);
+
+  function read(
+    host: Entry[],
+    options: {
+      covered?: number;
+      named?: Partial<Record<string, string | undefined>>;
+      entries?: Map<string, readonly Entry[]>;
+      fold?: Parameters<typeof relinkedNaming>[3];
+    } = {},
+  ) {
+    const entries =
+      options.entries ??
+      new Map<string, readonly Entry[]>([
+        [T, t],
+        [H, host],
+        [E, e],
+      ]);
+    const named = new Map<string, string | undefined>([
+      [T, X],
+      [H, Y],
+      [E, Y],
+    ]);
+    for (const [id, name] of Object.entries(options.named ?? {})) named.set(id, name);
+    for (const id of [...named.keys()]) if (!entries.has(id)) named.delete(id);
+    const covered = new Map(
+      [...entries.keys()].map((id) => [id, (entries.get(id)?.length ?? 0) - 1]),
+    );
+    if (options.covered !== undefined) covered.set(H, options.covered);
+    return relinkedNaming(named, entries, covered, options.fold ?? noIssue);
+  }
+
+  it('names nothing anew where no tail holds a relink, and says nothing', () => {
+    const named = new Map<string, string | undefined>([
+      [T, X],
+      [E, Y],
+    ]);
+    const entries = new Map<string, readonly Entry[]>([
+      [T, t],
+      [E, e],
+    ]);
+    const read = relinkedNaming(named, entries, new Map(), noIssue);
+    expect(read.named).toEqual(named);
+    expect([read.counted, read.refused, read.uncovered, read.absent]).toEqual([[], [], [], []]);
+  });
+
+  it('names the tail into the record its host names, where every check holds', () => {
+    const found = read(tail(H, K, 1, [relink(t)]));
+    expect(found.named.get(T)).toBe(Y);
+    expect(found.refused).toEqual([]);
+    expect(
+      found.counted.map((one) => [one.relink.host, one.relink.seq, one.events, one.firstAt]),
+    ).toEqual([[H, 1, 3, AT]]);
+  });
+
+  it('asks the fold over the tails that name the record joined by their own artifacts, the relinked one left out', () => {
+    const asked: string[][] = [];
+    read(tail(H, K, 1, [relink(t)]), {
+      fold: (entries) => {
+        asked.push([...entries.keys()].sort());
+        return [];
+      },
+    });
+    expect(asked).toEqual([[E, H].sort()]);
+  });
+
+  it('counts for nothing above the host’s last checkpoint (relink-uncovered), said and not refused', () => {
+    const found = read(tail(H, K, 1, [relink(t)]), { covered: 0 });
+    expect(found.named.get(T)).toBe(X);
+    expect(found.uncovered.map((one) => one.seq)).toEqual([1]);
+    expect(found.refused).toEqual([]);
+  });
+
+  it('refuses a relink another key signed (relink-not-the-owner)', () => {
+    const other = 'ef'.repeat(32);
+    const host = `${other}-${'04'.repeat(16)}`;
+    const entries = new Map<string, readonly Entry[]>([
+      [T, t],
+      [host, tail(host, other, 1, [relink(t, other)])],
+      [E, e],
+    ]);
+    const found = read([], { entries, named: { [host]: Y } });
+    expect(found.refused.map((one) => one.token)).toEqual([RELINK_NOT_THE_OWNER]);
+    expect(found.named.get(T)).toBe(X);
+  });
+
+  it('refuses a relink into a record its host does not name (relink-into-mismatch)', () => {
+    const found = read(tail(H, K, 1, [relink(t, K, { into: recordName('elsewhere') })]));
+    expect(found.refused.map((one) => one.token)).toEqual([RELINK_INTO_MISMATCH]);
+  });
+
+  it('refuses a relink from a record the tail does not name (relink-from-mismatch)', () => {
+    const found = read(tail(H, K, 1, [relink(t, K, { from: recordName('elsewhere') })]));
+    expect(found.refused.map((one) => one.token)).toEqual([RELINK_FROM_MISMATCH]);
+  });
+
+  it('refuses a relinked tail that grew past its head (relinked-tail-grew)', () => {
+    const grown = tail(T, K, 4);
+    const host = tail(H, K, 1, [relink(grown.slice(0, 3))]);
+    const found = read(host, {
+      entries: new Map<string, readonly Entry[]>([
+        [T, grown],
+        [H, host],
+        [E, e],
+      ]),
+    });
+    expect(found.refused.map((one) => one.token)).toEqual([RELINKED_TAIL_GREW]);
+    expect(found.named.get(T)).toBe(X);
+  });
+
+  it('refuses a relink whose head is not the tail’s (relink-head-mismatch)', () => {
+    const found = read(tail(H, K, 1, [relink(t, K, { throughHash: '9'.repeat(64) })]));
+    expect(found.refused.map((one) => one.token)).toEqual([RELINK_HEAD_MISMATCH]);
+  });
+
+  it('refuses two relinks of one tail, once for the tail (relink-conflict)', () => {
+    const found = read(tail(H, K, 1, [relink(t), relink(t)]));
+    expect(found.refused.map((one) => one.token)).toEqual([RELINK_CONFLICT]);
+    expect(found.named.get(T)).toBe(X);
+  });
+
+  it('refuses a relink hosted by a tail that is itself relinked (relink-hosted-by-a-relinked-tail)', () => {
+    // H is relinked by a covered relink its own key signed, in a third tail of the key.
+    const third = `${K}-${'05'.repeat(16)}`;
+    const host = tail(H, K, 1, [relink(t)]);
+    const relinkOfHost = tailRelinked(
+      { at: AT, who, signerFp: K, subject: who },
+      {
+        tail: H,
+        from: Y,
+        into: Y,
+        throughHash: host.at(-1)?.link.hash ?? '',
+        eventCount: 2,
+        reason: 'r',
+      },
+    );
+    const entries = new Map<string, readonly Entry[]>([
+      [T, t],
+      [H, host],
+      [third, tail(third, K, 0, [relinkOfHost])],
+      [E, e],
+    ]);
+    const found = read([], { entries, named: { [third]: Y } });
+    // The relink of H names Y as both ends, which is refused in its turn; it is still a covered
+    // relink by H's owner, so the relink H hosts does not count.
+    expect(found.refused.map((one) => [one.token, one.relink.host])).toEqual([
+      [RELINK_HOSTED_BY_A_RELINKED_TAIL, H],
+      [RELINK_INTO_ITS_OWN_RECORD, third],
+    ]);
+  });
+
+  it('refuses a relink that names one record as both ends (relink-into-its-own-record)', () => {
+    const found = read(tail(H, K, 1, [relink(t, K, { from: Y })]));
+    expect(found.refused.map((one) => one.token)).toEqual([RELINK_INTO_ITS_OWN_RECORD]);
+    expect(found.named.get(T)).toBe(X);
+  });
+
+  it('says a relink of a tail that is not here, and names nothing by it', () => {
+    const entries = new Map<string, readonly Entry[]>([
+      [H, tail(H, K, 1, [relink(t)])],
+      [E, e],
+    ]);
+    const found = read([], { entries });
+    expect(found.absent.map((one) => one.tail)).toEqual([T]);
+    expect(found.refused).toEqual([]);
+  });
+
+  it('refuses a relink whose key the record joined holds no membership of at that point (relink-not-a-member)', () => {
+    const found = read(tail(H, K, 1, [relink(t)]), {
+      fold: () => [{ tail: H, seq: 1 }],
+    });
+    expect(found.refused.map((one) => one.token)).toEqual([RELINK_NOT_A_MEMBER]);
+    expect(found.named.get(T)).toBe(X);
+  });
+});
+
+describe('the membership a relink asks for is one the record joined gave (ADR-157)', () => {
+  const K = 'ab'.repeat(32);
+  const G = 'ef'.repeat(32);
+  const T = `${K}-${'01'.repeat(16)}`;
+  const H = `${K}-${'02'.repeat(16)}`;
+  const GENESIS = `${G}-${'03'.repeat(16)}`;
+  const AT = '2026-10-31T00:00:00.000Z';
+
+  function sealed(id: string, events: CatalogEvent[]): Entry[] {
+    const entries: Entry[] = [];
+    for (const event of events) {
+      entries.push(
+        sealEntry({
+          event,
+          tail: id,
+          seq: entries.length,
+          prev: entries.at(-1)?.link.hash ?? null,
+        }),
+      );
+    }
+    return entries;
+  }
+
+  const found = (fp: string) =>
+    identityFounded(
+      { at: AT, who: deriveAnchor(fp), signerFp: fp, subject: deriveAnchor(fp) },
+      { foundingFp: fp },
+    );
+
+  it('hands the fold no founding but the genesis tail’s', () => {
+    const t = sealed(T, [found(K)]);
+    const host = sealed(H, [
+      found(K),
+      tailRelinked(
+        { at: AT, who: deriveAnchor(K), signerFp: K, subject: deriveAnchor(K) },
+        {
+          tail: T,
+          from: recordName(T),
+          into: recordName(GENESIS),
+          throughHash: t[0]?.link.hash ?? '',
+          eventCount: 1,
+          reason: 'r',
+        },
+      ),
+    ]);
+    const genesis = sealed(GENESIS, [found(G)]);
+    const kinds: Record<string, string[]> = {};
+    relinkedNaming(
+      new Map([
+        [T, recordName(T)],
+        [H, recordName(GENESIS)],
+        [GENESIS, recordName(GENESIS)],
+      ]),
+      new Map([
+        [T, t],
+        [H, host],
+        [GENESIS, genesis],
+      ]),
+      new Map([
+        [T, 0],
+        [H, 1],
+        [GENESIS, 0],
+      ]),
+      (entries) => {
+        for (const [tail, held] of entries) kinds[tail] = held.map((entry) => entry.event.kind);
+        return [];
+      },
+    );
+    expect(kinds).toEqual({
+      [H]: ['tail.relinked'],
+      [GENESIS]: ['identity.founded'],
     });
   });
 });
