@@ -23,8 +23,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mergeDriverLines } from '../src/commands/doctor-merge-driver.js';
-import { driverCommand } from '../src/commands/record-pull.js';
+import { fixMergeDriver, mergeDriverLines } from '../src/commands/doctor-merge-driver.js';
+import { driverCommand, runRecordPull } from '../src/commands/record-pull.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -109,12 +109,31 @@ function carry(local: string, other: string): void {
   expect(git(other, 'push', '-q', 'origin', 'main').status).toBe(0);
 }
 
+/** `mnema record pull` in process, in `checkout`, with the driver the built binary is. */
+function pull(checkout: string) {
+  return runRecordPull({
+    cwd: checkout,
+    env: { home: join(sandbox, 'home') },
+    processEnv: env(),
+    driver: driverCommand(process.execPath, CLI),
+    requirement: 'chained',
+  });
+}
+
+/** What the doctor's merge driver reading and fix are handed, in `checkout`. */
+function doctorIn(checkout: string) {
+  return { cwd: checkout, env: { home: join(sandbox, 'home') }, processEnv: env() };
+}
+
+/** Many programs start in each case: a remote, two checkouts, the binary and git. */
+const SLOW = { timeout: 60_000 };
+
 /** The merge settings git holds in the checkout's own configuration. */
 function mergeSettings(checkout: string): string {
   return git(checkout, 'config', '--local', '--get-regexp', '^merge\\.').out.trim();
 }
 
-describe('mnema record pull', () => {
+describe('mnema record pull', SLOW, () => {
   it('pulls over events not yet committed when the branch holds their start, and writes no configuration', () => {
     const { local, other } = world();
     expect(mnema(local, 'task', 'create', 'two').status).toBe(0);
@@ -152,10 +171,12 @@ describe('mnema record pull', () => {
     const head = git(local, 'rev-parse', 'HEAD').out;
     const before = readFileSync(join(local, segment));
 
-    const refused = mnema(local, 'record', 'pull');
-    expect(refused.status).toBe(1);
-    expect(refused.out).toContain(`${segment}: the two sides part at line ${lines}`);
-    expect(refused.out).toMatch(/fork/);
+    const refused = pull(local);
+    expect(refused.ok).toBe(false);
+    if (refused.ok || refused.reason !== 'NOT_A_PREFIX') throw new Error(JSON.stringify(refused));
+    expect(refused.found.map((one) => one.path)).toEqual([segment]);
+    expect(refused.found[0]?.said).toContain(`${segment}: the two sides part at line ${lines}`);
+    expect(refused.found[0]?.said).toMatch(/fork/);
     expect(readFileSync(join(local, segment)).equals(before)).toBe(true);
     expect(git(local, 'rev-parse', 'HEAD').out).toBe(head);
     expect(mergeSettings(local)).toBe('');
@@ -164,6 +185,12 @@ describe('mnema record pull', () => {
   it('refuses where a file outside the record has changes, and names it', () => {
     const { local } = world();
     writeFileSync(join(local, 'AGENTS.md'), 'changed\n');
+    expect(pull(local)).toEqual({
+      ok: false,
+      reason: 'CHANGES_OUTSIDE_THE_RECORD',
+      paths: ['AGENTS.md'],
+    });
+    // And the binary says it, naming the file.
     const refused = mnema(local, 'record', 'pull');
     expect(refused.status).toBe(1);
     expect(refused.out).toMatch(/Files outside the record have changes \(AGENTS\.md\)/);
@@ -187,14 +214,24 @@ describe('mnema record pull', () => {
     expect(grown).toMatch(/\?\? \.mnema\/tails\//);
     expect(git(local, 'pull').out).toMatch(/untracked working tree files would be overwritten/);
 
-    const pulled = mnema(local, 'record', 'pull');
-    expect(pulled.out).toMatch(/put back, with the events this checkout adds/);
-    expect(pulled.status).toBe(0);
-    expect(mnema(local, 'verify').status).toBe(0);
+    const opened = grown
+      .split('\n')
+      .filter((line) => line.startsWith('?? .mnema/tails/') && line.endsWith('000001.jsonl'))
+      .map((line) => line.slice(3));
+    expect(opened).toHaveLength(1);
+    const before = readFileSync(join(local, opened[0] as string));
+
+    const pulled = pull(local);
+    if (!pulled.ok) throw new Error(JSON.stringify(pulled));
+    expect(pulled.pulled.status).toBe(0);
+    expect(pulled.restored).toContain(opened[0]);
+    expect(pulled.keptAside).toBeUndefined();
+    expect(readFileSync(join(local, opened[0] as string)).equals(before)).toBe(true);
+    expect(pulled.verdict?.record.ok).toBe(true);
   });
 });
 
-describe('the driver record pull hands git', () => {
+describe('the driver record pull hands git', SLOW, () => {
   it("is this installation's node and script, quoted for the shell git runs it through", () => {
     expect(driverCommand('/opt/a b/node', "/x/it's/cli.js")).toBe(
       "'/opt/a b/node' '/x/it'\\''s/cli.js' record merge-tail %O %A %B %P",
@@ -202,7 +239,7 @@ describe('the driver record pull hands git', () => {
   });
 });
 
-describe('the merge driver, in a merge git runs', () => {
+describe('the merge driver, in a merge git runs', SLOW, () => {
   /** Both sides grow the record and commit: `other` holds what a pull request carried, `local` more. */
   function grownOnBothSides(): { local: string; segment: string; longer: Buffer } {
     const { local, other } = world();
@@ -254,7 +291,7 @@ describe('the merge driver, in a merge git runs', () => {
   });
 });
 
-describe('mnema init', () => {
+describe('mnema init', SLOW, () => {
   it('names the driver in the record and writes no line of git configuration', () => {
     const { local } = world();
     expect(readFileSync(join(local, '.mnema', '.gitattributes'), 'utf-8')).toContain(
@@ -264,7 +301,7 @@ describe('mnema init', () => {
   });
 });
 
-describe('the doctor', () => {
+describe('the doctor', SLOW, () => {
   it('names a driver git does not know, and only --fix merge-driver writes it, --dry-run first', () => {
     const { local } = world();
     const asked = mnema(local, 'doctor');
@@ -280,9 +317,9 @@ describe('the doctor', () => {
     );
     expect(mergeSettings(local)).toBe('');
 
-    const dry = mnema(local, 'doctor', '--fix', 'merge-driver', '--dry-run');
-    expect(dry.status).toBe(0);
-    expect(dry.out).toMatch(
+    const dry = fixMergeDriver(doctorIn(local), { dryRun: true });
+    expect(dry.refused).toBe(false);
+    expect(dry.lines.join('\n')).toMatch(
       /would set merge\.mnema-tail\.driver = mnema record merge-tail %O %A %B %P/,
     );
     expect(mergeSettings(local)).toBe('');
@@ -296,17 +333,49 @@ describe('the doctor', () => {
       ].join('\n'),
     );
     expect(mnema(local, 'doctor').out).not.toMatch(/merge-driver/);
-    expect(mnema(local, 'doctor', '--fix', 'merge-driver').out).toMatch(/nothing to change/);
+    expect(fixMergeDriver(doctorIn(local), { dryRun: false }).lines).toEqual([
+      'nothing to change: git already knows the driver here.',
+    ]);
   });
 
   it('leaves a driver of the same name it did not write, and says so', () => {
     const { local } = world();
     expect(git(local, 'config', 'merge.mnema-tail.driver', 'cat').status).toBe(0);
-    const refused = mnema(local, 'doctor', '--fix', 'merge-driver');
-    expect(refused.status).toBe(1);
-    expect(refused.out).toMatch(
+    const refused = fixMergeDriver(doctorIn(local), { dryRun: false });
+    expect(refused.refused).toBe(true);
+    expect(refused.lines.join('\n')).toMatch(
       /merge\.mnema-tail\.driver is already set to cat, which mnema did not write/,
     );
     expect(git(local, 'config', '--get', 'merge.mnema-tail.driver').out.trim()).toBe('cat');
   });
+});
+
+describe('the doctor outside a repository', () => {
+  it('says nothing, and its fix refuses, naming what it looked for', () => {
+    const bare = join(sandbox, 'no-git');
+    mkdirSync(bare, { recursive: true });
+    expect(mergeDriverLines(doctorIn(bare))).toEqual([]);
+    const refused = fixMergeDriver(doctorIn(bare), { dryRun: false });
+    expect(refused.refused).toBe(true);
+    expect(refused.lines[0]).toMatch(
+      /^nothing changed: there is no record here inside a git repository/,
+    );
+  });
+});
+
+describe('mnema record pull outside what it pulls', () => {
+  it('refuses with no project, and with no branch followed', () => {
+    const bare = join(sandbox, 'no-project');
+    mkdirSync(bare, { recursive: true });
+    expect(pull(bare)).toEqual({ ok: false, reason: 'NO_PROJECT' });
+    const lone = join(sandbox, 'lone');
+    mkdirSync(join(sandbox, 'home'), { recursive: true });
+    expect(git(sandbox, 'init', '-q', lone).status).toBe(0);
+    expect(mnema(lone, 'init', '--all-hosts').status).toBe(0);
+    expect(pull(lone)).toEqual({ ok: false, reason: 'NO_UPSTREAM' });
+    const plain = join(sandbox, 'plain');
+    mkdirSync(plain, { recursive: true });
+    expect(mnema(plain, 'init', '--all-hosts').status).toBe(0);
+    expect(pull(plain)).toEqual({ ok: false, reason: 'NOT_A_REPOSITORY' });
+  }, 60_000);
 });
