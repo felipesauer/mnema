@@ -146,6 +146,7 @@ export {
   type RelinkBrings,
   type RelinkRefusal,
   relinksWouldCount,
+  tailsACutWouldUnrelink,
 } from './chain/relink-plan.js';
 export {
   firstLinkBreakFrom,

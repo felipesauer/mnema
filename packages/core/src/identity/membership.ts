@@ -38,6 +38,7 @@ import {
   enrollmentMessage,
   type PublicHalf,
   publicKeyPath,
+  tailsReadAt,
   type UpcasterRegistry,
   verifySignature,
 } from '@mnema/chain';
@@ -435,6 +436,23 @@ export function staleAnchorRefusal(
     restores === undefined
       ? new IdentityUnavailableError('STALE_ANCHOR', message)
       : new IdentityUnavailableError('STALE_ANCHOR', message, restores);
+
+  // A DIRECTORY OF TWO RECORDS IS READ AS NOTHING (ADR-148), so every sentence below would be about
+  // a record nobody read: measured on the binary after a merge of two inits, this said that nothing
+  // ever founded an identity with the key and to delete the anchor, and the write after the
+  // deletion was refused `ANOTHER_RECORD`, a file lost on the way. The anchor is not what is wrong.
+  const several = tailsReadAt(layout).several;
+  if (several.length > 1) {
+    const records = several
+      .map(
+        (group) =>
+          `${oneLine(group.name.slice(0, 12))}... (${group.tails.map(oneLine).join(', ')})`,
+      )
+      .join(' and ');
+    return stale(
+      `this directory holds tails of ${several.length} records, ${records}, and no reading of the record reads either until it holds one (another-record), so the identity this checkout records cannot be found in it: the anchor is not what is wrong, and deleting it would only reach the refusal of writing into two records. Each tail of one record is relinked into the other by the key its id names, with \`mnema tail relink <tail>\` (\`mnema tail list\` spells the ids), or cut with \`mnema tail prune\``,
+    );
+  }
 
   const half = committedPublicKey(layout, fingerprint);
   // No half, no enrollment of this key can be proven, but a founding needs none, and the record

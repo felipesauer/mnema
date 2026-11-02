@@ -24,7 +24,7 @@ import { oneLine } from '../one-line.js';
 import type { Entry } from './entry.js';
 import { type ChainLayout, tailFingerprint } from './layout.js';
 import { RELINK_NOT_A_MEMBER, recordName, recordOf } from './record-name.js';
-import { listTails, readTail } from './store.js';
+import { lastTailCheckpoint, listTails, readTail } from './store.js';
 import { namesOfTails } from './tail-names.js';
 import { type RelinkToWrite, relinksReadAt, verifyChain } from './verify.js';
 
@@ -336,4 +336,35 @@ export function relinksWouldCount(
           }))
       : [];
   return { ok: true, leftBehind };
+}
+
+/**
+ * The tails a cut of `host` would turn back into the record they came from: each tail a relink in
+ * `host` names, where `host`'s last checkpoint covers that relink (one above it counts for
+ * nothing, so cutting it undoes nothing), the tail is still on disk with events in it, and no
+ * waiver in the tree authorizes its cut too. `tail prune` refuses the cut of such a host
+ * (`code/tests/the-owner-relinks-a-tail.test.ts`).
+ */
+export function tailsACutWouldUnrelink(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+  host: string,
+): readonly string[] {
+  const covered = lastTailCheckpoint(layout, host)?.toSeq ?? -1;
+  const tails = new Map(
+    listTails(layout).map((tail) => [tail, readTail(layout, tail, upcasters).entries] as const),
+  );
+  const waived = new Set<string>();
+  for (const entries of tails.values()) {
+    for (const entry of entries) {
+      if (entry.event.kind === 'tail.pruned') waived.add(entry.event.payload.tail);
+    }
+  }
+  const undone: string[] = [];
+  for (const entry of tails.get(host) ?? []) {
+    if (entry.event.kind !== 'tail.relinked' || entry.link.seq > covered) continue;
+    const tail = entry.event.payload.tail;
+    if ((tails.get(tail) ?? []).length > 0 && !waived.has(tail)) undone.push(tail);
+  }
+  return undone;
 }

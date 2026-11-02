@@ -156,7 +156,7 @@ export interface NamesRelinked {
  * per directory until a file of it changes. The writer signs under these names
  * (`recordToWriteUnder`), so a directory `verify` reads as one record after a relink is one a
  * writer writes in, and a tail a relink moved is one the writer does not append to
- * (`a-relinked-tail-is-not-written-to.test.ts`).
+ * (`code/tests/the-owner-relinks-a-tail.test.ts`).
  */
 export function namesRelinkedAt(layout: ChainLayout): NamesRelinked {
   const named = namesOfTails(layout);
