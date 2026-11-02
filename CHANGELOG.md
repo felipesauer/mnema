@@ -27,9 +27,10 @@ with its own changelog.
   or starts `mnema`. What each handler answers is unchanged (held by `the-hooks-file-runs-no-shell.test.ts` and the
   tests of each hook, and, in the real Claude Code 2.1.310, by `a-note-of-the-hosts-memory-is-copied.test.ts` and
   `a-settled-choice-reaches-the-model.test.ts`). **The cost, measured**: a `node` start where a shell line stood, base and
-  head alternated, 30 rounds, on a machine at load 29 where an empty `node` takes 31 ms: the hook after a write 49 ms
-  against 3 ms, a gate that turns the call away 43 ms against 2 ms, and the three commands that start at a write in
-  Claude Code (they run in parallel) 71 ms against 8 ms; a VS Code read, which starts six, 74 ms against 11 ms.
+  head alternated, 40 rounds, behind the shared lock at a load of 2 to 5, where an empty `node` takes 22 ms: the hook after a
+  write 33 ms against 2.5 ms, a gate that turns the call away 30 ms against 1.7 ms, and the three commands that start at a
+  write in Claude Code (they run in parallel) 36 ms against 4.4 ms; a VS Code read, which starts six, 44 ms against 7.7 ms.
+  (The same run at a load of 29: 49, 43, 71 and 74 ms.)
 
 - **Nothing governs in a directory whose tails name two records, and every reading of what governs says so.** Both
   readers refuse such a directory (`another-record`), but the readings that say what governs run over a directory

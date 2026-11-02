@@ -168,8 +168,8 @@ document, delivered by the host instead of waited for.
   command is `node` and the handler, with no shell in front (Anthropic's directory blocks one in a
   plugin that lives in a subfolder), so the handler reads the path out of the payload itself and
   starts no `mnema` for a path that can be neither of the two kinds below: a common write costs a
-  `node` start (about 49 ms with `node` itself at 31 ms, measured on a machine at load 29; the
-  shell line it replaced cost 3 ms). **A note of Claude Code's own memory for this project** (`projects/<project>/memory/*.md`, `<project>`
+  `node` start (about 33 ms with an empty `node` at 22 ms, measured at a load of 2 to 5; the
+  shell line it replaced cost 2.5 ms). **A note of Claude Code's own memory for this project** (`projects/<project>/memory/*.md`, `<project>`
   being the main working tree's path with every character but a letter or digit turned into `-`, as the host
   names it, so all worktrees of a repository share it; a note in another project's directory is not copied; under
   `$CLAUDE_CONFIG_DIR` or `~/.claude`, or the directory the `autoMemoryDirectory` setting names in your
