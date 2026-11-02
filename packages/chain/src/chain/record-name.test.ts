@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { memoryCaptured, tailRelinked } from '../events/build.js';
+import { identityFounded, memoryCaptured, tailRelinked } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { type Entry, sealEntry } from './entry.js';
+import { deriveAnchor } from './keys.js';
 import {
   arrivedSince,
   genesisTail,
@@ -642,5 +643,75 @@ describe('the name a relink gives a tail (relinkedNaming, FORMAT.md section 6.11
     });
     expect(found.refused.map((one) => one.token)).toEqual([RELINK_NOT_A_MEMBER]);
     expect(found.named.get(T)).toBe(X);
+  });
+});
+
+describe('the membership a relink asks for is one the record joined gave (ADR-157)', () => {
+  const K = 'ab'.repeat(32);
+  const G = 'ef'.repeat(32);
+  const T = `${K}-${'01'.repeat(16)}`;
+  const H = `${K}-${'02'.repeat(16)}`;
+  const GENESIS = `${G}-${'03'.repeat(16)}`;
+  const AT = '2026-10-31T00:00:00.000Z';
+
+  function sealed(id: string, events: CatalogEvent[]): Entry[] {
+    const entries: Entry[] = [];
+    for (const event of events) {
+      entries.push(
+        sealEntry({ event, tail: id, seq: entries.length, prev: entries.at(-1)?.link.hash ?? null }),
+      );
+    }
+    return entries;
+  }
+
+  const found = (fp: string) =>
+    identityFounded(
+      { at: AT, who: deriveAnchor(fp), signerFp: fp, subject: deriveAnchor(fp) },
+      { foundingFp: fp },
+    );
+
+  it('hands the fold no founding but the genesis tail’s', () => {
+    const t = sealed(T, [found(K)]);
+    const host = sealed(H, [
+      found(K),
+      tailRelinked(
+        { at: AT, who: deriveAnchor(K), signerFp: K, subject: deriveAnchor(K) },
+        {
+          tail: T,
+          from: recordName(T),
+          into: recordName(GENESIS),
+          throughHash: t[0]?.link.hash ?? '',
+          eventCount: 1,
+          reason: 'r',
+        },
+      ),
+    ]);
+    const genesis = sealed(GENESIS, [found(G)]);
+    const kinds: Record<string, string[]> = {};
+    relinkedNaming(
+      new Map([
+        [T, recordName(T)],
+        [H, recordName(GENESIS)],
+        [GENESIS, recordName(GENESIS)],
+      ]),
+      new Map([
+        [T, t],
+        [H, host],
+        [GENESIS, genesis],
+      ]),
+      new Map([
+        [T, 0],
+        [H, 1],
+        [GENESIS, 0],
+      ]),
+      (entries) => {
+        for (const [tail, held] of entries) kinds[tail] = held.map((entry) => entry.event.kind);
+        return [];
+      },
+    );
+    expect(kinds).toEqual({
+      [H]: ['tail.relinked'],
+      [GENESIS]: ['identity.founded'],
+    });
   });
 });

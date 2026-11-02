@@ -219,9 +219,21 @@ def relinked_naming(
     refused_in: dict[str, set[tuple[str, int]]] = {}
     for into in dict.fromkeys(relink.into for relink in admitted):
         tails = [tail for tail, name in named.items() if name == into and tail not in by_tail]
+        # ADR-157: only a membership the record gave counts, so no founding but the genesis tail's.
+        given = {
+            tail: (
+                entries_by_tail.get(tail, [])
+                if record_name(tail) == into
+                else [
+                    entry for entry in entries_by_tail.get(tail, [])
+                    if entry.event.get("kind") != "identity.founded"
+                ]
+            )
+            for tail in tails
+        }
         refused_in[into] = set(
             fold(
-                {tail: entries_by_tail.get(tail, []) for tail in tails},
+                given,
                 {tail: covered_through.get(tail, -1) for tail in tails},
             )
         )
@@ -231,9 +243,9 @@ def relinked_naming(
         if (relink.host, relink.seq) in refused_in.get(relink.into, set()):
             refuse(
                 RELINK_NOT_A_MEMBER, relink,
-                f"{_where(relink)} relinks tail {relink.tail}, and its key is no member of an "
-                f"identity of record {relink.into[:12]}... at that point, as the tails that name "
-                "that record say",
+                f"{_where(relink)} relinks tail {relink.tail}, and its key holds no membership "
+                f"record {relink.into[:12]}... gave it at that point: the founding of its genesis "
+                "identity, or an enrolment by a member that founding took in",
             )
             continue
         relinked[relink.tail] = relink.into

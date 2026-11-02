@@ -381,12 +381,19 @@ export type FoldRefusals = (
  *    own artifacts (`relink-from-mismatch`);
  * 7. T ends at `throughHash` with `eventCount` entries: more, through that head, is
  *    `relinked-tail-grew`, anything else `relink-head-mismatch`;
- * 8. the key is a member not revoked of an identity of `into` at the relink's point: the fold
- *    (`fold`) over the tails that name `into` by their own artifacts and that their owner did not
- *    relink refuses nothing at the relink (`relink-not-a-member`).
+ * 8. the key holds, at the relink's point, a membership the record joined GAVE it
+ *    (`relink-not-a-member`, ADR-157): the fold (`fold`) over the tails that name `into` by their
+ *    own artifacts and that their owner did not relink, with every `identity.founded` left out but
+ *    those of the record's genesis tail (the tail whose id `into` is the name of), refuses nothing
+ *    at the relink. So a key counts as the founder of the genesis identity, or as a key that
+ *    identity, or a key it took in, enrolled (`key.enrolled`, `agent.enrolled`); a key that founded
+ *    its own identity in the record does not, and neither does a key only such a key enrolled,
+ *    since any key may found its own identity anywhere and that is no act of the record's.
  *
  * The tails the last check folds are named by their artifacts alone, so the fold never reads a
- * tail whose name the rule is deciding, and the rule never waits on itself.
+ * tail whose name the rule is deciding, and the rule never waits on itself. Where the genesis
+ * tail is not in the directory (cut, ADR-147), no founding counts and no relink into the record
+ * does.
  *
  * A relink that counts names T `into`. T's own artifacts still name `from`, and they are not
  * compared with that name: `record-mismatch` stays a question among T's own artifacts. Nothing
@@ -511,12 +518,18 @@ export function relinkedNaming(
   }
 
   // Step 8, once per record joined: the fold over the tails that name it by their own artifacts
-  // and that their owner did not relink.
+  // and that their owner did not relink, with no founding but the genesis tail's.
   const refusedIn = new Map<string, ReadonlySet<string>>();
   for (const into of new Set(admitted.map((relink) => relink.into))) {
     const tails = [...named.keys()].filter((tail) => named.get(tail) === into && !byTail.has(tail));
+    const given = (tail: string): readonly EntryRead[] => {
+      const entries = entriesByTail.get(tail) ?? [];
+      return recordName(tail) === into
+        ? entries
+        : entries.filter((entry) => entry.event.kind !== 'identity.founded');
+    };
     const refusals = fold(
-      new Map(tails.map((tail) => [tail, entriesByTail.get(tail) ?? []])),
+      new Map(tails.map((tail) => [tail, given(tail)])),
       new Map(tails.map((tail) => [tail, coveredThrough.get(tail) ?? -1])),
     );
     refusedIn.set(into, new Set(refusals.map((one) => `${one.tail}#${one.seq}`)));
@@ -528,7 +541,7 @@ export function relinkedNaming(
       refuse(
         RELINK_NOT_A_MEMBER,
         relink,
-        `${where(relink)} relinks tail ${relink.tail}, and its key is no member of an identity of record ${relink.into.slice(0, 12)}... at that point, as the tails that name that record say`,
+        `${where(relink)} relinks tail ${relink.tail}, and its key holds no membership record ${relink.into.slice(0, 12)}... gave it at that point: the founding of its genesis identity, or an enrolment by a member that founding took in`,
       );
       continue;
     }

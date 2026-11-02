@@ -1735,30 +1735,48 @@ def _relinked(
     grows: bool = False,
     twice: bool = False,
     host_relinked: bool = False,
+    founder: bytes = UNENROLLED_SECRET,
+    stranger_enrols: bool = False,
 ) -> str:
     """Y, T and the relink, varied by one knob at a time; returns what was built."""
     at = _last_event(root)["at"]
     for name in ("tails", "keys"):
         shutil.rmtree(os.path.join(root, name), ignore_errors=True)
     owner = CHECKER_SECRET
-    y_tail = _tail_name(UNENROLLED_SECRET, "ab")
+    y_tail = _tail_name(founder, "ab")
     t_tail = _tail_name(owner, "cd")
     record_y, record_x = record_name(y_tail), record_name(t_tail)
-    anchor_y = _anchor(UNENROLLED_SECRET)
+    anchor_y = _anchor(founder)
     owner_fp, _ = _unenrolled_public(owner)
-    # Y: founded by the first key, a note, and (by default) the owner's key enrolled into it.
+    # Y: its genesis tail, founded by `founder`, a note, and (by default) the owner's key enrolled
+    # into that identity, unless the owner is the founder.
     y_events = [
-        _event(UNENROLLED_SECRET, at, "identity.founded", anchor_y, {"foundingFp": _unenrolled_public(UNENROLLED_SECRET)[0]}),
-        _event(UNENROLLED_SECRET, at, "memory.captured", "01a02d24-730d-7000-988d-ac7784b4a4a3", {"content": "a note of Y"}),
+        _event(founder, at, "identity.founded", anchor_y, {"foundingFp": _unenrolled_public(founder)[0]}),
+        _event(founder, at, "memory.captured", "01a02d24-730d-7000-988d-ac7784b4a4a3", {"content": "a note of Y"}),
     ]
-    if enrolled:
+    if enrolled and founder != owner and not stranger_enrols:
         y_events.append(
             _event(
-                UNENROLLED_SECRET, _later(at, 1), "key.enrolled", anchor_y,
+                founder, _later(at, 1), "key.enrolled", anchor_y,
                 {"newFp": owner_fp, "reverseSig": sign(owner, enrolment_message(anchor_y, owner_fp)).hex()},
             )
         )
-    _write_tail(root, UNENROLLED_SECRET, y_tail, y_events, record_y)
+    _write_tail(root, founder, y_tail, y_events, record_y)
+    if stranger_enrols:
+        # A third key founds its own identity in a tail of Y and enrols the owner's key into it.
+        anchor_y = _anchor(THIRD_SECRET)
+        third_fp, _ = _unenrolled_public(THIRD_SECRET)
+        _write_tail(
+            root, THIRD_SECRET, _tail_name(THIRD_SECRET, "34"),
+            [
+                _event(THIRD_SECRET, at, "identity.founded", anchor_y, {"foundingFp": third_fp}),
+                _event(
+                    THIRD_SECRET, _later(at, 1), "key.enrolled", anchor_y,
+                    {"newFp": owner_fp, "reverseSig": sign(owner, enrolment_message(anchor_y, owner_fp)).hex()},
+                ),
+            ],
+            record_y,
+        )
     # T: the owner's tail of record X, founded and holding a note (a third event when it grew).
     t_events = [
         _event(owner, at, "identity.founded", _anchor(owner), {"foundingFp": owner_fp}),
@@ -1808,11 +1826,24 @@ def relinked_tail(root: str) -> tuple[bool, str]:
     return True, _relinked(root)
 
 
+def relinked_by_the_genesis_founder(root: str) -> tuple[bool, str]:
+    """Section 6.11, honest: the key that founded this record's genesis identity relinks its tail
+    of another record from another tail of its own that names this one. Both readers verify."""
+    return True, _relinked(root, founder=CHECKER_SECRET)
+
+
 def relinked_by_a_key_that_founded_itself_here(root: str) -> tuple[bool, str]:
-    """Section 6.11, as the rule reads: the owner, enrolled by nobody here, founds its own identity
-    in the host tail and relinks there. Its key is a member of an identity of this record at the
-    relink's point, so both readers count the relink."""
+    """The owner, enrolled by nobody here, founds its own identity in the host tail and relinks
+    there. Any key may found its own identity anywhere, so that is no membership the record gave
+    (ADR-157): both readers refuse it, relink-not-a-member."""
     return True, _relinked(root, enrolled=False, founds_itself=True)
+
+
+def relinked_by_a_key_a_stranger_enrolled(root: str) -> tuple[bool, str]:
+    """A third key founds its own identity in a tail of this record and enrols the owner's key into
+    it; the owner relinks for that identity. The enrolment was not the record's to give, since its
+    voucher's membership is a founding outside the genesis tail: relink-not-a-member."""
+    return True, _relinked(root, stranger_enrols=True)
 
 
 def relink_by_another_key(root: str) -> tuple[bool, str]:
@@ -1933,7 +1964,9 @@ MUTATIONS = {
         event_by_another_enrolled_key_above_the_checkpoint
     ),
     "relinked-tail": relinked_tail,
+    "relinked-by-the-genesis-founder": relinked_by_the_genesis_founder,
     "relinked-by-a-key-that-founded-itself-here": relinked_by_a_key_that_founded_itself_here,
+    "relinked-by-a-key-a-stranger-enrolled": relinked_by_a_key_a_stranger_enrolled,
     "relink-by-another-key": relink_by_another_key,
     "relink-uncovered": relink_uncovered,
     "relinked-tail-grew": relinked_tail_grew,
