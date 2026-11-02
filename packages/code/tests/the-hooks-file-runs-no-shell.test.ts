@@ -136,9 +136,14 @@ describe('the plugin hooks file', () => {
 
   it('holds the check against the shell it replaced', () => {
     // NON-VACUITY: the line the Cursor gate was, and the one the question's hook was.
+    const ROOT_VARIABLE = '$' + '{CLAUDE_PLUGIN_ROOT}';
     const shell = [
-      '[ -n "$QWEN_PROJECT_DIR" ] && exit 0; [ -n "$CURSOR_VERSION" ] && node "${CLAUDE_PLUGIN_ROOT}/hooks/edit-refuses-a-write.mjs" --host cursor; exit 0',
-      'IN=$(cat); case "$IN" in *\'"AskUserQuestion"\'*) printf \'%s\' "$IN" | node "${CLAUDE_PLUGIN_ROOT}/hooks/choice-settled.mjs";; esac',
+      '[ -n "$QWEN_PROJECT_DIR" ] && exit 0; [ -n "$CURSOR_VERSION" ] && node "' +
+        ROOT_VARIABLE +
+        '/hooks/edit-refuses-a-write.mjs" --host cursor; exit 0',
+      'IN=$(cat); case "$IN" in *\'"AskUserQuestion"\'*) printf \'%s\' "$IN" | node "' +
+        ROOT_VARIABLE +
+        '/hooks/choice-settled.mjs";; esac',
     ];
     const plain =
       /^node "\$\{CLAUDE_PLUGIN_ROOT\}\/hooks\/([a-z-]+\.mjs)"((?: --[a-z-]+ [A-Za-z0-9_,-]+)*)$/;

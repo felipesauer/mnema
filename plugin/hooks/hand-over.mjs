@@ -634,7 +634,7 @@ function toolNameOf(input) {
  */
 export function aHostYields(argv, env) {
   const named = flagValue(argv, '--unless');
-  return named !== undefined && named.split(',').some((variable) => (env[variable] ?? '') !== '');
+  return named?.split(',').some((variable) => (env[variable] ?? '') !== '') === true;
 }
 
 /**
