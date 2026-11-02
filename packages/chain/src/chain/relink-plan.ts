@@ -181,26 +181,30 @@ export function planRelinks(
       }
       into = names[0] as string;
     }
-    if (into === from) {
+    // A name as `verify` prints it is its first twelve characters: taken for the whole name it
+    // begins, among the names the directory holds.
+    const ask = into;
+    const whole =
+      [...new Set(named.values())].find(
+        (name) =>
+          name !== undefined && (name === ask || (ask.length >= 12 && name.startsWith(ask))),
+      ) ?? ask;
+    if (whole === from) {
       return refuse(
         'ALREADY_IN_THAT_RECORD',
-        `Tail ${oneLine(tail)} already names record ${said(into)}: a relink moves a tail between two ` +
+        `Tail ${oneLine(tail)} already names record ${said(whole)}: a relink moves a tail between two ` +
           'records, and one into the record it names would only freeze it (relink-into-its-own-record).',
       );
     }
-    const join = into;
-    const joined = [...others].find(
-      ([name]) => name === join || (join.length >= 12 && name.startsWith(join)),
-    );
-    if (joined === undefined) {
+    if (!others.has(whole)) {
       return refuse(
         'NO_TAIL_NAMES_INTO',
-        `No tail here names record ${oneLine(join)} by its own artifacts, other than a tail a relink ` +
+        `No tail here names record ${oneLine(ask)} by its own artifacts, other than a tail a relink ` +
           'names: a relink joins a tail to a record the directory holds, and one into a name no ' +
           'tail holds would be a rename, not a join.',
       );
     }
-    into = joined[0];
+    into = whole;
     const layout = where.get(tail) as ChainLayout;
     let verdict = verified.get(layout.root);
     if (verdict === undefined) {
