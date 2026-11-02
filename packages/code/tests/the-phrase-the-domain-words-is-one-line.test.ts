@@ -604,7 +604,7 @@ type Verdict = 'collapsed' | 'minted' | 'composed';
  * the part that rots (which values exist, and whether each is collapsed) is derived.
  */
 const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = {
-  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}... into the same record: a relink moves a tail between two records\u00bb oneLine(relink.from.slice(0, 12)) #1':
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}... into the same record: a relink moves a tail between two records\u00bb oneLine(relink.source.slice(0, 12)) #1':
     {
       verdict: 'collapsed',
       why: 'the head of the record name a relink claims to leave, a payload string',
@@ -691,7 +691,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the `at` of the first entry of the relinked tail, a field of a stored line',
     },
-  '@mnema/chain chain/record-name.ts \u00abtail {}, record {}..., relinked into this record by its own key at {}: {} event(s), the first at {}\u00bb oneLine(relink.from.slice(0, 12)) #1':
+  '@mnema/chain chain/record-name.ts \u00abtail {}, record {}..., relinked into this record by its own key at {}: {} event(s), the first at {}\u00bb oneLine(relink.source.slice(0, 12)) #1':
     {
       verdict: 'collapsed',
       why: 'the head of the record name a relink claims to leave, a payload string',
@@ -719,7 +719,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the head of the record name the relinked tail signed, a string whoever signed it chose',
     },
-  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}..., and that tail names {}\u00bb oneLine(relink.from.slice(0, 12)) #1':
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}..., and that tail names {}\u00bb oneLine(relink.source.slice(0, 12)) #1':
     {
       verdict: 'collapsed',
       why: 'the head of the record name a relink claims to leave, a payload string',

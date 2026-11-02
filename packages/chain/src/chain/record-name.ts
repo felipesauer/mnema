@@ -305,7 +305,8 @@ export interface RelinkRead {
   readonly signerFp: string;
   /** The relinked tail. */
   readonly tail: string;
-  readonly from: string;
+  /** The record the relinked tail is moved from: the payload's `from`. */
+  readonly source: string;
   readonly into: string;
   readonly throughHash: string;
   readonly eventCount: number;
@@ -415,16 +416,17 @@ export function relinkedNaming(
     for (const entry of entries) {
       const event = entry.event;
       if (event.kind !== 'tail.relinked') continue;
+      const { tail, from: source, into, throughHash, eventCount } = event.payload;
       found.push({
         relink: {
           host,
           seq: entry.link.seq,
           signerFp: event.signerFp,
-          tail: event.payload.tail,
-          from: event.payload.from,
-          into: event.payload.into,
-          throughHash: event.payload.throughHash,
-          eventCount: event.payload.eventCount,
+          tail,
+          source,
+          into,
+          throughHash,
+          eventCount,
         },
         covered: entry.link.seq <= (coveredThrough.get(host) ?? -1),
       });
@@ -485,11 +487,11 @@ export function relinkedNaming(
       );
       continue;
     }
-    if (relink.from === relink.into) {
+    if (relink.source === relink.into) {
       refuse(
         RELINK_INTO_ITS_OWN_RECORD,
         relink,
-        `${oneLine(where(relink))} relinks tail ${oneLine(tail)} from record ${oneLine(relink.from.slice(0, 12))}... into the same record: a relink moves a tail between two records`,
+        `${oneLine(where(relink))} relinks tail ${oneLine(tail)} from record ${oneLine(relink.source.slice(0, 12))}... into the same record: a relink moves a tail between two records`,
       );
       continue;
     }
@@ -498,11 +500,11 @@ export function relinkedNaming(
       continue;
     }
     const tailNames = named.get(tail);
-    if (tailNames !== relink.from) {
+    if (tailNames !== relink.source) {
       refuse(
         RELINK_FROM_MISMATCH,
         relink,
-        `${oneLine(where(relink))} relinks tail ${oneLine(tail)} from record ${oneLine(relink.from.slice(0, 12))}..., and that tail names ${oneLine(recordSaid(tailNames))}`,
+        `${oneLine(where(relink))} relinks tail ${oneLine(tail)} from record ${oneLine(relink.source.slice(0, 12))}..., and that tail names ${oneLine(recordSaid(tailNames))}`,
       );
       continue;
     }
@@ -565,7 +567,7 @@ export function relinkedNaming(
       relink,
       events: entries.length,
       firstAt,
-      detail: `tail ${oneLine(relink.tail)}, record ${oneLine(relink.from.slice(0, 12))}..., relinked into this record by its own key at ${oneLine(where(relink))}: ${entries.length} event(s), the first at ${oneLine(firstAt)}`,
+      detail: `tail ${oneLine(relink.tail)}, record ${oneLine(relink.source.slice(0, 12))}..., relinked into this record by its own key at ${oneLine(where(relink))}: ${entries.length} event(s), the first at ${oneLine(firstAt)}`,
     });
   }
   return { named: relinkedNamed, counted, refused, uncovered, absent };
