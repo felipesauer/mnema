@@ -25,7 +25,6 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-// @ts-expect-error a plain .mjs next to the workflows, with no declaration file
 import {
   NAME,
   PACKAGE,
