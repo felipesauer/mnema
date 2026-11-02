@@ -119,12 +119,7 @@ export function ensureTree(layout: ChainLayout): boolean {
     NO_EOL_LINE,
   );
   // A tree made before the merge driver existed gets its line the same way, at its next write.
-  ensureLine(
-    gitattributesPath(layout),
-    GITATTRIBUTES_CONTENT,
-    (l) => l === MERGE_LINE,
-    MERGE_LINE,
-  );
+  ensureLine(gitattributesPath(layout), GITATTRIBUTES_CONTENT, (l) => l === MERGE_LINE, MERGE_LINE);
   // A tree made before the writers' lock directory existed has no line for it, and a lock left
   // by a killed holder would be committed.
   const wrote = ensureLine(

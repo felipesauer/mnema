@@ -33,7 +33,7 @@ export interface MergeDriverContext {
 
 /** The two settings the fix writes, in the order it writes them. */
 export const DRIVER_SETTINGS = [
-  [`merge.${MERGE_DRIVER}.name`, "mnema: keep the longer side of a tail that only grows"],
+  [`merge.${MERGE_DRIVER}.name`, 'mnema: keep the longer side of a tail that only grows'],
   [`merge.${MERGE_DRIVER}.driver`, 'mnema record merge-tail %O %A %B %P'],
 ] as const;
 
@@ -61,12 +61,7 @@ function governed(ctx: MergeDriverContext): { readonly top: string } | undefined
   if (record === undefined) return undefined;
   const top = gitIn(ctx, record, ['rev-parse', '--show-toplevel']);
   if (top === undefined || top.status !== 0) return undefined;
-  const named = gitIn(ctx, record, [
-    'check-attr',
-    'merge',
-    '--',
-    'tails/any/000001.jsonl',
-  ]);
+  const named = gitIn(ctx, record, ['check-attr', 'merge', '--', 'tails/any/000001.jsonl']);
   if (named === undefined || !named.out.endsWith(`: merge: ${MERGE_DRIVER}`)) return undefined;
   return { top: top.out };
 }
@@ -115,7 +110,9 @@ export function fixMergeDriver(
     if (now === value) continue;
     if (now !== undefined) {
       refused = true;
-      lines.push(`${key} is already set to ${oneLine(now)}, which mnema did not write; it is left as it is.`);
+      lines.push(
+        `${key} is already set to ${oneLine(now)}, which mnema did not write; it is left as it is.`,
+      );
       continue;
     }
     toWrite.push([key, value]);
@@ -131,7 +128,10 @@ export function fixMergeDriver(
     }
     const wrote = gitIn(ctx, here.top, ['config', '--local', key, value]);
     if (wrote?.status !== 0) {
-      return { refused: true, lines: [...lines, `git did not write ${key}; nothing else was written.`] };
+      return {
+        refused: true,
+        lines: [...lines, `git did not write ${key}; nothing else was written.`],
+      };
     }
     lines.push(`set ${key} = ${value} in this repository's git configuration.`);
   }

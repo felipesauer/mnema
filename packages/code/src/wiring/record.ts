@@ -92,7 +92,11 @@ export function registerRecord(program: Command, wiring: Wiring): Declared {
         );
       }
       if (result.pulled.status !== 0) {
-        io.err(render(fact(onOneLine`git pull from ${result.upstream} failed; see what git said above.`)));
+        io.err(
+          render(
+            fact(onOneLine`git pull from ${result.upstream} failed; see what git said above.`),
+          ),
+        );
         io.fail();
         return;
       }

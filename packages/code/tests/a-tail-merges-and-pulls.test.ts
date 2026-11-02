@@ -10,11 +10,20 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { mergeDriverLines } from '../src/commands/doctor-merge-driver.js';
 import { driverCommand } from '../src/commands/record-pull.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
@@ -133,7 +142,10 @@ describe('mnema record pull', () => {
     const tail = theTail(local);
     const segment = join(tail, '000001.jsonl');
     const lines = readFileSync(join(other, segment), 'utf-8').split('\n').length;
-    writeFileSync(join(other, segment), `${readFileSync(join(other, segment), 'utf-8')}{"forged":1}\n`);
+    writeFileSync(
+      join(other, segment),
+      `${readFileSync(join(other, segment), 'utf-8')}{"forged":1}\n`,
+    );
     expect(git(other, 'commit', '-qam', 'a fork').status).toBe(0);
     expect(git(other, 'push', '-q', 'origin', 'main').status).toBe(0);
     expect(mnema(local, 'task', 'create', 'two').status).toBe(0);
@@ -182,6 +194,14 @@ describe('mnema record pull', () => {
   });
 });
 
+describe('the driver record pull hands git', () => {
+  it("is this installation's node and script, quoted for the shell git runs it through", () => {
+    expect(driverCommand('/opt/a b/node', "/x/it's/cli.js")).toBe(
+      "'/opt/a b/node' '/x/it'\\''s/cli.js' record merge-tail %O %A %B %P",
+    );
+  });
+});
+
 describe('the merge driver, in a merge git runs', () => {
   /** Both sides grow the record and commit: `other` holds what a pull request carried, `local` more. */
   function grownOnBothSides(): { local: string; segment: string; longer: Buffer } {
@@ -215,7 +235,10 @@ describe('the merge driver, in a merge git runs', () => {
     const { local, other } = world();
     const segment = join(theTail(local), '000001.jsonl');
     const lines = readFileSync(join(other, segment), 'utf-8').split('\n').length;
-    writeFileSync(join(other, segment), `${readFileSync(join(other, segment), 'utf-8')}{"forged":1}\n`);
+    writeFileSync(
+      join(other, segment),
+      `${readFileSync(join(other, segment), 'utf-8')}{"forged":1}\n`,
+    );
     expect(git(other, 'commit', '-qam', 'a fork').status).toBe(0);
     expect(git(other, 'push', '-q', 'origin', 'main').status).toBe(0);
     expect(mnema(local, 'task', 'create', 'two').status).toBe(0);
@@ -246,11 +269,22 @@ describe('the doctor', () => {
     const { local } = world();
     const asked = mnema(local, 'doctor');
     expect(asked.out).toMatch(/to do · merge-driver: git merges this record's tails as text/);
+    const read = mergeDriverLines({
+      cwd: local,
+      env: { home: join(sandbox, 'home') },
+      processEnv: env(),
+    });
+    expect(read).toHaveLength(1);
+    expect(read[0]).toMatch(
+      /`mnema doctor --fix merge-driver` writes it into this repository's git configuration/,
+    );
     expect(mergeSettings(local)).toBe('');
 
     const dry = mnema(local, 'doctor', '--fix', 'merge-driver', '--dry-run');
     expect(dry.status).toBe(0);
-    expect(dry.out).toMatch(/would set merge\.mnema-tail\.driver = mnema record merge-tail %O %A %B %P/);
+    expect(dry.out).toMatch(
+      /would set merge\.mnema-tail\.driver = mnema record merge-tail %O %A %B %P/,
+    );
     expect(mergeSettings(local)).toBe('');
 
     const fixed = mnema(local, 'doctor', '--fix', 'merge-driver');
@@ -270,8 +304,9 @@ describe('the doctor', () => {
     expect(git(local, 'config', 'merge.mnema-tail.driver', 'cat').status).toBe(0);
     const refused = mnema(local, 'doctor', '--fix', 'merge-driver');
     expect(refused.status).toBe(1);
-    expect(refused.out).toMatch(/merge\.mnema-tail\.driver is already set to cat, which mnema did not write/);
+    expect(refused.out).toMatch(
+      /merge\.mnema-tail\.driver is already set to cat, which mnema did not write/,
+    );
     expect(git(local, 'config', '--get', 'merge.mnema-tail.driver').out.trim()).toBe('cat');
   });
 });
-

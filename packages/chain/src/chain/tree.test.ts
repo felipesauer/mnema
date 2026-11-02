@@ -183,7 +183,11 @@ describe('ensureTree: a .gitattributes that keeps git from rewriting line ends',
     const work = mkdtempSync(join(tmpdir(), 'mnema-merge-attribute-'));
     try {
       execFileSync('git', ['init', '-q', work], {
-        env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
+        env: {
+          ...process.env,
+          GIT_CONFIG_NOSYSTEM: '1',
+          GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+        },
       });
       ensureTree({ root: join(work, '.mnema') });
       const asked = execFileSync(

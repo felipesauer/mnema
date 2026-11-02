@@ -18,13 +18,19 @@ describe('joinGrownTail', () => {
       kind: 'longer',
       side: 'theirs',
     });
-    expect(joinGrownTail(bytes('a\nb\nc\n'), bytes('a\n'))).toEqual({ kind: 'longer', side: 'ours' });
+    expect(joinGrownTail(bytes('a\nb\nc\n'), bytes('a\n'))).toEqual({
+      kind: 'longer',
+      side: 'ours',
+    });
     expect(joinGrownTail(bytes(''), bytes('a\n'))).toEqual({ kind: 'longer', side: 'theirs' });
     expect(joinGrownTail(bytes('a\n'), bytes('a\n'))).toEqual({ kind: 'same' });
   });
 
   it('a divergence is a fork, at the line where the two sides part', () => {
-    expect(joinGrownTail(bytes('a\nb\nc\n'), bytes('a\nb\nd\n'))).toEqual({ kind: 'fork', line: 3 });
+    expect(joinGrownTail(bytes('a\nb\nc\n'), bytes('a\nb\nd\n'))).toEqual({
+      kind: 'fork',
+      line: 3,
+    });
     expect(joinGrownTail(bytes('x\n'), bytes('y\nz\n'))).toEqual({ kind: 'fork', line: 1 });
     // Same length, one byte apart, is a fork too, not "the same".
     expect(joinGrownTail(bytes('a\nb\n'), bytes('a\nc\n'))).toEqual({ kind: 'fork', line: 2 });

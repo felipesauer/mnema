@@ -162,7 +162,8 @@ export function runRecordPull(ctx: RecordPullContext): RecordPullDone | RecordPu
     }
     if (!path.startsWith(recordDir)) outside.push(path);
   }
-  if (outside.length > 0) return { ok: false, reason: 'CHANGES_OUTSIDE_THE_RECORD', paths: outside };
+  if (outside.length > 0)
+    return { ok: false, reason: 'CHANGES_OUTSIDE_THE_RECORD', paths: outside };
 
   // 2. The upstream branch as it is now, and every tail file that differs from it here.
   const fetched = git(ctx, top, ['fetch', '--quiet']);
