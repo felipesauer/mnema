@@ -12,7 +12,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -161,6 +161,31 @@ describe('the namer of the surfaces names a directory as verify does', () => {
       expect(reading.several).toEqual([]);
       expect([...reading.read].sort()).toEqual(readdirSync(join(record, 'tails')).sort());
     }
+  });
+
+  it('reads the directory again once a file of it changes, rather than keep an answer it took', () => {
+    const record = mutated('relinked-tail');
+    expect(tailsReadAt({ root: record }).read).toHaveLength(3);
+    // The relink's host loses the checkpoint that covered it: the relink counts for nothing now.
+    const host = readdirSync(join(record, 'tails')).find((id) => id.endsWith('ef'.repeat(16)));
+    if (host === undefined) throw new Error('no host tail');
+    rmSync(join(record, 'tails', host, 'checkpoints.jsonl'));
+    expect(tailsReadAt({ root: record }).read).toEqual([]);
+    expect(verify(record, catalogUpcasters()).record.state).toBe('several');
+  });
+
+  it('takes no covering checkpoint whose signature fails, as verify takes none', () => {
+    // The namer checks the last checkpoint's signature alone and binds the earlier ones through
+    // `prev`; a last signature that fails is not a cover, and the relink above it counts nothing.
+    const record = mutated('relinked-tail');
+    const host = readdirSync(join(record, 'tails')).find((id) => id.endsWith('ef'.repeat(16)));
+    if (host === undefined) throw new Error('no host tail');
+    const file = join(record, 'tails', host, 'checkpoints.jsonl');
+    const line = JSON.parse(readFileSync(file, 'utf-8').trim()) as { sig: string };
+    const flipped = `${line.sig.startsWith('0') ? '1' : '0'}${line.sig.slice(1)}`;
+    writeFileSync(file, readFileSync(file, 'utf-8').replace(line.sig, flipped));
+    expect(verify(record, catalogUpcasters()).record.state).toBe('several');
+    expect(tailsReadAt({ root: record }).read).toEqual([]);
   });
 
   it('reads a relinked directory whole, where before it read nothing of it', () => {

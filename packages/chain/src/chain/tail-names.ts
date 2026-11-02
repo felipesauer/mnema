@@ -119,8 +119,10 @@ export function arrivalsSince(
  * Measured on the built package, base and head alternated, median of 15 rounds of 5 calls: a
  * relinked directory whose joined record holds 553 events and 551 checkpoints, 0.79 ms on the base
  * (which reads nothing of it) against 24.16 ms on the head after a change, where a whole
- * `verifyChain` costs 86.02 ms, and about what stating its files costs when nothing changed; a
- * directory of two records with no relink, 0.57 ms against 0.60 ms; one record, 0.02 against 0.01.
+ * `verifyChain` costs 86.02 ms (it was the namer's cost before), and 0.84 ms against 1.20 ms when
+ * nothing changed since the last reading; a directory of two records with no relink, 0.57 ms
+ * against 0.60 ms; one record, 0.02 against 0.01. A write changes the directory, so each catch-up
+ * after a write pays the reading once.
  * The reading grows with the events of the record joined, about 0.04 ms each.
  */
 export function tailsReadAt(layout: ChainLayout): TheRecordRead {
