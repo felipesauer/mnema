@@ -181,29 +181,6 @@ export {
   retireAgent,
   revokeKey,
 } from './workflow/identity-operations.js';
-// The write operations for the work domain: each appends an event a gate
-// authorized. Their input/result/context types travel with them: a caller that
-// can write needs them; a reader never sees this module.
-//
-// `authorizeTailPrune` is the one here that no gate authorizes, and it is not an
-// exception to the rule so much as the rule's other side: gates protect the SHAPE
-// of the record, and a waiver's shape is checked against the disk by the writer's
-// own door instead (`@mnema/chain`, `waiver.ts`). It arrived on this surface the day
-// `mnema tail prune` asked for it, and it has that one caller.
-//
-// `switchChannel` is the other one no gate authorizes, and for a different reason
-// again: its subject is not the work but MNEMA, one of the places this product puts
-// the record in front of a model unasked, and there is no prior state to judge,
-// because switching a channel to where it already stands is a person saying so twice.
-// It arrived with `mnema switch`, and it has that one caller: the MCP server serves no
-// tool for it, so an agent cannot switch off what governs its own work through the door
-// built for agents.
-//
-// `recordChannelServed`, `recordChannelAsked` and `recordChannelRefused` are the same subject from the other side:
-// what a channel DID, rather than what somebody did to it. They have no verb and no gate
-// either, and their caller is not a person at all: it is the push itself, which is what
-// makes the rule id an asking cites a value that came out of the record. An agent cannot
-// reach them: no tool takes a rule id and writes an accusation with it.
 export {
   type AskedInput,
   type AskedOk,
@@ -277,6 +254,42 @@ export type {
   DecideThenWrite,
   DeferredWriteContext,
 } from './workflow/operations.js';
+// The write operations for the work domain: each appends an event a gate
+// authorized. Their input/result/context types travel with them: a caller that
+// can write needs them; a reader never sees this module.
+//
+// `authorizeTailPrune` is the one here that no gate authorizes, and it is not an
+// exception to the rule so much as the rule's other side: gates protect the SHAPE
+// of the record, and a waiver's shape is checked against the disk by the writer's
+// own door instead (`@mnema/chain`, `waiver.ts`). It arrived on this surface the day
+// `mnema tail prune` asked for it, and it has that one caller.
+//
+// `switchChannel` is the other one no gate authorizes, and for a different reason
+// again: its subject is not the work but MNEMA, one of the places this product puts
+// the record in front of a model unasked, and there is no prior state to judge,
+// because switching a channel to where it already stands is a person saying so twice.
+// It arrived with `mnema switch`, and it has that one caller: the MCP server serves no
+// tool for it, so an agent cannot switch off what governs its own work through the door
+// built for agents.
+//
+// `recordChannelServed`, `recordChannelAsked` and `recordChannelRefused` are the same subject from the other side:
+// what a channel DID, rather than what somebody did to it. They have no verb and no gate
+// either, and their caller is not a person at all: it is the push itself, which is what
+// makes the rule id an asking cites a value that came out of the record. An agent cannot
+// reach them: no tool takes a rule id and writes an accusation with it.
+// `relinkTails` has no gate either, and asks no identity door: it asks the readers' own relink
+// rule over the directory as it would read, and writes nothing that rule refuses. Its callers are
+// `mnema tail relink` and `mnema doctor --fix private-tree`, both at a shell.
+export {
+  type KeyOnThisMachine,
+  keysOnThisMachine,
+  type RelinkContext,
+  type RelinkError,
+  type RelinkInput,
+  type RelinkOk,
+  type RelinkWritten,
+  relinkTails,
+} from './workflow/relink-operations.js';
 // A stack adopted into a tree, and removed from it: the two facts an installation records.
 export {
   type AdoptStackInput,

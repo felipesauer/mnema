@@ -165,5 +165,104 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
       },
     );
 
+  tail
+    .command('relink')
+    .description(
+      'relink whole tails of another record into the one this directory names, each signed by its own key',
+    )
+    .argument(
+      '<tails...>',
+      'the tails to relink, as `tail list` spells them: <fingerprint>-<installation>',
+    )
+    .option(
+      '--into <record>',
+      'the record they join, as `mnema verify` names it; omitted, the one other record the tails here name',
+    )
+    .requiredOption('--reason <text>', 'why they are relinked (recorded in the fact)')
+    .addHelpText(
+      'after',
+      [
+        '',
+        'Each relink is signed by the key the tail id names, which this machine must hold, and',
+        'written in a tail of that key that names the record joined, or in a new one born naming it,',
+        'checkpointed at once. Only a key the record joined took in counts: the founder of its genesis',
+        'identity, or a key that identity enrolled. A relinked tail is frozen at its head.',
+        'Nothing is written where the readers would not count a relink.',
+      ].join('\n'),
+    )
+    .addHelpText('after', RECORD_CONTRACT_HELP)
+    .action(async (named: string[], opts: { into?: string; reason: string }) => {
+      const { runTailRelink } = await import('../commands/tail-relink.js');
+      const { describeNewTail } = await import('@mnema/chain');
+      const run = pinnedRun();
+      if (run === PIN_REFUSED) {
+        io.fail();
+        return;
+      }
+      const result = runTailRelink(here(), {
+        tails: named,
+        reason: opts.reason,
+        ...(opts.into !== undefined ? { into: opts.into } : {}),
+        ...(run !== undefined ? { run } : {}),
+      });
+      if (!result.ok) {
+        if (result.reason === 'UNKNOWN_TAIL') {
+          reportRefusal(wiring, result, { UNKNOWN_TAIL: noSuchRecord('tail', result.tail) });
+          return;
+        }
+        reportRefusal(wiring, result, {
+          TAILS_IN_TWO_TREES:
+            'Those tails are in two trees: a relink is written in the tree that holds its tail, so relink the tails of each tree apart.',
+        });
+        return;
+      }
+      for (const relink of result.relinks) {
+        io.out(`Relinked tail ${relink.tail} into record ${relink.into.slice(0, 12)}...`);
+        io.out(
+          render(
+            fact(
+              `${relink.eventCount} event(s) through ${relink.throughHash}, from record ${relink.from.slice(0, 12)}...`,
+            ),
+          ),
+        );
+        io.out(
+          render(
+            fact(
+              `written in tail ${relink.host} at seq ${relink.seq}, signed by ${relink.signedBy}, and checkpointed`,
+            ),
+          ),
+        );
+        io.out(render(fact(`it brings ${bringsSaid(relink.brings)}`)));
+      }
+      for (const opened of result.opened) io.out(render(fact(describeNewTail(opened))));
+      for (const left of result.leftBehind) {
+        io.out(
+          render(
+            fact(
+              `the tails here still name record ${left.record.slice(0, 12)}... too (${left.tails.join(', ')}): \`mnema verify\` refuses the directory until the owners of ${left.keys.join(', ')} relink them, or they are cut (\`mnema tail prune\`)`,
+            ),
+          ),
+        );
+      }
+      reportRecorded(result, io);
+    });
+
   return mutatesTheRecord(tail);
+}
+
+/** What a relinked tail brings into the record it joins, in one clause. */
+function bringsSaid(brings: {
+  readonly identity: readonly { readonly kind: string; readonly count: number }[];
+  readonly decisions: number;
+  readonly olderThanTheGenesis?: { readonly firstAt: string; readonly genesisAt: string };
+}): string {
+  const identity =
+    brings.identity.length === 0
+      ? 'no identity fact'
+      : brings.identity.map((one) => `${one.count} ${one.kind}`).join(', ');
+  const older =
+    brings.olderThanTheGenesis === undefined
+      ? ''
+      : `; its first entry, at ${brings.olderThanTheGenesis.firstAt}, is older than the first of the record's genesis tail, at ${brings.olderThanTheGenesis.genesisAt}`;
+  return `${identity} and ${brings.decisions} decision(s)${older}`;
 }

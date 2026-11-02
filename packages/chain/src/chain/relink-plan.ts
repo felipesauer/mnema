@@ -1,0 +1,339 @@
+/**
+ * WHAT A WRITER OF A RELINK READS BEFORE IT WRITES (FORMAT.md section 6.11, ADR-155): which tails
+ * it may relink, into which record, what each brings, and whether the readers would count the
+ * relinks once written. A relink is append-only once written, so everything that refuses one is
+ * asked here, over the disk, and a refusal writes nothing.
+ *
+ * Two questions, asked in this order by `mnema tail relink` and by `mnema doctor --fix
+ * private-tree` (`@mnema/core`, `relink-operations.ts`):
+ *
+ * 1. {@link planRelinks}: the refusals that need no event built, each naming what it found: a tail
+ *    that is not here, that names no record, that already names the record it would join, that
+ *    does not verify alone, that hosts a relink or is the tail of one already; and the record it
+ *    joins, the one other name of the directory unless the caller names it;
+ * 2. {@link relinksWouldCount}: the readers' own rule (`relinkedNaming`, through
+ *    `relinksReadAt`), over the directory as it would read with the relinks appended and covered.
+ *    A relink the rule refuses is refused here by the rule's own words, and nothing is written.
+ *
+ * The tails are read from `layouts`, in order: the tree the relinks are written in first, and for
+ * the doctor the tree that moves into it, so the directory read is the one after the move.
+ */
+
+import type { UpcasterRegistry } from '../events/upcaster.js';
+import { oneLine } from '../one-line.js';
+import type { Entry } from './entry.js';
+import { type ChainLayout, tailFingerprint } from './layout.js';
+import { RELINK_NOT_A_MEMBER, recordName, recordOf } from './record-name.js';
+import { listTails, readTail } from './store.js';
+import { namesOfTails } from './tail-names.js';
+import { type RelinkToWrite, relinksReadAt, verifyChain } from './verify.js';
+
+/** The identity facts a relinked tail may bring into the record it joins. */
+const IDENTITY_KINDS = [
+  'identity.founded',
+  'key.enrolled',
+  'agent.enrolled',
+  'checker.enrolled',
+] as const;
+
+/** What a relinked tail brings into the record it joins: said, never refused. */
+export interface RelinkBrings {
+  /** How many of each identity fact it holds, for the kinds it holds any of. */
+  readonly identity: readonly { readonly kind: string; readonly count: number }[];
+  /** How many decisions it recorded. */
+  readonly decisions: number;
+  /** Its first `at`, where it is older than the first entry of the record's genesis tail. */
+  readonly olderThanTheGenesis?: { readonly firstAt: string; readonly genesisAt: string };
+}
+
+/** One relink a writer is to write: everything its event says, and what the tail brings. */
+export interface PlannedRelink {
+  readonly tail: string;
+  readonly from: string;
+  readonly into: string;
+  readonly throughHash: string;
+  readonly eventCount: number;
+  /** The anchor the tail spoke for: the `who` of its last event, the relink's subject. */
+  readonly subject: string;
+  readonly brings: RelinkBrings;
+}
+
+/** Why a relink is not written: a code a surface reports, and the words that name what was found. */
+export interface RelinkRefusal {
+  readonly ok: false;
+  readonly code:
+    | 'UNKNOWN_TAIL'
+    | 'TAIL_NAMES_NO_RECORD'
+    | 'NO_RECORD_TO_JOIN'
+    | 'INTO_REQUIRED'
+    | 'NO_TAIL_NAMES_INTO'
+    | 'ALREADY_IN_THAT_RECORD'
+    | 'TAIL_DOES_NOT_VERIFY'
+    | 'TAIL_HOSTS_A_RELINK'
+    | 'TAIL_ALREADY_RELINKED'
+    | 'RELINK_WOULD_NOT_COUNT';
+  readonly message: string;
+}
+
+/** Every tail of `layouts`, read once, from the first layout that holds it. */
+function readAll(
+  layouts: readonly ChainLayout[],
+  upcasters: UpcasterRegistry,
+): {
+  readonly entries: ReadonlyMap<string, readonly Entry[]>;
+  readonly named: ReadonlyMap<string, string | undefined>;
+  readonly where: ReadonlyMap<string, ChainLayout>;
+} {
+  const entries = new Map<string, readonly Entry[]>();
+  const named = new Map<string, string | undefined>();
+  const where = new Map<string, ChainLayout>();
+  for (const layout of layouts) {
+    const names = namesOfTails(layout);
+    for (const tail of listTails(layout)) {
+      if (where.has(tail)) continue;
+      where.set(tail, layout);
+      named.set(tail, names.get(tail));
+      entries.set(tail, readTail(layout, tail, upcasters).entries);
+    }
+  }
+  return { entries, named, where };
+}
+
+/** A record's name as the pages print it: its first twelve characters. */
+function said(record: string): string {
+  return `${oneLine(record.slice(0, 12))}...`;
+}
+
+/**
+ * The relinks of `tails` into `into` (or into the one other record the directory names), read off
+ * `layouts`, or the first refusal met, tail by tail in the order given.
+ */
+export function planRelinks(
+  layouts: readonly ChainLayout[],
+  upcasters: UpcasterRegistry,
+  asked: { readonly tails: readonly string[]; readonly into?: string },
+): { readonly ok: true; readonly relinks: readonly PlannedRelink[] } | RelinkRefusal {
+  const { entries, named, where } = readAll(layouts, upcasters);
+  const refuse = (code: RelinkRefusal['code'], message: string): RelinkRefusal => ({
+    ok: false,
+    code,
+    message,
+  });
+  // The tails some relink on disk already names, and the tails that hold one.
+  const relinkedOnDisk = new Map<string, string>();
+  for (const [host, held] of entries) {
+    for (const entry of held) {
+      if (entry.event.kind !== 'tail.relinked') continue;
+      relinkedOnDisk.set(entry.event.payload.tail, `${host}#${entry.link.seq}`);
+    }
+  }
+  const asking = new Set(asked.tails);
+  const verified = new Map<string, ReturnType<typeof verifyChain>>();
+  const relinks: PlannedRelink[] = [];
+  for (const tail of asked.tails) {
+    const held = entries.get(tail) ?? [];
+    const last = held.at(-1);
+    const first = held[0];
+    if (last === undefined || first === undefined) {
+      return refuse(
+        'UNKNOWN_TAIL',
+        `No tail ${oneLine(tail)} holds events here: a relink names a tail on disk, whole, ` +
+          'and binds every entry it holds (`mnema tail list` spells the ids).',
+      );
+    }
+    const from = named.get(tail);
+    if (from === undefined) {
+      return refuse(
+        'TAIL_NAMES_NO_RECORD',
+        `Tail ${oneLine(tail)} names no record (it was written before records were named, and ` +
+          'no checkpoint of the second scheme binds it): `mnema verify` reads it as a census ' +
+          'note already, and there is nothing to move.',
+      );
+    }
+    // The records the directory's other tails name by their own artifacts, the tails being
+    // relinked and the tails a relink names left out: the ones a relink could join.
+    const others = new Map<string, string[]>();
+    for (const [other, name] of named) {
+      if (name === undefined || name === from || asking.has(other) || relinkedOnDisk.has(other)) {
+        continue;
+      }
+      const group = others.get(name);
+      if (group === undefined) others.set(name, [other]);
+      else group.push(other);
+    }
+    let into = asked.into;
+    if (into === undefined) {
+      const names = [...others.keys()];
+      if (names.length === 0) {
+        return refuse(
+          'NO_RECORD_TO_JOIN',
+          `Tail ${oneLine(tail)} names record ${said(from)}, and no other tail here names another ` +
+            'record: a relink joins a tail to a record a tail of the directory already names.',
+        );
+      }
+      if (names.length > 1) {
+        return refuse(
+          'INTO_REQUIRED',
+          `The tails here name ${names.length + 1} records (${[from, ...names].map(said).join(', ')}): ` +
+            'say which one tail ' +
+            `${oneLine(tail)} joins, with --into <record> (the record's name as \`mnema verify\` prints it, whole).`,
+        );
+      }
+      into = names[0] as string;
+    }
+    if (into === from) {
+      return refuse(
+        'ALREADY_IN_THAT_RECORD',
+        `Tail ${oneLine(tail)} already names record ${said(into)}: a relink moves a tail between two ` +
+          'records, and one into the record it names would only freeze it (relink-into-its-own-record).',
+      );
+    }
+    const join = into;
+    const joined = [...others].find(
+      ([name]) => name === join || (join.length >= 12 && name.startsWith(join)),
+    );
+    if (joined === undefined) {
+      return refuse(
+        'NO_TAIL_NAMES_INTO',
+        `No tail here names record ${oneLine(join)} by its own artifacts, other than a tail a relink ` +
+          'names: a relink joins a tail to a record the directory holds, and one into a name no ' +
+          'tail holds would be a rename, not a join.',
+      );
+    }
+    into = joined[0];
+    const layout = where.get(tail) as ChainLayout;
+    let verdict = verified.get(layout.root);
+    if (verdict === undefined) {
+      verdict = verifyChain(layout, upcasters);
+      verified.set(layout.root, verdict);
+    }
+    const broken = verdict.issues.find((issue) => issue.tail === tail);
+    if (broken !== undefined) {
+      return refuse(
+        'TAIL_DOES_NOT_VERIFY',
+        `Tail ${oneLine(tail)} does not verify: ${oneLine(broken.detail)}. A relink binds every ` +
+          'entry of the tail, so it would bind a broken history: nothing was written.',
+      );
+    }
+    if (held.some((entry) => entry.event.kind === 'tail.relinked')) {
+      return refuse(
+        'TAIL_HOSTS_A_RELINK',
+        `Tail ${oneLine(tail)} holds a relink of another tail: a relink counts only from a tail ` +
+          'that names its record by its own artifacts, so relinking this one would undo it ' +
+          '(relink-hosted-by-a-relinked-tail).',
+      );
+    }
+    const already = relinkedOnDisk.get(tail);
+    if (already !== undefined) {
+      return refuse(
+        'TAIL_ALREADY_RELINKED',
+        `Tail ${oneLine(tail)} is named by the relink at ${oneLine(already)} already: a tail is ` +
+          'relinked once, and a second relink of it counts for neither (relink-conflict). If that ' +
+          'relink is not covered yet, a checkpoint of its tail by its writer covers it.',
+      );
+    }
+    relinks.push({
+      tail,
+      from,
+      into,
+      throughHash: last.link.hash,
+      eventCount: held.length,
+      subject: last.event.who,
+      brings: bringsOf(held, into, entries),
+    });
+  }
+  return { ok: true, relinks };
+}
+
+/** What the entries of a tail bring into the record `into` names, beside its genesis. */
+function bringsOf(
+  held: readonly Entry[],
+  into: string,
+  entries: ReadonlyMap<string, readonly Entry[]>,
+): RelinkBrings {
+  const identity = IDENTITY_KINDS.map((kind) => ({
+    kind,
+    count: held.filter((entry) => entry.event.kind === kind).length,
+  })).filter((one) => one.count > 0);
+  const decisions = held.filter((entry) => entry.event.kind === 'decision.recorded').length;
+  const firstAt = (held[0] as Entry).event.at;
+  const genesis = [...entries].find(([tail]) => recordName(tail) === into)?.[1][0]?.event.at;
+  return genesis !== undefined && firstAt < genesis
+    ? { identity, decisions, olderThanTheGenesis: { firstAt, genesisAt: genesis } }
+    : { identity, decisions };
+}
+
+/** The records a directory would still hold after the relinks, beside the one they join. */
+export interface LeftBehind {
+  readonly record: string;
+  readonly tails: readonly string[];
+  /** The keys those tails' ids name: whose owners must act, or whose tails are cut. */
+  readonly keys: readonly string[];
+}
+
+/**
+ * Whether the readers would count `asked` once written and covered, over the tails of `layouts`
+ * read together (`relinksReadAt`, the rule both readers apply): the records the directory would
+ * still name beside the one joined, or the readers' refusal of the first relink they would not
+ * count, in their own words. A relink whose host does not name the record it joins is read as
+ * written in a new tail of its key (`newTailOf`), which is where its writer writes it.
+ */
+export function relinksWouldCount(
+  layouts: readonly ChainLayout[],
+  upcasters: UpcasterRegistry,
+  asked: readonly RelinkToWrite[],
+  newTailOf: (fingerprint: string) => string,
+):
+  | { readonly ok: true; readonly leftBehind: readonly LeftBehind[] }
+  | (RelinkRefusal & { readonly token?: string }) {
+  const { named } = readAll(layouts, upcasters);
+  // A host that does not name the record joined by its own artifacts is not written in: the
+  // writer opens a new tail of the same key, born naming it (`WriterOptions.joins`).
+  const toWrite = asked.map((one) =>
+    named.get(one.host) === one.hostNames
+      ? one
+      : { ...one, host: newTailOf(tailFingerprint(one.host)) },
+  );
+  const read = relinksReadAt(layouts, upcasters, named, toWrite);
+  for (const { host, event } of toWrite) {
+    if (event.kind !== 'tail.relinked') continue;
+    const tail = event.payload.tail;
+    const refused = read.refused.find(
+      (one) => one.relink.tail === tail && one.relink.host === host,
+    );
+    if (refused !== undefined) {
+      const rule =
+        refused.token === RELINK_NOT_A_MEMBER
+          ? ' Only a key the record joined took in may relink into it: the key that founded the identity of its genesis tail, or a key that identity, or a member it took in, enrolled (ADR-157). A key that founded its own identity there does not count, and an admission of another person’s tail by a member of the record does not exist in this version: that person writes again in this record, under a tail born in it, or the tail is cut (`mnema tail prune`).'
+          : '';
+      return {
+        ok: false,
+        code: 'RELINK_WOULD_NOT_COUNT',
+        token: refused.token,
+        message: `The readers would not count the relink of tail ${oneLine(tail)}: ${refused.detail}.${rule} Nothing was written.`,
+      };
+    }
+    if (!read.counted.some((one) => one.relink.tail === tail && one.relink.host === host)) {
+      return {
+        ok: false,
+        code: 'RELINK_WOULD_NOT_COUNT',
+        message: `The readers would not count the relink of tail ${oneLine(tail)}. Nothing was written.`,
+      };
+    }
+  }
+  const joined = new Set(
+    toWrite.flatMap((one) => (one.event.kind === 'tail.relinked' ? [one.event.payload.into] : [])),
+  );
+  const record = recordOf(read.named);
+  const leftBehind =
+    record.state === 'several'
+      ? record.groups
+          .filter((group) => !joined.has(group.name))
+          .map((group) => ({
+            record: group.name,
+            tails: group.tails,
+            keys: [...new Set(group.tails.map(tailFingerprint))],
+          }))
+      : [];
+  return { ok: true, leftBehind };
+}
