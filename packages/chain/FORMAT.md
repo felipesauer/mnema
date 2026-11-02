@@ -1488,11 +1488,14 @@ refuses (§4) holds nothing here: no relink of it is read, and as a relinked tai
 both readers name the same causes (`relink-host-with-an-unreadable-line`, in the same tests).
 
 An agent key is meant to relink its own tail like any key, under its role (§6.2): the rule names no
-role, and no test holds an agent key's relink yet. This product's writer
-writes no relink yet, and its namer, where a directory's tails would name two records and a
-segment holds a relink, names the directory as `verify` does
-(`packages/chain/src/chain/tail-names.ts`, `tailsReadAt`). A reader from before this kind refuses
-the line by naming its version (§7.1).
+role, and no test holds an agent key's relink yet. This product writes a relink with `mnema tail
+relink` and `mnema doctor --fix private-tree`, which ask this rule over the directory as it would
+read before they write, and write nothing it would not count. Its namer, where a directory's tails
+would name two records and a segment holds a relink, names the directory as `verify` does
+(`packages/chain/src/chain/tail-names.ts`, `tailsReadAt`), and so does its writer, which signs
+under the name a relink gives, and, where its own tail is the one relinked, writes in a new tail
+and leaves the frozen one as it is (`packages/code/tests/the-owner-relinks-a-tail.test.ts`). A reader
+from before this kind refuses the line by naming its version (§7.1).
 
 ## 7. Versions, and why a proof is never recomputed over a reading
 

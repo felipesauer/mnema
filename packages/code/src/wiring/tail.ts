@@ -1,10 +1,12 @@
 /**
  * The `mnema tail` wiring: what it declares, and what it prints.
  *
- * A group of two, and the shape is `key`'s rather than `task`'s: its subject is not
+ * A group of three, and the shape is `key`'s rather than `task`'s: its subject is not
  * a workflow entity but the record's own storage, so there is no birth, no state and
- * no `move`; there is one act, authorizing the cut of a whole tail, and the reading
- * that says which tails there are to act on.
+ * no `move`; there are two acts, authorizing the cut of a whole tail and relinking a
+ * whole tail of another record into this one (`relink`, FORMAT.md section 6.11), and the
+ * reading that says which tails there are to act on. This said "a group of two" and
+ * "one act" until the relink arrived.
  *
  * THE READING IS HERE BECAUSE THE ACT TAKES AN ID NOTHING PRINTED. `prune`'s
  * argument is a tail id, and until `list` existed no read of this product put one on
@@ -69,7 +71,9 @@ export const CUT_LIMIT =
 /** Registers `mnema tail` on the program. */
 export function registerTail(program: Command, wiring: Wiring): Declared {
   const { io, render, pinnedRun } = wiring;
-  const tail = program.command('tail').description("authorize a cut in the record's own tails");
+  const tail = program
+    .command('tail')
+    .description("act on the record's own tails: list them, authorize a cut, relink one");
 
   tail
     .command('list')
