@@ -1027,6 +1027,10 @@ function manifest(name: string, description: string): string {
     homepage: 'https://github.com/felipesauer/mnema',
     repository: 'https://github.com/felipesauer/mnema',
     license: 'Apache-2.0',
+    // The icon of the listing in Anthropic's directory, which reads it from here and from nowhere
+    // else (https://code.claude.com/docs/en/plugins-reference, "Directory listing fields"); Claude
+    // Code ignores it at load time. `.github/the-plugin-icon/make.mjs` writes the file.
+    icon: './.claude-plugin/icon.png',
     keywords: ['audit-trail', 'append-only', 'accountability', 'adr', 'local-first'],
     userConfig: {
       mnema_path: {

@@ -7,8 +7,8 @@
  *
  * WHAT IS HELD HERE AND WHAT IS NOT. The product's half (which file is a note, what is copied, once
  * per content) is `what-a-write-means-to-the-record.test.ts`. What it cannot say is that this host runs
- * the hooks file's shell as written (the path read out of the payload by the shell itself) and hands
- * the reply to the model. That is read here with a stand-in for the model; the memory directory is the
+ * the hooks file's command as written (`node` and the handler, which reads the path out of the
+ * payload itself) and hands the reply to the model. That is read here with a stand-in for the model; the memory directory is the
  * one under the `CLAUDE_CONFIG_DIR` the host is started with. The write to the project is the control.
  *
  * WHERE THE LINE LANDS, AS READ ON 2.1.281: inside the `tool_result` of the write, after its text, as a
