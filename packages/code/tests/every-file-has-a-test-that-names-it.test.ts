@@ -1065,6 +1065,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/an-agent-request-says-the-kind-of-key-it-refuses-and-where-a-file-key-goes.test.ts': 7,
   'packages/code/tests/an-answer-says-the-path-of-a-project.test.ts': 11,
   'packages/code/tests/an-inherited-rule-reaches-the-edit.test.ts': 19,
+  'packages/code/tests/an-mcp-agent-is-told-of-a-new-tail.test.ts': 11,
   'packages/code/tests/another-run-consulted-this-path.test.ts': 13,
   'packages/code/tests/both-surfaces-one-vocabulary.test.ts': 18,
   'packages/code/tests/cli-e2e.test.ts': 15,

@@ -96,6 +96,7 @@ const SESSION = {
   founding: { take: () => [] },
   recordPage: { settled: () => [] },
   replacementsOwed: { take: () => [] },
+  newTails: { take: () => [] },
   trees: { keyRoot: '/nowhere' },
   env: {},
 } as unknown as Session;

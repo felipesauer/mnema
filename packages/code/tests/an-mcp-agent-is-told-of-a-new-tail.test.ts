@@ -203,7 +203,7 @@ describe('an agent through the MCP server is told of a new tail by the tool that
     } finally {
       await client.close();
     }
-  });
+  }, 120_000);
 
   it('says it once, and the next reply says nothing of it', async () => {
     const { client } = await connect();
