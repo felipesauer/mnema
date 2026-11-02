@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-asks-a-person.mjs\" --host vscode --tools create_file,replace_string_in_file,insert_edit_into_file,edit_notebook_file,multi_replace_string_in_file,apply_patch --unless CURSOR_VERSION,QWEN_PROJECT_DIR --agent-key vscode",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-asks-a-person.mjs\" --host vscode --tools create_file,replace_string_in_file,insert_edit_into_file,edit_notebook_file,multi_replace_string_in_file,apply_patch --agent-key vscode",
             "timeout": 15
           }
         ]

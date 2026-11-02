@@ -1,7 +1,7 @@
 /**
  * The extension's icon, drawn in code: `drawIcon(blocks)` returns a 128x128 PNG as a Buffer, and
  * `drawIcon(blocks, 512)` the same drawing at 512 pixels, for the plugin's icon in Anthropic's
- * directory (`plugin/.claude-plugin/icon.png`, written by `plugin/build/make-the-icon.mjs`): every
+ * directory (`plugin/.claude-plugin/icon.png`, written by `.github/the-plugin-icon/make.mjs`): every
  * length below is a share of the icon, so the shapes are the same at any size and the 128 pixel file
  * is the bytes it always was.
  *

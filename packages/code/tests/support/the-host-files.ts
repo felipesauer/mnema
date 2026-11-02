@@ -3,10 +3,10 @@
  * the rung table `docs/evidence.md` carries, and the summary of it on the README.
  *
  * ONE FACT, WRITTEN ONCE. Which hook reaches which host, through which door and under which
- * matcher, was a hand-written file the binary's tables had to agree with; the shell in front of
- * some of its commands said which host it was in. Now the command line of each hook is generated
+ * matcher, was a hand-written file the binary's tables had to agree with, and a shell in front
+ * of some of its commands said which host it was in. Now the command line of each hook is generated
  * from the host's row (its door, whether it asks, the variable it sets) and the handler is told
- * its host by name (`--host`) and what starts it (`--tools`, `--where`), so the file holds no
+ * its host by name (`--host`) and what starts it (`--tools`, `--where`, `--unless`), so the file holds no
  * shell. `the-host-files-are-generated.test.ts` compares each committed file with what this
  * module makes, and writes them with `-u`.
  *
@@ -200,7 +200,9 @@ function beforeAWrite(name: HostName): readonly Json[] {
             '--host',
             hookHost,
             ...(env === undefined ? ['--tools', tools.join(',')] : ['--where', env]),
-            ...(yieldsTo.length === 0 ? [] : ['--unless', yieldsTo.join(',')]),
+            // Only a host that sets a variable of its own yields: VS Code's gate answers whatever other
+            // host's variable is set, as it did when a shell filtered the call.
+            ...(env === undefined || yieldsTo.length === 0 ? [] : ['--unless', yieldsTo.join(',')]),
             ...signsAs(hookHost),
           ]),
           timeout: TIMEOUT,

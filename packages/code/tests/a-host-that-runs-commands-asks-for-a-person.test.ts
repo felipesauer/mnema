@@ -351,7 +351,7 @@ describe('the plugin command VS Code runs', () => {
     expect(HOOK_HOSTS.filter((host) => command.includes(` --host ${host} `))).toEqual(['vscode']);
   });
 
-  it('reaches the verb on a write and asks; on a read it starts no process at all', () => {
+  it('reaches the verb on a write and asks; on a read it starts no mnema', () => {
     const bin = join(sandbox, 'bin');
     mkdirSync(bin);
     const calls = join(sandbox, 'calls.txt');
@@ -401,6 +401,41 @@ describe('the plugin command VS Code runs', () => {
       'before-a-write --host vscode --agent-key vscode',
       'before-a-write --host vscode --agent-key vscode',
     ]);
+  });
+
+  it('still asks where another host leaves its variable behind: VS Code yields to no one', () => {
+    // A terminal opened in Cursor or Qwen Code carries that host's variable into VS Code's. VS Code's
+    // gate was never behind a variable check, so it answers; it is Cursor's gate that yields.
+    const bin = join(sandbox, 'bin');
+    mkdirSync(bin);
+    const calls = join(sandbox, 'calls.txt');
+    writeFileSync(
+      join(bin, 'mnema'),
+      [
+        '#!/bin/sh',
+        'printf \'%s\\n\' "$*" >> "$MNEMA_CALLS"',
+        `exec "${process.execPath}" "${CLI}" "$@"`,
+        '',
+      ].join('\n'),
+    );
+    chmodSync(join(bin, 'mnema'), 0o755);
+    expect(declared().command).not.toContain('--unless');
+    const write = spawnSync('sh', ['-c', declared().command], {
+      cwd: repo,
+      input: createFile('src/billing/invoice.ts'),
+      encoding: 'utf-8',
+      env: {
+        HOME: join(sandbox, 'home'),
+        PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
+        MNEMA_CALLS: calls,
+        CLAUDE_PLUGIN_ROOT: PLUGIN,
+        CURSOR_VERSION: '2026.09.18',
+        QWEN_PROJECT_DIR: '/tmp/a-qwen-project',
+      },
+    });
+    expect(write.status).toBe(0);
+    expect(decided(JSON.parse(write.stdout) as Record<string, unknown>).value).toBe('ask');
+    expect(readFileSync(calls, 'utf-8')).toContain('before-a-write --host vscode');
   });
 
   it('starts no mnema on a VS Code read, or for a write outside Cursor and Qwen Code', () => {
