@@ -240,3 +240,38 @@ describe('mnema init', () => {
     expect(mergeSettings(local)).toBe('');
   });
 });
+
+describe('the doctor', () => {
+  it('names a driver git does not know, and only --fix merge-driver writes it, --dry-run first', () => {
+    const { local } = world();
+    const asked = mnema(local, 'doctor');
+    expect(asked.out).toMatch(/to do · merge-driver: git merges this record's tails as text/);
+    expect(mergeSettings(local)).toBe('');
+
+    const dry = mnema(local, 'doctor', '--fix', 'merge-driver', '--dry-run');
+    expect(dry.status).toBe(0);
+    expect(dry.out).toMatch(/would set merge\.mnema-tail\.driver = mnema record merge-tail %O %A %B %P/);
+    expect(mergeSettings(local)).toBe('');
+
+    const fixed = mnema(local, 'doctor', '--fix', 'merge-driver');
+    expect(fixed.status).toBe(0);
+    expect(mergeSettings(local)).toBe(
+      [
+        'merge.mnema-tail.name mnema: keep the longer side of a tail that only grows',
+        'merge.mnema-tail.driver mnema record merge-tail %O %A %B %P',
+      ].join('\n'),
+    );
+    expect(mnema(local, 'doctor').out).not.toMatch(/merge-driver/);
+    expect(mnema(local, 'doctor', '--fix', 'merge-driver').out).toMatch(/nothing to change/);
+  });
+
+  it('leaves a driver of the same name it did not write, and says so', () => {
+    const { local } = world();
+    expect(git(local, 'config', 'merge.mnema-tail.driver', 'cat').status).toBe(0);
+    const refused = mnema(local, 'doctor', '--fix', 'merge-driver');
+    expect(refused.status).toBe(1);
+    expect(refused.out).toMatch(/merge\.mnema-tail\.driver is already set to cat, which mnema did not write/);
+    expect(git(local, 'config', '--get', 'merge.mnema-tail.driver').out.trim()).toBe('cat');
+  });
+});
+

@@ -5,9 +5,10 @@
  * `PATH`, the Claude Code plugin, the VS Code agent's plugin setting, the MCP server declared
  * twice, a namesake, a private tree left where it lived before it moved into the repository's
  * git directory. One line to a finding, each ending in what to do. Asked alone it reads and
- * writes nothing; `--fix vscode` writes one setting of VS Code's `settings.json`, and
- * `--fix private-tree` moves those private trees: each only when a person asks
- * (`commands/doctor.ts`).
+ * writes nothing; `--fix vscode` writes one setting of VS Code's `settings.json`,
+ * `--fix private-tree` moves those private trees, and `--fix merge-driver` writes the tails' merge
+ * driver into the repository's `.git/config`: each only when a person asks (`commands/doctor.ts`,
+ * `commands/doctor-merge-driver.ts`).
  */
 
 import type { Command } from 'commander';
@@ -27,7 +28,7 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--fix <what>',
-      'make the one change a finding asks for, and only that one: `vscode` lists the plugin in the chat.pluginLocations setting of VS Code’s settings.json, after keeping a copy of the file; `private-tree` moves the private notes a worktree still holds in .mnema/private/ into the repository’s git directory',
+      'make the one change a finding asks for, and only that one: `vscode` lists the plugin in the chat.pluginLocations setting of VS Code’s settings.json, after keeping a copy of the file; `private-tree` moves the private notes a worktree still holds in .mnema/private/ into the repository’s git directory; `merge-driver` tells this repository’s git configuration what the merge driver the record’s tails name is',
     )
     .option('--dry-run', 'with --fix: say what would change and write nothing')
     .addHelpText(
@@ -50,10 +51,13 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         'it, keeps the file’s comments, and refuses a file it cannot edit safely.',
         '`--fix private-tree` writes: it moves each tail, as it is, into the repository’s private',
         'tree, and leaves where it was anything whose name there holds other bytes.',
+        '`--fix merge-driver` writes: two settings in this repository’s .git/config, the only git',
+        'configuration mnema writes, and leaves a setting of the same name it did not write.',
       ].join('\n'),
     )
     .action(async (options: { fix?: string; dryRun?: boolean }) => {
       const { fixPrivateTree, fixVscode, runDoctor } = await import('../commands/doctor.js');
+      const { fixMergeDriver } = await import('../commands/doctor-merge-driver.js');
       const ctx = {
         ...here(),
         env: discoveryEnv(),
@@ -61,14 +65,24 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         running: { file: process.argv[1] ?? '', version: VERSION },
       };
       if (options.fix !== undefined) {
-        if (options.fix !== 'vscode' && options.fix !== 'private-tree') {
-          io.err(render(fact('`--fix` knows how to fix two things: `vscode` and `private-tree`.')));
+        const fixes = {
+          vscode: fixVscode,
+          'private-tree': fixPrivateTree,
+          'merge-driver': fixMergeDriver,
+        } as const;
+        if (!Object.hasOwn(fixes, options.fix)) {
+          io.err(
+            render(
+              fact(
+                '`--fix` knows how to fix three things: `vscode`, `private-tree` and `merge-driver`.',
+              ),
+            ),
+          );
           io.fail();
           return;
         }
         const dryRun = options.dryRun === true;
-        const fixed =
-          options.fix === 'vscode' ? fixVscode(ctx, { dryRun }) : fixPrivateTree(ctx, { dryRun });
+        const fixed = fixes[options.fix as keyof typeof fixes](ctx, { dryRun });
         for (const line of fixed.lines) io.out(line);
         if (fixed.refused) io.fail();
         return;
