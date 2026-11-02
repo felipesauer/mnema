@@ -153,6 +153,12 @@ exits 1. The tails written before 0.1.5 stay unnamed for
 
 ### Added
 
+- **The VS Code extension says in its status bar tooltip when the command line it calls is on another version than
+  the extension.** It compares `mnema --version`, already asked, with its own version by major,
+  minor and patch (a pre-release suffix is ignored). An older command line gets "update the command line" with a
+  link to the install page, or "set `mnema.command` to a newer one"; a newer one gets "update the extension"; the
+  same version gets nothing. No notification, no network (`versionNotice`, `packages/vscode/src/status.ts`).
+
 - **`mnema init` asks, at a terminal, which files an agent host reads the mnema instructions are written into.** The question
   comes before the founding and lists `AGENTS.md` and the three rule files of mnema's own (Claude Code, the `.github/instructions`
   file for VS Code and Copilot CLI, and Cursor) with the hosts that read each, as `docs/cli-reference.md` names them: Enter

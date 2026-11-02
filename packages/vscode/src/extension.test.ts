@@ -75,6 +75,7 @@ function world(
   root: string = folderWith(true),
   rereadSetting = false,
   hidden: readonly string[] = [],
+  extensionVersion?: string,
 ) {
   const setting = { command: 'mnema', statusBarEnabled: true };
   const settingListeners: ((e: { affectsConfiguration(s: string): boolean }) => void)[] = [];
@@ -352,7 +353,12 @@ function world(
     },
   } as unknown as VscodeApi;
   const started = activate(
-    { subscriptions: [] },
+    {
+      subscriptions: [],
+      ...(extensionVersion === undefined
+        ? {}
+        : { extension: { packageJSON: { version: extensionVersion } } }),
+    },
     api,
     rereadSetting
       ? {
@@ -462,6 +468,41 @@ afterEach(() => {
 const settle = () => vi.advanceTimersByTimeAsync(0);
 /** The commands a run started, one string each, in the order they were started. */
 const calls = (w: { ran: string[][] }): string[] => w.ran.map((args) => args.join(' '));
+
+describe('the tooltip says when the command line and the extension differ', () => {
+  const tooltipFor = async (cli: string, extension: string | undefined): Promise<string> => {
+    const w = world(
+      { ...base(), '--version': ok(`${cli}\n`) },
+      undefined,
+      folderWith(true),
+      false,
+      [],
+      extension,
+    );
+    await settle();
+    return w.tooltip();
+  };
+
+  it('says the command line is older, and what to do, when its version is below the extension', async () => {
+    const tip = await tooltipFor('0.1.2', '0.1.4');
+    expect(tip).toContain(
+      'The mnema command (0.1.2) is older than this extension (0.1.4): update the command line',
+    );
+    expect(tip).toContain('docs/install.md');
+    expect(tip).toContain('to a newer one.');
+  });
+
+  it('says the extension is older, and what to do, when the command line is newer', async () => {
+    expect(await tooltipFor('0.2.0-beta', '0.1.4')).toContain(
+      'The mnema command (0.2.0) is newer than this extension (0.1.4): update the extension.',
+    );
+  });
+
+  it('says nothing when the versions agree up to the pre-release suffix, or the extension version is not known', async () => {
+    expect(await tooltipFor('0.1.4', '0.1.4-beta')).not.toContain('than this extension');
+    expect(await tooltipFor('0.1.2', undefined)).not.toContain('than this extension');
+  });
+});
 
 describe('the extension reads the record through the command line', () => {
   it('shows the level and what awaits in the status bar, and the detail in its tooltip', async () => {

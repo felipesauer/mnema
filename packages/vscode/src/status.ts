@@ -102,6 +102,31 @@ export function readCli(result: {
   return { kind: 'ready' };
 }
 
+/** The page that says how to install or update the command line. */
+export const INSTALL_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
+
+/**
+ * The one sentence for a command line and an extension on different versions, or nothing when they
+ * are the same or either is not a version. Major, minor and patch are compared; a pre-release
+ * suffix is ignored. It is read from what the machine already has (`mnema --version` and the
+ * extension's own manifest) and asks no network.
+ */
+export function versionNotice(cli: string, extension: string): string | undefined {
+  const found = parts(cli.trim());
+  const own = parts(extension.trim());
+  if (found === undefined || own === undefined) return undefined;
+  for (let i = 0; i < 3; i++) {
+    const a = found[i] ?? 0;
+    const b = own[i] ?? 0;
+    if (a === b) continue;
+    const shown = `(${found.join('.')}) is ${a < b ? 'older' : 'newer'} than this extension (${own.join('.')})`;
+    return a < b
+      ? `The mnema command ${shown}: update the command line ([how](${INSTALL_PAGE})) or set ${settingLink('mnema.command', 'mnema.command')} to a newer one.`
+      : `The mnema command ${shown}: update the extension.`;
+  }
+  return undefined;
+}
+
 /** The command that opens the extension's container in the side bar: what a click on the bar does. */
 export const CONTAINER_COMMAND = 'workbench.view.extension.mnema';
 
@@ -180,6 +205,8 @@ export function describeBar(input: {
   /** The decisions awaiting a judgment, as the command line counted them; undefined when not read. */
   readonly awaiting: number | undefined;
   readonly readAt: Date;
+  /** The sentence `versionNotice` gave, when the command line and the extension differ. */
+  readonly notice?: string | undefined;
 }): Bar {
   if (input.cli.kind === 'missing') {
     return {
@@ -216,6 +243,7 @@ export function describeBar(input: {
   } else {
     parts.push('Every channel is on.');
   }
+  if (input.notice !== undefined) parts.push(input.notice);
   const at = `${two(input.readAt.getHours())}:${two(input.readAt.getMinutes())}:${two(input.readAt.getSeconds())}`;
   parts.push(
     `Read at ${at} · [Refresh](command:mnema.refresh) · ${settingLink('Settings', 'mnema.statusBar')}`,

@@ -13,6 +13,7 @@ import {
   SWITCHES_PAGE,
   TOOLTIP_COMMANDS,
   type Verdict,
+  versionNotice,
 } from './status.js';
 
 /** What `mnema verify --json` really printed (HOME in a temp folder): an intact record, one with a line altered, and an empty `.mnema`. */
@@ -367,5 +368,34 @@ describe('the tooltip', () => {
   it('says the same words as the badge for what awaits', () => {
     expect(awaitingPhrase(1)).toBe('1 decision awaits a judgment');
     expect(awaitingPhrase(250)).toBe('250 decisions await a judgment');
+  });
+});
+
+describe('the sentence for a command line and an extension on different versions', () => {
+  it('names an older command line and what to do about it', () => {
+    const notice = versionNotice('0.1.2', '0.1.4');
+    expect(notice).toContain(
+      'The mnema command (0.1.2) is older than this extension (0.1.4): update the command line',
+    );
+    expect(notice).toContain('/docs/install.md');
+    expect(notice).toContain('to a newer one.');
+  });
+
+  it('names a newer command line and says to update the extension', () => {
+    expect(versionNotice('1.0.0', '0.9.9')).toBe(
+      'The mnema command (1.0.0) is newer than this extension (0.9.9): update the extension.',
+    );
+  });
+
+  it('compares number by number, not as text, and by minor and patch too', () => {
+    expect(versionNotice('0.10.0', '0.9.0')).toContain('is newer');
+    expect(versionNotice('0.1.9', '0.1.10')).toContain('is older');
+  });
+
+  it('says nothing for the same version, a pre-release suffix alone, or what is not a version', () => {
+    expect(versionNotice('0.1.4', '0.1.4')).toBeUndefined();
+    expect(versionNotice('0.1.4-beta.2', '0.1.4')).toBeUndefined();
+    expect(versionNotice('mnema', '0.1.4')).toBeUndefined();
+    expect(versionNotice('0.1.4', '')).toBeUndefined();
   });
 });
