@@ -1147,7 +1147,8 @@ function verifyReading(
     ...keyFilesWithoutAKey(committedFingerprints, keys),
     ...misnamedKeys(committedFingerprints, keys),
     ...(counted.length === 0 ? [noTailHeld(layout, tails)] : []),
-    ...(record.state === 'several' ? [anotherRecord(record.groups)] : []),
+    // A refused relink before the record's agreement, which it explains: the tail it did not move
+    // is what leaves the directory two records, and both readers say the cause first.
     ...relinks.refused.map(
       ({ relink, detail }): TailIssue => ({
         tail: relink.host,
@@ -1156,6 +1157,7 @@ function verifyReading(
         detail,
       }),
     ),
+    ...(record.state === 'several' ? [anotherRecord(record.groups)] : []),
     ...tails.flatMap((tail) => issuesByTail.get(tail) ?? []),
   ];
 

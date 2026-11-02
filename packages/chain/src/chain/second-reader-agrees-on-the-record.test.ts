@@ -211,11 +211,11 @@ describe('the second reader can be run at all', () => {
     // The 38 rows and the four aggregates, named in the finding so a shrinking vector
     // set cannot pass quietly.
     const said = report.findings.map((f) => f.what).join('\n');
-    expect(said).toMatch(/39 of 39 published vectors reproduce/);
+    expect(said).toMatch(/40 of 40 published vectors reproduce/);
     expect(said).toMatch(/the fold over an empty range reproduces/);
     expect(said).toMatch(/the entry hash of a genesis entry reproduces/);
     expect(said).toMatch(/the entry hash of a linked entry reproduces/);
-    expect(said).toMatch(/the content root over all 39 vectors reproduces/);
+    expect(said).toMatch(/the content root over all 40 vectors reproduces/);
     // The signed messages (sections 6, 6.1 and 6.10), counted so a shrinking set cannot pass.
     expect(said).toMatch(/5 of 5 published signed messages reproduce, and their signatures verify/);
     expect(said).toMatch(/the record's name reproduces from its genesis tail/);
@@ -899,6 +899,108 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // ADR-155 and ADR-157: the owner's relink of a tail, refused in both readers by its token, and
+    // the directory then still two records. An uncovered relink is no refusal of its own: it counts
+    // for nothing, so what refuses is the record's agreement, and the census says the relink.
+    name: 'relink-uncovered',
+    refusals: 1,
+    section: '6.10',
+    says: '(another-record)',
+    productSays: '(another-record)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'relink-by-another-key',
+    refusals: 3,
+    section: '6.11',
+    says: '(relink-not-the-owner)',
+    productSays: '(relink-not-the-owner)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'relinked-tail-grew',
+    refusals: 2,
+    section: '6.11',
+    says: '(relinked-tail-grew)',
+    productSays: '(relinked-tail-grew)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'relink-head-mismatch',
+    refusals: 2,
+    section: '6.11',
+    says: '(relink-head-mismatch)',
+    productSays: '(relink-head-mismatch)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'relink-from-mismatch',
+    refusals: 2,
+    section: '6.11',
+    says: '(relink-from-mismatch)',
+    productSays: '(relink-from-mismatch)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'relink-conflict',
+    refusals: 2,
+    section: '6.11',
+    says: '(relink-conflict)',
+    productSays: '(relink-conflict)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'relink-into-a-name-no-tail-holds',
+    refusals: 2,
+    section: '6.11',
+    says: '(relink-into-mismatch)',
+    productSays: '(relink-into-mismatch)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'relink-hosted-by-a-relinked-tail',
+    refusals: 2,
+    section: '6.11',
+    says: '(relink-hosted-by-a-relinked-tail)',
+    productSays: '(relink-hosted-by-a-relinked-tail)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'relinked-by-a-key-that-founded-itself-here',
+    refusals: 2,
+    section: '6.11',
+    says: '(relink-not-a-member)',
+    productSays: '(relink-not-a-member)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'relinked-by-a-key-a-stranger-enrolled',
+    refusals: 2,
+    section: '6.11',
+    says: '(relink-not-a-member)',
+    productSays: '(relink-not-a-member)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'relink-by-a-key-no-identity-here-holds',
+    refusals: 3,
+    section: '6.11',
+    says: '(relink-not-a-member)',
+    productSays: '(relink-not-a-member)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'checkpoint-signed-under-the-first-scheme-after-a-named-proof',
     refusals: 1,
     section: '6.10',
@@ -1009,6 +1111,26 @@ const MUTATIONS = [
     agreedAccepted: true,
   },
   {
+    // ADR-155 and ADR-157: the owner's relink, by a key the record's genesis identity enrolled,
+    // and by the key that founded that identity. Both readers verify, and say the relink.
+    name: 'relinked-tail',
+    refusals: 0,
+    section: '6.11',
+    says: '',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+    agreedAccepted: true,
+  },
+  {
+    name: 'relinked-by-the-genesis-founder',
+    refusals: 0,
+    section: '6.11',
+    says: '',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+    agreedAccepted: true,
+  },
+  {
     // A move the workflow does not allow (FORMAT.md section 6.7) is not applied and is named,
     // and it is not a break: both readers verify the record, and
     // `second-reader-agrees-on-what-is-not-applied.test.ts` holds them to naming the same move.
@@ -1090,8 +1212,8 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
     (mutation) => !('incomplete' in mutation) && !('agreedAccepted' in mutation),
   );
 
-  it('leaves exactly EIGHT rows out of the refusal loop, and no row is an acceptance by one reader alone', () => {
-    expect(MUTATIONS.length - REFUSING.length).toBe(8);
+  it('leaves exactly TEN rows out of the refusal loop, and no row is an acceptance by one reader alone', () => {
+    expect(MUTATIONS.length - REFUSING.length).toBe(10);
     expect(
       MUTATIONS.filter((m) => 'incomplete' in m || 'agreedAccepted' in m)
         .map((m) => m.name)
@@ -1104,6 +1226,8 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
       'keys-removed',
       'named-record',
       'refounded-record',
+      'relinked-by-the-genesis-founder',
+      'relinked-tail',
       'unnamed-tail-beside-named-ones',
     ]);
     // NO ROW MAY BE AN ACCEPTANCE. This is the assertion the delivery is measured by: every

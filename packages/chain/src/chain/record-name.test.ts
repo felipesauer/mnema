@@ -658,7 +658,12 @@ describe('the membership a relink asks for is one the record joined gave (ADR-15
     const entries: Entry[] = [];
     for (const event of events) {
       entries.push(
-        sealEntry({ event, tail: id, seq: entries.length, prev: entries.at(-1)?.link.hash ?? null }),
+        sealEntry({
+          event,
+          tail: id,
+          seq: entries.length,
+          prev: entries.at(-1)?.link.hash ?? null,
+        }),
       );
     }
     return entries;
