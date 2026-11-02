@@ -7,7 +7,7 @@ against their implementation, and get the same digests we do.
 
 **Somebody has.** [`verifier/`](./verifier/) beside this file is a second implementation, in
 Python, written from this document and importing nothing of the product it checks. It
-reproduces the 39 published vectors and the four aggregate digests, and checks the frozen
+reproduces the 40 published vectors and the four aggregate digests, and checks the frozen
 records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
@@ -488,6 +488,10 @@ vocabulary:
 An implementation that applies this table refuses what this product refuses: the
 same appended event that used to read as verified from outside now reads as
 refused (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`).
+
+`tail.relinked` v1 (§6.11) declares `tail`, `from`, `into`, `throughHash` and `reason` under
+`string`, and `eventCount` under `count`: the shape of `tail.pruned`, with the two names it moves a
+tail between. Whether a relink counts is no field rule: it is §6.11's, over the whole directory.
 
 ## 5. The content root
 
@@ -1332,7 +1336,8 @@ that the tails agree, and names, as information, the genesis tail when one of th
 hashes to the name (`packages/chain/src/chain/record-name.test.ts`).
 
 A tail **names** a record by its second-scheme tail proof, when that proof verifies, and
-otherwise by its latest second-scheme checkpoint whose signature, root and binding verify (§6). A
+otherwise by its latest second-scheme checkpoint whose signature, root and binding verify (§6),
+unless its owner's relink that counts (§6.11) names it into another. A
 checkpoint that failed names nothing, and a tail that holds nothing (§4) counts toward no name.
 A tail born before records were named is bound to one by its owner's first second-scheme
 checkpoint, whose `prev` covers the history before it.
@@ -1350,7 +1355,8 @@ Both readers refuse, by the same names (`packages/chain/src/chain/a-tail-of-anot
   is about the record and names every group with its tails, on purpose: a reader of a directory
   alone cannot tell which group was there first, and counting tails would let a graft of many
   win. A tail grafted from another record, and two records an honest `init` began on two branches
-  and a merge joined, both read this way.
+  and a merge joined, both read this way. A tail of another record its owner relinked into this
+  one by a relink that counts (§6.11) is not one: it is read under this record's name.
 
 A tail that names no record, in a record whose other tails name one, is **said and not refused**,
 as a census note `unnamed-tail`: a tail written before records were named on a machine that
@@ -1404,8 +1410,74 @@ on names the record from the genesis among the tails still present, and a branch
 from the old genesis leaves, once merged, a directory of two names that both readers refuse
 (`another-record`; the cut with no waiver, in the same test). So does a tail written before records
 were named whose first `at` is earlier than the genesis, brought by a branch on which a writer from
-0.1.5 on named the record after it (same test). This document does not mend either: the product's `verify --since` refuses such a
-branch before the merge.
+0.1.5 on named the record after it (same test). The product's `verify --since` refuses such a branch before the merge; after it, each
+tail's owner mends the directory tail by tail with the relink of §6.11, which both readers apply.
+
+### 6.11 A tail its owner relinked
+
+A tail is named by its tail proof, signed once at its birth and never rewritten, so nothing signed
+in the tail itself can move it to another record (§6.10). The owner moves it with an event written
+elsewhere: `tail.relinked` v1 (§4.1), in a tail of the same key that already names the record the
+relinked tail joins, in the shape of `tail.pruned`:
+
+```
+kind: tail.relinked, v: 1
+subject: the anchor the relinked tail spoke for (the `who` of its last event)
+payload: { tail, from, into, throughHash, eventCount, reason }
+```
+
+`tail` is the relinked tail T, `from` the record T names by its own artifacts, `into` the record
+the host tail H names, `throughHash` the entry hash of T's last entry and `eventCount` how many
+entries T holds. The entry hash frames each entry with its tail, seq and predecessor (§3), so the
+relink binds every entry of T from seq 0, the ones above T's last checkpoint included. Nothing of
+T is rewritten: its proof and its checkpoints still name `from`, and are not compared with the name
+the relink gives it (`record-mismatch` stays a question among T's own artifacts).
+
+After every tail is read and named by its own artifacts, and before the record's agreement is
+asked, both readers take every `tail.relinked` the directory holds, in this order, and say a
+refusal by its name (`packages/chain/src/chain/record-name.test.ts`, check by check, and over
+records both readers read: `packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`,
+`packages/chain/src/chain/second-reader-agrees-on-a-relink.test.ts`):
+
+1. **Covered.** A relink above the last verified checkpoint of H rests on the hash chain alone,
+   which a party with no key can append to and re-chain: it counts for nothing, at every level,
+   and is said as the census note `relink-uncovered`.
+2. **By the owner.** The key T's id names signs it, which is H's key too: else
+   `relink-not-the-owner`. A party without that key cannot relink T, so a tail grafted with its
+   public key alone stays `another-record`.
+3. **Once.** Two covered relinks of T by its owner: `relink-conflict`, said once for T, and
+   neither counts. A tail is relinked once.
+4. **From a tail that is not relinked.** H the tail of such a relink: `relink-hosted-by-a-relinked-tail`.
+5. **Into what H names.** H names `into` by its own artifacts: else `relink-into-mismatch`.
+6. **From what T names.** T absent from the directory (moved away, or cut since): the relink names
+   nothing, and is said as the census note `relinked-tail-absent`. T present and naming another
+   record than `from`, or none: `relink-from-mismatch`.
+7. **T frozen at its head.** T ends at `throughHash` with `eventCount` entries. More entries, through
+   that head: `relinked-tail-grew`. Anything else: `relink-head-mismatch`. A writer that would go on
+   writing as T opens another tail instead.
+8. **A membership the record gave.** At the relink's point, the key holds a membership `into` gave
+   it: the fold of §6.2, over the tails that name `into` by their own artifacts and that their
+   owner did not relink, with every `identity.founded` left out but those of the genesis tail
+   (the tail whose id `into` is the name of, §6.10), accepts the relink. So the key counts as the
+   founder of the genesis identity, or as a key that identity, or a member it took in, enrolled
+   (`key.enrolled`, `agent.enrolled`); a key that founded its own identity in the record does not,
+   nor does a key only such a key enrolled, since any key may found its own identity anywhere and
+   that is no act of the record's. Else `relink-not-a-member`. Where the genesis tail is not in the
+   directory, no founding counts, and no relink into the record does.
+
+The tails the last check folds are named by their own artifacts, so the fold never reads a tail
+whose name the rules above are deciding. A relink that passes every check names T `into`, and
+`another-record` (§6.10) is then asked of the names the relinks gave. Only T's name moves: a tail
+of `from` left behind keeps naming `from`, and its tail id names the key whose owner must act. A
+relink that counts is the census note `relinked-tail` (*tail T, record X..., relinked into this
+record by its own key at tail H seq N: E event(s), the first at A*), and `verify` gives it a clause
+of its verdict. Both readers say the three notes in the same words.
+
+An agent key relinks its own tail like any key, under its role (§6.2). This product's writer
+writes no relink yet, and its namer, where a directory's tails would name two records and a
+segment holds a relink, names the directory as `verify` does
+(`packages/chain/src/chain/tail-names.ts`, `tailsReadAt`). A reader from before this kind refuses
+the line by naming its version (§7.1).
 
 ## 7. Versions, and why a proof is never recomputed over a reading
 
@@ -1484,7 +1556,9 @@ are this product's, and the test named below holds both readers beside this docu
   did before the first publication. This is what keeps the forward promise whole: a permission
   added inside an existing pair would be read by a version from before it as a forged, illegal or
   broken line, with nothing refused, so two versions would read the same bytes two ways and
-  neither would say why.
+  neither would say why. The relink of §6.11 is that case: a permission for a tail to count in
+  another record, and so a kind of its own, which a version from before it refuses as a kind it does not
+  read.
 
 `packages/chain/src/chain/the-promise-between-versions.test.ts` holds a record to each promise.
 Backward, `__fixtures__/written-by-an-earlier-binary`, a record this product's command line wrote
@@ -1694,6 +1768,10 @@ the moment one more event was written, an understatement of what its own files p
 `packages/chain/src/chain/witness.test.ts`,
 `packages/chain/src/chain/witnessed-record.test.ts`.)
 
+A witness over a checkpoint of a tail later relinked (§6.11) dates that tail's events, and
+that the tail was then the record its checkpoint names: it does not date the tail's place in the
+record it joined, which only the relink, a signed act with its own `at`, says.
+
 What this layer does **not** prove, said here rather than in a footnote: the stored
 header is checked for its work, not for its place in the chain. A reader who needs
 that follows the block id into any explorer, or runs the `ots` client against a node,
@@ -1750,6 +1828,10 @@ order puts them. Every sentence names the case that holds it. Unless another fil
 case named P, MR, R5 or R6 is in `packages/core/src/projections/many-tails.properties.test.ts`,
 and a case named R1 to R4 or R8 in `packages/chain/src/chain/causal-order.properties.test.ts`;
 each compares the reader with a model of the sentence, a few lines long, written in the test.
+
+**A relinked tail enters the order by its own `at`** (§6.11), which may be older than the
+genesis of the record it joined: its events are history of the record it was born in, read in
+this one, and the merge does not date them otherwise.
 
 **The order inside a tail is `seq`, always.** The reader never compares the `at` of two events of
 one tail, so a clock that stepped back between two appends does not move the later-sequenced event
@@ -1984,6 +2066,12 @@ Stated plainly, because a published format invites all three readings:
   copies. Anyone may still write their own tail into a record: the name is not secret, and a
   party who knows it signs a tail naming it with their own key, which is a contribution, not a
   graft; review is the gate for that, as before.
+- **A relink brings a person's own history, with its dates** (§6.11). A key the record's genesis
+  identity took in may relink its own tail of another record into this one: its decisions and
+  notes, ordered by the `at` they carried, older than this record's genesis if so. What the
+  format refuses is a relink by any other key, and one by a key whose only membership here is
+  one it gave itself; whether that history belongs here is the reviewer's to judge, not the
+  format's.
 - **A tail written before records were named is never named by being read.** It stays unnamed
   until its owner signs a second-scheme checkpoint over it, and one whose last such checkpoint is
   cut off together with the events it covered (the aligned cut of §6) is unnamed again. A graft

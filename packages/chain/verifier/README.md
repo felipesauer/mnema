@@ -6,7 +6,7 @@ document** and importing **nothing** of the product it checks.
 ```
 python3 mnema_verify.py record <a record directory>    # T1, T2/T4, T3 over a real record
 python3 mnema_verify.py record <dir> --require signed  # ...and refuse an event no signature covers
-python3 mnema_verify.py vectors                        # reproduce the 39 published vectors and the 5 signed messages
+python3 mnema_verify.py vectors                        # reproduce the 40 published vectors and the 5 signed messages
 python3 mnema_verify.py self-test                      # RFC 8032, section 1, section 8's limits
 python3 mnema_verify.py all --record <dir>             # all three
 python3 mnema_verify.py gaps                           # where FORMAT.md did not suffice
@@ -56,7 +56,7 @@ rigour, so nobody goes looking for it.
 | **T2** | each checkpoint's content root folds over the events of its range, from their canonical bytes |
 | **T4** | the Ed25519 signature over the checkpoint's signed message, under a key whose material is **recomputed** to the fingerprint that names it, and a key file whose name is not its material's fingerprint refused whether or not a signature asks for it, as is a `.pub` that holds no key (a directory, a file it may not read, bytes that are not UTF-8, no PEM-wrapped Ed25519 `SubjectPublicKeyInfo`); a name that starts with `._` (macOS metadata) is skipped, as `.DS_Store` is, by name and with the reason, never with a traceback; and every event of the range names that key as its `signerFp`, with a `which` that is not its `who`; and every checkpoint and every event of a tail, checkpointed or not, names the key the tail id begins with, and one that names another is refused as `tail-signer-mismatch` |
 | **T3** | the OpenTimestamps proof's subject is the checkpoint's digest, the path folds to the merkle root the stored header carries, and the header's own hash meets the target it declares, with section 8's three declared limits refused by name |
-| **§1** | the 39 published vectors and the four aggregate digests, plus every refusal section 1 lists; and the five published signed messages (sections 6, 6.1 and 6.10), each message rebuilt from its stored line, hashed, and its signature verified |
+| **§1** | the 40 published vectors and the four aggregate digests, plus every refusal section 1 lists; and the five published signed messages (sections 6, 6.1 and 6.10), each message rebuilt from its stored line, hashed, and its signature verified |
 | **§4** | byte identity: re-serializing what a line holds reproduces that line exactly; and a line, its link, a checkpoint line or the tail proof holding a key beside the ones it has is refused, naming the keys |
 | **§4.1** | every event rebuilt from the fields its `(kind, v)` contract declares in `event-schema.json`, and any other refused, which catches a forged field on a **newly appended** event, where byte identity cannot |
 | **§6.2** | enrolment: every event's signer is a key **valid for its anchor** at that point in the fold, with a revocation and a restoring re-add taking effect only when signature-covered; a checker key signs check results only, and a retirement of one (signature-covered as well) leaves it signing nothing; an agent key signs only for the identity that enrolled it, under the `which` it was enrolled as, and nothing that changes who may sign, and a `key.enrolled` naming it is refused, and the facts it signed are counted as attested, those it signed before a retirement are counted per retired key, and every other `which` as declared, in the same numbers the product's census gives |
@@ -66,6 +66,7 @@ rigour, so nobody goes looking for it.
 | **§6.7** | every move of a workflow judged where the merged order puts it, against the tables the `workflows` of `event-schema.json` publishes (a birth once, a row with the proof it requires, a successor the record holds, a run ended once, and a `from` that is the state there or the one its writer saw) and a move they do not allow named with the rule it broke, at the same place the product's census names it, the verdict unchanged |
 | **§6.9** | a run marked `run.unannounced`: the facts the key that signed the mark wrote under that run (its birth, its marks and its end included; a mark its key opened no such run for marks nothing) are counted apart from the declared `which`, informational, in the same numbers the product's census gives |
 | **§6.1** | every tail carries `tailproof.json`, an Ed25519 signature over its own id under the key the tail id names (looked up by the id, never by the proof's own `signerFp`), and a proof whose `signerFp` is another key is refused as `signer-mismatch` |
+| **§6.11** | a tail its owner relinked: a `tail.relinked` counts when a verified checkpoint of its tail covers it, the key the relinked tail's id names signed it, no other relink names that tail, its tail is not itself relinked and names the record joined, the relinked tail names `from` and ends at the head and count it froze, and the key holds a membership the record gave it (the genesis founding, or an enrolment rooted in it); each refusal said by the product's token, and a relink that counts, one above its checkpoint and one of a tail not here noted in the product's census words |
 | n/a | the tail id's fingerprint is a key the record carries; whether the newest confirmed attestation reaches the last event |
 
 ## What it does not check
@@ -225,12 +226,14 @@ Only §6.2 refuses it, which is the whole difference between *the signature veri
 **What this buys.** A verdict on a real record, reached from the document and the bytes, by
 a program that has never seen the implementation. Twenty-seven places where the document was
 not enough for that, each one written down. **A refusal for every mutation in `mutate.py`
-but eight, and none of the eight is accepted by this reader alone.** Six are accepted by
+but ten, and none of the ten is accepted by this reader alone.** Eight are accepted by
 both readers: two because neither can see them, the newest events cut together with the
-checkpoints that covered them (`aligned-cut`) and a record erased and founded again; and four
+checkpoints that covered them (`aligned-cut`) and a record erased and founded again; and six
 because they are no break: a move the workflow does not allow, which is named; the metadata
-macOS writes beside a key; a record that names itself (section 6.10); and a tail beside it
-that names no record, which is named. The other two are reported
+macOS writes beside a key; a record that names itself (section 6.10); a tail beside it
+that names no record, which is named; and a tail its owner relinked into the record, by a key
+the record's genesis identity enrolled and by the key that founded it (section 6.11), each
+named. The other two are reported
 INCOMPLETE rather than refused, and they are the two places below. This used to say there
 was a refusal for every mutation, with no acceptance left. **One disagreement with the
 product is pinned.** This paragraph used to say there was none, and a case in
