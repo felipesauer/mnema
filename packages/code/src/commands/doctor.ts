@@ -53,6 +53,7 @@ import {
 } from 'node:fs';
 import { basename, delimiter, dirname, join, relative } from 'node:path';
 import {
+  type ChainWriter,
   catalogUpcasters,
   listAppleDoubleKeyFiles,
   listPrivateKeyFingerprints,
@@ -1217,20 +1218,27 @@ function relinkLeftBehind(
     };
   }
   const opened: string[] = [];
+  const writers: ChainWriter[] = [];
   const relinked = relinkTails(
     {
       layouts: [{ root: to }, { root: from }],
       upcasters: catalogUpcasters(),
       keys,
-      openWriter: (key, joins) =>
-        openTreeForWriting(trees, 'private', {
+      openWriter: (key, joins) => {
+        const writer = openTreeForWriting(trees, 'private', {
           keyRoot: key.keyRoot,
           joins,
           onNewTail: (one) => opened.push(one.to),
-        }),
+        });
+        writers.push(writer);
+        return writer;
+      },
     },
     { tails: tails.map(([tail]) => tail), into: into.name, reason: RELINKED_BY_THE_DOCTOR },
   );
+  // Signed before this returns, as every write path is: each relink is checkpointed by the
+  // operation, and a writer with nothing left to sign signs nothing here.
+  for (const writer of writers) writer.checkpoint();
   if (!relinked.ok) return { ok: false, why: `${relinked.code}: ${oneLine(relinked.message)}` };
   const hosts = [...new Set(relinked.relinks.map((one) => one.host))];
   return {

@@ -3,7 +3,7 @@ import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { catalogUpcasters, deriveAnchor, openChainForWriting } from '@mnema/chain';
+import { catalogUpcasters, deriveAnchor, namesOfTails, openChainForWriting } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { declareCheck, enrollChecker, retireChecker, runRuleChecks } from '../checks/operations.js';
 import { requestAgentEnrollment, requestEnrollment } from '../identity/handshake.js';
@@ -40,6 +40,7 @@ import {
 } from './identity-operations.js';
 import { createTask, type WriteContext } from './operations.js';
 import { authorizeTailPrune } from './prune-operations.js';
+import { relinkTails } from './relink-operations.js';
 import { endRun, prepareRun, startRun } from './session-operations.js';
 import { createSkill, recordConsultation } from './skill-operations.js';
 
@@ -196,6 +197,7 @@ describe('every write refuses what no read could accept', () => {
     let openRun = '';
     let secondKey = '';
     let foreignTail = '';
+    let relinkedTail = '';
     let note = '';
     let rule = '';
     let checker: WriteContext | undefined;
@@ -633,6 +635,48 @@ describe('every write refuses what no read could accept', () => {
             reason: '',
           }),
       },
+      {
+        // A relink's reason reaches the door only over a tail its own key wrote in another
+        // record, here: the operation refuses an unknown tail, a key this machine does not hold
+        // and a relink the readers would not count before it builds anything. The tail is this
+        // key's, born in a record of its own and copied in. LAST, because the directory then
+        // names two records and every reading of it reads nothing, so the count around this row
+        // is the same before and after whatever it did: that nothing of a refused relink lands
+        // is held by the bytes of the tails in `relink-operations.test.ts`.
+        op: 'relinkTails',
+        field: 'reason',
+        names: 'payload.reason',
+        prepare: () => {
+          const elsewhere = mkdtempSync(join(tmpdir(), 'mnema-append-elsewhere-'));
+          const other = openChainForWriting(elsewhere, { keyRoot: root });
+          const did = createTask(
+            { writer: other, layout: { root: elsewhere }, upcasters },
+            { title: 'work of another record' },
+          );
+          if (!did.ok) throw new Error('the other record holds nothing to relink');
+          cpSync(join(elsewhere, 'tails', other.tail), join(root, 'tails', other.tail), {
+            recursive: true,
+          });
+          rmSync(elsewhere, { recursive: true, force: true });
+          relinkedTail = other.tail;
+        },
+        drive: () => {
+          const fingerprint = ctx.writer.signerFingerprint;
+          return relinkTails(
+            {
+              layouts: [ctx.layout],
+              upcasters,
+              keys: new Map([[fingerprint, { fingerprint, keyRoot: root }]]),
+              openWriter: (_key, joins) => openChainForWriting(root, { keyRoot: root, joins }),
+            },
+            {
+              tails: [relinkedTail],
+              into: namesOfTails(ctx.layout).get(ctx.writer.tail) as string,
+              reason: '',
+            },
+          );
+        },
+      },
     ];
   }
 
@@ -770,6 +814,7 @@ describe('every write refuses what no read could accept', () => {
     deferredWrite: 'pairs a signer with a writer it has not opened; the write is the operation’s',
     encodeAgentRequest: 'serializes one',
     encodeKeyRequest: 'serializes one',
+    keysOnThisMachine: 'reads which keys this machine holds; appends nothing',
     onTheRecordAsItStands: 'holds the lock around a judgement; the write is the caller’s',
     openTreeForWriting: 'opens a writer; the write is the caller’s',
     recordedAnchorOf: 'asks whether the recorded identity still counts the key; appends nothing',

@@ -52,6 +52,7 @@ import {
 } from '../src/commands/stack-install.js';
 import { runSwitch } from '../src/commands/switch.js';
 import { runTailPrune } from '../src/commands/tail-prune.js';
+import { runTailRelink } from '../src/commands/tail-relink.js';
 import { runTask } from '../src/commands/task.js';
 import { runTaskTransition } from '../src/commands/task-transition.js';
 import { runUnlink } from '../src/commands/unlink.js';
@@ -184,8 +185,9 @@ const CODE_SRC = join(HERE, 'src');
  * `ensureFounded`'s own founding half (`foundedAnchor`). 56 since the door asks an operation's
  * fact before anything is founded: `appendFact`, `appendFacts`, and the half they share
  * (`foundedThenBuilt`), which every operation now reaches the founding and the append through.
+ * 57 since the owner relinks a tail (`relinkTails`), which asks the readers' rule and no founding.
  */
-const CORE_OPERATIONS_THAT_APPEND = 56;
+const CORE_OPERATIONS_THAT_APPEND = 57;
 
 /** The stack the cases install. */
 const HELLO_STACK = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', import.meta.url));
@@ -193,9 +195,11 @@ const HELLO_STACK = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', i
 /**
  * How many paths of the shipped surface reach one of them. 44 since `runKeySigstore`; 46 since a
  * stack is installed and removed (`applyStackInstall`, `removeInstalledStack`); 48 since a person
- * can enrol and retire an agent key (`runAgentEnroll`, `runAgentRetire`).
+ * can enrol and retire an agent key (`runAgentEnroll`, `runAgentRetire`); 51 since a tail is
+ * relinked, by the verb (`runTailRelink`) and by the doctor before it moves a private tree
+ * (`relinkLeftBehind`).
  */
-const SURFACE_WRITE_PATHS = 49;
+const SURFACE_WRITE_PATHS = 51;
 
 /** What `runInit` answered when it did not refuse; a refusal ends the setup. */
 function founded(result: InitResult | InitRefused): InitResult {
@@ -510,6 +514,33 @@ function mergeAForeignTail(into: string): string {
 }
 
 /**
+ * A tail of the person's own key, born in a record of its own elsewhere and copied into `into`:
+ * the tail the owner's relink joins to the record there (FORMAT.md section 6.11).
+ */
+function aTailOfAnotherRecord(into: string, keyRoot: string): string {
+  const elsewhere = mkdtempSync(join(tmpdir(), 'mnema-signs-elsewhere-'));
+  try {
+    const trees = { keyRoot, projectPublic: elsewhere } as unknown as ResolvedTrees;
+    const writer = openTreeForWriting(trees, 'public');
+    const made = writer.exclusively(() => {
+      const created = createTask(
+        { writer, layout: { root: elsewhere }, upcasters },
+        { title: 'work of another record' },
+      );
+      writer.checkpoint();
+      return created;
+    });
+    if (!made.ok) throw new Error('the other record holds nothing to relink');
+    cpSync(join(elsewhere, 'tails', writer.tail), join(into, 'tails', writer.tail), {
+      recursive: true,
+    });
+    return writer.tail;
+  } finally {
+    rmSync(elsewhere, { recursive: true, force: true });
+  }
+}
+
+/**
  * One driven path: what it is called, and the act that reaches it.
  *
  * `at` is the key the source guard produced, so the two halves cannot drift: a path
@@ -522,7 +553,10 @@ interface Driven {
 }
 
 /** A path the sweep does not drive, and the reason: the honest half of the list. */
-const NOT_DRIVEN: Readonly<Record<string, string>> = {};
+const NOT_DRIVEN: Readonly<Record<string, string>> = {
+  'commands/doctor.ts:relinkLeftBehind':
+    'it needs a private tree from before the repository that names another record, which only the binary builds; `the-private-tree-moves-out-of-the-worktree.test.ts` drives it there, and `verify` and the second reader then pass the tree it wrote in',
+};
 
 /**
  * The two CLI sweeps start the real binary once per row of {@link cliSweep}. Measured with the
@@ -915,6 +949,17 @@ describe('every write path leaves the record fully signed', () => {
               loseKeys: [foreignTail.slice(0, foreignTail.lastIndexOf('-'))],
             }),
           );
+        },
+      },
+      {
+        at: 'commands/tail-relink.ts:runTailRelink',
+        drive: () => {
+          const trees = resolveTrees(project, env);
+          const relinked = aTailOfAnotherRecord(
+            chainRootForScope(trees, 'public') as string,
+            trees.keyRoot,
+          );
+          void ok('tail relink', runTailRelink(ctx, { tails: [relinked], reason: 'one project' }));
         },
       },
     ];

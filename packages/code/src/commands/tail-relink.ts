@@ -15,7 +15,7 @@
  * the readers' own rule instead, over the directory as it would read with the relinks written.
  */
 
-import { catalogUpcasters, type NewTail } from '@mnema/chain';
+import { type ChainWriter, catalogUpcasters, type NewTail } from '@mnema/chain';
 import { chainRootForScope, type DiscoveryEnv, locateTailScope, resolveTrees } from '@mnema/core';
 import {
   keysOnThisMachine,
@@ -72,17 +72,21 @@ export function runTailRelink(
   const tree = scope;
   const root = chainRootForScope(trees, tree) as string;
   const opened: NewTail[] = [];
+  const writers: ChainWriter[] = [];
   const relinked = relinkTails(
     {
       layouts: [{ root }],
       upcasters,
       keys: keysOnThisMachine(trees.keyRoot, ctx.env),
-      openWriter: (key, joins) =>
-        openTreeForWriting(trees, tree, {
+      openWriter: (key, joins) => {
+        const writer = openTreeForWriting(trees, tree, {
           keyRoot: key.keyRoot,
           joins,
           onNewTail: (one) => opened.push(one),
-        }),
+        });
+        writers.push(writer);
+        return writer;
+      },
     },
     {
       tails: input.tails,
@@ -91,6 +95,9 @@ export function runTailRelink(
       ...(input.run !== undefined ? { run: input.run } : {}),
     },
   );
+  // Signed before this returns, as every write path of the surface is: the operation checkpoints
+  // each relink it wrote, and a writer with nothing left to sign signs nothing here.
+  for (const writer of writers) writer.checkpoint();
   if (!relinked.ok) {
     return { ok: false, reason: 'REFUSED', code: relinked.code, message: relinked.message };
   }
