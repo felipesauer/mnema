@@ -36,9 +36,7 @@ export function registerRecord(program: Command, wiring: Wiring): Declared {
 
   group
     .command('pull')
-    .description(
-      'git pull over tails that grew here and are not committed, when the branch followed holds their start',
-    )
+    .description('git pull over tails grown here and not yet committed')
     .addHelpText(
       'after',
       [
@@ -106,7 +104,7 @@ export function registerRecord(program: Command, wiring: Wiring): Declared {
 
   group
     .command('merge-tail')
-    .description('the merge driver git runs for a tail file: the longer side wins when one is the start of the other')
+    .description("the merge driver git runs for a tail's files")
     .argument('<ancestor>', 'the common ancestor git hands (%O); not read')
     .argument('<ours>', 'our side (%A), where the result is written')
     .argument('<theirs>', 'their side (%B)')
