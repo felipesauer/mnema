@@ -373,9 +373,9 @@ describe('the tooltip', () => {
 
 describe('the sentence for a command line and an extension on different versions', () => {
   it('names an older command line and what to do about it', () => {
-    const notice = versionNotice('0.1.2', '0.1.4');
+    const notice = versionNotice('0.6.1', '0.7.3');
     expect(notice).toContain(
-      'The mnema command (0.1.2) is older than this extension (0.1.4): update the command line',
+      'The mnema command (0.6.1) is older than this extension (0.7.3): update the command line',
     );
     expect(notice).toContain('/docs/install.md');
     expect(notice).toContain('to a newer one.');
@@ -393,9 +393,9 @@ describe('the sentence for a command line and an extension on different versions
   });
 
   it('says nothing for the same version, a pre-release suffix alone, or what is not a version', () => {
-    expect(versionNotice('0.1.4', '0.1.4')).toBeUndefined();
-    expect(versionNotice('0.1.4-beta.2', '0.1.4')).toBeUndefined();
-    expect(versionNotice('mnema', '0.1.4')).toBeUndefined();
-    expect(versionNotice('0.1.4', '')).toBeUndefined();
+    expect(versionNotice('0.7.3', '0.7.3')).toBeUndefined();
+    expect(versionNotice('0.7.3-beta.2', '0.7.3')).toBeUndefined();
+    expect(versionNotice('mnema', '0.7.3')).toBeUndefined();
+    expect(versionNotice('0.7.3', '')).toBeUndefined();
   });
 });

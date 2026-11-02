@@ -484,23 +484,23 @@ describe('the tooltip says when the command line and the extension differ', () =
   };
 
   it('says the command line is older, and what to do, when its version is below the extension', async () => {
-    const tip = await tooltipFor('0.1.2', '0.1.4');
+    const tip = await tooltipFor('0.6.1', '0.7.3');
     expect(tip).toContain(
-      'The mnema command (0.1.2) is older than this extension (0.1.4): update the command line',
+      'The mnema command (0.6.1) is older than this extension (0.7.3): update the command line',
     );
     expect(tip).toContain('docs/install.md');
     expect(tip).toContain('to a newer one.');
   });
 
   it('says the extension is older, and what to do, when the command line is newer', async () => {
-    expect(await tooltipFor('0.2.0-beta', '0.1.4')).toContain(
-      'The mnema command (0.2.0) is newer than this extension (0.1.4): update the extension.',
+    expect(await tooltipFor('0.9.0-beta', '0.7.3')).toContain(
+      'The mnema command (0.9.0) is newer than this extension (0.7.3): update the extension.',
     );
   });
 
   it('says nothing when the versions agree up to the pre-release suffix, or the extension version is not known', async () => {
-    expect(await tooltipFor('0.1.4', '0.1.4-beta')).not.toContain('than this extension');
-    expect(await tooltipFor('0.1.2', undefined)).not.toContain('than this extension');
+    expect(await tooltipFor('0.7.3', '0.7.3-beta')).not.toContain('than this extension');
+    expect(await tooltipFor('0.6.1', undefined)).not.toContain('than this extension');
   });
 });
 

@@ -154,7 +154,7 @@ exits 1. The tails written before 0.1.5 stay unnamed for
 ### Added
 
 - **The VS Code extension says in its status bar tooltip when the command line it calls is on another version than
-  the extension.** It compares `mnema --version`, already asked, with its own version by major,
+  the extension.** It compares the version the command line already prints with its own by major,
   minor and patch (a pre-release suffix is ignored). An older command line gets "update the command line" with a
   link to the install page, or "set `mnema.command` to a newer one"; a newer one gets "update the extension"; the
   same version gets nothing. No notification, no network (`versionNotice`, `packages/vscode/src/status.ts`).
