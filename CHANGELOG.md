@@ -12,6 +12,14 @@ with its own changelog.
 
 ### Changed
 
+- **An agent working through the MCP server is told, in the reply of the tool that wrote, that the writer opened a new
+  tail.** The sentence (`mnema: wrote to a new tail, ...`) went to standard error from the writer, which the command line
+  shows and an MCP server wrote to the host's log, so the agent whose write went to another tail was the one party not
+  told. Every tool that writes now carries it in its reply, once, beside what the write founded, in the same words the
+  command line prints (the chain's `describeNewTail`, one source), and the log hears it as before; a refusal that comes
+  after the tail was opened (`STALE_ANCHOR`) carries it in a block beside its own words, which are unchanged. The
+  closing of the connection's run, which has no reply, says it in the log alone. The command line is unchanged
+  (`packages/code/tests/an-mcp-agent-is-told-of-a-new-tail.test.ts`).
 - **Nothing governs in a directory whose tails name two records, and every reading of what governs says so.** Both
   readers refuse such a directory (`another-record`), but the readings that say what governs run over a directory
   nobody verified, and read a tail grafted from another record as this one's: its decisions were listed in force in the
