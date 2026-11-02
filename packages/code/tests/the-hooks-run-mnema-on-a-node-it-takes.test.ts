@@ -825,6 +825,25 @@ describe('a fault of the handler itself', () => {
     expect(met.reason).toContain('The mnema gate could not run');
   });
 
+  it('refuses nothing where a host with a handler of its own says it is there too (`--unless`)', () => {
+    const root = aBrokenPlugin();
+    const both = { ...CURSOR_ENV, QWEN_PROJECT_DIR: '/tmp/a-qwen-project' };
+    const cursor = declared('PreToolUse', 'edit-refuses-a-write.mjs', 'cursor');
+    expect(cursor).toContain('--unless QWEN_PROJECT_DIR');
+    // The gate that refuses, and the one that asks, each end in their own `catch` before the fault.
+    const commands = [
+      cursor,
+      handler(root, '--host cursor --where CURSOR_VERSION --unless QWEN_PROJECT_DIR'),
+    ];
+    for (const command of commands) {
+      const yielded = aHook(command, cursorWrite(), pathOf('real', 'tools'), both, repo, root);
+      expect(yielded).toMatchObject({ stdout: '', status: 0 });
+      // NON-VACUITY: with only Cursor's variable the same broken handler refuses the write.
+      const alone = aHook(command, cursorWrite(), pathOf('real', 'tools'), CURSOR_ENV, repo, root);
+      expect(alone.decision).toBe('deny');
+    }
+  });
+
   it('refuses nothing where the host is not the one the call is for, or the tool is not a write', () => {
     const root = aBrokenPlugin();
     const where = aHook(

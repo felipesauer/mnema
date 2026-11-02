@@ -17,11 +17,13 @@
  *
  * `hooks.json` runs it for Cursor alone, and by the host's own environment rather than by a
  * matcher: Cursor and Claude Code both apply the matcher `Write|Edit|NotebookEdit`, Claude Code
- * runs the per-edit call into the server there, so the shell `hooks.json` generates from the
- * host table asks for `$CURSOR_VERSION`, which Cursor sets for every hook (measured) and Claude
- * Code does not, before any process starts. It also hands this handler its host and that variable
- * (`--host cursor --where CURSOR_VERSION`), and the handler checks it again before it runs `mnema`
- * (`hand-over.mjs`, `whatTheGateAnswers`): a second line, not the first.
+ * runs the per-edit call into the server there, so `hooks.json` hands this handler its host and
+ * `$CURSOR_VERSION`, which Cursor sets for every hook (measured) and Claude Code does not
+ * (`--host cursor --where CURSOR_VERSION`), and the handler ends before it runs `mnema` where it is
+ * unset (`hand-over.mjs`, `whatTheGateAnswers`). There is no shell in front: the command is one
+ * program and its arguments, so the process starts in Claude Code for every write and ends there.
+ * Where another host that has a handler of its own says it is there too (`--unless QWEN_PROJECT_DIR`),
+ * this one yields.
  *
  * IT DECIDES NOTHING, AND IT CARRIES NO TEXT OF ITS OWN. The payload goes to `mnema
  * before-a-write --host <host>` byte for byte and its answer comes back byte for byte; which
@@ -45,8 +47,9 @@
  * reads silence as a write that may go on, and a record with a rule at an address is what brought
  * this process to life. Where there is no `mnema` at all, no project, or no rule that refuses a write or asks for a person at the path,
  * nothing refuses: silence and exit 0, as before (`without-mnema-the-hooks-fail-open.test.ts`).
- * The same checks the hooks file's shell made hold in the refusal: where the host's variable is
- * unset, or the tool is not one that writes, nothing is refused.
+ * The same checks hold in the refusal: where the host's variable is unset, where a host that has a
+ * handler of its own says it is there (`--unless`), or where the tool is not one that writes,
+ * nothing is refused.
  */
 
 /**
@@ -81,11 +84,13 @@ try {
     argv.includes(flag) ? argv[argv.indexOf(flag) + 1] : undefined;
   const where = flagValue('--where');
   const tools = flagValue('--tools');
+  const unless = flagValue('--unless');
+  const yields = unless?.split(',').some((variable) => (process.env[variable] ?? '') !== '');
   let tool = '';
   try {
     // Where the fault came before the payload was read, and the call is only this handler's if the
     // tool is one that writes, the payload is read now.
-    if (handed === '' && !(where !== undefined && (process.env[where] ?? '') === '')) {
+    if (handed === '' && !yields && !(where !== undefined && (process.env[where] ?? '') === '')) {
       const chunks = [];
       for await (const chunk of process.stdin) chunks.push(chunk);
       handed = Buffer.concat(chunks).toString('utf-8');
@@ -95,6 +100,7 @@ try {
     // No payload that names a tool: the filter below then has nothing to turn the call away by.
   }
   const startsNothing =
+    yields === true ||
     (where !== undefined && (process.env[where] ?? '') === '') ||
     (tools !== undefined && !tools.split(',').includes(tool));
   // ... and only where a rule that refuses the write or asks for a person at it addresses the path, read

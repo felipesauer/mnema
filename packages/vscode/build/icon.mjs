@@ -1,5 +1,9 @@
 /**
- * The extension's icon, drawn in code: `drawIcon(blocks)` returns a 128x128 PNG as a Buffer.
+ * The extension's icon, drawn in code: `drawIcon(blocks)` returns a 128x128 PNG as a Buffer, and
+ * `drawIcon(blocks, 512)` the same drawing at 512 pixels, for the plugin's icon in Anthropic's
+ * directory (`plugin/.claude-plugin/icon.png`, written by `.github/the-plugin-icon/make.mjs`): every
+ * length below is a share of the icon, so the shapes are the same at any size and the 128 pixel file
+ * is the bytes it always was.
  *
  * The mark is the letter M of the repository's banner, and nothing else: the first letter of the
  * console's wordmark (`THE_BLOCKS`, `packages/code/src/presentation/banner.ts`), in the banner's
@@ -22,6 +26,7 @@ import { ACCENT } from '../../../.github/the-front-page/accent.mjs';
 import { CELL, inkFoot, PAGE } from '../../../.github/the-front-page/draw.mjs';
 import { firstLetter, letterCells } from './mark.mjs';
 
+/** The size of the extension's icon, and the size every length below is written for. */
 const SIZE = 128;
 const SAMPLES = 4;
 const rgb = (hex) => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
@@ -51,11 +56,12 @@ const shapesOf = (blocks) => {
   return { rects, width: (firstLetter(blocks)[0]?.length ?? 0) * CELL.w, height: inkFoot(blocks) };
 };
 
-const inRoundedSquare = (x, y, inset) => {
-  const half = SIZE / 2 - inset;
-  const radius = RADIUS - inset;
-  const qx = Math.abs(x - SIZE / 2) - (half - radius);
-  const qy = Math.abs(y - SIZE / 2) - (half - radius);
+const inRoundedSquare = (x, y, inset, size) => {
+  const k = size / SIZE;
+  const half = size / 2 - inset;
+  const radius = RADIUS * k - inset;
+  const qx = Math.abs(x - size / 2) - (half - radius);
+  const qy = Math.abs(y - size / 2) - (half - radius);
   return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) <= radius;
 };
 
@@ -79,34 +85,36 @@ const chunk = (type, data) => {
 };
 
 /**
- * The icon over the rows of the console's wordmark (`THE_BLOCKS`).
+ * The icon over the rows of the console's wordmark (`THE_BLOCKS`), `size` pixels on a side.
  * @param {readonly string[]} blocks
+ * @param {number} [size] A whole number of pixels, 128 by default.
  * @returns {Buffer}
  */
-export function drawIcon(blocks) {
+export function drawIcon(blocks, size = SIZE) {
+  const k = size / SIZE;
   const { rects, width, height } = shapesOf(blocks);
-  const scale = (SIZE * LETTER) / width;
-  const x0 = (SIZE - width * scale) / 2;
-  const y0 = (SIZE - height * scale) / 2;
+  const scale = (size * LETTER) / width;
+  const x0 = (size - width * scale) / 2;
+  const y0 = (size - height * scale) / 2;
 
   /** The colour at a point: [r, g, b, a] with a in 0..1. */
   const sample = (px, py) => {
-    if (!inRoundedSquare(px, py, 0)) return [0, 0, 0, 0];
-    if (!inRoundedSquare(px, py, BORDER)) return [...PAINT, 1];
+    if (!inRoundedSquare(px, py, 0, size)) return [0, 0, 0, 0];
+    if (!inRoundedSquare(px, py, BORDER * k, size)) return [...PAINT, 1];
     const covers = (qx, qy) => {
       const x = (qx - x0) / scale;
       const y = (qy - y0) / scale;
       return rects.some(([l, t, r, b]) => x >= l && x < r && y >= t && y < b);
     };
     if (covers(px, py)) return [...PAINT, 1];
-    if (covers(px - SHADOW_OFFSET, py - SHADOW_OFFSET)) return [...SHADOW, 1];
+    if (covers(px - SHADOW_OFFSET * k, py - SHADOW_OFFSET * k)) return [...SHADOW, 1];
     return [...GROUND, 1];
   };
 
   const rows = [];
-  for (let y = 0; y < SIZE; y++) {
-    const row = Buffer.alloc(1 + SIZE * 4);
-    for (let x = 0; x < SIZE; x++) {
+  for (let y = 0; y < size; y++) {
+    const row = Buffer.alloc(1 + size * 4);
+    for (let x = 0; x < size; x++) {
       let r = 0;
       let g = 0;
       let b = 0;
@@ -129,8 +137,8 @@ export function drawIcon(blocks) {
     rows.push(row);
   }
   const header = Buffer.alloc(13);
-  header.writeUInt32BE(SIZE, 0);
-  header.writeUInt32BE(SIZE, 4);
+  header.writeUInt32BE(size, 0);
+  header.writeUInt32BE(size, 4);
   header.set([8, 6, 0, 0, 0], 8);
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),

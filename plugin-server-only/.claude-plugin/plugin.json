@@ -10,6 +10,7 @@
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": "https://github.com/felipesauer/mnema",
   "license": "Apache-2.0",
+  "icon": "./.claude-plugin/icon.png",
   "keywords": ["audit-trail", "append-only", "accountability", "adr", "local-first"],
   "userConfig": {
     "mnema_path": {
