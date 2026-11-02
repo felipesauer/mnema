@@ -1084,8 +1084,8 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-chain-refusal-is-a-refusal.test.ts': 14,
   'packages/code/tests/every-description-reaches-the-model.test.ts': 12,
   'packages/code/tests/every-file-has-a-test-that-names-it.test.ts': 6,
-  'packages/code/tests/every-page-of-the-site-says-what-it-is.test.ts': 6,
   'packages/code/tests/every-git-that-writes-runs-without-maintenance.test.ts': 9,
+  'packages/code/tests/every-page-of-the-site-says-what-it-is.test.ts': 6,
   'packages/code/tests/every-group-flag-is-read-or-refused.test.ts': 9,
   'packages/code/tests/every-instant-is-its-own.test.ts': 4,
   'packages/code/tests/every-link-a-page-carries-lands.test.ts': 6,
@@ -2225,8 +2225,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows; a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(22);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(22);
+    expect(unresolved.length).toBe(26);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(26);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);
