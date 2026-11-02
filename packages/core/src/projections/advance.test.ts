@@ -303,6 +303,30 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
         }),
       ),
   },
+  // No operation of this package writes a relink yet (ADR-155: the readers first), so it arrives
+  // appended as built, like the agent facts above. What the case proves is what it feeds.
+  'tail.relinked': {
+    emit: (ctx) => {
+      const signerFp = ctx.writer.signerFingerprint;
+      const anchor = deriveAnchor(signerFp);
+      ctx.writer.append({
+        v: 1,
+        kind: 'tail.relinked',
+        at: new Date().toISOString(),
+        who: anchor,
+        signerFp,
+        subject: anchor,
+        payload: {
+          tail: `${'e'.repeat(64)}-${'f'.repeat(32)}`,
+          from: 'a'.repeat(64),
+          into: 'b'.repeat(64),
+          throughHash: 'c'.repeat(64),
+          eventCount: 1,
+          reason: 'two inits joined by a merge',
+        },
+      });
+    },
+  },
   'channel.switched': {
     emit: (ctx) => landed(switchChannel(ctx, { channel: 'a-channel-that-arrived', on: false })),
   },
