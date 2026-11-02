@@ -130,6 +130,11 @@ describe('release:prepare with a number', () => {
     const install = readFileSync(join(dir, INSTALL_PAGE), 'utf-8');
     expect(install).toContain(`\nnpm i -g @mnema/code@${TARGET}\n`);
     expect(install).toContain(`\nnpm i --ignore-scripts @mnema/code@${TARGET}\n`);
+    const entry = JSON.parse(readFileSync(join(dir, 'server.json'), 'utf-8')) as {
+      version: string;
+      packages: { version: string }[];
+    };
+    expect([entry.version, entry.packages[0]?.version]).toEqual([TARGET, TARGET]);
 
     const log = readFileSync(join(dir, 'CHANGELOG.md'), 'utf-8');
     expect(log).toContain(`## [Unreleased]\n\n## [${TARGET}] - 2030-01-02\n\n### Added`);
@@ -159,6 +164,7 @@ describe('release:prepare --check', () => {
     expect(code).toBe(1);
     expect(out).toContain('would write CHANGELOG.md');
     expect(out).toContain('would write packages/zz-new/package.json');
+    expect(out).toContain('would write server.json');
     expect(git(dir, 'status', '--porcelain')).toBe(before);
     expect(readFileSync(join(dir, 'CHANGELOG.md'), 'utf-8')).toBe(CHANGELOG);
   });

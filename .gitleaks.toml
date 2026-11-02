@@ -6,10 +6,26 @@
 useDefault = true
 
 [[allowlists]]
-description = "Signature test vectors: public published values (RFC 8032, the Ed25519 vectors file) and key fingerprints the tests print."
+description = "Signature test vectors: public published values (RFC 8032, the Ed25519 vectors file)."
 paths = [
   '''packages/chain/conformance/vectors/.*''',
-  '''measurements/.*''',
+]
+
+# measurements/ is NOT exempt as a folder: results from outside contributors land under it, and a
+# credential in one of them has to be seen. Only what a scan was shown to flag is named, each
+# for one reason (gitleaks 8.30.1 over the whole history, with measurements/ not exempt, flagged
+# these six lines and nothing else).
+[[allowlists]]
+description = "The pre-registration manifest lists the sha256 of each kit script, and the generic-api-key rule reads the one named scan-for-key.mjs as a key: a file digest, not a secret."
+condition = "AND"
+paths = ['''measurements/free-block-2026-10/prereg\.json''']
+regexTarget = "line"
+regexes = ['''"lib/scan-for-key\.mjs": "[0-9a-f]{64}"''']
+
+[[allowlists]]
+description = "Two raw outputs of the retired p3 measurement folder (gone from the tree, still in the history) that print the public id of a key the tests enrolled."
+paths = [
+  '''measurements/p3/results/2026-08-18/raw/attack-[56]\.txt''',
 ]
 
 [[allowlists]]

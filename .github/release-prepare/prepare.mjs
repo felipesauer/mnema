@@ -12,7 +12,8 @@
 // `packages/code/tests/the-version-is-one-number.test.ts` finds them, plus the three places that
 // spell it in source: `packages/code/src/version.ts`, `packages/chain/src/version.ts` and the
 // `--version` line of `packages/code/src/cli.help.golden.txt`, and the two pinned install lines of
-// `docs/install.md` (`npm i -g @mnema/code@x.y.z`, `npm i --ignore-scripts @mnema/code@x.y.z`). When the number moves it also
+// `docs/install.md` (`npm i -g @mnema/code@x.y.z`, `npm i --ignore-scripts @mnema/code@x.y.z`), and the root
+// `server.json` the MCP Registry is sent, which `server-json.mjs` makes whole from the number. When the number moves it also
 // makes `recordings/console.cast` and its GIF again, because the console draws it.
 // `packages/code/tests/the-release-prepare-writes-every-number.test.ts` holds all of this.
 
@@ -20,6 +21,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { serverJson } from './server-json.mjs';
 
 const MANIFEST_NAMES = new Set(['package.json', 'plugin.json', 'gemini-extension.json']);
 const VERSION_TS = 'packages/code/src/version.ts';
@@ -28,6 +30,7 @@ const GOLDEN = 'packages/code/src/cli.help.golden.txt';
 const PYPROJECT = 'packages/chain/verifier/pyproject.toml';
 const INSTALL_PAGE = 'docs/install.md';
 const PINNED = /^(npm i (?:-g|--ignore-scripts) @mnema\/code@)\d+\.\d+\.\d+( *)$/gm;
+const SERVER_JSON = 'server.json';
 const CHANGELOG = 'CHANGELOG.md';
 const RELEASES = 'https://github.com/felipesauer/mnema/releases/tag/';
 const RETIRED = ', a pre-release withdrawn, from before this line';
@@ -148,6 +151,10 @@ export function plan(root, version, date) {
     throw new Error(`${INSTALL_PAGE}: expected two pinned install lines`);
   }
   put(INSTALL_PAGE, install.replace(PINNED, `$1${version}$2`));
+  // The entry the MCP Registry is sent is made, not edited: it may not exist yet.
+  const entry = serverJson(version);
+  if (!existsSync(join(root, SERVER_JSON)) || read(SERVER_JSON) !== entry)
+    edits.set(SERVER_JSON, entry);
 
   let log = read(CHANGELOG);
   if (!new RegExp(`^## \\[${version.replace(/\./g, '\\.')}\\]`, 'm').test(log)) {
