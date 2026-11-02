@@ -32,7 +32,6 @@ with its own changelog.
   write in Claude Code (they run in parallel) 36 ms against 4.4 ms; a VS Code read, which starts six, 44 ms against 7.7 ms.
   (The same run at a load of 29: 49, 43, 71 and 74 ms.)
 
-
 - **An agent working through the MCP server is told, in the reply of the tool that wrote, that the writer opened a new
   tail.** The sentence (`mnema: wrote to a new tail, ...`) went to standard error from the writer, which the command line
   shows and an MCP server wrote to the host's log, so the agent whose write went to another tail was the one party not
