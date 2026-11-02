@@ -4,7 +4,7 @@
  *
  * ONE FACT, WRITTEN ONCE. Which hook reaches which host, through which door and under which
  * matcher, was a hand-written file the binary's tables had to agree with; the shell in front of
- * two of its commands said which host it was in. Now the command line of each hook is generated
+ * some of its commands said which host it was in. Now the command line of each hook is generated
  * from the host's row (its door, whether it asks, the variable it sets) and the handler is told
  * its host by name (`--host`) and what starts it (`--tools`, `--where`), so the file holds no
  * shell. `the-host-files-are-generated.test.ts` compares each committed file with what this
@@ -144,40 +144,6 @@ function nodeRuns(handler: string, args: readonly string[] = []): string {
 }
 
 /**
- * The shell in front of a gate's handler, generated from the host's row: it starts no process
- * where the gate has nothing to do, which is most of the time.
- *
- * WHY A SHELL AND NOT ONLY THE HANDLER. The handler filters too (`whatTheGateAnswers`), as a
- * second line; but a filter in the handler costs a `node` start at every call it turns away, and
- * VS Code runs every command of the plugin on every tool call, whatever its matcher says: a read
- * would start two. So a host that sets a variable of its own is asked for it before anything
- * starts (`[ -n "$VAR" ] && …; exit 0`), and a host that reads no matcher has its payload passed
- * on only when it names one of the tools it writes through (`case`). Neither is written by hand:
- * both come from the row, and `the-host-files-are-generated.test.ts` holds what they say.
- *
- * A VARIABLE A TERMINAL LEAVES BEHIND. A host that runs the hook inherits the person's
- * environment (Qwen Code only strips secrets), so a session opened in another host's terminal
- * carries that host's variable too, and both handlers would start and refuse the one write twice.
- * `yieldsTo` is that: the variables of the hosts after this one in the table that have a handler of
- * their own here, so exactly one handler starts, the later host's.
- */
-function gate(
-  handler: string,
-  args: readonly string[],
-  env: string | undefined,
-  tools: readonly string[],
-  yieldsTo: readonly string[] = [],
-): string {
-  const run = nodeRuns(handler, args);
-  if (env !== undefined) {
-    const turnedAway = yieldsTo.map((variable) => `[ -n "$${variable}" ] && exit 0; `).join('');
-    return `${turnedAway}[ -n "$${env}" ] && ${run}; exit 0`;
-  }
-  const named = tools.map((tool) => `*'"${tool}"'*`).join('|');
-  return `IN=$(cat); case "$IN" in ${named}) printf '%s' "$IN" | ${run};; esac`;
-}
-
-/**
  * The order of the groups before a write: the one `hooks.ids.json` pins by position, so a host
  * added to the table lands after them rather than moving one.
  */
@@ -209,8 +175,14 @@ function beforeAWrite(name: HostName): readonly Json[] {
   const handler = does(name, 'asks') ? 'edit-asks-a-person.mjs' : 'edit-refuses-a-write.mjs';
   const tools = writeToolsOf(hookHost);
   // A host that sets a variable of its own applies the matcher Claude Code applies too, so its
-  // command starts only where that variable is set. One that does not reads no matcher at all
-  // (VS Code: measured), so its command starts only for the tools it writes through.
+  // handler starts nothing where that variable is unset. One that does not reads no matcher at all
+  // (VS Code: measured), so its handler starts nothing for a tool it does not write through.
+  //
+  // A VARIABLE A TERMINAL LEAVES BEHIND. A host that runs the hook inherits the person's
+  // environment (Qwen Code only strips secrets), so a session opened in another host's terminal
+  // carries that host's variable too, and both handlers would start and refuse the one write twice.
+  // `yieldsTo` is that: the variables of the hosts after this one in the table that have a handler of
+  // their own here, so exactly one handler answers, the later host's (`--unless`).
   const env = 'saysItIsTheHost' in host ? host.saysItIsTheHost : undefined;
   const yieldsTo = HOST_NAMES.slice(HOST_NAMES.indexOf(name) + 1).flatMap((other) => {
     const row = HOSTS[other] as Host;
@@ -224,18 +196,13 @@ function beforeAWrite(name: HostName): readonly Json[] {
       hooks: [
         {
           type: 'command',
-          command: gate(
-            handler,
-            [
-              '--host',
-              hookHost,
-              ...(env === undefined ? ['--tools', tools.join(',')] : ['--where', env]),
-              ...signsAs(hookHost),
-            ],
-            env,
-            tools,
-            yieldsTo,
-          ),
+          command: nodeRuns(handler, [
+            '--host',
+            hookHost,
+            ...(env === undefined ? ['--tools', tools.join(',')] : ['--where', env]),
+            ...(yieldsTo.length === 0 ? [] : ['--unless', yieldsTo.join(',')]),
+            ...signsAs(hookHost),
+          ]),
           timeout: TIMEOUT,
         },
       ],
@@ -263,19 +230,14 @@ for (const tool of Object.values(ASKS_THROUGH)) {
 
 /**
  * The group after a question in the plugin's hooks file: matched to Claude Code's question tool,
- * with the shell of {@link gate} in front, because VS Code reads this file too and runs every
- * command whatever its matcher says, so the handler starts only for a payload that names the tool.
+ * with the tool handed to the handler (`--tools`) because VS Code reads this file too and runs every
+ * command whatever its matcher says, so the handler ends before `mnema` for a payload that names
+ * another tool.
  */
 const AFTER_A_QUESTION: Json = [
   {
     matcher: ASKS_THROUGH.claude,
-    hooks: [
-      {
-        type: 'command',
-        command: gate('choice-settled.mjs', [], undefined, [ASKS_THROUGH.claude]),
-        timeout: TIMEOUT,
-      },
-    ],
+    hooks: [command('choice-settled.mjs', ['--tools', ASKS_THROUGH.claude])],
   },
 ];
 
@@ -286,20 +248,14 @@ const AFTER_A_QUESTION: Json = [
 const DISPATCH_TOOLS = ['Agent', 'Task'] as const;
 
 /**
- * The group after a dispatch in the plugin's hooks file: `mnema dispatched`, behind the same kind of
- * shell as the group after a question, because VS Code reads this file too and runs every command
- * whatever its matcher says, so the handler starts only for a payload that names the tool.
+ * The group after a dispatch in the plugin's hooks file: `mnema dispatched`, handed the same kind of
+ * `--tools` as the group after a question, because VS Code reads this file too and runs every command
+ * whatever its matcher says, so the handler ends before `mnema` for a payload that names another tool.
  */
 const AFTER_A_DISPATCH: Json = [
   {
     matcher: DISPATCH_TOOLS.join('|'),
-    hooks: [
-      {
-        type: 'command',
-        command: gate('agent-dispatched.mjs', [], undefined, DISPATCH_TOOLS),
-        timeout: TIMEOUT,
-      },
-    ],
+    hooks: [command('agent-dispatched.mjs', ['--tools', DISPATCH_TOOLS.join(',')])],
   },
 ];
 
@@ -320,62 +276,21 @@ const stopsASubagent = (name: HostName): boolean => {
 };
 
 /**
- * The paths a write can be one of `mnema after-a-write`'s two kinds at, as the shell in front of it
- * matches them: a note of the host's memory under its default directory, and the files that may hold
- * decisions (`src/decision-files.ts` decides which of them do). A `.md` outside the project passes
- * too, for a memory directory a setting moved; every other path inside the project starts nothing.
- */
-const AFTER_A_WRITE_PATHS = [
-  '*/memory/*.md',
-  '*/adr/*.md',
-  '*/decisions/*.md',
-  '*/CLAUDE.md',
-  '*/AGENTS.md',
-  '*/GEMINI.md',
-  '*/.claude/rules/*',
-  '*/.cursor/rules/*',
-  '*/.github/copilot-instructions.md',
-] as const;
-
-/**
- * The words a file that keeps the work's plan, handoff or ledger is named by, in any case: the
- * pattern spells each letter as a bracket pair, so the shell matches `PLANO.md` and `Ledger.md`
- * without starting a process to lower the path. `README.md` and `CHANGELOG.md` hold none of them.
- */
-const WORK_FILE_WORDS = ['handoff', 'plan', 'ledger', 'livro'] as const;
-
-/** `word` as a shell pattern that ignores case. */
-const anyCase = (word: string): string =>
-  [...word].map((letter) => `[${letter}${letter.toUpperCase()}]`).join('');
-
-/**
- * The group after a write in Claude Code: `mnema after-a-write`, behind a shell that starts it only
- * for a path in {@link AFTER_A_WRITE_PATHS}. The shell reads the path out of the payload itself (the
- * `file_path` the host puts in `tool_input`, by parameter expansion, with no process), so a common
- * write costs a shell and nothing else. A host that reads this file and says it is there (Cursor,
- * by its variable) is turned away first: what this reads is Claude Code's memory and payload.
+ * The group after a write in Claude Code: `mnema after-a-write`. The handler reads the path out of
+ * the payload itself and ends before `mnema` for a path that can be neither a note of the host's
+ * memory nor a file that holds decisions (`plugin/hooks/after-a-write.mjs`), so the command is one
+ * program and its arguments. A host that reads this file and says it is there (Cursor, Qwen Code, by
+ * their variables) is named in `--unless` and turned away first: what this reads is Claude Code's
+ * memory and payload.
  */
 function afterAWrite(): readonly Json[] {
   const turnedAway = HOST_NAMES.filter((n) => !readsItsOwn(n))
     .map((n) => HOSTS[n] as Host)
-    .flatMap((host) => (host.saysItIsTheHost === undefined ? [] : [host.saysItIsTheHost]))
-    .map((variable) => `[ -n "$${variable}" ] && exit 0; `)
-    .join('');
-  const path = `P=$${'{'}IN#*\\"file_path\\":\\"}; P=$${'{'}P%%\\"*}`;
-  const project = `"$${'{'}CLAUDE_PROJECT_DIR}"`;
-  const passes = AFTER_A_WRITE_PATHS.join('|');
-  const work = WORK_FILE_WORDS.map((word) => `*${anyCase(word)}*.md`).join('|');
-  const filter = `case "$P" in ${passes}|${work}) ;; ${project}/*) exit 0;; *.md) ;; *) exit 0;; esac`;
+    .flatMap((host) => (host.saysItIsTheHost === undefined ? [] : [host.saysItIsTheHost]));
   return [
     {
       matcher: 'Write|Edit',
-      hooks: [
-        {
-          type: 'command',
-          command: `${turnedAway}IN=$(cat); ${path}; ${filter}; printf '%s' "$IN" | ${nodeRuns('after-a-write.mjs')}`,
-          timeout: TIMEOUT,
-        },
-      ],
+      hooks: [command('after-a-write.mjs', ['--unless', turnedAway.join(',')])],
     },
   ];
 }

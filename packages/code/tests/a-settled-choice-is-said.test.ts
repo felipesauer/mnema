@@ -5,7 +5,7 @@
  * WHAT IS HELD HERE AND WHAT IS NOT. The product's half: which payloads are answered (a question
  * tool of each host, after it ran), the sentence and the reply shapes, the silence where the product
  * has no standing (no project, the channel off, a tool that asks nothing), that the record does not
- * move, and that the plugin's hook starts no process for a tool that is not a question. What the real
+ * move, and that the plugin's hook starts no `mnema` for a tool that is not a question. What the real
  * host does with the reply is held by `host-contract/a-settled-choice-reaches-the-model.test.ts`.
  */
 
@@ -19,11 +19,10 @@ import {
   readFileSync,
   rmSync,
   statSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { DiscoveryEnv } from '@mnema/core';
 import { Command } from 'commander';
@@ -237,31 +236,24 @@ describe('the plugin hook a host runs after a question', () => {
   }
 
   /**
-   * Runs the hook's command line in a shell, as the host does, with a `node` on the PATH that
-   * leaves a mark before it runs the real one: the mark says whether a process was started at all.
+   * Runs the hook's command line, as the host does, with a `mnema` on the PATH that leaves a mark
+   * before it runs the real one: the mark says whether `mnema` was started at all. The command is one
+   * program and its arguments, so `node` starts whatever the tool and the handler ends before `mnema`.
    */
   function host(input: string) {
     const bin = join(sandbox, 'bin');
     mkdirSync(bin, { recursive: true });
+    const mark = join(sandbox, 'mnema-started');
     writeFileSync(
       join(bin, 'mnema'),
-      ['#!/bin/sh', `exec "${process.execPath}" "${CLI}" "$@"`, ''].join('\n'),
+      [
+        '#!/bin/sh',
+        `echo started >> "${mark}"`,
+        `exec "${process.execPath}" "${CLI}" "$@"`,
+        '',
+      ].join('\n'),
     );
     chmodSync(join(bin, 'mnema'), 0o755);
-    const mark = join(sandbox, 'node-started');
-    writeFileSync(
-      join(bin, 'node'),
-      ['#!/bin/sh', `echo started >> "${mark}"`, `exec "${process.execPath}" "$@"`, ''].join('\n'),
-    );
-    chmodSync(join(bin, 'node'), 0o755);
-    const only = join(sandbox, 'sh-only');
-    mkdirSync(only, { recursive: true });
-    for (const tool of ['cat', 'printf']) {
-      const found = ['/usr/bin', '/bin'].map((dir) => join(dir, tool)).find((p) => existsSync(p));
-      if (found !== undefined && !existsSync(join(only, tool))) {
-        symlinkSync(found, join(only, tool));
-      }
-    }
     const sent = spawnSync('/bin/sh', ['-c', theGroup().hooks[0]?.command ?? 'exit 9'], {
       cwd: repo,
       input,
@@ -269,7 +261,7 @@ describe('the plugin hook a host runs after a question', () => {
       timeout: 20_000,
       env: {
         HOME: join(sandbox, 'home'),
-        PATH: `${bin}:${only}`,
+        PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
         CLAUDE_PLUGIN_ROOT: PLUGIN,
         CLAUDE_PROJECT_DIR: repo,
       },
@@ -289,9 +281,10 @@ describe('the plugin hook a host runs after a question', () => {
     expect(JSON.parse(sent.stdout)).toEqual({
       hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: SETTLED_SENTENCE },
     });
+    expect(sent.started).toBe(true);
   });
 
-  it('starts no process for a tool that is not a question, where a host ignores the matcher', () => {
+  it('starts no mnema for a tool that is not a question, where a host ignores the matcher', () => {
     const sent = host(payload('read_file'));
     expect(sent.status).toBe(0);
     expect(sent.stdout).toBe('');

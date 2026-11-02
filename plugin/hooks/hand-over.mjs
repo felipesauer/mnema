@@ -471,9 +471,11 @@ function answerOf(ran) {
  * variable no other host sets (the gate starts nothing where it is unset, and reads no stdin
  * there), or `--tools <a,b,…>`, for a host that runs a plugin's command on every tool whatever
  * the matcher says (the gate starts nothing for a tool the host does not write through). Either
- * way no `mnema` runs. It is the SECOND line: the hooks file puts a shell generated from the same
- * row in front of the handler, so where that shell turns a call away no process starts at all,
- * and this check holds only for a handler run some other way.
+ * way no `mnema` runs. It is the ONLY line: a hook command is a program and its arguments, with no
+ * shell in front to turn a call away, so the process starts and this is what ends it. A host that
+ * sets a variable of its own is also given `--unless <VARIABLE,…>`, the variables of the hosts after
+ * it in the table that have a handler here, and the handler starts nothing where one of them is set
+ * ({@link aHostYields}).
  *
  * AND NO `mnema` STARTS WHERE NO RULE CAN BE MET: where no tree it could read holds a link with an
  * address, read from the stored lines and with every doubt starting it (`an-address-can-be-met.mjs`),
@@ -492,6 +494,7 @@ export async function whatTheGateAnswers(argv, env, cwd, payload, { timeout = GA
   if (host === undefined) return null;
   const where = flagValue(argv, '--where');
   if (where !== undefined && (env[where] ?? '') === '') return null;
+  if (aHostYields(argv, env)) return null;
   const input = await payload();
   const tools = flagValue(argv, '--tools');
   if (tools !== undefined && !tools.split(',').includes(toolNameOf(input))) return null;
@@ -617,6 +620,54 @@ function toolNameOf(input) {
   } catch {
     return '';
   }
+}
+
+/**
+ * Whether a host that has a handler of its own later in the hooks file says it is the host: the
+ * variables the hooks file names after `--unless`, separated by commas, and any of them set turns
+ * the call away, before any payload is read. A terminal of another host leaves its variable behind
+ * (Qwen Code opened in Cursor's terminal), and exactly one handler is to answer the one write.
+ *
+ * @param {readonly string[]} argv The handler's own arguments, from the hooks file.
+ * @param {Readonly<Record<string, string | undefined>>} env The host's environment.
+ * @returns {boolean}
+ */
+export function aHostYields(argv, env) {
+  const named = flagValue(argv, '--unless');
+  return named !== undefined && named.split(',').some((variable) => (env[variable] ?? '') !== '');
+}
+
+/**
+ * Whether the hooks file's `--tools <a,b,…>` turns a call away: it names tools, and the payload
+ * names none of them. Where the hooks file names none, nothing is turned away. This is what the
+ * hooks file's shell did for the handlers that carry no gate (`case "$IN" in *'"Agent"'*`), now
+ * that a hook command is one program and its arguments: a host that runs a plugin's command on
+ * every tool call whatever its matcher says (VS Code) starts the handler, and the handler ends
+ * before it starts `mnema`.
+ *
+ * @param {readonly string[]} argv The handler's own arguments, from the hooks file.
+ * @param {string} input What the host handed this hook.
+ * @returns {boolean}
+ */
+export function theToolIsNotNamed(argv, input) {
+  const tools = flagValue(argv, '--tools');
+  return tools !== undefined && !tools.split(',').includes(toolNameOf(input));
+}
+
+/**
+ * The handler's own arguments without the two that only say whether to start (`--tools`,
+ * `--unless`, each with its value): what is left is what the verb is handed.
+ *
+ * @param {readonly string[]} argv
+ * @returns {string[]}
+ */
+export function withoutTheFiltersOfTheHooksFile(argv) {
+  const kept = [];
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--tools' || argv[i] === '--unless') i++;
+    else kept.push(/** @type {string} */ (argv[i]));
+  }
+  return kept;
 }
 
 /**
