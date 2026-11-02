@@ -8,6 +8,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { type CliIo, run } from '../program.js';
 import { forkSentence, joinGrownTail, MERGE_DRIVER, mergeTailFiles } from './record-merge-tail.js';
 
 const bytes = (text: string): Buffer => Buffer.from(text, 'utf-8');
@@ -73,5 +74,46 @@ describe('mergeTailFiles, the driver', () => {
 
   it('is the driver the record names', () => {
     expect(MERGE_DRIVER).toBe('mnema-tail');
+  });
+});
+
+describe('mnema record merge-tail, as git calls it', () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'mnema-merge-tail-verb-'));
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  /** The verb over two files, in process: what it said on each stream, and whether it failed. */
+  async function driver(ours: string, theirs: string) {
+    const paths = { ancestor: join(dir, 'o'), ours: join(dir, 'a'), theirs: join(dir, 'b') };
+    writeFileSync(paths.ancestor, '');
+    writeFileSync(paths.ours, ours);
+    writeFileSync(paths.theirs, theirs);
+    const err: string[] = [];
+    let failed = false;
+    const io: CliIo = {
+      out: () => undefined,
+      err: (line) => err.push(line),
+      fail: () => {
+        failed = true;
+      },
+    };
+    const path = '.mnema/tails/t/000001.jsonl';
+    await run(['record', 'merge-tail', paths.ancestor, paths.ours, paths.theirs, path], io);
+    return { failed, err: err.join('\n'), merged: readFileSync(paths.ours, 'utf-8') };
+  }
+
+  it('exits 0 with the longer side in the file git reads, and says nothing', async () => {
+    expect(await driver('a\n', 'a\nb\n')).toEqual({ failed: false, err: '', merged: 'a\nb\n' });
+  });
+
+  it('exits non-zero on a fork, naming the path git is merging, and leaves ours', async () => {
+    const forked = await driver('a\nb\n', 'a\nc\n');
+    expect(forked.failed).toBe(true);
+    expect(forked.merged).toBe('a\nb\n');
+    expect(forked.err).toContain('.mnema/tails/t/000001.jsonl: the two sides part at line 2');
   });
 });

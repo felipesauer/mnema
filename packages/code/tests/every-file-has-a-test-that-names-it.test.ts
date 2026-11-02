@@ -902,7 +902,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/next-actions.test.ts': 9,
   'packages/code/src/commands/observe.test.ts': 8,
   'packages/code/src/commands/recall.test.ts': 17,
-  'packages/code/src/commands/record-merge-tail.test.ts': 5,
+  'packages/code/src/commands/record-merge-tail.test.ts': 6,
   'packages/code/src/commands/references.test.ts': 15,
   'packages/code/src/commands/resume.test.ts': 9,
   'packages/code/src/commands/run-end.test.ts': 9,
