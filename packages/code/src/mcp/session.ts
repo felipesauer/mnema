@@ -57,7 +57,7 @@
  */
 
 import { dirname } from 'node:path';
-import { catalogUpcasters } from '@mnema/chain';
+import { catalogUpcasters, describeNewTail, type NewTail } from '@mnema/chain';
 import {
   agentSignsIn,
   chainRootForScope,
@@ -448,6 +448,14 @@ export interface Session {
    */
   readonly replacementsOwed: ReplacementsOwed;
   /**
+   * The tails the writer opened for this connection's writes since the last reply, owed to the
+   * reply that answers the write ({@link NewTailsOwed}). Fed at {@link openWrite}, taken where a
+   * reply is composed beside {@link replacementsOwed}: `replied` and `refused` in `server.ts`,
+   * and the hook's two replies in `tools.ts`. `an-mcp-agent-is-told-of-a-new-tail.test.ts` holds
+   * that every tool that writes says it, and that no door that takes the one skips the other.
+   */
+  readonly newTails: NewTailsOwed;
+  /**
    * The chain roots this connection BEGAN writing to: {@link ensureRun} adds one before the
    * run's own append, whether or not the run then opens. A run's opening is two writes when
    * the key has no anchor there (the founding, then `run.started`), so a connection whose run
@@ -657,6 +665,7 @@ export function openSession(input: OpenSessionInput): Session {
     founding: new FoundingWatch(),
     recordPage: new RecordPageWatch(),
     replacementsOwed: new ReplacementsOwed(),
+    newTails: new NewTailsOwed(),
     writesBegun: new Set<string>(),
     consulted: new Map<string, Set<string>>(),
     served: new Map<string, Set<string>>(),
@@ -1004,15 +1013,20 @@ export function openWrite(session: Session, scope: Scope, target?: WriteTarget):
   // answer, unchanged, and the whole of the non-regression: a call that says nothing
   // lands exactly where it landed before this parameter existed.
   const trees = target?.trees ?? session.trees;
+  const tellTheAgent = (opened: NewTail): void => {
+    session.newTails.add(opened);
+    // The host's log keeps hearing it, as it did before a reply carried it.
+    session.log(describeNewTail(opened));
+  };
   session.recordPage.opened(trees.projectPublic, keyRootsOf(trees));
   const which = whichIn(trees, scope, session);
   const open = session.runs.get(chainRootForScope(trees, scope) as string);
   if (open !== undefined)
-    return { run: open.id, ctx: writeContext(trees, scope, session.caches), which };
+    return { run: open.id, ctx: writeContext(trees, scope, session.caches, tellTheAgent), which };
   // No run here yet: one is PREPARED, and written by the operation's own first fact, on the
   // context the operation writes through, so a first call the operation refuses leaves no run,
   // no founding and no key behind it (see `ensureRun`).
-  const ctx = writeContext(trees, scope, session.caches);
+  const ctx = writeContext(trees, scope, session.caches, tellTheAgent);
   const pending = ensureRun(session, trees, scope, ctx);
   return {
     run: pending.id,
@@ -1046,6 +1060,29 @@ export class ReplacementsOwed {
         ...replacementNotice(was),
       ].join('\n'),
     ];
+  }
+}
+
+/**
+ * The tails the writer opened for a connection's writes, held for the reply that answers them.
+ *
+ * The sentence is the writer's own ({@link describeNewTail}, in the chain), the one the command
+ * line prints on standard error: this holds it and does not word it. A reply carries it once, and
+ * an agent whose write went to a new tail is told, which a line in the host's log never did.
+ */
+export class NewTailsOwed {
+  private held: string[] = [];
+
+  /** Holds the sentence for a tail the writer opened. */
+  add(opened: NewTail): void {
+    this.held.push(describeNewTail(opened));
+  }
+
+  /** The sentences owed since the last take (none when no tail was opened) and forgets them. */
+  take(): string[] {
+    const was = this.held;
+    this.held = [];
+    return was;
   }
 }
 
@@ -1391,13 +1428,15 @@ export function writeContext(
   trees: ResolvedTrees,
   scope: Scope,
   caches: CacheRegistry,
+  onNewTail?: (opened: NewTail) => void,
 ): WriteContext {
   const root = chainRootForScope(trees, scope);
   // An absent tree has no cache to invalidate; `openTreeForWriting` below is
   // what refuses it, so the honest error still comes from one place.
   if (root !== undefined) caches.invalidate(root);
   return {
-    writer: openTreeForWriting(trees, scope),
+    // Unasked, the writer says a new tail on standard error: a close, and a caller with no reply.
+    writer: openTreeForWriting(trees, scope, onNewTail === undefined ? {} : { onNewTail }),
     layout: { root: root as string },
     upcasters: catalogUpcasters(),
     roster: (anchor) => caches.rosterAsOfNow(root as string, anchor),
