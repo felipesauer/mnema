@@ -31,11 +31,11 @@ import {
   copyOf,
   DESCRIPTION_CHARS,
   descriptionOf,
+  headOfTheRecord,
   jsonLdOf,
   pageOf,
   sitemapWith,
   structuredDataOf,
-  withTheHeadOfTheSite,
 } from '../../../site/build/the-pages.mjs';
 import { DIST, htmlFiles, ROOT, readText, SITE, tracked } from './support/reading-the-site.js';
 
@@ -54,7 +54,7 @@ const FACTS = {
   extensionId: 'pub.ext',
 };
 
-describe('what a page of docs/ says of itself is its first paragraph of prose', () => {
+describe('what a page of docs/ says of itself is the first sentence of its prose, unless it says its own', () => {
   it('skips the heading, a fence, a table, a list and a line of HTML, and reads a link, bold and code as words', () => {
     const page = [
       '# Title',
@@ -76,10 +76,16 @@ describe('what a page of docs/ says of itself is its first paragraph of prose', 
     expect(descriptionOf(page, 'p.md')).toBe('The first real paragraph, with code.');
   });
 
-  it('cuts a long paragraph at the last whole sentence that fits, or at a whole word with an ellipsis', () => {
-    const sentence = `${'Word '.repeat(20)}ends here.`;
-    const long = `${sentence} ${'more '.repeat(60)}`;
-    expect(descriptionOf(`# T\n\n${long}\n`, 'p.md')).toBe(sentence);
+  it('is the FIRST SENTENCE of the paragraph, not the paragraph', () => {
+    expect(descriptionOf('# T\n\nOne sentence. And a second one.\n', 'p.md')).toBe('One sentence.');
+  });
+
+  it("is the page's own `<!-- description: ... -->` line when it has one, whatever its prose says", () => {
+    const page = '# T\n\n<!-- description: Its own words. -->\n\nProse that says less. More.\n';
+    expect(descriptionOf(page, 'p.md')).toBe('Its own words.');
+  });
+
+  it('cuts a first sentence that is longer than a result shows at a whole word, with an ellipsis', () => {
     const noSentence = descriptionOf(`# T\n\n${'longword '.repeat(60)}\n`, 'p.md');
     expect(noSentence.endsWith('longword…')).toBe(true);
     expect(noSentence.length).toBeLessThanOrEqual(DESCRIPTION_CHARS + 1);
@@ -130,33 +136,14 @@ describe('the structured data is the facts, with where the software is found and
   });
 });
 
-describe('the head and the sitemap the build completes after Astro', () => {
-  const page = '<head>\n<title>The record</title>\n<style></style>\n</head>';
-
-  it('gives /record/ its title, description, canonical and structured data, and changes nothing else', () => {
-    const out = withTheHeadOfTheSite({
-      html: page,
-      title: 'T & "t"',
+describe('the head of /record/ and the sitemap line the build adds after Astro', () => {
+  it('hands mnema site --head the title and description, the canonical under the home and the structured data', () => {
+    expect(headOfTheRecord({ title: 'T', description: 'D', facts: FACTS })).toEqual({
+      title: 'T',
       description: 'D',
-      facts: FACTS,
-    }) as string;
-    expect(out).toContain(
-      '<title>T &amp; &quot;t&quot;</title>\n<meta name="description" content="D">',
-    );
-    expect(out).toContain('<link rel="canonical" href="https://o.github.io/r/record/">');
-    expect(out).toContain(
-      `<script type="application/ld+json">${jsonLdOf(structuredDataOf(FACTS))}</script>`,
-    );
-    expect(out.replace(/<title>[\s\S]*<\/script>/, '<title>The record</title>')).toBe(page);
-  });
-
-  it('stops when the page has no title of the binary to replace, or two', () => {
-    expect(() =>
-      withTheHeadOfTheSite({ html: '<head></head>', title: 'T', description: 'D', facts: FACTS }),
-    ).toThrow('not exactly one');
-    expect(() =>
-      withTheHeadOfTheSite({ html: `${page}${page}`, title: 'T', description: 'D', facts: FACTS }),
-    ).toThrow('not exactly one');
+      canonical: 'https://o.github.io/r/record/',
+      structuredData: structuredDataOf(FACTS),
+    });
   });
 
   it('adds one address to the sitemap, and stops at one already there or at a file that is not a sitemap', () => {
@@ -193,9 +180,14 @@ describe('the pages of this tree say different things of themselves', () => {
     for (const { name, description } of described) {
       expect(description.length, `${name} has no description`).toBeGreaterThan(20);
       expect(description.length, `${name}: its description is too long`).toBeLessThanOrEqual(
-        DESCRIPTION_CHARS + 1,
+        DESCRIPTION_CHARS,
       );
     }
+  });
+
+  it('names the extension as the pages of the extension do: its id is the one its README publishes it under', () => {
+    expect(facts.extensionId).toBe('mnema.mnema');
+    expect(readText(join(ROOT, 'packages/vscode/README.md'))).toContain(`\`${facts.extensionId}\``);
   });
 
   it('shares no description between a page of docs/, the landing and /record/', () => {

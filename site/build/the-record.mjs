@@ -1,11 +1,11 @@
 // /record/: the verifier page of THIS repository's record, written by `mnema site` of the binary built from
 // the same commit. The site holds no copy of the record and no second reader: the page is what the command
-// writes (its head is completed by `withTheHeadOfTheSite`: the binary's title is the same for every record, and a
-// search engine reads this site's copy), and the build stops when the record does not verify, so a page that says "this does not verify"
+// writes (with the head the build hands it through `--head`: the binary's own title is the same for every record, and
+// a search engine reads this site's copy), and the build stops when the record does not verify, so a page that says "this does not verify"
 // is never published as the site's own.
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -57,17 +57,32 @@ export function theVerdictOfTheCommit({ root, repo = root, sha, command }) {
 
 /**
  * Writes `<out>/index.html` from the record committed under `cwd`, with the binary built under `root`.
- * With `backLink` the page carries one link back to the site (`mnema site --back-link`).
+ * With `backLink` the page carries one link back to the site (`mnema site --back-link`); with `head` (an object:
+ * title, description, canonical, structuredData) it says what it is to a search engine (`mnema site --head`, handed a file).
  * Throws when `mnema verify` does not pass, or when `mnema site` refuses or says the record does not verify.
- * @param {{ root: string, cwd?: string, out: string, backLink?: string }} options
+ * @param {{ root: string, cwd?: string, out: string, backLink?: string, head?: object }} options
  */
-export function writeTheRecord({ root, cwd = root, out, backLink }) {
+export function writeTheRecord({ root, cwd = root, out, backLink, head }) {
   const verify = run(root, cwd, ['verify']);
   if (verify.status !== 0) {
     throw new Error(`the record under ${cwd} does not verify, so /record/ is not written:\n${verify.stdout}${verify.stderr}`);
   }
   mkdirSync(out, { recursive: true });
-  const site = run(root, cwd, ['site', '--out', out, ...(backLink === undefined ? [] : ['--back-link', backLink])]);
+  const headDir = mkdtempSync(join(tmpdir(), 'the-site-head-'));
+  let site;
+  try {
+    const headFile = join(headDir, 'head.json');
+    if (head !== undefined) writeFileSync(headFile, JSON.stringify(head));
+    site = run(root, cwd, [
+      'site',
+      '--out',
+      out,
+      ...(backLink === undefined ? [] : ['--back-link', backLink]),
+      ...(head === undefined ? [] : ['--head', headFile]),
+    ]);
+  } finally {
+    rmSync(headDir, { recursive: true, force: true });
+  }
   if (site.status !== 0 || /does not verify/.test(site.stderr)) {
     throw new Error(`mnema site refused or said the record does not verify:\n${site.stdout}${site.stderr}`);
   }

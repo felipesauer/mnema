@@ -255,11 +255,43 @@ const LISTS_UNCHECKED =
   'The lists below were written by mnema site. Checking them against the verified events needs JavaScript, so they have not been checked.';
 
 /**
+ * What a page that is published says of itself to whoever indexes it: the title, the description, the canonical
+ * address and, optionally, structured data (a JSON value). Without it the page's title is "The record", the same for
+ * every record, and it has no description and no canonical.
+ */
+export interface SiteHead {
+  readonly title: string;
+  readonly description: string;
+  readonly canonical: string;
+  readonly structuredData?: unknown;
+}
+
+/** The head's lines for `head`: the title, the description, the canonical and the data (a `<` in it escaped). */
+function headLines(head: SiteHead | undefined): string {
+  if (head === undefined) return '<title>The record</title>';
+  const lines = [
+    `<title>${escapeHtml(head.title)}</title>`,
+    `<meta name="description" content="${escapeHtml(head.description)}">`,
+    `<link rel="canonical" href="${escapeHtml(head.canonical)}">`,
+  ];
+  if (head.structuredData !== undefined) {
+    lines.push(`<script type="application/ld+json">${inertJson(head.structuredData)}</script>`);
+  }
+  return lines.join('\n');
+}
+
+/**
  * The page, as the text of `index.html`. `script` is the file `dist/site-verifier.js` holds: the
  * verifier, the filters and the drawing of the raw lines. With a `backLink` the page opens with
- * one link to it; without, the page opens with the link that skips to the decisions.
+ * one link to it; without, the page opens with the link that skips to the decisions. With a
+ * `head` the page says what it is to a search engine ({@link SiteHead}); nothing else of it changes.
  */
-export function renderPage(model: SiteModel, script: string, backLink?: string): string {
+export function renderPage(
+  model: SiteModel,
+  script: string,
+  backLink?: string,
+  head?: SiteHead,
+): string {
   const fileCount = Object.keys(model.files).length;
   const policy = [
     "default-src 'none'",
@@ -288,7 +320,7 @@ export function renderPage(model: SiteModel, script: string, backLink?: string):
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${escapeHtml(policy)}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The record</title>
+${headLines(head)}
 <style>${STYLE}</style>
 </head>
 <body>

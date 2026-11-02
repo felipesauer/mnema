@@ -1,5 +1,7 @@
 # Checking a record without installing this
 
+<!-- description: Check a record with a verifier written from the format document, in dependency-free Python that imports nothing of the product. -->
+
 It is the claim the README opens on, so here is the command behind it.
 [`packages/chain/FORMAT.md`](../packages/chain/FORMAT.md) specifies the bytes
 (canonicalization, the entry hash, the content root, the signed checkpoint) and

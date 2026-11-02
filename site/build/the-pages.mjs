@@ -10,6 +10,7 @@
 //      on GitHub and npm and not of the published one the site describes).
 
 import { posix } from 'node:path';
+import { EXTENSION_NAME } from '../../packages/vscode/build/the-extension-name.mjs';
 
 /** The Markdown outside fenced code: `fn` is called for each such run of lines, the fences pass through. */
 function outsideFences(markdown, fn) {
@@ -88,9 +89,10 @@ export function factsOf({ rootPackage, codePackage, extensionPackage, sha }) {
     // The address the site is read at, the one every manifest points its `homepage` at.
     homeUrl: `https://${owner}.github.io/${name}/`,
     npmUrl: `https://www.npmjs.com/package/${codePackage.name}`,
-    // The extension's id in the stores is `<publisher>.<name>`, and the packer names it after the display name
-    // (`packages/vscode/build/package-vsix.mjs`), since the workspace name is scoped and a store refuses a scoped one.
-    extensionId: `${extensionPackage.publisher}.${String(extensionPackage.displayName).toLowerCase()}`,
+    // The extension's id in the stores is `<publisher>.<name>`: the publisher is the workspace manifest's, and the name
+    // is the one the packer writes into the manifest it packs (the workspace name is scoped and a store refuses that),
+    // read from the packer's own constant.
+    extensionId: `${extensionPackage.publisher}.${EXTENSION_NAME}`,
   };
 }
 
@@ -563,26 +565,32 @@ function plainOf(markdown) {
     .trim();
 }
 
+/** The field a page of `docs/` may carry to say its own description: a line `<!-- description: <text> -->`. */
+const DESCRIPTION_FIELD = /^<!-- description: (.+?) -->$/m;
+
 /**
- * What a page of `docs/` says of itself: its first paragraph of prose (a heading, a code fence, a table, a list, a
- * quotation and a line of HTML are not one), as plain words, cut at the last whole sentence that fits
- * `DESCRIPTION_CHARS`, or at the last whole word with an ellipsis when no sentence of a useful length does. Read from
- * the page, never typed, so a page that changes changes what a search result says of it.
+ * What a page of `docs/` says of itself. Its own `<!-- description: ... -->` line, when it has one (a page whose
+ * first sentence says too little); otherwise the first sentence of its first paragraph of prose (a heading, a code
+ * fence, a table, a list, a quotation and a line of HTML are not one), as plain words, or those words cut at the last
+ * whole word with an ellipsis when the sentence is longer than `DESCRIPTION_CHARS`. Never typed in the build: a page
+ * that changes changes what a search result says of it.
  */
 export function descriptionOf(markdown, from) {
+  let own = null;
   let paragraph = null;
   outsideFences(markdown, (text) => {
+    own ??= DESCRIPTION_FIELD.exec(text)?.[1] ?? null;
     for (const block of text.split(/\n\s*\n/)) {
       const trimmed = block.trim();
       if (paragraph === null && trimmed !== '' && !/^(#|[-*+] |\d+\. |\||>|<)/.test(trimmed)) paragraph = plainOf(trimmed);
     }
     return text;
   });
+  if (own !== null) return own.trim();
   if (paragraph === null) throw new Error(`${from} has no paragraph of prose to describe it`);
-  if (paragraph.length <= DESCRIPTION_CHARS) return paragraph;
-  const head = paragraph.slice(0, DESCRIPTION_CHARS);
-  const sentence = /^(.{60,}[.!?])\s/s.exec(head);
-  if (sentence?.[1] !== undefined) return sentence[1];
+  const sentence = /^(.+?[.!?])(?:\s|$)/s.exec(paragraph)?.[1] ?? paragraph;
+  if (sentence.length <= DESCRIPTION_CHARS) return sentence;
+  const head = sentence.slice(0, DESCRIPTION_CHARS);
   return `${head.slice(0, head.lastIndexOf(' ')).replace(/[,;:]$/, '')}…`;
 }
 
@@ -628,26 +636,14 @@ export function jsonLdOf(data) {
   return JSON.stringify(data).replace(/</g, '\\u003c');
 }
 
-const escapeAttribute = (text) =>
-  text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
 /**
- * `/record/` as the site serves it: the page `mnema site` wrote, with its head given what a search engine reads of
- * any page (a title of its own, a description, the canonical address and the structured data) and nothing else of it
- * changed. The binary writes the verifier and its title is "The record", the same for every record in the world, so
- * the head of THIS site's copy is completed here, and the guard compares the served bytes to this function's output.
- * @param {{ html: string, title: string, description: string, facts: FactsOfTheSite }} options
+ * What /record/ says of itself, handed to `mnema site --head`: a title and a description (the two entries of
+ * `site/copy.md`), the canonical address under the site's home and the structured data of the site. The binary writes
+ * the page with them, so the page the site serves is byte for byte the one the command writes.
+ * @param {{ title: string, description: string, facts: FactsOfTheSite }} options
  */
-export function withTheHeadOfTheSite({ html, title, description, facts }) {
-  const given = '<title>The record</title>';
-  if (html.split(given).length !== 2) throw new Error(`the page of the record has not exactly one ${given}`);
-  return html.replace(
-    given,
-    () =>
-      `<title>${escapeAttribute(title)}</title>\n<meta name="description" content="${escapeAttribute(description)}">\n` +
-      `<link rel="canonical" href="${escapeAttribute(`${facts.homeUrl}record/`)}">\n` +
-      `<script type="application/ld+json">${jsonLdOf(structuredDataOf(facts))}</script>`,
-  );
+export function headOfTheRecord({ title, description, facts }) {
+  return { title, description, canonical: `${facts.homeUrl}record/`, structuredData: structuredDataOf(facts) };
 }
 
 /** The sitemap with one address more, the one a page the build writes after Astro is at; it stops if it is already there. */

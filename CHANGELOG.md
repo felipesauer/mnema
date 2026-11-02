@@ -23,7 +23,14 @@ with its own changelog.
   four plugin manifests is the site, and the private tools keep the repository. A case over every built page fails on a
   missing, repeated or foreign title, description or canonical, on a sitemap that is not the pages, and on structured
   data that is not the facts (`every-page-of-the-site-says-what-it-is.test.ts`). The site reaches the public with the
-  next release, since it is deployed only at one.
+  next release, since it is deployed only at one. `mnema site` takes `--head <file>` (a JSON file with a title, a
+  description, a canonical address and optionally structured data) and writes them into the page, so `/record/` is the
+  page the command writes with no step after it (the site build is the option's caller, and the case of the built site
+  compares the served bytes to the command's output); `descriptionOf` takes the first sentence of a page, or the
+  page's own `<!-- description: ... -->` line, which three pages whose first sentence says too little now carry. A page
+  for teams that keep ADR files, `docs/mnema-next-to-a-folder-of-adrs.md`, shows `mnema decision import` bringing
+  them in as proposed decisions, and `docs/where-it-fits.md` opens with the sentence that mnema is a decision record
+  and not a memory service.
 - **Nothing governs in a directory whose tails name two records, and every reading of what governs says so.** Both
   readers refuse such a directory (`another-record`), but the readings that say what governs run over a directory
   nobody verified, and read a tail grafted from another record as this one's: its decisions were listed in force in the

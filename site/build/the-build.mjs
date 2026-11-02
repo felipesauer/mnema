@@ -9,6 +9,7 @@ import {
   copyOf,
   docNames,
   factsOf,
+  headOfTheRecord,
   installLineOf,
   llmsTxt,
   pageOf,
@@ -20,7 +21,6 @@ import {
   themeCss,
   sitemapWith,
   verifyCommandOf,
-  withTheHeadOfTheSite,
   withoutWhatIsNotOnTheSite,
 } from './the-pages.mjs';
 import { theVerdictOfTheCommit } from './the-record.mjs';
@@ -155,16 +155,19 @@ export async function writeTheCard({ root = ROOT, out = join(SITE, 'dist') } = {
 }
 
 /**
- * What /record/ needs after `mnema site` wrote it: its head (`withTheHeadOfTheSite`) and its line in the sitemap, which
- * Astro wrote before the page existed. The page's words are the two entries `prepare` read from `site/copy.md`.
+ * What /record/ needs besides the page the binary wrote: its line in the sitemap, which Astro wrote before the page
+ * existed. Its head is not completed here: `theHeadOfTheRecord` is what `mnema site --head` is handed.
  */
-export function completeTheRecord({ root = ROOT, site = SITE, out = join(SITE, 'dist') } = {}) {
+export function completeTheSitemap({ root = ROOT, out = join(SITE, 'dist') } = {}) {
   const facts = theFacts(root);
-  const { title, description } = JSON.parse(readFileSync(join(site, 'src/generated/record.json'), 'utf8'));
-  const page = join(out, 'record/index.html');
-  writeFileSync(page, withTheHeadOfTheSite({ html: readFileSync(page, 'utf8'), title, description, facts }));
   const map = join(out, 'sitemap-0.xml');
   writeFileSync(map, sitemapWith(readFileSync(map, 'utf8'), `${facts.homeUrl}record/`));
+}
+
+/** What /record/ says of itself: its two entries of the microcopy, read where `prepare` wrote them, and the facts. */
+export function theHeadOfTheRecord({ root = ROOT, site = SITE } = {}) {
+  const { title, description } = JSON.parse(readFileSync(join(site, 'src/generated/record.json'), 'utf8'));
+  return headOfTheRecord({ title, description, facts: theFacts(root) });
 }
 
 /** What goes beside the built pages: `llms.txt` and `robots.txt`, from the same sources. */
