@@ -1808,14 +1808,21 @@ def _relinked(
     h_tail = _tail_name(signer, "ef")
     h_hashes = _write_tail(root, signer, h_tail, h_events, record_y, None if covered else len(h_events) - 2)
     if host_relinked:
-        # The host H relinked in its turn, by its own key, from a third tail that names Y.
+        # The host H relinked in its turn, by its own key, into a third record Z whose genesis
+        # tail that key founded, from that tail.
+        z_tail = _tail_name(signer, "12")
+        record_z = record_name(z_tail)
         again = _event(
             signer, _later(at, 3), "tail.relinked", anchor_y,
-            {"eventCount": len(h_events), "from": record_y, "into": record_y, "reason": "again",
+            {"eventCount": len(h_events), "from": record_y, "into": record_z, "reason": "again",
              "tail": h_tail, "throughHash": h_hashes[-1]},
-            signer_who,
+            _anchor(signer),
         )
-        _write_tail(root, signer, _tail_name(signer, "12"), [again], record_y)
+        founding = _event(
+            signer, _later(at, 3), "identity.founded", _anchor(signer),
+            {"foundingFp": _unenrolled_public(signer)[0]},
+        )
+        _write_tail(root, signer, z_tail, [founding, again], record_z)
     return f"tail {t_tail[:12]}... of record {record_x[:12]}... relinked into {record_y[:12]}... at {h_tail[:12]}..."
 
 
@@ -1869,6 +1876,21 @@ def relink_head_mismatch(root: str) -> tuple[bool, str]:
 def relink_from_mismatch(root: str) -> tuple[bool, str]:
     """A relink saying the tail comes from a record it does not name."""
     return True, _relinked(root, claim={"from": record_name("another-genesis")})
+
+
+def relink_host_with_an_unreadable_line(root: str) -> tuple[bool, str]:
+    """The honest relink, and a line no reader can read appended to its host tail after it. Both
+    readers read nothing of a tail holding such a line, its relink included, so the relinked tail
+    keeps its own record and the directory is two records."""
+    built = _relinked(root)
+    host = os.path.join(root, "tails", _tail_name(CHECKER_SECRET, "ef"), "000001.jsonl")
+    lines = _read_lines(host)
+    return _rewrite(host, [*lines, b"not a line"]), built
+
+
+def relink_into_its_own_record(root: str) -> tuple[bool, str]:
+    """A relink whose `from` is the record it joins: it would move nothing and freeze the tail."""
+    return True, _relinked(root, claim={"from": record_name(_tail_name(UNENROLLED_SECRET, "ab"))})
 
 
 def relink_conflict(root: str) -> tuple[bool, str]:
@@ -1973,6 +1995,8 @@ MUTATIONS = {
     "relink-head-mismatch": relink_head_mismatch,
     "relink-from-mismatch": relink_from_mismatch,
     "relink-conflict": relink_conflict,
+    "relink-into-its-own-record": relink_into_its_own_record,
+    "relink-host-with-an-unreadable-line": relink_host_with_an_unreadable_line,
     "relink-into-a-name-no-tail-holds": relink_into_a_name_no_tail_holds,
     "relink-hosted-by-a-relinked-tail": relink_hosted_by_a_relinked_tail,
     "relink-by-a-key-no-identity-here-holds": relink_by_a_key_no_identity_here_holds,

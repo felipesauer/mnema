@@ -286,6 +286,8 @@ export const RELINK_CONFLICT = 'relink-conflict';
 export const RELINK_HOSTED_BY_A_RELINKED_TAIL = 'relink-hosted-by-a-relinked-tail';
 /** The name both readers refuse a relink by whose host does not name `into` by its own artifacts. */
 export const RELINK_INTO_MISMATCH = 'relink-into-mismatch';
+/** The name both readers refuse a relink by that names one record as both `from` and `into`. */
+export const RELINK_INTO_ITS_OWN_RECORD = 'relink-into-its-own-record';
 /** The name both readers refuse a relink by whose `from` is not the name the tail carries. */
 export const RELINK_FROM_MISMATCH = 'relink-from-mismatch';
 /** The name both readers refuse a relink by whose tail holds entries past the head it froze. */
@@ -316,6 +318,7 @@ export interface RelinkRefused {
     | typeof RELINK_CONFLICT
     | typeof RELINK_HOSTED_BY_A_RELINKED_TAIL
     | typeof RELINK_INTO_MISMATCH
+    | typeof RELINK_INTO_ITS_OWN_RECORD
     | typeof RELINK_FROM_MISMATCH
     | typeof RELINKED_TAIL_GREW
     | typeof RELINK_HEAD_MISMATCH
@@ -377,7 +380,8 @@ export type FoldRefusals = (
  * 2. it is signed by the key T's id names, which is H's key too (`relink-not-the-owner`);
  * 3. no other covered relink by that key names T (`relink-conflict`, once for the tail);
  * 4. H is not itself the tail of such a relink (`relink-hosted-by-a-relinked-tail`);
- * 5. H names `into` by its own artifacts (`relink-into-mismatch`);
+ * 5. H names `into` by its own artifacts (`relink-into-mismatch`), and `from` is another record
+ *    (`relink-into-its-own-record`: a relink of a tail into the record it names would only freeze it);
  * 6. T is in the directory (else the relink is said, and names nothing) and names `from` by its
  *    own artifacts (`relink-from-mismatch`);
  * 7. T ends at `throughHash` with `eventCount` entries: more, through that head, is
@@ -478,6 +482,14 @@ export function relinkedNaming(
         RELINK_INTO_MISMATCH,
         relink,
         `${oneLine(where(relink))} relinks tail ${oneLine(tail)} into record ${oneLine(relink.into.slice(0, 12))}..., and names ${oneLine(recordSaid(hostNames))} itself`,
+      );
+      continue;
+    }
+    if (relink.from === relink.into) {
+      refuse(
+        RELINK_INTO_ITS_OWN_RECORD,
+        relink,
+        `${oneLine(where(relink))} relinks tail ${oneLine(tail)} from record ${oneLine(relink.from.slice(0, 12))}... into the same record: a relink moves a tail between two records`,
       );
       continue;
     }

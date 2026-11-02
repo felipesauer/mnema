@@ -604,6 +604,21 @@ type Verdict = 'collapsed' | 'minted' | 'composed';
  * the part that rots (which values exist, and whether each is collapsed) is derived.
  */
 const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = {
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}... into the same record: a relink moves a tail between two records\u00bb oneLine(relink.from.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the record name a relink claims to leave, a payload string',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}... into the same record: a relink moves a tail between two records\u00bb oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the relinked tail id a relink names: a payload string whoever wrote the line chose',
+    },
+  '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}... into the same record: a relink moves a tail between two records\u00bb oneLine(where(relink)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'where a relink sits: the directory name of its tail, which anyone who can write the tree makes, and its seq',
+    },
   '@mnema/chain chain/record-name.ts \u00abtail {} ends at {}... with {} event(s), not at the head {}... with {} the relink at {} names\u00bb entries.length #1':
     {
       verdict: 'minted',
@@ -2648,8 +2663,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(406);
-    expect(FOUND[0]?.sites.length).toBe(199);
+    expect(SITES.length).toBe(409);
+    expect(FOUND[0]?.sites.length).toBe(202);
     expect(FOUND[1]?.sites.length).toBe(207);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2700,11 +2715,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(273);
+    expect(count('collapsed')).toBe(276);
     expect(count('minted')).toBe(102);
     expect(count('composed')).toBe(31);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      273,
+      276,
     );
   });
 

@@ -456,8 +456,9 @@ record whose tails name two records (`another-record`, naming each record with i
 tail that names two (`record-mismatch`), and a checkpoint that names none after one that did
 (`scheme-downgrade`), and the write refuses to grow such a record (`ANOTHER_RECORD`). A tail of
 another record its owner relinked into this one (`tail.relinked`, section 6.11) is read under this
-record's name where the relink counts, and said in the census (`relinked-tail`); no command writes
-a relink yet. A tail
+record's name where the relink counts, and said in the census (`relinked-tail`). Only the keys of
+the record's founder relink: another person writes again in the record, or their tail is cut. No
+command writes a relink yet. A tail
 written before 0.1.5 names nothing, and stays that way: beside named tails it is a census line
 (`N tail(s) that name no record, written before 0.1.5`), and a record none of whose tails names
 one ends its verdict with `record: unnamed (written before 0.1.5): a tail of another record could

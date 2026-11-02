@@ -12,6 +12,7 @@ import {
   RELINK_FROM_MISMATCH,
   RELINK_HEAD_MISMATCH,
   RELINK_HOSTED_BY_A_RELINKED_TAIL,
+  RELINK_INTO_ITS_OWN_RECORD,
   RELINK_INTO_MISMATCH,
   RELINK_NOT_A_MEMBER,
   RELINK_NOT_THE_OWNER,
@@ -622,9 +623,18 @@ describe('the name a relink gives a tail (relinkedNaming, FORMAT.md section 6.11
       [E, e],
     ]);
     const found = read([], { entries, named: { [third]: Y } });
+    // The relink of H names Y as both ends, which is refused in its turn; it is still a covered
+    // relink by H's owner, so the relink H hosts does not count.
     expect(found.refused.map((one) => [one.token, one.relink.host])).toEqual([
       [RELINK_HOSTED_BY_A_RELINKED_TAIL, H],
+      [RELINK_INTO_ITS_OWN_RECORD, third],
     ]);
+  });
+
+  it('refuses a relink that names one record as both ends (relink-into-its-own-record)', () => {
+    const found = read(tail(H, K, 1, [relink(t, K, { from: Y })]));
+    expect(found.refused.map((one) => one.token)).toEqual([RELINK_INTO_ITS_OWN_RECORD]);
+    expect(found.named.get(T)).toBe(X);
   });
 
   it('says a relink of a tail that is not here, and names nothing by it', () => {

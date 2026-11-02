@@ -116,6 +116,24 @@ describe('a relink that counts for nothing, said in both', () => {
   });
 });
 
+describe('a host tail with a line no reader reads', () => {
+  it('holds no relink in either reader, so both name the same causes', () => {
+    // The product reads nothing of a tail holding such a line; the second reader used to keep the
+    // entries before it, count the relink and name no second record. Both now read no relink of it.
+    const record = mutated('relink-host-with-an-unreadable-line');
+    const here = verify(record, catalogUpcasters());
+    expect(here.census.filter((note) => note.kind === 'relinked-tail')).toEqual([]);
+    expect(here.issues.map((issue) => issue.detail).join('\n')).toContain('(another-record)');
+    const parsed = JSON.parse(python([VERIFIER, '--json', 'record', record]).stdout) as {
+      findings: readonly Finding[];
+    };
+    const failed = parsed.findings.filter((f) => f.level === 'FAIL');
+    expect(failed.map((f) => f.section).sort()).toEqual(['1', '6.10']);
+    expect(failed.find((f) => f.section === '6.10')?.what).toContain('(another-record)');
+    expect(parsed.findings.filter((f) => f.section === '6.11')).toEqual([]);
+  });
+});
+
 describe('the namer of the surfaces names a directory as verify does', () => {
   const EVERY = [
     'relinked-tail',
@@ -124,6 +142,9 @@ describe('the namer of the surfaces names a directory as verify does', () => {
     'relink-by-another-key',
     'relinked-tail-grew',
     'relink-conflict',
+    'relink-into-its-own-record',
+    'relink-host-with-an-unreadable-line',
+    'relink-hosted-by-a-relinked-tail',
     'relinked-by-a-key-that-founded-itself-here',
     'relinked-by-a-key-a-stranger-enrolled',
     'tail-of-another-record',

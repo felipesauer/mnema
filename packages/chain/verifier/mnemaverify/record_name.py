@@ -67,6 +67,7 @@ RELINK_NOT_THE_OWNER = "relink-not-the-owner"
 RELINK_CONFLICT = "relink-conflict"
 RELINK_HOSTED_BY_A_RELINKED_TAIL = "relink-hosted-by-a-relinked-tail"
 RELINK_INTO_MISMATCH = "relink-into-mismatch"
+RELINK_INTO_ITS_OWN_RECORD = "relink-into-its-own-record"
 RELINK_FROM_MISMATCH = "relink-from-mismatch"
 RELINKED_TAIL_GREW = "relinked-tail-grew"
 RELINK_HEAD_MISMATCH = "relink-head-mismatch"
@@ -181,6 +182,13 @@ def relinked_naming(
                 RELINK_INTO_MISMATCH, relink,
                 f"{_where(relink)} relinks tail {tail} into record {relink.into[:12]}..., and "
                 f"names {_record_said(host_names)} itself",
+            )
+            continue
+        if relink.source == relink.into:
+            refuse(
+                RELINK_INTO_ITS_OWN_RECORD, relink,
+                f"{_where(relink)} relinks tail {tail} from record {relink.source[:12]}... into the "
+                "same record: a relink moves a tail between two records",
             )
             continue
         if tail not in named:

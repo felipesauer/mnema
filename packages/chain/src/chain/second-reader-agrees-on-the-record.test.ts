@@ -947,6 +947,26 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    name: 'relink-into-its-own-record',
+    refusals: 2,
+    section: '6.11',
+    says: '(relink-into-its-own-record)',
+    productSays: '(relink-into-its-own-record)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // A line no reader reads, in the host after its relink: both read nothing of that tail, so the
+    // relink is not read, and the directory stays two records in both.
+    name: 'relink-host-with-an-unreadable-line',
+    refusals: 2,
+    section: '6.10',
+    says: '(another-record)',
+    productSays: '(another-record)',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'relink-conflict',
     refusals: 2,
     section: '6.11',

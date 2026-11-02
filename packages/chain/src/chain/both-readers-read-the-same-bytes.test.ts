@@ -575,6 +575,17 @@ const AGREEMENTS: readonly Agreement[] = [
     },
   },
   {
+    name: 'relink-into-its-own-record',
+    verdict: 'refused',
+    product: { layer: 'T2/T4', says: '(relink-into-its-own-record)' },
+    second: {
+      section: '6.11',
+      says: '(relink-into-its-own-record)',
+      where: 'deb2ded39dc26fce0e60... seq 0',
+      refusals: 2,
+    },
+  },
+  {
     name: 'relink-conflict',
     verdict: 'refused',
     product: { layer: 'T2/T4', says: '(relink-conflict)' },

@@ -1119,6 +1119,9 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
     named_by_tail: dict[str, str | None] = {}
     # The tails whose FIRST line this reader refused, before any entry of theirs: where it was.
     refused_first: dict[str, str] = {}
+    # The tails holding an event line this reader refused: section 6.11 reads no relink of theirs,
+    # and no entry of theirs as a relinked tail's head, as the product reads nothing of such a tail.
+    holed: set[str] = set()
     for tail_id in tail_ids:
         tail_dir = os.path.join(tails_dir, tail_id)
         _check_tail_id(report, tail_id, ring)
@@ -1139,8 +1142,16 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         covered_by_tail[tail_id] = found.covered_through
         if refused and before_refused == 0:
             refused_first[tail_id] = refused[0]
+        if refused:
+            holed.add(tail_id)
 
-    named_by_tail = _check_relinks(report, entries_by_tail, covered_by_tail, named_by_tail, ring)
+    named_by_tail = _check_relinks(
+        report,
+        {tail: ([] if tail in holed else entries) for tail, entries in entries_by_tail.items()},
+        covered_by_tail,
+        named_by_tail,
+        ring,
+    )
     _check_record(report, named_by_tail)
     resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring, refused_first)
     _check_retractions(report, entries_by_tail)

@@ -121,7 +121,7 @@ import {
 import { decisionTexts } from './decision-text.js';
 import { type IdentityResolution, type RetiredElsewhere, resolveIdentity } from './enrollment.js';
 import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
-import { entryHash } from './hash.js';
+import { contentRoot, entryHash } from './hash.js';
 import {
   type ChainLayout,
   isSegmentFile,
@@ -876,6 +876,65 @@ export interface VerifyOptions {
    * format's over this record alone. {@link verifyTogether} is the one caller that hands it in.
    */
   readonly retiredElsewhere?: ReadonlyMap<string, RetiredElsewhere>;
+}
+
+/**
+ * THE RECORD THE TAILS AT `layout` BELONG TO ONCE THE RELINKS THAT COUNT ARE APPLIED, reading only
+ * what the relink rule needs (FORMAT.md section 6.11): `named` is what each tail names by its own
+ * artifacts (`namesOfTails`, `tail-names.ts`), and the answer is {@link relinkedNaming}'s, the
+ * rule `verify` asks below, over the same reading of each tail `verify` makes. A tail with a line
+ * that does not read holds nothing here, as in `verify`; the checkpoints are verified only for the
+ * tails the rule asks coverage of (a tail that holds a relink, and every tail naming a record a
+ * relink joins), and nothing else of a verification is done: no hash chain, no tail proof, no fold
+ * of the whole record, no census, no witness. The namer of the surfaces asks it where a directory
+ * would hold two records and holds a relink line; `second-reader-agrees-on-a-relink.test.ts` holds
+ * it to `verify`'s record over every relink state the suite builds.
+ */
+export function relinkedNamingAt(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+  named: ReadonlyMap<string, string | undefined>,
+): RecordNaming {
+  const keys = committedKeys(layout);
+  const entriesByTail = new Map<string, readonly Entry[]>();
+  const checkpointsByTail = new Map<string, readonly Checkpoint[]>();
+  const joined = new Set<string>();
+  const hosts = new Set<string>();
+  for (const tail of listTails(layout)) {
+    const refused: TailIssue[] = [];
+    const read = readTail(layout, tail, upcasters, refusedLine(layout, tail, refused));
+    const checkpoints = readTailCheckpoints(layout, tail, refusedLine(layout, tail, refused));
+    const entries = refused.length > 0 ? [] : read.entries;
+    entriesByTail.set(tail, entries);
+    checkpointsByTail.set(tail, checkpoints);
+    for (const entry of entries) {
+      if (entry.event.kind !== 'tail.relinked') continue;
+      hosts.add(tail);
+      joined.add(entry.event.payload.into);
+    }
+  }
+  const coveredThrough = new Map<string, number>();
+  for (const [tail, entries] of entriesByTail) {
+    const name = named.get(tail);
+    if (!hosts.has(tail) && (name === undefined || !joined.has(name))) continue;
+    const coverage = verifyCheckpoints(
+      keys,
+      tail,
+      entries,
+      checkpointsByTail.get(tail) ?? [],
+      [],
+      'the-chain',
+    );
+    coveredThrough.set(tail, coverage.covered);
+  }
+  return recordOf(
+    relinkedNaming(
+      named,
+      entriesByTail,
+      coveredThrough,
+      (entries, covered) => resolveIdentity(layout, entries, covered, keys).issues,
+    ).named,
+  );
 }
 
 /** Verifies an entire chain, aggregating all tails. */
@@ -2056,13 +2115,48 @@ interface NamedCheckpoint {
   readonly record: string;
 }
 
+/**
+ * How {@link verifyCheckpoints} checks signatures. `every`: each checkpoint's own, as `verify` does.
+ * `the-chain`: the last checkpoint's alone, every earlier one being bound to it through `prev` (the
+ * hash of the previous checkpoint's signed message, its root included, is in the message the last
+ * one signs); any refusal, or a last signature that fails, falls back to `every`, so a tail that
+ * is not whole is answered exactly as `verify` answers it. One verification per tail instead of
+ * one per checkpoint, for the namer of the surfaces ({@link relinkedNamingAt}).
+ */
+type SignaturesChecked = 'every' | 'the-chain';
+
 function verifyCheckpoints(
   keys: CommittedKeys,
   tail: string,
   entries: readonly Entry[] | undefined,
   stored: readonly Checkpoint[],
   issues: TailIssue[],
+  signatures: SignaturesChecked = 'every',
 ): CheckpointCoverage {
+  if (signatures === 'the-chain') {
+    const own: TailIssue[] = [];
+    const chained = verifyCheckpointsOnce(keys, tail, entries, stored, own, 'the-chain');
+    const last = chained.lastAccepted;
+    const signer = last === undefined ? null : keys(last.signerFp);
+    if (
+      own.length === 0 &&
+      (last === undefined || (signer !== null && checkpointSignatureHolds(last, signer.key)))
+    ) {
+      return chained;
+    }
+  }
+  return verifyCheckpointsOnce(keys, tail, entries, stored, issues, 'every');
+}
+
+function verifyCheckpointsOnce(
+  keys: CommittedKeys,
+  tail: string,
+  entries: readonly Entry[] | undefined,
+  stored: readonly Checkpoint[],
+  issues: TailIssue[],
+  signatures: SignaturesChecked,
+): CheckpointCoverage & { readonly lastAccepted?: Checkpoint } {
+  let lastAccepted: Checkpoint | undefined;
   const checkpoints = [...stored].sort((a, b) => a.fromSeq - b.fromSeq);
   const proven: ProvenCheckpoint[] = [];
   const named: NamedCheckpoint[] = [];
@@ -2137,6 +2231,11 @@ function verifyCheckpoints(
       continue;
     }
     if (between === undefined) {
+      if (signatures === 'the-chain') {
+        // No range can be known: the chain is not whole, and `every` answers it.
+        issues.push({ tail, layer: 'T2/T4', detail: 'no range to check the chain over' });
+        continue;
+      }
       if (!checkpointSignatureHolds(checkpoint, committed.key)) {
         issues.push({
           tail,
@@ -2150,14 +2249,20 @@ function verifyCheckpoints(
       continue;
     }
     const range = between(checkpoint.fromSeq, checkpoint.toSeq);
-    const verdict = verifyCheckpoint({
-      checkpoint,
-      // The signed root is folded over the events AS WRITTEN. Folding it over
-      // the lifted reading would turn the first version bump into a signature
-      // failure on every chain written before it.
-      events: range.map((e) => e.written),
-      publicKey: committed.key,
-    });
+    const verdict =
+      signatures === 'every'
+        ? verifyCheckpoint({
+            checkpoint,
+            // The signed root is folded over the events AS WRITTEN. Folding it over
+            // the lifted reading would turn the first version bump into a signature
+            // failure on every chain written before it.
+            events: range.map((e) => e.written),
+            publicKey: committed.key,
+          })
+        : range.length === checkpoint.toSeq - checkpoint.fromSeq + 1 &&
+            contentRoot(range.map((e) => e.written)) === checkpoint.contentRoot
+          ? ({ ok: true } as const)
+          : ({ ok: false, reason: 'root' } as const);
     if (!verdict.ok) {
       issues.push({
         tail,
@@ -2201,6 +2306,7 @@ function verifyCheckpoints(
     }
     covered = checkpoint.toSeq;
     expectedPrev = checkpointHash(checkpoint);
+    lastAccepted = checkpoint;
     proven.push({ hash: expectedPrev, toSeq: checkpoint.toSeq });
     if (checkpoint.record !== undefined) {
       named.push({ fromSeq: checkpoint.fromSeq, record: checkpoint.record });
@@ -2209,7 +2315,9 @@ function verifyCheckpoints(
   // `proven` is APPENDED TO at the bottom of the loop and only there, so a checkpoint
   // that took any of the refusals above never becomes one a witness is looked for
   // under: the property the single hash carried before, over the whole run of them.
-  return { covered, proven, named };
+  return lastAccepted === undefined
+    ? { covered, proven, named }
+    : { covered, proven, named, lastAccepted };
 }
 
 /**

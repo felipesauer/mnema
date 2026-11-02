@@ -1410,8 +1410,10 @@ on names the record from the genesis among the tails still present, and a branch
 from the old genesis leaves, once merged, a directory of two names that both readers refuse
 (`another-record`; the cut with no waiver, in the same test). So does a tail written before records
 were named whose first `at` is earlier than the genesis, brought by a branch on which a writer from
-0.1.5 on named the record after it (same test). The product's `verify --since` refuses such a branch before the merge; after it, each
-tail's owner mends the directory tail by tail with the relink of §6.11, which both readers apply.
+0.1.5 on named the record after it (same test). The product's `verify --since` refuses such a branch
+before the merge. After it, the relink of §6.11 does not mend it: a relink counts only by a
+membership the record's genesis identity gave, and the genesis was cut. The tails of the other name
+are cut (`tail prune`), or their owners write again in the record, under a tail born in it.
 
 ### 6.11 A tail its owner relinked
 
@@ -1448,7 +1450,9 @@ records both readers read: `packages/chain/src/chain/second-reader-agrees-on-the
 3. **Once.** Two covered relinks of T by its owner: `relink-conflict`, said once for T, and
    neither counts. A tail is relinked once.
 4. **From a tail that is not relinked.** H the tail of such a relink: `relink-hosted-by-a-relinked-tail`.
-5. **Into what H names.** H names `into` by its own artifacts: else `relink-into-mismatch`.
+5. **Into what H names, from another.** H names `into` by its own artifacts: else
+   `relink-into-mismatch`. `from` and `into` are two records: a relink naming one record as both
+   would move nothing and freeze T, and is `relink-into-its-own-record`.
 6. **From what T names.** T absent from the directory (moved away, or cut since): the relink names
    nothing, and is said as the census note `relinked-tail-absent`. T present and naming another
    record than `from`, or none: `relink-from-mismatch`.
@@ -1465,15 +1469,26 @@ records both readers read: `packages/chain/src/chain/second-reader-agrees-on-the
    that is no act of the record's. Else `relink-not-a-member`. Where the genesis tail is not in the
    directory, no founding counts, and no relink into the record does.
 
+**So, in this version, only the founder's keys relink.** Enrolling a key into the genesis identity
+makes it that identity's key, the same actor's, and a person whose identity was founded outside
+the genesis tail holds no membership the record gave, however long they have written in it. A
+second person does not relink their own tail of another record: they write again in this record,
+under a tail born in it, or that tail is cut (`tail prune`). An admission of another person's tail
+by a member of the record is not in this version (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`,
+`relinked-by-a-key-that-founded-itself-here` and `relinked-by-a-key-a-stranger-enrolled`, both refused).
+
 The tails the last check folds are named by their own artifacts, so the fold never reads a tail
 whose name the rules above are deciding. A relink that passes every check names T `into`, and
 `another-record` (§6.10) is then asked of the names the relinks gave. Only T's name moves: a tail
 of `from` left behind keeps naming `from`, and its tail id names the key whose owner must act. A
 relink that counts is the census note `relinked-tail` (*tail T, record X..., relinked into this
 record by its own key at tail H seq N: E event(s), the first at A*), and `verify` gives it a clause
-of its verdict. Both readers say the three notes in the same words.
+of its verdict. Both readers say the three notes in the same words. A tail holding a line a reader
+refuses (§4) holds nothing here: no relink of it is read, and as a relinked tail it has no head, so
+both readers name the same causes (`relink-host-with-an-unreadable-line`, in the same tests).
 
-An agent key relinks its own tail like any key, under its role (§6.2). This product's writer
+An agent key is meant to relink its own tail like any key, under its role (§6.2): the rule names no
+role, and no test holds an agent key's relink yet. This product's writer
 writes no relink yet, and its namer, where a directory's tails would name two records and a
 segment holds a relink, names the directory as `verify` does
 (`packages/chain/src/chain/tail-names.ts`, `tailsReadAt`). A reader from before this kind refuses
@@ -2066,8 +2081,9 @@ Stated plainly, because a published format invites all three readings:
   copies. Anyone may still write their own tail into a record: the name is not secret, and a
   party who knows it signs a tail naming it with their own key, which is a contribution, not a
   graft; review is the gate for that, as before.
-- **A relink brings a person's own history, with its dates** (§6.11). A key the record's genesis
-  identity took in may relink its own tail of another record into this one: its decisions and
+- **A relink brings a person's own history, with its dates** (§6.11). The founder of the record's
+  genesis identity, or a key that identity took in, may relink its own tail of another record into
+  this one: its decisions and
   notes, ordered by the `at` they carried, older than this record's genesis if so. What the
   format refuses is a relink by any other key, and one by a key whose only membership here is
   one it gave itself; whether that history belongs here is the reviewer's to judge, not the

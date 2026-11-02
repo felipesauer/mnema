@@ -20,11 +20,13 @@ with its own changelog.
   Both readers apply one rule, in this order, and refuse by the same names: covered by a verified checkpoint of its tail
   (else the census note `relink-uncovered`, and it counts for nothing), signed by the key the relinked tail's id names
   (`relink-not-the-owner`), once per tail (`relink-conflict`), from a tail not itself relinked
-  (`relink-hosted-by-a-relinked-tail`) that names the record joined (`relink-into-mismatch`), of a tail that names
-  `from` (`relink-from-mismatch`; a tail not here is the note `relinked-tail-absent`) and ends at the head and count
+  (`relink-hosted-by-a-relinked-tail`) that names the record joined (`relink-into-mismatch`) and is not the one it
+  leaves (`relink-into-its-own-record`), of a tail that names `from` (`relink-from-mismatch`; a tail not here is the note `relinked-tail-absent`) and ends at the head and count
   the relink froze (`relinked-tail-grew`, `relink-head-mismatch`), and by a key holding a membership the record gave
   it: the founding of the record's genesis identity, or an enrolment rooted in it; a key that founded its own identity
-  in the record does not count (`relink-not-a-member`). A relink that counts is the census note `relinked-tail` and a
+  in the record does not count (`relink-not-a-member`). So, for now, only the founder's keys relink: a second person
+  writes again in the record, or their tail is cut, and after a cut of the genesis no relink counts. A tail holding a
+  line a reader refuses holds no relink in either reader. A relink that counts is the census note `relinked-tail` and a
   clause of the verdict, and the namer the surfaces ask reads such a directory as `verify` does. The rule is
   `relinkedNaming` (`packages/chain/src/chain/record-name.ts`) and its mirror in the second reader; `mutate.py` builds
   a record for every refusal and for the two that pass. No command writes a relink yet, and the writer, `doctor` and
