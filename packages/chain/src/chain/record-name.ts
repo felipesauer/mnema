@@ -25,6 +25,7 @@
  * ({@link tailsReadAsOneRecord}); they refuse nothing, which stays the readers'.
  */
 
+import { oneLine } from '../one-line.js';
 import type { Entry } from './entry.js';
 import { framedTextDigest } from './hash.js';
 import { tailFingerprint } from './layout.js';
@@ -442,7 +443,7 @@ export function relinkedNaming(
       refuse(
         RELINK_NOT_THE_OWNER,
         relink,
-        `${where(relink)} relinks tail ${relink.tail}, signed by ${relink.signerFp.slice(0, 12)}..., not the key that tail's id names`,
+        `${oneLine(where(relink))} relinks tail ${oneLine(relink.tail)}, signed by ${oneLine(relink.signerFp.slice(0, 12))}..., not the key that tail's id names`,
       );
       continue;
     }
@@ -459,7 +460,7 @@ export function relinkedNaming(
       refuse(
         RELINK_CONFLICT,
         relink,
-        `tail ${tail} is relinked ${relinks.length} times (${relinks.map(where).join(', ')}): a tail is relinked once`,
+        `tail ${oneLine(tail)} is relinked ${relinks.length} times (${oneLine(relinks.map(where).join(', '))}): a tail is relinked once`,
       );
       continue;
     }
@@ -467,7 +468,7 @@ export function relinkedNaming(
       refuse(
         RELINK_HOSTED_BY_A_RELINKED_TAIL,
         relink,
-        `${where(relink)} relinks tail ${tail}, and is itself relinked: a relink counts only from a tail that names its record by its own artifacts`,
+        `${oneLine(where(relink))} relinks tail ${oneLine(tail)}, and is itself relinked: a relink counts only from a tail that names its record by its own artifacts`,
       );
       continue;
     }
@@ -476,7 +477,7 @@ export function relinkedNaming(
       refuse(
         RELINK_INTO_MISMATCH,
         relink,
-        `${where(relink)} relinks tail ${tail} into record ${relink.into.slice(0, 12)}..., and names ${recordSaid(hostNames)} itself`,
+        `${oneLine(where(relink))} relinks tail ${oneLine(tail)} into record ${oneLine(relink.into.slice(0, 12))}..., and names ${oneLine(recordSaid(hostNames))} itself`,
       );
       continue;
     }
@@ -489,7 +490,7 @@ export function relinkedNaming(
       refuse(
         RELINK_FROM_MISMATCH,
         relink,
-        `${where(relink)} relinks tail ${tail} from record ${relink.from.slice(0, 12)}..., and that tail names ${recordSaid(tailNames)}`,
+        `${oneLine(where(relink))} relinks tail ${oneLine(tail)} from record ${oneLine(relink.from.slice(0, 12))}..., and that tail names ${oneLine(recordSaid(tailNames))}`,
       );
       continue;
     }
@@ -503,13 +504,13 @@ export function relinkedNaming(
         refuse(
           RELINKED_TAIL_GREW,
           relink,
-          `tail ${tail} holds ${entries.length} event(s), and the relink at ${where(relink)} froze it at ${relink.eventCount}`,
+          `tail ${oneLine(tail)} holds ${entries.length} event(s), and the relink at ${oneLine(where(relink))} froze it at ${relink.eventCount}`,
         );
       } else {
         refuse(
           RELINK_HEAD_MISMATCH,
           relink,
-          `tail ${tail} ends at ${(head ?? 'nothing').slice(0, 12)}... with ${entries.length} event(s), not at the head ${relink.throughHash.slice(0, 12)}... with ${relink.eventCount} the relink at ${where(relink)} names`,
+          `tail ${oneLine(tail)} ends at ${oneLine((head ?? 'nothing').slice(0, 12))}... with ${entries.length} event(s), not at the head ${oneLine(relink.throughHash.slice(0, 12))}... with ${relink.eventCount} the relink at ${oneLine(where(relink))} names`,
         );
       }
       continue;
@@ -541,7 +542,7 @@ export function relinkedNaming(
       refuse(
         RELINK_NOT_A_MEMBER,
         relink,
-        `${where(relink)} relinks tail ${relink.tail}, and its key holds no membership record ${relink.into.slice(0, 12)}... gave it at that point: the founding of its genesis identity, or an enrolment by a member that founding took in`,
+        `${oneLine(where(relink))} relinks tail ${oneLine(relink.tail)}, and its key holds no membership record ${oneLine(relink.into.slice(0, 12))}... gave it at that point: the founding of its genesis identity, or an enrolment by a member that founding took in`,
       );
       continue;
     }
@@ -552,7 +553,7 @@ export function relinkedNaming(
       relink,
       events: entries.length,
       firstAt,
-      detail: `tail ${relink.tail}, record ${relink.from.slice(0, 12)}..., relinked into this record by its own key at ${where(relink)}: ${entries.length} event(s), the first at ${firstAt}`,
+      detail: `tail ${oneLine(relink.tail)}, record ${oneLine(relink.from.slice(0, 12))}..., relinked into this record by its own key at ${oneLine(where(relink))}: ${entries.length} event(s), the first at ${oneLine(firstAt)}`,
     });
   }
   return { named: relinkedNamed, counted, refused, uncovered, absent };

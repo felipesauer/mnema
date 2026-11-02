@@ -189,7 +189,9 @@ export const REASONS: { readonly [K in EventKind]: readonly ReasonSite<K>[] } = 
   'skill.transitioned': ['fields'],
   'skill.consulted': [],
   'tail.pruned': ['reason'],
-  'tail.relinked': ['reason'],
+  // No operation writes a relink yet (ADR-155: the readers first); the one that does asks its
+  // reason here, and this row says so then.
+  'tail.relinked': [],
   'channel.switched': ['reason'],
   'channel.served': [],
   'channel.asked': [],
