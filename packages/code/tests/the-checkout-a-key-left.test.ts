@@ -305,6 +305,47 @@ describe('the agent in the checkout the key left', () => {
   }, 150_000);
 });
 
+describe('the agent in the checkout the key left, whose write also opens a new tail', () => {
+  it('is refused in the same words, and the refusal then says the tail was opened and leaves the words as they were', async () => {
+    const { b, n, atB, fp, founded } = aMigration();
+    pull(atB);
+    expect(mnema(atB, b, 'key', 'enroll', requestFrom(n, founded)).status).toBe(0);
+    expect(mnema(atB, b, 'key', 'revoke', fp, '--reason', 'this laptop goes to Y').status).toBe(0);
+    share(atB);
+    const printed = refusedWrite(atB, b, 'from the command line').words;
+    // What a branch switch leaves: the writer holds no note of the last entry it wrote.
+    const locks = join(atB, '.mnema', 'locks');
+    const notes = readdirSync(locks).filter((name) => name.endsWith('.head'));
+    expect(notes.length).toBeGreaterThan(0);
+    for (const note of notes) rmSync(join(locks, note));
+
+    const { server } = buildMcpServer({ cwd: sandbox, env: { home: b }, log: () => {} });
+    const client = new Client(
+      { name: 'claude-code', version: '1.0.0' },
+      { capabilities: { roots: {} } },
+    );
+    client.setRequestHandler(ListRootsRequestSchema, () => ({
+      roots: [{ uri: pathToFileURL(atB).href }],
+    }));
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
+    const refused = (await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'from the agent, for the team', scope: 'public' },
+    })) as { isError?: boolean; content: { text: string }[] };
+    await client.close();
+
+    expect(refused.isError).toBe(true);
+    const [first, ...beside] = refused.content.map((block) => block.text);
+    // The refusal is what it was, word for word, and comes first: the sentence is a block beside it.
+    expect(first?.startsWith(REFUSED), first).toBe(true);
+    expect(first).toContain(printed);
+    expect(first).not.toContain('wrote to a new tail');
+    expect(beside.join('\n').match(/wrote to a new tail/g) ?? []).toHaveLength(1);
+    expect(whoWrote(atB, 'from the agent, for the team')).toBeUndefined();
+  }, 150_000);
+});
+
 describe('an anchor recorded with no founding behind it', () => {
   it.each([
     ['with', true],
