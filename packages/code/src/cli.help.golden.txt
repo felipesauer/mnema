@@ -865,6 +865,10 @@ $ mnema site --help
 |                      of git)
 |   --back-link <url>  put one link, labelled "Back", to this address (http(s)://,
 |                      or a path on the same site) at the top of the page
+|   --head <file>      a JSON file with a title, a description and a canonical
+|                      address (and optionally structuredData) that the page says
+|                      of itself to a search engine; without it the title is "The
+|                      record" and there is no description or canonical
 |   -h, --help         display help for command
 |
 | The page holds the committed (public) tree and nothing else: no private tree, no
@@ -885,7 +889,10 @@ $ mnema site --help
 | a second reader. Everything is inside the one file: no script or style comes from
 | elsewhere.
 | Without --back-link the page has no link to a site; with it, the page opens with one
-| link back to a site that hosts it, and nothing else about the page changes.
+| link back to a site that hosts it, and nothing else about the page changes. Likewise
+| --head: it replaces the title and adds the description, the canonical address and the
+| structured data the file names, and nothing else changes; a file that is not JSON, that
+| lacks one of the three, or whose canonical is not an absolute http(s) address is refused.
 |
 | Without --out the page is written under the record, in .mnema/site/, and the record's
 | .gitignore is given the line /site/ first, so a `git add .mnema` leaves it out. A
@@ -896,6 +903,7 @@ $ mnema site --help
 |   mnema site                       write .mnema/site/index.html
 |   mnema site --out dist/record     write dist/record/index.html
 |   mnema site --out dist/record --back-link /mnema/
+|   mnema site --out dist/record --head head.json
 
 ### mnema search --help
 $ mnema search --help

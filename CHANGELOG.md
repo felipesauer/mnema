@@ -14,7 +14,7 @@ with its own changelog.
 
 - **Every page of the site says what it is, and the places a stranger first reads point at the site.** The site's
   configuration set one meta description for the whole site and it beat the one in each page, so every page said the
-  same thing; now each page of `docs/` is described by its own first paragraph of prose (`descriptionOf`), the landing
+  same thing; now each page of `docs/` is described by the first sentence of its prose (`descriptionOf`) or by its own description line, the landing
   by the description of `@mnema/code` and the 404 by its own line, and `/record/` has a title, a description, a canonical
   address and structured data of its own (`withTheHeadOfTheSite`) and is in the sitemap, which Astro wrote before the
   page existed. The landing and `/record/` carry JSON-LD of a `WebSite` and a `SoftwareApplication`, built from the
