@@ -45,11 +45,20 @@ function gitIn(
   cwd: string,
   args: readonly string[],
 ): { readonly status: number; readonly out: string } | undefined {
-  const asked = spawnSync('git', [...args], {
+  // Automatic maintenance off, as every git this product starts where a repository may be written.
+  const asked = spawnSync('git', ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args], {
     cwd,
     encoding: 'utf-8',
     timeout: 5_000,
-    env: { ...ctx.processEnv, GIT_OPTIONAL_LOCKS: '0' },
+    // The process's own HOME where it has one (git reads the user's configuration from it), and
+    // the one this run was handed where it has none, as the doctor's other reads of git do.
+    env: {
+      ...ctx.processEnv,
+      ...(ctx.processEnv.HOME === undefined && ctx.env.home !== undefined
+        ? { HOME: ctx.env.home }
+        : {}),
+      GIT_OPTIONAL_LOCKS: '0',
+    },
   });
   if (asked.error !== undefined || asked.status === null) return undefined;
   return { status: asked.status, out: asked.stdout.trim() };

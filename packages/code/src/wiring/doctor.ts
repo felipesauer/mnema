@@ -65,12 +65,11 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         running: { file: process.argv[1] ?? '', version: VERSION },
       };
       if (options.fix !== undefined) {
-        const fixes = {
-          vscode: fixVscode,
-          'private-tree': fixPrivateTree,
-          'merge-driver': fixMergeDriver,
-        } as const;
-        if (!Object.hasOwn(fixes, options.fix)) {
+        if (
+          options.fix !== 'vscode' &&
+          options.fix !== 'private-tree' &&
+          options.fix !== 'merge-driver'
+        ) {
           io.err(
             render(
               fact(
@@ -82,7 +81,12 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
           return;
         }
         const dryRun = options.dryRun === true;
-        const fixed = fixes[options.fix as keyof typeof fixes](ctx, { dryRun });
+        const fixed =
+          options.fix === 'vscode'
+            ? fixVscode(ctx, { dryRun })
+            : options.fix === 'private-tree'
+              ? fixPrivateTree(ctx, { dryRun })
+              : fixMergeDriver(ctx, { dryRun });
         for (const line of fixed.lines) io.out(line);
         if (fixed.refused) io.fail();
         return;

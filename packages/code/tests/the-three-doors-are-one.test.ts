@@ -275,6 +275,8 @@ const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   witness: 'an outside witness is a person’s',
   'commit-hook':
     'it writes a file into a git repository’s hooks, which only a person at a shell asks for',
+  record:
+    'it runs git over the working tree (a pull) or is the merge driver git itself calls, which a person at a shell or git asks for',
   mcp: 'it serves the MCP door, which is the second of the three',
   check: 'a rule’s check is declared by a person and run by a machine with a key of its own',
   inherit: 'trusting another repository’s record is a person’s decision',

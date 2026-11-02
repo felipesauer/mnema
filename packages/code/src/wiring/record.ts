@@ -67,7 +67,7 @@ export function registerRecord(program: Command, wiring: Wiring): Declared {
               : '',
           FETCH_FAILED:
             result.reason === 'FETCH_FAILED'
-              ? `git fetch failed, and nothing was changed: ${result.said}`
+              ? `Reading the branch followed from its remote failed, and nothing was changed: ${result.said}`
               : '',
           NOT_A_PREFIX:
             result.reason === 'NOT_A_PREFIX'
@@ -77,7 +77,9 @@ export function registerRecord(program: Command, wiring: Wiring): Declared {
         return;
       }
       if (result.pulled.status !== 0) {
-        if (result.pulled.said !== '') io.err(result.pulled.said);
+        for (const line of result.pulled.said.split('\n')) {
+          if (line !== '') io.err(render(fact(line)));
+        }
       }
       for (const path of result.restored) {
         io.out(render(fact(onOneLine`${path}: put back, with the events this checkout adds`)));
