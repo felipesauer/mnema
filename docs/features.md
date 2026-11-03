@@ -129,5 +129,5 @@ Each line says what it does and what it leaves unproven; the page it points to h
   Cursor's command-line agent carries, where it is on this machine), whether the
   plugin is installed, whether VS Code's settings tell its agent where the plugin is, and whether the
   server is declared twice and, where it holds an agent key, in which trees the record enrols it. Asked alone it writes nothing and does not ask the registry;
-  `mnema doctor --fix vscode` is the one change it makes, and only when you type it. For skills, the plugin brings `recording-decisions`, `recording-rulings` and
+  `mnema doctor --fix vscode` is one of the three changes it makes (the others are `--fix private-tree` and `--fix merge-driver`), and only when you type it. For skills, the plugin brings `recording-decisions`, `recording-rulings` and
   `diagnosing-recording`; `mnema-server-only` is the same server without the hooks and the skills.

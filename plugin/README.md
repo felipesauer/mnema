@@ -450,8 +450,8 @@ machine, with Cursor's import of third-party plugins on, which is how it ships.
    folder, `~/.claude/plugins/marketplaces/mnema/plugin`.
 2. Run `mnema doctor` and read its `vscode` line: it says whether your `settings.json` has
    `chat.pluginLocations`, and whether it lists a mnema plugin that exists and is this version.
-3. If it says to, run `mnema doctor --fix vscode`. It is the only thing `doctor` writes, it
-   runs only when you type it, and `--dry-run` shows what it would change without writing.
+3. If it says to, run `mnema doctor --fix vscode`. It is one of the three things `doctor` writes
+   (with `--fix private-tree` and `--fix merge-driver`), it runs only when you type it, and `--dry-run` shows what it would change without writing.
    It copies `settings.json` to a file beside it first, keeps your comments and the rest of the
    file as it is, adds the marketplace folder above to `chat.pluginLocations` and removes an
    entry that points into a versioned folder of Claude Code's plugin cache, and a second run

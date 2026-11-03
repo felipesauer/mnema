@@ -487,6 +487,7 @@ const FLOOR_MODULES: readonly string[] = [
   // of help) and it reaches its command and its presentation only inside the action, so
   // what it adds here is one file of declarations and no adapter.
   'wiring/recall.ts',
+  'wiring/record.ts',
   'wiring/no-such-decision.ts',
   'wiring/on-one-line.ts',
   'wiring/options.ts',

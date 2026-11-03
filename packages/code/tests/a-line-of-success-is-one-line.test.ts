@@ -815,6 +815,27 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the id positional, HEADING the list: reachable only with an id that matched',
   },
+  'record.ts «Pulled {}.» #1': {
+    verdict: 'collapsed',
+    why: 'the branch followed, as git names it: a name a person or a remote chose',
+  },
+  'record.ts «git pull from {} left these files in conflict: {}; resolve them, then commit or check them out.» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the branch followed and the paths git holds in conflict: names a person or a remote chose',
+    },
+  'record.ts «git pull from {} failed; see what git said above.» #1': {
+    verdict: 'collapsed',
+    why: 'the branch followed, as git names it: a name a person or a remote chose',
+  },
+  'record.ts «kept in {}, since the pull left another side there: {}» #1': {
+    verdict: 'collapsed',
+    why: 'a folder under the git directory and the paths of files in the working tree',
+  },
+  'record.ts «{}: put back as this checkout held it, the longer side or the only one» #1': {
+    verdict: 'collapsed',
+    why: 'the path of a file in the working tree, which a name in it can carry',
+  },
   'observe.ts «Recorded observation {} about {}» #1': {
     verdict: 'collapsed',
     why: '`about` is not validated: this is the door a forged value enters the record by',
@@ -1061,7 +1082,9 @@ describe('every line this wiring words is classified', () => {
     // 163 with the two lines `verify --since` prints of a tail that arrived (born-unnamed, another-record).
     // 164 with the note it prints of an unnamed tail over a base with no name yet (unnamed-record).
     // 169 with the five lines `tail relink` prints of a relink it wrote.
-    expect(FOUND.sites.length).toBe(169);
+    // 173 with the four lines `record pull` prints.
+    // 174 with the line that names the files a pull left in conflict.
+    expect(FOUND.sites.length).toBe(174);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1081,9 +1104,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(88);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(93);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(81);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(88);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(93);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1225,6 +1248,22 @@ describe('a value from outside cannot forge a second line', () => {
  * somebody closed and nobody drove, and the reconciliation below is what says so.
  */
 const UNREACHABLE: Readonly<Record<string, string>> = {
+  'record.ts «Pulled {}.» #1':
+    'needs a git repository whose branch follows a remote, which no in-process argv here holds; the ' +
+    'built binary prints it over real git in `a-tail-merges-and-pulls.test.ts`',
+  'record.ts «git pull from {} left these files in conflict: {}; resolve them, then commit or check them out.» #1':
+    'needs an autostash git puts back with conflicts, over a real remote; driven in process in ' +
+    '`a-tail-merges-and-pulls.test.ts`, where the result names the file, and the tag is the fence ' +
+    'for the paths',
+  'record.ts «git pull from {} failed; see what git said above.» #1':
+    'needs a git pull that fails after every check before it passed, over a real remote; the tag is ' +
+    'the fence for a branch name git hands back',
+  'record.ts «kept in {}, since the pull left another side there: {}» #1':
+    'needs a file of the record that forked between the check and the pull, a race over a real ' +
+    'remote; the tag is the fence for the paths',
+  'record.ts «{}: put back as this checkout held it, the longer side or the only one» #1':
+    'needs an untracked tail the branch followed already holds, over a real remote; the built binary ' +
+    'prints it over real git in `a-tail-merges-and-pulls.test.ts`',
   'which-host-files.ts «"{}" is not on the list: {}.» #1':
     'needs a person at a terminal who types an answer off the list; driven with a break in it in ' +
     '`the-init-asks-which-host-files-to-write.test.ts`',

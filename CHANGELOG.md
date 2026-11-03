@@ -34,6 +34,21 @@ with its own changelog.
   that tail's cut is authorized first by a covered waiver. Like `tail prune`, `tail relink` takes `--which` for the
   agent that executed it; a relink an agent's key signs names the agent the record enrolled that key as.
 
+- **`mnema record pull` pulls over the record's uncommitted events, and a merge driver keeps the longer side of a tail
+  (ADR-163, which replaces ADR-139).** A pull request that carries a tail's events to the branch you follow left `git
+  pull` refusing ("Your local changes ... would be overwritten by merge") over a local file that only holds more.
+  `record pull` refuses, writing nothing, when a file outside `.mnema/` has changes or when a tail file here and on the
+  branch followed is not one the start of the other (a fork, named with the line where the sides part); otherwise it
+  runs `git pull --autostash` with the driver given on that one command line, puts back a file of the record git did
+  not track yet, and verifies the record. It writes no git configuration, and it fails, printing what git said, when the
+  pull fails or git puts its autostash back with conflicts (a file of the record that is not a tail merges as text).
+  `mnema init`, and the first write to a record
+  made before it, add `tails/*/*.jsonl merge=mnema-tail` to the record's `.gitattributes`; `mnema record merge-tail` is
+  the driver (the longer side wins byte for byte; a fork keeps your side, exits 1 and says where the sides part), and
+  git runs it only where its configuration names it: `mnema doctor` says where it does not, and `mnema doctor --fix
+  merge-driver` (with `--dry-run`) writes the two settings into `.git/config`, the only git configuration mnema writes,
+  and only when asked. Without the setting git merges a tail as text, as before. No driver lets a plain `git pull`
+  pass over uncommitted changes: git refuses before it merges.
 - **Both readers read a tail its owner relinked into another record (`tail.relinked`, `FORMAT.md` section 6.11).** A
   tail is named by its tail proof, signed once at birth, so nothing signed in it could move it to another record, and
   a directory joining two (two `mnema init` on two branches and a merge, or a genesis cut on one of them) stayed

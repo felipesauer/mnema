@@ -468,6 +468,7 @@ describe('the refused run is refused everywhere', () => {
       'decision',
       'inherit',
       'key',
+      'record',
       'run',
       'skill',
       'stack',
