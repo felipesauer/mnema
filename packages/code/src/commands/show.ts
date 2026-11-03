@@ -176,8 +176,11 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         readRecord([holder, ...opened.filter((source) => source !== holder)], input.id) ?? found;
     }
     const id = found.id;
-    // Asked at each return, since the second opens the trees the first leaves shut.
+    // Over EVERY tree the project holds, as `read_record` counts them: the lines a newer mnema
+    // wrote about this record may be in a tree this read stopped short of, and the two doors say
+    // one number. It opens the trees left shut (a replay each) only when a record is served.
     const newer = () => {
+      for (; next < SCOPES.length; next++) open(SCOPES[next] as Scope);
       const said = newerLinesAbout(
         opened.map((source) => source.cache),
         id,

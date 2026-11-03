@@ -212,6 +212,46 @@ describe('a record a newer mnema wrote a line into', { timeout: 120_000 }, () =>
     expect(mnema('show', otherId).err).not.toContain('newer mnema');
   });
 
+  it('counts the same lines for one record in show and in read_record, whichever tree holds them', async () => {
+    const id = aDecision();
+    const otherId = anotherRecord();
+    // Two lines about the decision in the committed tree, one in the private one: show used to
+    // stop at the first tree holding the decision and count two, read_record counted three.
+    newerWrites({ subject: id });
+    newerWrites({ subject: id });
+    expect(mnema('memory', '--scope', 'private', 'A private note.').status).toBe(0);
+    aNewerMnemaWrites(
+      { record: join(repo, '.git', 'mnema', '%2E', 'private'), home },
+      { means: 'something' },
+      { subject: id },
+    );
+    const shown = mnema('show', id);
+    expect(shown.err).toContain('A newer mnema wrote 3 lines about this record (3 of ');
+    const tools = await theTools(id, otherId);
+    expect(tools.read_record?.join('\n')).toContain(
+      'A newer mnema wrote 3 lines about this record (3 of ',
+    );
+  });
+
+  it('keeps kinds that share a long prefix distinguishable in what it says', () => {
+    aDecision();
+    const prefix = 'vendor.area.subsystem.module.thing.version-two.';
+    const kinds = ['created', 'updated', 'retired', 'restored', 'merged'].map((s) => prefix + s);
+    for (const kind of kinds) newerWrites({ kind });
+    const said = JSON.parse(mnema('status', '--json').out).newerLines.kinds.map(
+      (one: { kind: string }) => one.kind,
+    );
+    expect(said).toEqual(kinds);
+    const sentence = mnema('status')
+      .out.split('\n')
+      .find((l) => l.includes('A newer mnema wrote'));
+    // Three kinds are named, and each reads differently from the others by its end.
+    const named = [...(sentence ?? '').matchAll(/1 of "([^"]+)"/g)].map((m) => m[1]);
+    expect(named).toHaveLength(3);
+    expect(new Set(named).size).toBe(3);
+    expect(named.map((n) => n?.slice(-7))).toEqual(['created', 'updated', 'retired']);
+  });
+
   it('says so in show for a memory too, which is read over every tree and not the first', () => {
     aDecision();
     const memoryId = anotherRecord();

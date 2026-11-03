@@ -430,8 +430,14 @@ export function severalRecordsSentence(groups: readonly RecordGroup[]): string {
 
 /** How many kinds a sentence about lines a newer mnema wrote names before it counts the rest. */
 const KINDS_NAMED = 3;
-/** How much of a kind's name a sentence quotes: a kind is what a newer writer chose, of any length. */
-const KIND_QUOTED = 40;
+/**
+ * A kind's name is what a newer writer chose, of any length. Up to this many characters it is
+ * quoted whole; past it, its first and last {@link KIND_ENDS} characters are, with the cut marked
+ * between, so kinds that share a long prefix (`vendor.area.thing.v2.created`, `...updated`) still
+ * read differently.
+ */
+const KIND_QUOTED = 64;
+const KIND_ENDS = 30;
 
 function linesWord(count: number): string {
   return `${count} ${count === 1 ? 'line' : 'lines'}`;
@@ -441,7 +447,10 @@ function linesWord(count: number): string {
 function kindsClause(newer: NewerLines): string {
   const named = newer.kinds.slice(0, KINDS_NAMED).map((one) => {
     const kind = oneLine(one.kind);
-    const quoted = kind.length > KIND_QUOTED ? `${kind.slice(0, KIND_QUOTED)}...` : kind;
+    const quoted =
+      kind.length > KIND_QUOTED
+        ? `${kind.slice(0, KIND_ENDS)}...${kind.slice(kind.length - KIND_ENDS)}`
+        : kind;
     return `${one.lines} of ${JSON.stringify(quoted)}`;
   });
   const more = newer.kinds.length - named.length;
