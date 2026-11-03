@@ -4,7 +4,7 @@ import {
   AGENT_ACCEPTS_IS_OFF,
   acceptedByAnAgent,
   agentMayAccept,
-  agentsAcceptHere,
+  acceptStateHere,
   stateOfANewDecision,
 } from './agent-accepts.js';
 import { tellsWhatToDo } from './record-framing.js';
@@ -63,23 +63,23 @@ describe('what an acceptance by an agent says about itself', () => {
 
 describe('what a decision just recorded says of its state', () => {
   it('tells an agent through the tool when to accept and when to wait, and a person who accepts', () => {
-    expect(stateOfANewDecision(true, 'agent-tool')).toBe(
+    expect(stateOfANewDecision('on', 'agent-tool')).toBe(
       '  Born proposed, so not yet in force. If the person dictated it, or chose it among options ' +
         'you offered (a recommended one included), accept it now with `decision_transition` ' +
         '(action `accept`), the note quoting their answer; if you concluded it alone, it waits ' +
         'for the person (`mnema decision review`).',
     );
-    expect(stateOfANewDecision(true, 'agent-command')).toContain(
-      'accept it now with `mnema decision move accept <id> --which <agent>`',
+    expect(stateOfANewDecision('on', 'agent-command', { id: 'abc', agent: 'claude-code' })).toContain(
+      'accept it now with `mnema decision move accept abc --which claude-code`',
     );
-    expect(stateOfANewDecision(false, 'person')).toBe(
+    expect(stateOfANewDecision('off', 'person')).toBe(
       '  Born proposed, so not yet in force. A person accepts it with `mnema decision review`.',
     );
   });
 
   it('says only a person accepts where the switch is off, whoever the agent is', () => {
     for (const who of ['agent-tool', 'agent-command'] as const) {
-      const said = stateOfANewDecision(false, who);
+      const said = stateOfANewDecision('off', who);
       expect(said).toBe(
         '  Born proposed, so not yet in force. Here only a person accepts it ' +
           '(`mnema decision review`): `agent-accepts` is switched off.',
@@ -89,7 +89,7 @@ describe('what a decision just recorded says of its state', () => {
   });
 
   it('is one line, and tells nothing the framing tripwire knows', () => {
-    for (const mayAccept of [true, false]) {
+    for (const mayAccept of ['on', 'off', 'unreadable'] as const) {
       for (const who of ['agent-tool', 'agent-command', 'person'] as const) {
         const said = stateOfANewDecision(mayAccept, who);
         expect(said).not.toContain('\n');
@@ -99,8 +99,31 @@ describe('what a decision just recorded says of its state', () => {
   });
 
   it('asks the gate: agents accept here unless the switch is off', () => {
-    expect(agentsAcceptHere(sources('never'))).toBe(true);
-    expect(agentsAcceptHere(sources('on'))).toBe(true);
-    expect(agentsAcceptHere(sources('off'))).toBe(false);
+    expect(acceptStateHere(sources('never'))).toBe('on');
+    expect(acceptStateHere(sources('on'))).toBe('on');
+    expect(acceptStateHere(sources('off'))).toBe('off');
+  });
+
+  it('says the switch could not be read, and not that it is off, where the record cannot be read', () => {
+    const unreadable = [
+      {
+        scope: 'public',
+        cache: {
+          channelSwitch: () => {
+            throw new Error('the projection cannot be read');
+          },
+        },
+      },
+    ] as unknown as ScopedCache[];
+    expect(acceptStateHere(unreadable)).toBe('unreadable');
+    for (const who of ['agent-tool', 'agent-command'] as const) {
+      const said = stateOfANewDecision('unreadable', who);
+      expect(said).toBe(
+        '  Born proposed, so not yet in force. The switch `agent-accepts` could not be read, so only a ' +
+          'person accepts it here (`mnema decision review`).',
+      );
+      expect(said).not.toContain('switched off');
+      expect(said).not.toContain('accept it now');
+    }
   });
 });

@@ -156,7 +156,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     }
     if (result.ok) {
       io.out(`Recorded decision ${result.adr} (${result.id})`);
-      io.out(stateBesideADecision(writing, given.which));
+      io.out(stateBesideADecision(writing, given.which, result.id));
       reportRecorded(result, io);
       const text = {
         title,

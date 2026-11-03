@@ -142,7 +142,7 @@ import {
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
-import { agentMayAccept, agentsAcceptHere } from '../agent-accepts.js';
+import { type AcceptState, acceptStateHere, agentMayAccept } from '../agent-accepts.js';
 import { editRulesTold, firstWriteNotice, readThePush } from '../edit-rules-push.js';
 import { type FileBehindAPath, fileOfTheOrigin } from '../file-behind-a-path.js';
 import { reachOfAddress, readGoverningRules } from '../governed-tree.js';
@@ -321,7 +321,7 @@ export type RecordDecisionResult =
          * Whether an agent may accept it (`agent-accepts` is not off), read after the write: the
          * reply words when to accept by it (`stateOfANewDecision`).
          */
-        readonly agentsAccept: boolean;
+        readonly agentsAccept: AcceptState;
         /**
          * Set when the decision was already on the record (same title, rationale and
          * alternatives, in force or awaiting a judgement): nothing was written, `id` and `adr` are the
@@ -1774,14 +1774,13 @@ function ambiguousLabel(message: string): {
 
 /**
  * Whether an agent may accept a decision here (`agent-accepts` is not off). A record this session
- * cannot read says no: the reply then leaves the accept to a person, which no instruction
- * can be set against.
+ * cannot read is `unreadable`: the reply then says so and leaves the accept to a person.
  */
-function agentsAcceptInThisSession(session: Session): boolean {
+function agentsAcceptInThisSession(session: Session): AcceptState {
   try {
-    return agentsAcceptHere(workspaceCaches(session));
+    return acceptStateHere(workspaceCaches(session));
   } catch {
-    return false;
+    return 'unreadable';
   }
 }
 

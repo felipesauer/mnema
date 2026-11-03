@@ -96,8 +96,8 @@ async function mnema(...argv: string[]): Promise<{ out: string[]; failed: boolea
   return { out, failed };
 }
 
-const WHEN_TO_ACCEPT = stateOfANewDecision(true, 'agent-tool');
-const ONLY_A_PERSON = stateOfANewDecision(false, 'agent-tool');
+const WHEN_TO_ACCEPT = stateOfANewDecision('on', 'agent-tool');
+const ONLY_A_PERSON = stateOfANewDecision('off', 'agent-tool');
 
 describe('record_decision, over a real client', () => {
   it('says the state and when to accept, on the line after the label and before where it landed', async () => {
@@ -186,8 +186,12 @@ describe('mnema decision record', () => {
     );
     expect(done.failed).toBe(false);
     expect(done.out[0]).toMatch(/^Recorded decision ADR-1 \(/);
-    expect(done.out[1]).toBe(stateOfANewDecision(true, 'agent-command'));
-    expect(done.out[1]).toContain('`mnema decision move accept <id> --which <agent>`');
+    const id = /^Recorded decision ADR-1 \(([0-9a-f-]{36})\)$/.exec(done.out[0] as string)?.[1] as string;
+    expect(done.out[1]).toBe(
+      stateOfANewDecision('on', 'agent-command', { id, agent: 'claude-code' }),
+    );
+    expect(done.out[1]).toContain(`\`mnema decision move accept ${id} --which claude-code\``);
+    expect(done.out[1]).not.toContain('<id>');
     expect(done.out[2]).toMatch(/^ {2}Landed in the public tree/);
   });
 
@@ -206,7 +210,7 @@ describe('mnema decision record', () => {
 
   it('tells a person, who declares no agent, that a person accepts it with the review', async () => {
     const done = await mnema('decision', 'record', 'Use SQLite', 'one file');
-    expect(done.out[1]).toBe(stateOfANewDecision(false, 'person'));
+    expect(done.out[1]).toBe(stateOfANewDecision('off', 'person'));
     expect(done.out[1]).toBe(
       '  Born proposed, so not yet in force. A person accepts it with `mnema decision review`.',
     );

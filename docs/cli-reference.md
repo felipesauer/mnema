@@ -121,10 +121,11 @@ CLI and the MCP tools behave identically, because they are the same call.
   rules from the hook that runs after it (`mnema beside-a-write --host copilot` or `gemini`): it asks
   the record what `before-a-write` asks and records the same one `channel.served` per session, but it
   never refuses or asks and records no refusal or asking. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
-  the last response, it prints one line saying how many files they wrote and how
-  many decisions were recorded in the project since the session opened (and, on a second line, how many of them are still `proposed`, with `mnema decision review`), counted off the
-  transcript the host names and off the record: no model is called and nothing is
-  recorded. The line goes out as the reply's `systemMessage`; which host shows it was not
+  the last response, it prints a `systemMessage` of one line saying how many files they wrote and how
+  many decisions were recorded in the project since the session opened, counted off the
+  transcript the host names and off the record, and, where some of those decisions are still `proposed`, a second line
+  saying how many and naming `mnema decision review`: no model is called and nothing is
+  recorded. The message goes out as the reply's `systemMessage`; which host shows it was not
   measured. `mnema switch off session-tally` stops it. The same command keeps the session journal (see
   [The session journal](#the-session-journal)), a small file on this machine that lets the next `Stop` read only
   what the host wrote since. The sixth runs only after a conversation was compacted (the `compact` matcher of

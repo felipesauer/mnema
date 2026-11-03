@@ -116,7 +116,7 @@ describe('a settled choice reaches the model', () => {
     const sent = theAnswerAsSent(session);
     expect(sent).toContain('"Which store do we use?"="SQLite"');
     expect(sent).toContain(
-      `PostToolUse:AskUserQuestion hook additional context: ${settledSentence(true)}`,
+      `PostToolUse:AskUserQuestion hook additional context: ${settledSentence('on')}`,
     );
   }, 120_000);
 
@@ -130,6 +130,6 @@ describe('a settled choice reaches the model', () => {
     expect(JSON.parse(readFileSync(file, 'utf-8')).tool_name).toBe('AskUserQuestion');
     const sent = theAnswerAsSent(session);
     expect(sent).toContain('"Which store do we use?"="SQLite"');
-    expect(sent).not.toContain(settledSentence(true));
+    expect(sent).not.toContain(settledSentence('on'));
   }, 120_000);
 });

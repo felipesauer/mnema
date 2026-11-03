@@ -38,7 +38,7 @@ const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
 const PLUGIN = join(REPO, 'plugin');
 
 /** What a project that never touched `agent-accepts` is handed: the switch is on by default. */
-const ACCEPTING = settledSentence(true);
+const ACCEPTING = settledSentence('on');
 
 let sandbox: string;
 let repo: string;
@@ -181,9 +181,19 @@ describe('mnema settled', () => {
     });
   });
 
+  it('says the switch could not be read, and not that it is off, where it cannot be read', () => {
+    expect(settledSentence('unreadable')).toBe(
+      'A question to the person was answered here. Where the answer settled a choice, ' +
+        '`record_decision` records it in this project’s record, with the options not taken as ' +
+        '`alternatives`; the switch `agent-accepts` could not be read, so a person accepts it ' +
+        '(`mnema decision review`); nothing has been recorded from this answer.',
+    );
+    expect(settledSentence('unreadable')).not.toContain('is off');
+  });
+
   it('tells the agent nothing to do: no word the framing tripwire knows, in either state', () => {
-    for (const agentsAccept of [true, false]) {
-      expect(tellsWhatToDo(settledSentence(agentsAccept)), String(agentsAccept)).toBeUndefined();
+    for (const agentsAccept of ['on', 'off', 'unreadable'] as const) {
+      expect(tellsWhatToDo(settledSentence(agentsAccept)), agentsAccept).toBeUndefined();
     }
     // The tripwire is awake: the same sentence with an order in it is caught.
     expect(tellsWhatToDo(`${ACCEPTING} You must record it.`)).toBe('you must');

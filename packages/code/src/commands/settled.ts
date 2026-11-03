@@ -19,7 +19,7 @@
 
 import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { agentsAcceptHere } from '../agent-accepts.js';
+import { type AcceptState, acceptStateHere } from '../agent-accepts.js';
 import { CHOICE_SETTLED_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
 
@@ -59,13 +59,16 @@ const AFTER_A_TOOL: ReadonlySet<string> = new Set(['PostToolUse', 'AfterTool']);
  * settled is one the agent accepts at once (a standing rule of this record, the product's default
  * now); with `agent-accepts` off only a person accepts, and the sentence says so instead.
  */
-export function settledSentence(agentsAccept: boolean): string {
+export function settledSentence(agentsAccept: AcceptState): string {
   const opening =
     'A question to the person was answered here. Where the answer settled a choice, ' +
     '`record_decision` records it in this project’s record, with the options not taken as ' +
     '`alternatives`';
   const closing = 'nothing has been recorded from this answer.';
-  return agentsAccept
+  if (agentsAccept === 'unreadable') {
+    return `${opening}; the switch \`agent-accepts\` could not be read, so a person accepts it (\`mnema decision review\`); ${closing}`;
+  }
+  return agentsAccept === 'on'
     ? `${opening}, and \`decision_transition\` (action \`accept\`) accepts it, the note quoting the answer; ${closing}`
     : `${opening}; \`agent-accepts\` is off, so a person accepts it (\`mnema decision review\`); ${closing}`;
 }
@@ -97,7 +100,7 @@ export function runSettled(
   if (trees.projectPublic === undefined) return SILENT;
   const read = withScopedCaches(trees, (sources) => ({
     on: channelIsOn(sources, CHOICE_SETTLED_CHANNEL),
-    agentsAccept: agentsAcceptHere(sources),
+    agentsAccept: acceptStateHere(sources),
   }));
   if (!read.on) return SILENT;
   const sentence = settledSentence(read.agentsAccept);
