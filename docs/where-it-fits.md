@@ -1,5 +1,9 @@
 # Where it fits
 
+<!-- description: Who mnema is for, when not to use it, and what it is not. -->
+
+A decision record for the work of coding agents, not a memory service: it keeps what was decided and why, and anyone can check it has not changed.
+
 **Who it is for.** A team, or one person, whose coding agents (Claude Code, Codex, GitHub
 Copilot CLI, Gemini CLI, OpenCode, VS Code's agent, Cursor) make choices that somebody will later ask about:
 which library, which approach, which option was turned down and why. The reader it is

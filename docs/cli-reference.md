@@ -68,6 +68,11 @@ CLI and the MCP tools behave identically, because they are the same call.
   not prove is in the table below. `--back-link <url>` puts one link, labelled "Back", to that
   address (an `http(s)://` address or a path on the same site) at the top of the page, for a page that sits inside a site;
   without it the page is the same bytes, and a `//host`, a backslash, an `https:` with no `//` or any other scheme is refused.
+  `--head <file>` names a JSON file with a `title`, a `description` and a `canonical` (an absolute `http(s)://` address) and,
+  optionally, `structuredData`: the page's title becomes that title and the description, the canonical address and the data
+  (as `application/ld+json`) are written into its head, for a page that is published and indexed; nothing else of the page
+  changes, and a file that is not JSON, that lacks one of the three or whose canonical is not absolute is refused before
+  anything is written.
 - **A brief an agent reads without being asked**: `mnema brief` prints the
   decisions in force and the adopted patterns as markdown, which the plugin below hands to
   every session, and `mnema brief > MNEMA.md` puts in a file of its own. The redirection

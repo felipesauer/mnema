@@ -1,5 +1,7 @@
 # What lives where
 
+<!-- description: Which package of the repository is the one to install, and what each of the others holds. -->
+
 | | |
 |---|---|
 | [`packages/code`](../packages/code/) | **`@mnema/code`: the package you install.** The command line and the MCP server. It holds no domain logic: it resolves where you are, calls one function below, and prints what came back, which is what makes the two surfaces behave identically. |

@@ -13,3 +13,9 @@ Nothing is at this address. These are the places to start from.
 
 ## record
 Record
+
+## record-title
+The record of mnema, checked in your browser
+
+## record-description
+Every decision of this repository's record with its reasons, and the verdict of its hash chain, computed in your browser.

@@ -36,6 +36,10 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
       '--back-link <url>',
       'put one link, labelled "Back", to this address (http(s)://, or a path on the same site) at the top of the page',
     )
+    .option(
+      '--head <file>',
+      'a JSON file with a title, a description and a canonical address (and optionally structuredData) that the page says of itself to a search engine; without it the title is "The record" and there is no description or canonical',
+    )
     .addHelpText(
       'after',
       [
@@ -58,7 +62,10 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
         'a second reader. Everything is inside the one file: no script or style comes from',
         'elsewhere.',
         'Without --back-link the page has no link to a site; with it, the page opens with one',
-        'link back to a site that hosts it, and nothing else about the page changes.',
+        'link back to a site that hosts it, and nothing else about the page changes. Likewise',
+        '--head: it replaces the title and adds the description, the canonical address and the',
+        'structured data the file names, and nothing else changes; a file that is not JSON, that',
+        'lacks one of the three, or whose canonical is not an absolute http(s) address is refused.',
         '',
         "Without --out the page is written under the record, in .mnema/site/, and the record's",
         '.gitignore is given the line /site/ first, so a `git add .mnema` leaves it out. A',
@@ -69,13 +76,15 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
         '  mnema site                       write .mnema/site/index.html',
         '  mnema site --out dist/record     write dist/record/index.html',
         '  mnema site --out dist/record --back-link /mnema/',
+        '  mnema site --out dist/record --head head.json',
       ].join('\n'),
     )
-    .action(async (opts: { out?: string; backLink?: string }) => {
+    .action(async (opts: { out?: string; backLink?: string; head?: string }) => {
       const { runSite } = await import('../commands/site.js');
       const result = runSite(here(), {
         ...(opts.out !== undefined ? { out: opts.out } : {}),
         ...(opts.backLink !== undefined ? { backLink: opts.backLink } : {}),
+        ...(opts.head !== undefined ? { head: opts.head } : {}),
       });
       if (!result.ok) {
         reportRefusal(

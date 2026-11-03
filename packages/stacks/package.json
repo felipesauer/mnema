@@ -26,7 +26,7 @@
     "digest.sh",
     "NOTICE"
   ],
-  "homepage": "https://github.com/felipesauer/mnema",
+  "homepage": "https://felipesauer.github.io/mnema/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/felipesauer/mnema.git",

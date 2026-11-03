@@ -48,6 +48,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { theFacts } from '../../../site/build/the-build.mjs';
 import { buildProgram } from '../src/program.js';
 import { PRODUCT_PROMISE, PRODUCT_PROMISE_CAVEAT } from '../src/promise.js';
 
@@ -469,6 +470,12 @@ describe('no keyword promises what the sentence does not', () => {
  * so a dead link was the first thing a reader of the published package could click. A dead
  * link is not a claim about the record, so it is asserted apart from the sentence.
  *
+ * IT WAS ONE DESTINATION, THE REPOSITORY, AND THE SITE FALSIFIED THAT. The premise "every manifest names the
+ * repository" held while the site was dead; the site is back, and a package page, a store page and a plugin
+ * listing are where a search engine and a reader first meet the product, so a manifest a stranger reads names
+ * the site (`homeUrl` of `site/build/the-pages.mjs`, from the facts the site is built from). A manifest that is
+ * private and is not the extension (the root, the action and the SDK) stays on the repository.
+ *
  * THE LIST IS READ OFF THE DISK, NEVER TYPED HERE. A list typed here is a list that stays
  * at three while a fourth manifest is added with a home of its own, and the guard would go
  * on passing over the three it knows. So every tracked manifest that names a `homepage` is
@@ -521,15 +528,29 @@ describe('every manifest points home at the same place', () => {
     ]);
   });
 
-  it('all of them name the repository this is, which is a destination that exists', () => {
+  it('the ones a stranger reads (published, the extension, the plugins) name the site, and the private tools name the repository', () => {
     const repository = (
       JSON.parse(read('package.json')) as { repository: { url: string } }
     ).repository.url
       .replace(/^git\+/, '')
       .replace(/\.git$/, '');
     expect(repository).toBe('https://github.com/felipesauer/mnema');
+    const site = theFacts().homeUrl;
+    expect(site).toBe('https://felipesauer.github.io/mnema/');
+    const toTheRepository = new Set<string>();
+    const toTheSite = new Set<string>();
     for (const { file, homepage } of homes()) {
-      expect(homepage, `${file} points somewhere else`).toBe(repository);
+      const isPrivate = (JSON.parse(read(file)) as { private?: boolean }).private === true;
+      const strangersRead = !isPrivate || file === 'packages/vscode/package.json';
+      (strangersRead ? toTheSite : toTheRepository).add(file);
+      expect(homepage, `${file} points somewhere else`).toBe(strangersRead ? site : repository);
     }
+    // The non-vacuity: the split is not all on one side.
+    expect([...toTheRepository].sort()).toEqual([
+      'package.json',
+      'packages/action/package.json',
+      'packages/sdk/package.json',
+    ]);
+    expect(toTheSite.size).toBe(10);
   });
 });
