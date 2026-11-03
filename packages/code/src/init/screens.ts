@@ -189,6 +189,7 @@ export function hostItems(files: ReadonlyMap<string, InstructionsPeek>): readonl
 /** What a file of the instructions is, in the few words a row carries. */
 export function stateOfAFile(peek: InstructionsPeek): string {
   const state = peek.found;
+  if (peek.unwritable !== undefined) return `${peek.unwritable}: left as it is`;
   switch (state.state) {
     case 'missing':
       return peek.exists ? 'yours: block added' : 'new';

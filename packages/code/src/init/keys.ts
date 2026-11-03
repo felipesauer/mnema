@@ -63,6 +63,7 @@ export function onTheHosts(
   rows: readonly CompletionWord[],
   state: Marked,
   stroke: Keystroke,
+  locked: ReadonlySet<string> = new Set(),
 ): Step<Marked, ReadonlySet<string>> {
   if (isALeave(stroke)) return { kind: 'left' };
   if (stroke.ctrl) return { kind: 'stay', state };
@@ -72,16 +73,24 @@ export function onTheHosts(
     return { kind: 'stay', state: { ...state, picked: theNextPicked(rows, state.picked, moved) } };
   }
   if (stroke.input === ' ') {
+    if (locked.has(state.picked)) return { kind: 'stay', state };
     const marks = new Set(state.marks);
     if (marks.has(state.picked)) marks.delete(state.picked);
     else marks.add(state.picked);
     return { kind: 'stay', state: { ...state, marks } };
   }
   if (stroke.input === 'a') {
-    const every = rows.every((row) => state.marks.has(row.word));
+    const every = rows
+      .filter((row) => !locked.has(row.word))
+      .every((row) => state.marks.has(row.word));
     return {
       kind: 'stay',
-      state: { ...state, marks: every ? new Set() : new Set(rows.map((row) => row.word)) },
+      state: {
+        ...state,
+        marks: every
+          ? new Set()
+          : new Set(rows.map((row) => row.word).filter((word) => !locked.has(word))),
+      },
     };
   }
   return { kind: 'stay', state };

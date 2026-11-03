@@ -280,7 +280,8 @@ describe('mnema init, at a terminal', { timeout: 60_000 }, () => {
     await through(person, { hosts: `${DOWN}${SPACE}${ENTER}` });
     await person.finished();
     expect(readFileSync(join(repo, 'CLAUDE.md'), 'utf-8')).toBe('# Mine\n');
-    expect(readFileSync(join(repo, 'GEMINI.md'), 'utf-8')).toContain('mnema:begin');
+    // GEMINI.md sits under the Codex row, which nothing in the folder says is in use, so its mark opens off.
+    expect(readFileSync(join(repo, 'GEMINI.md'), 'utf-8')).toBe('# Also mine\n');
     expect(existsSync(join(repo, CLAUDE_RULE))).toBe(true);
   });
 

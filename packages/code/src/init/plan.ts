@@ -63,6 +63,10 @@ const ORDER: readonly Verb[] = ['create', 'add to', 'replace', 'keep', 'leave', 
 function rowForAFile(peek: InstructionsPeek): PlanRow {
   const state = peek.found;
   const what = peek.path;
+  // A FILE THE WRITE WOULD REFUSE IS LEFT, with the reason: the plan never promises a write that then fails.
+  if (peek.unwritable !== undefined) {
+    return { section: 'repository', verb: 'leave', what, note: `(${peek.unwritable})` };
+  }
   switch (state.state) {
     case 'missing':
       return peek.exists
@@ -143,7 +147,11 @@ export function instructionRows(
   around: Pick<Around, 'files'>,
   marks: ReadonlySet<string>,
 ): readonly PlanRow[] {
-  const wanted = [...ownFilesOf(marks), ...yoursOf(marks)];
+  // A file that is there and cannot be written is said whether or not a mark asks for it: it is what the founding leaves.
+  const refused = [...around.files.values()]
+    .filter((peek) => peek.exists && peek.unwritable !== undefined)
+    .map((peek) => peek.path);
+  const wanted = [...ownFilesOf(marks), ...yoursOf(marks), ...refused];
   const rows = HOST_ROWS.flatMap((row) => [...row.files, ...row.yours])
     .filter((path) => wanted.includes(path))
     .flatMap((path) => {

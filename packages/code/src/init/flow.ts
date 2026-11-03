@@ -182,14 +182,29 @@ export function printed(asking: Pick<Asking, 'io' | 'render'>, lines: readonly L
 
 /** The marks a question opens with: the hosts found here, or every host where none was; the person's files all. */
 export function defaultMarks(around: Pick<Around, 'detected' | 'files'>): ReadonlySet<string> {
-  const hosts: readonly RowId[] =
+  // ONE FUNCTION FOR WHAT IS FOUND, which `--hosts detected` and `--yes` use as the screen does: the hosts found
+  // (every host where none was), and a person's file only under a row that is checked. A file that cannot be
+  // written is never checked: its row says why and the plan leaves it.
+  const marks =
     around.detected.size === 0
-      ? HOST_ROWS.map((row) => row.id)
-      : HOST_ROWS.filter((row) => around.detected.has(row.id)).map((row) => row.id);
-  const yours = HOST_ROWS.flatMap((row) => row.yours).filter(
-    (path) => around.files.get(path)?.exists === true,
-  );
-  return new Set([...hosts.map(hostMark), ...yours.map(yoursMark)]);
+      ? marksForHosts(
+          around,
+          HOST_ROWS.map((row) => row.id),
+          false,
+        )
+      : marksForHosts(around, [], true);
+  return new Set([...marks].filter((mark) => !lockedMarks(around).has(mark)));
+}
+
+/** The marks of the rows whose files cannot be written: they cannot be checked. */
+export function lockedMarks(around: Pick<Around, 'files'>): ReadonlySet<string> {
+  const locked = new Set<string>();
+  for (const row of HOST_ROWS) {
+    const cannot = (path: string): boolean => around.files.get(path)?.unwritable !== undefined;
+    if (row.files.length > 0 && row.files.every(cannot)) locked.add(hostMark(row.id));
+    for (const path of row.yours) if (cannot(path)) locked.add(yoursMark(path));
+  }
+  return locked;
 }
 
 /**
@@ -226,7 +241,7 @@ export async function askTheHosts(
   return await putTheQuestion(asking, {
     initial: { marks: initial, picked: items[0]?.word ?? '' },
     page: (state, width) => hostsPage(around, state, width, question),
-    on: (state, stroke) => onTheHosts(items, state, stroke),
+    on: (state, stroke) => onTheHosts(items, state, stroke, lockedMarks(around)),
     answered: (marks, width) => hostsAnswered(marks, instructionRows(around, marks), width),
     left,
   });

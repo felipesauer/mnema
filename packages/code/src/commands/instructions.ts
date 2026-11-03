@@ -27,6 +27,8 @@
  */
 
 import {
+  accessSync,
+  constants,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -34,6 +36,7 @@ import {
   readlinkSync,
   realpathSync,
   rmdirSync,
+  statSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -320,6 +323,33 @@ export interface InstructionsPeek {
   readonly own: boolean;
   /** What it holds of the block: the state a write is decided by. */
   readonly found: InstructionsState;
+  /** Why a write would be refused (read-only, a directory in its place, no permission on its folder), when it would. */
+  readonly unwritable?: string;
+}
+
+/**
+ * Why a write of `relative` under `project` would fail, or nothing where it would not: the file is read-only, a
+ * directory stands in its place, or the folder it would be made in cannot be written. Asked of the file system
+ * and not guessed from the mode, so the plan of `mnema init` never promises a write that then fails
+ * (`the-init-leaves-what-it-cannot-write.test.ts`).
+ */
+function unwritableBecause(project: string, relative: string): string | undefined {
+  const path = join(project, relative);
+  try {
+    if (statSync(path).isDirectory()) return 'a directory is in its place';
+    accessSync(path, constants.W_OK);
+    return undefined;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return 'read-only';
+  }
+  let dir = dirname(path);
+  while (!existsSync(dir) && dir !== dirname(dir)) dir = dirname(dir);
+  try {
+    accessSync(dir, constants.W_OK);
+    return undefined;
+  } catch {
+    return 'no permission on its folder';
+  }
 }
 
 /**
@@ -328,12 +358,16 @@ export interface InstructionsPeek {
  * writes is what the write then does.
  */
 export function peekInstructions(project: string): readonly InstructionsPeek[] {
-  return INSTRUCTIONS_TARGETS.map((target) => ({
-    path: target.path,
-    exists: existsAsALink(join(project, target.path)),
-    own: target.own !== undefined,
-    found: inspect(project, target).found,
-  }));
+  return INSTRUCTIONS_TARGETS.map((target) => {
+    const unwritable = unwritableBecause(project, target.path);
+    return {
+      path: target.path,
+      exists: existsAsALink(join(project, target.path)),
+      own: target.own !== undefined,
+      found: inspect(project, target).found,
+      ...(unwritable !== undefined ? { unwritable } : {}),
+    };
+  });
 }
 
 /** What each instructions file of the project at `project` holds of the block. Reads only. */
@@ -354,7 +388,11 @@ function withTheBlock(left: string, eol: Eol): string {
   return `${left}${eol}${inEol(INSTRUCTIONS_BLOCK, eol)}`;
 }
 
-const WRITE_AGAIN = 'mnema instructions';
+/**
+ * The command a refused or failed write names to try again. It is the explicit form: plain `mnema instructions`
+ * leaves a file of the person's that holds no block alone where another one does (ADR-177), so it would not.
+ */
+const WRITE_AGAIN = 'mnema instructions --all-hosts';
 const REMOVE_AGAIN = 'mnema instructions --remove';
 
 type Done = (did: InstructionsChange, extra?: Partial<InstructionsFile>) => InstructionsFile;

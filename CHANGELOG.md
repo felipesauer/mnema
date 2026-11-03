@@ -28,7 +28,7 @@ with its own changelog.
   accepting is recorded in the public tree as a decision of the person's, accepted by them (a `no` also records the switch
   that refuses an agent's `accept`); an agent that gives it with `--which` records its own proposal, which waits for the
   person; `--yes` never answers it. With no terminal, and with none of these flags, the lines are the ones `init` has
-  always printed. A person's file left unchecked stays left out: `mnema instructions --check`, `mnema doctor` and `mnema instructions` without a terminal say so in one line and no longer ask for the block in it. The question by number (`HOST_FILES_NOT_UNDERSTOOD`) is gone: an answer cannot be off the list now.
+  always printed. A person's file left unchecked stays left out (ADR-177): `mnema instructions --check`, `mnema doctor` and `mnema instructions` without a terminal say so in one line and no longer ask for the block in it. A file the write would refuse (read-only, a directory in its place, no permission on its folder) is shown by the plan as `leave` with the reason, and what `init` says of it names `mnema instructions --all-hosts`, the form that adds the block once the permission is fixed. The question by number (`HOST_FILES_NOT_UNDERSTOOD`) is gone: an answer cannot be off the list now.
 
 - **A line of a kind this mnema does not know is read past, not refused, in both readers (ADR-113, `FORMAT.md` section
   7.1).** A newer mnema adds a kind; until now every older binary refused the whole record over the first line of it.
