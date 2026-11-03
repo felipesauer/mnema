@@ -36,6 +36,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runDoctor } from '../src/commands/doctor.js';
 import { CHOOSABLE_INSTRUCTIONS, INSTRUCTIONS_TARGETS } from '../src/instructions-block.js';
+import { widthOfText, withoutSequences } from '../src/presentation/width.js';
 import { type CliIo, run } from '../src/program.js';
 import { fakeTerminal, hooksNothing, until } from './support/console.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
@@ -592,6 +593,7 @@ describe('on the built binary, under a pseudo-terminal', () => {
   const atTheDevice = (
     steps: { types?: string; until: (bytes: string, since: number) => boolean; what: string }[],
     extra: Record<string, string> = {},
+    columns = 100,
   ) =>
     inPty(
       {
@@ -601,7 +603,7 @@ describe('on the built binary, under a pseudo-terminal', () => {
         scratch: sandbox,
         environment: { ...env(), ...extra },
       },
-      { columns: 100, rows: 50, steps },
+      { columns, rows: 50, steps },
     );
 
   it('writes the files of the hosts left checked on three Enters, and exits 0', {
@@ -659,6 +661,37 @@ describe('on the built binary, under a pseudo-terminal', () => {
     expect(styles(quiet.bytes)).toBe(0);
     const never = await atTheDevice(walk, { FORCE_COLOR: '1' });
     expect(styles(never.bytes)).toBeGreaterThan(0);
+  });
+
+  it('draws every row of the questions inside a terminal sixty columns wide, the notes under what they are about', {
+    timeout: 60_000,
+  }, async () => {
+    // The width is the renderer's, learned and never asked of the device by this flow: on a narrow terminal a
+    // note that does not fit beside its row goes under it, and a row that fits is not folded by the layout.
+    const ran = await atTheDevice(
+      [
+        asked(HOSTS),
+        { types: ENTER, ...asked(ACCEPTS) },
+        { types: ENTER, ...asked(CONFIRM) },
+        { types: ESC, until: () => true, what: 'left' },
+      ],
+      {},
+      60,
+    );
+    expect(ran.code).toBe(0);
+    const rows = ran.bytes
+      .split(/\r?\n/)
+      .map((row) => withoutSequences(row))
+      .filter((row) => row.trim() !== '');
+    expect(rows.length).toBeGreaterThan(20);
+    const wide = rows.filter((row) => widthOfText(row) > 60);
+    // What is wider than the terminal is a path that cannot be cut, and nothing else.
+    for (const row of wide) {
+      expect(Math.max(...row.split(' ').map((word) => widthOfText(word))), row).toBeGreaterThan(52);
+    }
+    expect(
+      rows.some((row) => row.includes('detected: CLAUDE.md') || row.includes('detected: .cursor/')),
+    ).toBe(false);
   });
 
   it('keeps every line of the trail on a line of its own where the layout runs for a screen reader', {

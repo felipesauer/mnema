@@ -173,7 +173,6 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
         version: VERSION,
         machine,
         ...(hostsGiven !== undefined ? { hostsGiven } : {}),
-        asksWhoMayAccept: !asksNothing,
         ...(opts.accepts !== undefined ? { acceptsGiven: opts.accepts } : {}),
         ...(opts.accepts !== undefined && agent !== undefined ? { agent } : {}),
         yes: asksNothing,

@@ -264,8 +264,6 @@ export interface InitAsk {
   readonly machine: Machine;
   /** Marks a flag already decided (`--hosts`, `--all-hosts`, `--yes`): that question is not asked. */
   readonly hostsGiven?: ReadonlySet<string>;
-  /** Whether the question of who may accept is put to the person at all. */
-  readonly asksWhoMayAccept: boolean;
   /** The answer `--accepts` already gave: that question is not asked. */
   readonly acceptsGiven?: Accepts;
   /** The agent `--which` declared: its answer is its proposal. */
@@ -287,8 +285,7 @@ export async function askInit(asking: Asking, request: InitAsk): Promise<Outcome
   const width = theWidthOf(asking.render);
   say(asking, theFirstScreen(request.around, request.name, request.version, width));
   const hostsAreAsked = request.hostsGiven === undefined && !request.yes;
-  const acceptsIsAsked =
-    request.acceptsGiven === undefined && request.asksWhoMayAccept && !request.yes;
+  const acceptsIsAsked = request.acceptsGiven === undefined && !request.yes;
   let marks = request.hostsGiven ?? defaultMarks(request.around);
   let accepts: Accepts | undefined = request.acceptsGiven;
   for (;;) {
