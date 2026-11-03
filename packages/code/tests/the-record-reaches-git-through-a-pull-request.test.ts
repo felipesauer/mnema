@@ -285,8 +285,7 @@ describe('mnema record commit', SLOW, () => {
     expect(carried).not.toContain('"third"');
     // The same by its id.
     const byId = commitIn(local, second);
-    if (!byId.ok) throw new Error(JSON.stringify(byId));
-    expect(byId.kind).toBe('exists');
+    if (!byId.ok || byId.kind !== 'exists') throw new Error(JSON.stringify(byId));
     expect(byId.branch).toBe(made.branch);
   });
 
