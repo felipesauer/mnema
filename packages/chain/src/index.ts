@@ -165,7 +165,7 @@ export {
   recordNamedIn,
   tailsReadAt,
 } from './chain/tail-names.js';
-export { ensureTree } from './chain/tree.js';
+export { ensureTree, TAIL_MERGE_DRIVER } from './chain/tree.js';
 export {
   type BackupKeyNote,
   type CensusNote,

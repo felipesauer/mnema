@@ -78,6 +78,7 @@ import {
   THE_AGENT_KEY_SEPARATES_NOTHING,
 } from '../the-persons-key-in-the-clear.js';
 import { isOlderThan } from '../version.js';
+import { mergeDriverLines } from './doctor-merge-driver.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
 import { checkInstructions, stateLine } from './instructions.js';
 import { stacksHere } from './stack-inspect.js';
@@ -115,7 +116,8 @@ export interface Finding {
     | 'record-page'
     | 'key-metadata'
     | 'instructions'
-    | 'agent-key';
+    | 'agent-key'
+    | 'merge-driver';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
   readonly line: string;
@@ -1195,6 +1197,11 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
       ...namesakeFindings(ctx),
       ...privateTreeFindings(ctx),
       ...recordPageFindings(ctx),
+      ...mergeDriverLines(ctx).map((line) => ({
+        topic: 'merge-driver' as const,
+        state: 'attention' as const,
+        line,
+      })),
       ...keyMetadataFindings(ctx),
       ...instructionsFindings(ctx),
       ...stackFindings(ctx),
