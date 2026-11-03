@@ -141,6 +141,15 @@ export type {
   TheRecordRead,
 } from './chain/record-name.js';
 export {
+  type LeftBehind,
+  type PlannedRelink,
+  planRelinks,
+  type RelinkBrings,
+  type RelinkRefusal,
+  relinksWouldCount,
+  tailsACutWouldUnrelink,
+} from './chain/relink-plan.js';
+export {
   firstLinkBreakFrom,
   holdsRecord,
   type LinkBreak,
@@ -162,6 +171,7 @@ export { type KeyATailHolds, type KeyIntroduction, keysATailHolds } from './chai
 export { DEFAULT_WAIT_MS, TailBusyError } from './chain/tail-lock.js';
 export {
   arrivalsSince,
+  namesOfTails,
   nameTheGenesisDerives,
   recordNamedIn,
   tailsReadAt,
@@ -182,6 +192,7 @@ export {
   type PartialFinalLineNote,
   type RecordOfASet,
   type Reformatted,
+  type RelinkToWrite,
   type TailIssue,
   type TailResult,
   type VerdictClause,
@@ -275,6 +286,7 @@ export {
   stackAdopted,
   stackRemoved,
   tailPruned,
+  tailRelinked,
   taskBirth,
   taskCreated,
   taskTransitioned,

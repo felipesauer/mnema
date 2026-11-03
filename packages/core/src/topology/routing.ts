@@ -286,6 +286,13 @@ export interface OpenTreeOptions {
    * channel every surface has that no answer is parsed from.
    */
   readonly onNewTail?: (opened: NewTail) => void;
+  /**
+   * The key root to sign with instead of the one the trees choose: a relink is signed by the key
+   * the relinked tail's id names, the person's or an agent's kept on this machine.
+   */
+  readonly keyRoot?: string;
+  /** The record the writer's tail is to name: the one a relink joins (`WriterOptions.joins`). */
+  readonly joins?: string;
 }
 
 /** Where a write that opened a new tail says so when its caller did not ask to be told. */
@@ -320,7 +327,7 @@ export function openTreeForWriting(
     throw new TreeUnavailableError(`no ${scope} tree in this context`);
   }
   // Decided first: a write the key refuses leaves the tree as it found it, `.gitignore` included.
-  const keyRoot = keyRootFor(trees, chainRoot);
+  const keyRoot = options.keyRoot ?? keyRootFor(trees, chainRoot);
   // A project write, public or private, first makes the public tree own the
   // `.gitignore` that hides `private/`. `projectPublic` is defined whenever
   // `projectPrivate` is (both come from the same discovered project), so this is

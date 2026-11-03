@@ -96,14 +96,17 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { PROJECT_DIR } from '@mnema/core';
+import { PROJECT_DIR, resolveTrees } from '@mnema/core';
 import { Command, CommanderError } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderPlain } from '../src/presentation/plain.js';
 import { type CliIo, run } from '../src/program.js';
 import { misuseReport, usageOf } from '../src/wiring/misuse.js';
 import { PIN_REFUSED, pinnedRunResolver, RUN_ENV } from '../src/wiring/run-pin.js';
-import { mergeAForeignTail } from './support/a-tail-from-another-machine.js';
+import {
+  aTailOfThisKeyInAnotherRecord,
+  mergeAForeignTail,
+} from './support/a-tail-from-another-machine.js';
 import {
   A_CODE_NOBODY_WORDED,
   type Fixture,
@@ -330,6 +333,16 @@ async function fixture(name: string): Promise<Fixture> {
       if (found?.[1] === undefined) throw new Error(`fixture: memory printed no id: ${made.out}`);
       return found[1];
     })(),
+    // LAST, and only for the path that relinks it: it leaves the directory two records, where
+    // every other write is refused until the relink this line makes.
+    relinkableTail:
+      name === 'tail-relink'
+        ? aTailOfThisKeyInAnotherRecord(
+            join(project, PROJECT_DIR),
+            join(sandbox, name, 'elsewhere'),
+            resolveTrees(project, { home: process.env.HOME as string }).keyRoot,
+          )
+        : 'no-such-tail',
   };
 }
 
@@ -404,7 +417,7 @@ describe('the refused run is refused everywhere', () => {
 
     // The derivation itself, both ways: this is the list the rule was applied to, and a
     // path that starts stamping a run has to arrive in it before anything can be said to
-    // have checked it. SEVENTEEN paths from SIXTEEN written sites: `switch off` and
+    // have checked it. EIGHTEEN paths from SEVENTEEN written sites: `switch off` and
     // `switch on` are one site, declared once by a function that hangs both.
     const asks = measured.filter((one) => one.asked).map((one) => one.path);
     expect([...asks].sort()).toEqual([
@@ -421,6 +434,7 @@ describe('the refused run is refused everywhere', () => {
       'switch off',
       'switch on',
       'tail prune',
+      'tail relink',
       'task create',
       'task handoff',
       'task move',
@@ -523,7 +537,7 @@ describe('the refused run is refused everywhere', () => {
     // The pair covered the whole derived set, so no site's "wrote nothing" rests on a line
     // that could not have written anything in the first place.
     expect([...bothHalvesSeen].sort()).toEqual([...asks].map((one) => one.path).sort());
-    expect(bothHalvesSeen.length).toBe(17);
+    expect(bothHalvesSeen.length).toBe(18);
   }, 300_000);
 
   it('tells the parser’s three answers from a verb’s own, and names what the literal missed', async () => {

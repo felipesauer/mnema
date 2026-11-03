@@ -89,7 +89,7 @@ import { linesFromEnd, parseStoredLine } from './lines.js';
 import { recordToWriteUnder, type WriteUnder } from './record-name.js';
 import { lastTailCheckpoint, orderedSegments, readTailTip } from './store.js';
 import { withTailLock } from './tail-lock.js';
-import { firstEntries, namesOfTails } from './tail-names.js';
+import { firstEntries, type NamesRelinked, namesRelinkedAt } from './tail-names.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 import { unprovenWaiverReason } from './waiver.js';
 
@@ -145,6 +145,15 @@ export interface WriterOptions {
    * names it.
    */
   readonly continues?: () => string | undefined;
+  /**
+   * The record this writer's tail is to name, decided by its caller: the record a relink joins
+   * (FORMAT.md section 6.11), which is written from a tail of the relinked tail's key that names
+   * that record. Where the installation's own tail names another record, the writer opens a new
+   * tail ({@link NewTail}), born naming this one; where the other tails name two records, which is
+   * what a relink mends, the writer still writes under it. Absent, the record is decided as
+   * `recordToWriteUnder` says.
+   */
+  readonly joins?: string;
 }
 
 /**
@@ -166,10 +175,27 @@ export interface NewTail {
   readonly kept: KeptHead | undefined;
   /** The entry `from` ends with on disk, or undefined when it holds none. */
   readonly found: KeptHead | undefined;
+  /**
+   * Why else the writer left `from`, where it still ended where this installation left it: its
+   * owner relinked it into this record (`relinked`, FORMAT.md section 6.11: a relinked tail is
+   * frozen at the head the relink names), or this write joins another record than the one it
+   * names (`joins`, {@link WriterOptions.joins}).
+   */
+  readonly left?:
+    | { readonly relinked: string }
+    | { readonly names: string; readonly joins: string };
 }
 
 /** The sentence a {@link NewTail} is told in: one wording for every surface that tells it. */
 export function describeNewTail(opened: NewTail): string {
+  const left = opened.left;
+  if (left !== undefined) {
+    const why =
+      'relinked' in left
+        ? `its owner relinked it into record ${left.relinked.slice(0, 12)}..., which freezes it at the entry the relink names, and appending there would undo the relink`
+        : `it names record ${left.names.slice(0, 12)}..., and this write joins record ${left.joins.slice(0, 12)}...: a tail names one record, so the write is made from a tail of this key born in the record it joins`;
+    return `mnema: wrote to a new tail, ${opened.to}, and left tail ${opened.from} as it is: ${why}.`;
+  }
   const held = (opened.found?.seq ?? -1) + 1;
   const why =
     opened.kept === undefined
@@ -290,6 +316,13 @@ export class ChainWriter {
   private readonly onNewTail: ((opened: NewTail) => void) | undefined;
   /** {@link WriterOptions.continues}. */
   private readonly continues: (() => string | undefined) | undefined;
+  /** {@link WriterOptions.joins}. */
+  private readonly joins: string | undefined;
+  /**
+   * What each tail names, the relinks applied, as the recovery of this act read it: asked once
+   * per act and handed to {@link recordName}, which would otherwise read it again.
+   */
+  private namesRead: NamesRelinked | undefined;
   /**
    * Set by {@link recover} when the tail does not end at the entry this installation last
    * wrote to it: the act does not run there, and {@link underTailLock} moves to a new tail.
@@ -329,6 +362,7 @@ export class ChainWriter {
     this.citeHeads = options.citeHeads === true;
     this.onNewTail = options.onNewTail;
     this.continues = options.continues;
+    this.joins = options.joins;
     this.heads = this.citeHeads ? new HeadsToCite(layout, this.tailId, upcasters) : undefined;
     // NOTHING IS WRITTEN HERE. Both the recovery and the birth happen in the first act,
     // under the tail's lock.
@@ -481,6 +515,7 @@ export class ChainWriter {
     this.movedOn = undefined;
     this.keptHash = null;
     this.record = undefined;
+    this.namesRead = undefined;
     this.born = false;
     this.mark = { segmentBytes: -2, nextSegment: false, checkpointBytes: -2 };
   }
@@ -561,11 +596,13 @@ export class ChainWriter {
    */
   private recordName(): string {
     if (this.record !== undefined) return this.record;
+    const names = this.namesRead ?? namesRelinkedAt(this.layout);
     const under = recordToWriteUnder(
       this.tailId,
-      namesOfTails(this.layout),
+      names.named,
       () => firstEntries(this.layout, this.upcasters),
       this.continues,
+      this.joins,
     );
     if (!('name' in under)) throw new AnotherRecordError(this.tailId, under);
     this.record = under.name;
@@ -702,6 +739,24 @@ export class ChainWriter {
     if (!endsWhereLeft) {
       this.movedOn = { from: this.tailId, to: this.tailId, kept, found };
       return;
+    }
+    // A TAIL THAT HOLDS ENTRIES MAY HAVE BEEN RELINKED, here or by its owner elsewhere, and a
+    // relinked tail is frozen at the head the relink names (FORMAT.md section 6.11): an entry more
+    // and both readers refuse it (`relinked-tail-grew`). So is a tail that names another record
+    // than the one this write joins. Either way the act goes to a new tail, as above.
+    if (found !== undefined) {
+      const names = namesRelinkedAt(this.layout);
+      this.namesRead = names;
+      const own = names.named.get(this.tailId);
+      const left = names.relinked.has(this.tailId)
+        ? { relinked: own as string }
+        : this.joins !== undefined && own !== undefined && own !== this.joins
+          ? { names: own, joins: this.joins }
+          : undefined;
+      if (left !== undefined) {
+        this.movedOn = { from: this.tailId, to: this.tailId, kept, found, left };
+        return;
+      }
     }
     this.movedOn = undefined;
     this.keptHash = kept?.hash ?? null;

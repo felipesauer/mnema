@@ -120,7 +120,7 @@ import {
 } from './checkpoint.js';
 import { decisionTexts } from './decision-text.js';
 import { type IdentityResolution, type RetiredElsewhere, resolveIdentity } from './enrollment.js';
-import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
+import { describeLinkBreak, type Entry, linkBreakAt, sealEntry } from './entry.js';
 import { contentRoot, entryHash } from './hash.js';
 import {
   type ChainLayout,
@@ -901,43 +901,72 @@ export function relinkedNamingAt(
   upcasters: UpcasterRegistry,
   named: ReadonlyMap<string, string | undefined>,
 ): RecordNaming {
-  return recordOf(relinksReadAt(layout, upcasters, named).named);
+  return recordOf(relinksReadAt([layout], upcasters, named).named);
 }
 
 /**
- * What {@link relinkedNaming} reads of the relinks at `layout`, read as {@link relinkedNamingAt}
- * reads them: each tail's name once the relinks that count are applied, and those relinks. `verify
- * --since` asks it of the base and of the disk (`arrivalsSince`, `tail-names.ts`).
+ * A relink not written yet, as a writer would write it: `event` appended to `host` and covered by
+ * the checkpoint signed with it at once. `hostNames` is the record the host names by its own
+ * artifacts, which a host not on disk yet is born naming.
+ */
+export interface RelinkToWrite {
+  readonly host: string;
+  readonly hostNames: string;
+  readonly event: CatalogEvent;
+}
+
+/**
+ * What {@link relinkedNaming} reads of the tails at `layouts`, read together, with `toWrite`
+ * appended to their hosts as if each were already written and covered: the reading the relink
+ * rule makes, and nothing else of a verification (see {@link relinkedNamingAt}).
+ *
+ * IT IS THE QUESTION A WRITER OF A RELINK ASKS BEFORE IT WRITES (`tail relink`, and `doctor --fix
+ * private-tree` over the tree that stays and the one that moves into it): a relink is append-only
+ * once written, so whether the readers would count it is asked of their own rule, over the record
+ * as it would read, and a refusal writes nothing. A tail found in two layouts is read from the
+ * first; each layout's tails are named, and checked, under its own committed keys, the first
+ * layout's keys asked first.
  */
 export function relinksReadAt(
-  layout: ChainLayout,
+  layouts: readonly ChainLayout[],
   upcasters: UpcasterRegistry,
   named: ReadonlyMap<string, string | undefined>,
+  toWrite: readonly RelinkToWrite[] = [],
 ): RelinksRead {
-  const keys = committedKeys(layout);
+  const keysOf = layouts.map((layout) => committedKeys(layout));
+  const keys = eitherKeys(keysOf);
   const entriesByTail = new Map<string, readonly Entry[]>();
   const checkpointsByTail = new Map<string, readonly Checkpoint[]>();
+  const keysByTail = new Map<string, CommittedKeys>();
+  layouts.forEach((layout, at) => {
+    for (const tail of listTails(layout)) {
+      if (entriesByTail.has(tail)) continue;
+      const refused: TailIssue[] = [];
+      const read = readTail(layout, tail, upcasters, refusedLine(layout, tail, refused));
+      const checkpoints = readTailCheckpoints(layout, tail, refusedLine(layout, tail, refused));
+      entriesByTail.set(tail, refused.length > 0 ? [] : read.entries);
+      checkpointsByTail.set(tail, checkpoints);
+      keysByTail.set(tail, keysOf[at] as CommittedKeys);
+    }
+  });
   const joined = new Set<string>();
   const hosts = new Set<string>();
-  for (const tail of listTails(layout)) {
-    const refused: TailIssue[] = [];
-    const read = readTail(layout, tail, upcasters, refusedLine(layout, tail, refused));
-    const checkpoints = readTailCheckpoints(layout, tail, refusedLine(layout, tail, refused));
-    const entries = refused.length > 0 ? [] : read.entries;
-    entriesByTail.set(tail, entries);
-    checkpointsByTail.set(tail, checkpoints);
+  for (const [tail, entries] of entriesByTail) {
     for (const entry of entries) {
       if (entry.event.kind !== 'tail.relinked') continue;
       hosts.add(tail);
       joined.add(entry.event.payload.into);
     }
   }
+  for (const { event } of toWrite) {
+    if (event.kind === 'tail.relinked') joined.add(event.payload.into);
+  }
   const coveredThrough = new Map<string, number>();
   for (const [tail, entries] of entriesByTail) {
     const name = named.get(tail);
     if (!hosts.has(tail) && (name === undefined || !joined.has(name))) continue;
     const coverage = verifyCheckpoints(
-      keys,
+      keysByTail.get(tail) ?? keys,
       tail,
       entries,
       checkpointsByTail.get(tail) ?? [],
@@ -946,12 +975,39 @@ export function relinksReadAt(
     );
     coveredThrough.set(tail, coverage.covered);
   }
-  return relinkedNaming(
-    named,
-    entriesByTail,
-    coveredThrough,
-    (entries, covered) => resolveIdentity(layout, entries, covered, keys).issues,
-  );
+  // Each relink to write, sealed where its host's last entry leaves off and covered: the
+  // checkpoint its writer signs at once.
+  const naming = new Map(named);
+  for (const { host, hostNames, event } of toWrite) {
+    const entries = entriesByTail.get(host) ?? [];
+    const last = entries.at(-1);
+    const entry = sealEntry({
+      event,
+      tail: host,
+      seq: (last?.link.seq ?? -1) + 1,
+      prev: last?.link.hash ?? null,
+    });
+    entriesByTail.set(host, [...entries, entry]);
+    coveredThrough.set(host, entry.link.seq);
+    if (naming.get(host) === undefined) naming.set(host, hostNames);
+  }
+  return relinkedNaming(naming, entriesByTail, coveredThrough, (entries, covered) => {
+    return resolveIdentity(layouts[0] as ChainLayout, entries, covered, keys).issues;
+  });
+}
+
+/** The committed keys of several layouts, asked in order: the first that holds a key answers. */
+function eitherKeys(each: readonly CommittedKeys[]): CommittedKeys {
+  const keys = (fingerprint: string) => {
+    for (const one of each) {
+      const key = one(fingerprint);
+      if (key !== null) return key;
+    }
+    return null;
+  };
+  keys.holdsNoKey = (fingerprint: string): string | undefined =>
+    each.length === 0 ? undefined : (each[0] as CommittedKeys).holdsNoKey(fingerprint);
+  return keys;
 }
 
 /** Verifies an entire chain, aggregating all tails. */

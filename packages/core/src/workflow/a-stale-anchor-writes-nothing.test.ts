@@ -528,6 +528,20 @@ describe('a checkout the key left writes nothing, through every write of the sur
     restoreKey: 'records an anchor from the record: the way out this refusal names',
     signerFor: 'reads who would sign in a tree',
     signerHeldFor: 'reads who would sign in a tree, and makes no key',
+    keysOnThisMachine: 'reads which keys this machine holds, and makes none',
+  };
+
+  /**
+   * The writes that ask no anchor, each with what decides them instead: the other half of the
+   * reconciliation. The owner's relink is written into a directory of two records, where every
+   * anchor reads as stale, so it asks the readers' own rule over the directory as it would read;
+   * that rule counts a relink only by a membership the record gave the key at that point, which is
+   * meant to refuse a key that left as it refuses one never taken in (the second is held, bytes
+   * unchanged, in `relink-operations.test.ts`; a key that left is not driven here).
+   */
+  const ASKS_THE_READERS_RULE: Readonly<Record<string, string>> = {
+    relinkTails:
+      'a relink counts only by a membership the record joined gave its key, at its point',
   };
 
   it('classifies every function the writing surface exports', () => {
@@ -537,7 +551,9 @@ describe('a checkout the key left writes nothing, through every write of the sur
       .sort();
     const driven = PROBES.map((probe) => probe.op);
     expect(new Set(driven).size, 'an op driven twice').toBe(driven.length);
-    expect([...driven, ...Object.keys(APPENDS_NOTHING)].sort()).toEqual(exported);
+    expect(
+      [...driven, ...Object.keys(APPENDS_NOTHING), ...Object.keys(ASKS_THE_READERS_RULE)].sort(),
+    ).toEqual(exported);
   });
 
   // Every write the surface exports is driven twice here, once refused and once as the control,
