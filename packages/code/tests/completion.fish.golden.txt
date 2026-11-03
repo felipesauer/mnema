@@ -482,6 +482,7 @@ complete -c mnema -f -n '__mnema_at "rules-file"' -l color -x -a 'auto always ne
 # mnema instructions
 complete -c mnema -f -n '__mnema_at "instructions"' -l check
 complete -c mnema -f -n '__mnema_at "instructions"' -l remove
+complete -c mnema -f -n '__mnema_at "instructions"' -l hosts -r
 complete -c mnema -f -n '__mnema_at "instructions"' -l all-hosts
 complete -c mnema -f -n '__mnema_at "instructions"' -s h -l help
 complete -c mnema -f -n '__mnema_at "instructions"' -s V -l version

@@ -72,7 +72,7 @@ _mnema_flags() {
     'recall') echo '--hook --host --session --after-a-compaction -h --help -V --version --color' ;;
     'rules') echo '--json -h --help -V --version --color' ;;
     'rules-file') echo '--host -h --help -V --version --color' ;;
-    'instructions') echo '--check --remove --all-hosts -h --help -V --version --color' ;;
+    'instructions') echo '--check --remove --hosts --all-hosts -h --help -V --version --color' ;;
     'switch') echo '-h --help -V --version --color' ;;
     'switch off') echo '--reason --scope --which -h --help -V --version --color' ;;
     'switch on') echo '--reason --scope --which -h --help -V --version --color' ;;

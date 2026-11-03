@@ -2062,7 +2062,7 @@ come before the founding, so leaving one leaves the project and the home as they
 Where a person's file exists (`CLAUDE.md`, `.claude/CLAUDE.md`, `GEMINI.md`) and nobody was asked, it gets the block, as it
 always did. Afterwards the disk is the choice: a `CLAUDE.md`, `.claude/CLAUDE.md` or `GEMINI.md` of yours with no block, in a project where
 another instructions file holds it, counts as left out, so `mnema instructions --check`, `mnema doctor` and `mnema instructions`
-without a terminal leave it alone and say in one line that it was left out, with `mnema instructions --all-hosts`, which adds the block.
+without a terminal leave it alone and say in one line that it was left out, with the form that adds the block to it alone, `mnema instructions --hosts claude` (or the host it belongs to). `--hosts` takes what `init --hosts` takes and writes only the hosts it names, a file of yours under them where it exists; it cannot be given with `--check`, `--remove` or `--all-hosts`.
 Where no file holds a block, nothing was left out.
 
 The question of who may accept is whether an agent may accept at once what you pick among the options it offered, or

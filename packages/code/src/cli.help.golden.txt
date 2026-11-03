@@ -686,11 +686,15 @@ $ mnema instructions --help
 | its kin), check them, or remove them
 |
 | Options:
-|   --check      say what each file holds of the instructions, and write nothing
-|   --remove     take the instructions out of each file
-|   --all-hosts  write AGENTS.md and the three files of mnema’s own, asking
-|                nothing and whichever are there
-|   -h, --help   display help for command
+|   --check         say what each file holds of the instructions, and write
+|                   nothing
+|   --remove        take the instructions out of each file
+|   --hosts <list>  which hosts get the mnema instructions, without asking:
+|                   claude, cursor, vscode, codex (several, separated by commas),
+|                   or one of all, detected, none
+|   --all-hosts     write AGENTS.md and the three files of mnema’s own, asking
+|                   nothing and whichever are there
+|   -h, --help      display help for command
 |
 | The files:
 |   AGENTS.md, created where there is none; CLAUDE.md, .claude/CLAUDE.md and GEMINI.md where
@@ -709,7 +713,9 @@ $ mnema instructions --help
 | hold the instructions, those are written, checked and removed, and the others are not
 | expected; where none does, a terminal is asked which hosts (arrows and space to mark, Enter
 | to confirm; a CLAUDE.md or GEMINI.md that exists is a mark of its own), and without one all
-| four are written. --all-hosts writes all four, whichever are there.
+| four are written. --all-hosts writes all four, whichever are there. --hosts writes only the hosts
+| it names (claude, cursor, vscode, codex; a person’s CLAUDE.md or GEMINI.md under the host that
+| is named), which is how to add the block to one file without writing the others.
 
 ### mnema switch --help
 $ mnema switch --help
