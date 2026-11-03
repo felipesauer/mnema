@@ -24,6 +24,7 @@ import { THE_BLOCKS } from '../../code/dist/presentation/banner.js';
 import { drawIcon } from './icon.mjs';
 import { drawIconFont } from './icon-font.mjs';
 import { drawActivityIcon } from './mark.mjs';
+import { EXTENSION_NAME } from './the-extension-name.mjs';
 
 const pkgDir = fileURLToPath(new URL('..', import.meta.url));
 const repoRoot = join(pkgDir, '..', '..');
@@ -36,7 +37,7 @@ try {
   const { name, private: isPrivate, devDependencies, scripts, type, ...packed } = manifest;
   writeFileSync(
     join(scratch, 'package.json'),
-    `${JSON.stringify({ name: 'mnema', ...packed, files: ['extension.cjs', 'icon.png', 'media/**', 'LICENSE', 'NOTICE', 'README.md', 'CHANGELOG.md'] }, null, 2)}\n`,
+    `${JSON.stringify({ name: EXTENSION_NAME, ...packed, files: ['extension.cjs', 'icon.png', 'media/**', 'LICENSE', 'NOTICE', 'README.md', 'CHANGELOG.md'] }, null, 2)}\n`,
   );
   copyFileSync(join(repoRoot, 'LICENSE'), join(scratch, 'LICENSE'));
   copyFileSync(join(pkgDir, 'NOTICE'), join(scratch, 'NOTICE'));

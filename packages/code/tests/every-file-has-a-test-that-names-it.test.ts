@@ -295,6 +295,14 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     'Two things of the readings the built-site case needs: the address /record/ links back to, so that the case that compares /record/ with what `mnema site --back-link` writes asks for the same address the build used, and the path of the recording the proof shows, so that the case that looks for it in the built page reads it from where the build does. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
   'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-record.mjs':
     'The step that writes the verifier page of the record by running the binary of this commit, and stops when the record does not verify. The case runs it over this repository and over a copy with one byte changed, so the specifier is the proof that a record that fails never becomes a page of the site.',
+  'packages/code/tests/every-page-of-the-site-says-what-it-is.test.ts -> ../../../site/build/the-build.mjs':
+    'The facts the site is built from, read now from the packages and the commit: the case holds the structured data and the canonical addresses of the built pages to them, and so asks for the same function the build asks. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
+  'packages/code/tests/every-page-of-the-site-says-what-it-is.test.ts -> ../../../site/build/the-pages.mjs':
+    'The readings of what a page says of itself: the description read from the first sentence of a page of docs/ or from its own description line, the structured data, the head handed to `mnema site --head` for /record/ and its sitemap line. The case runs them over fixtures and holds the built pages to them, and the specifier is the proof of the site and not a dependency the scanner could follow.',
+  'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts -> ../../../site/build/the-build.mjs':
+    'The facts of the build, for the case that compares /record/ with what `mnema site --back-link --head` writes: the build hands the command a head read from the same facts. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
+  'packages/code/tests/the-sentence-reaches-every-door.test.ts -> ../../../site/build/the-build.mjs':
+    'The address of the site, from the same facts the site is built from, so that the case that holds every manifest a stranger reads to the site asks for the address the build serves it at, and no copy of it is typed in a test. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
 };
 
 // ---------------------------------------------------------------------------
@@ -1095,6 +1103,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-link-a-page-carries-lands.test.ts': 6,
   'packages/code/tests/every-option-feeds-something.test.ts': 8,
   'packages/code/tests/every-page-of-the-cli-is-pinned.test.ts': 7,
+  'packages/code/tests/every-page-of-the-site-says-what-it-is.test.ts': 6,
   'packages/code/tests/every-public-value-has-a-caller.test.ts': 6,
   'packages/code/tests/every-readme-says-what-it-does-not.test.ts': 5,
   'packages/code/tests/every-sandbox-is-removed-where-it-was-made.test.ts': 6,
@@ -1237,7 +1246,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-brief-is-the-same-bytes-in-any-order.properties.test.ts': 9,
   'packages/code/tests/the-broken-link-reaches-every-reader.test.ts': 5,
   'packages/code/tests/the-built-binary-runs-from-a-symlink.test.ts': 7,
-  'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts': 10,
+  'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts': 11,
   'packages/code/tests/the-busy-tail-is-a-refusal.test.ts': 11,
   'packages/code/tests/the-cache-dir-reaches-every-door.test.ts': 9,
   'packages/code/tests/the-cache-is-not-said-to-change-no-answer.test.ts': 5,
@@ -1378,7 +1387,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-screen-is-ours.test.ts': 15,
   'packages/code/tests/the-screen-says-what-it-was-drawn-at.test.ts': 10,
   'packages/code/tests/the-secret-classes-page-is-generated.test.ts': 4,
-  'packages/code/tests/the-sentence-reaches-every-door.test.ts': 7,
+  'packages/code/tests/the-sentence-reaches-every-door.test.ts': 8,
   'packages/code/tests/the-server-keeps-its-own-projects-cache.test.ts': 11,
   'packages/code/tests/the-server-only-plugin-runs-no-hook.test.ts': 4,
   'packages/code/tests/the-session-journal-keeps-the-shape-not-the-words.test.ts': 16,
@@ -2241,8 +2250,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows; a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(23);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(23);
+    expect(unresolved.length).toBe(27);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(27);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);

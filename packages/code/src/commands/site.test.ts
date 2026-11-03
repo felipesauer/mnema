@@ -136,6 +136,73 @@ describe('mnema site', () => {
     },
   );
 
+  it('says what the page is to a search engine only when --head is given, and changes nothing else', () => {
+    runInit({ cwd: repo, env });
+    decide('Keep money in integer cents', 'public', 'accept');
+    const plain = join(sandbox, 'plain');
+    const headed = join(sandbox, 'headed');
+    const file = join(sandbox, 'head.json');
+    writeFileSync(
+      file,
+      JSON.stringify({
+        title: 'A "title" & more',
+        description: 'The <b>description</b>.',
+        canonical: 'https://x.test/r/record/',
+        structuredData: { '@type': 'WebSite', name: '</script>' },
+      }),
+    );
+    expect(runSite({ cwd: repo, env }, { out: plain }).ok).toBe(true);
+    expect(runSite({ cwd: repo, env }, { out: headed, head: file }).ok).toBe(true);
+    expect(pageOf(plain)).toContain('<title>The record</title>');
+    expect(pageOf(plain)).not.toContain('rel="canonical"');
+    expect(pageOf(headed)).toBe(
+      pageOf(plain).replace(
+        '<title>The record</title>',
+        [
+          '<title>A &quot;title&quot; &amp; more</title>',
+          '<meta name="description" content="The &lt;b&gt;description&lt;/b&gt;.">',
+          '<link rel="canonical" href="https://x.test/r/record/">',
+          '<script type="application/ld+json">{"@type":"WebSite","name":"\\u003c/script>"}</script>',
+        ].join('\n'),
+      ),
+    );
+  });
+
+  it.each([
+    ['is not JSON', 'not json'],
+    ['is not a JSON object', '[1]'],
+    ['has no title', JSON.stringify({ description: 'd', canonical: 'https://x.test/' })],
+    [
+      'has no description',
+      JSON.stringify({ title: 't', description: ' ', canonical: 'https://x.test/' }),
+    ],
+    ['has no canonical', JSON.stringify({ title: 't', description: 'd' })],
+    [
+      'an absolute http(s) address',
+      JSON.stringify({ title: 't', description: 'd', canonical: '/record/' }),
+    ],
+    [
+      'an absolute http(s) address',
+      JSON.stringify({ title: 't', description: 'd', canonical: 'javascript:alert(1)' }),
+    ],
+  ])('refuses a --head file that %s, and writes nothing', (said, text) => {
+    runInit({ cwd: repo, env });
+    const file = join(sandbox, 'head.json');
+    writeFileSync(file, text);
+    const out = join(sandbox, 'out');
+    const refused = runSite({ cwd: repo, env }, { out, head: file });
+    expect(refused.ok ? '' : refused.reason).toBe('BAD_HEAD');
+    expect(refused.ok ? '' : (refused as { message: string }).message).toContain(said);
+    expect(readdirSync(sandbox)).not.toContain('out');
+  });
+
+  it('refuses a --head that names no file, and writes nothing', () => {
+    runInit({ cwd: repo, env });
+    const refused = runSite({ cwd: repo, env }, { out: join(sandbox, 'out'), head: 'nope.json' });
+    expect(refused.ok ? '' : refused.reason).toBe('BAD_HEAD');
+    expect(readdirSync(sandbox)).not.toContain('out');
+  });
+
   it('refuses an --out that is a file, and writes nothing there', () => {
     runInit({ cwd: repo, env });
     decide('Keep money in integer cents', 'public', 'accept');

@@ -33,7 +33,7 @@ import { catalogUpcasters, ensureTree, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, realOfMaybeMissing, resolveTrees } from '@mnema/core';
 import { tailsOfFiles } from '../site/browser/tails.js';
 import { pageModel } from '../site/model.js';
-import { renderPage } from '../site/page.js';
+import { renderPage, type SiteHead } from '../site/page.js';
 import { theSiteVerifier } from '../site/verifier-bundle.js';
 
 /** What the site command needs: injected so it is testable. */
@@ -69,7 +69,8 @@ export type SiteRefused =
   | { readonly ok: false; readonly reason: 'UNREADABLE'; readonly message: string }
   | { readonly ok: false; readonly reason: 'OUT_IS_A_FILE'; readonly message: string }
   | { readonly ok: false; readonly reason: 'OUT_IN_THE_RECORD'; readonly message: string }
-  | { readonly ok: false; readonly reason: 'BAD_BACK_LINK'; readonly message: string };
+  | { readonly ok: false; readonly reason: 'BAD_BACK_LINK'; readonly message: string }
+  | { readonly ok: false; readonly reason: 'BAD_HEAD'; readonly message: string };
 
 /**
  * Whether `--back-link` may be put in the page: an http(s) address with `//` after the scheme, or a
@@ -84,6 +85,39 @@ export function isAcceptableBackLink(link: string): boolean {
   const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(link)?.[1];
   if (scheme !== undefined) return /^https?$/i.test(scheme) && /^[^:]+:\/\/[^/]/.test(link);
   return !link.startsWith('//');
+}
+
+/**
+ * What `--head` names: a JSON file with a `title`, a `description` and a `canonical` (each a non-empty string; the
+ * canonical an absolute http(s) address) and, optionally, `structuredData` (any JSON value, written as
+ * `application/ld+json`). Returns the head, or what is wrong with the file.
+ */
+export function readSiteHead(text: string): SiteHead | string {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return 'is not JSON';
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    return 'is not a JSON object';
+  }
+  const fields = parsed as Record<string, unknown>;
+  for (const key of ['title', 'description', 'canonical']) {
+    const value = fields[key];
+    if (typeof value !== 'string' || value.trim() === '')
+      return `has no ${key} (a non-empty string)`;
+  }
+  const canonical = fields.canonical as string;
+  if (!isAcceptableBackLink(canonical) || !/^https?:\/\//i.test(canonical)) {
+    return 'has a canonical that is not an absolute http(s) address';
+  }
+  return {
+    title: fields.title as string,
+    description: fields.description as string,
+    canonical,
+    ...('structuredData' in fields ? { structuredData: fields.structuredData } : {}),
+  };
 }
 
 /** Every file under `dir`, as a path relative to `base`, in a fixed order. */
@@ -133,7 +167,7 @@ function isWithin(inner: string, outer: string): boolean {
  */
 export function runSite(
   ctx: SiteContext,
-  input: { readonly out?: string; readonly backLink?: string },
+  input: { readonly out?: string; readonly backLink?: string; readonly head?: string },
 ): SiteDone | SiteRefused {
   if (input.backLink !== undefined && !isAcceptableBackLink(input.backLink)) {
     return {
@@ -142,6 +176,24 @@ export function runSite(
       message:
         '--back-link takes an http:// or https:// address, or a path on the same site (not //host, no backslash, no spaces)',
     };
+  }
+  let head: SiteHead | undefined;
+  if (input.head !== undefined) {
+    let text: string;
+    try {
+      text = readFileSync(resolve(ctx.cwd, input.head), 'utf8');
+    } catch {
+      return {
+        ok: false,
+        reason: 'BAD_HEAD',
+        message: `--head ${input.head} cannot be read: it names a JSON file with a title, a description and a canonical address`,
+      };
+    }
+    const read = readSiteHead(text);
+    if (typeof read === 'string') {
+      return { ok: false, reason: 'BAD_HEAD', message: `--head ${input.head} ${read}` };
+    }
+    head = read;
   }
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const publicRoot = trees.projectPublic;
@@ -197,7 +249,10 @@ export function runSite(
   if (inSite) ensureTree({ root: publicRoot });
   mkdirSync(target, { recursive: true });
   const written = join(target, 'index.html');
-  writeFileSync(written, renderPage({ ...page, tails, files }, theSiteVerifier(), input.backLink));
+  writeFileSync(
+    written,
+    renderPage({ ...page, tails, files }, theSiteVerifier(), input.backLink, head),
+  );
   return {
     ok: true,
     path: input.out === undefined ? relative(ctx.cwd, written) : join(input.out, 'index.html'),

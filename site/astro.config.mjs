@@ -28,7 +28,6 @@ export default defineConfig({
       customCss: ['./src/generated/theme.css', './src/styles/site.css'],
       components: { Footer: './src/components/Footer.astro', Hero: './src/components/Hero.astro' },
       head: [
-        { tag: 'meta', attrs: { name: 'description', content: facts.description } },
         { tag: 'meta', attrs: { property: 'og:image', content: card } },
         { tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
         { tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },

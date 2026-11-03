@@ -6,7 +6,7 @@
     "name": "Felipe Sauer",
     "url": "https://github.com/felipesauer"
   },
-  "homepage": "https://github.com/felipesauer/mnema",
+  "homepage": "https://felipesauer.github.io/mnema/",
   "repository": "https://github.com/felipesauer/mnema",
   "license": "Apache-2.0",
   "keywords": ["audit-trail", "append-only", "accountability", "adr", "local-first"],

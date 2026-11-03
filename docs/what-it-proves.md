@@ -1,5 +1,7 @@
 # What it proves, and what it does not
 
+<!-- description: What mnema verify proves about a record, a hash chain and signed checkpoints, and what it does not. -->
+
 Being exact about this is what the product is for, so it is the section worth
 reading twice. `mnema verify` reads the events and the committed public keys of
 a project's trees (no private key, no network) and prints each verdict
