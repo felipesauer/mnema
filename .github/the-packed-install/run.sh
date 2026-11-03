@@ -93,5 +93,25 @@ run decision record "Keep money as integer cents" "Float sums drift; cents are e
 run verify
 grep -q "local integrity verified" "$work/out.txt" || fail "verify did not say the record is intact"
 
+# The stack index comes inside the package: listed from a folder that is no checkout, each entry's
+# folder is in the installed package, and the plan for it shows the digest the entry lists.
+run stack index --json
+index_json="$work/index.json"
+cp "$work/out.txt" "$index_json"
+for name in evidence-first review-pass; do
+  folder="$(node -e '
+    const s = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).stacks;
+    console.log(s.find((x) => x.name === process.argv[2])?.source ?? "");' "$index_json" "$name")"
+  want_digest="$(node -e '
+    const s = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).stacks;
+    console.log(s.find((x) => x.name === process.argv[2])?.digest ?? "");' "$index_json" "$name")"
+  if [ -z "$folder" ] || [ ! -f "$folder/stack.json" ]; then
+    fail "the installed index lists no folder that exists for $name"
+    continue
+  fi
+  run stack add "$folder" --dry-run
+  grep -q "digest   $want_digest" "$work/out.txt" || fail "the plan for $name does not show the listed digest"
+done
+
 cd "$root" || exit 1
 exit "$failed"

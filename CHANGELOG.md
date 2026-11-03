@@ -337,6 +337,20 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   SHA-256 with `login github-oidc`. It is the third job of the workflow that can ask for the OIDC token. Nothing has run
   against the registry: the first listing is the first release that carries `mcpName`.
 
+### Fixed
+
+- **`mnema stack index` and the extension's Add from Index work in a folder that is not a mnema checkout (ADR-169).** In
+  0.1.4 they read a `stack-index/` folder relative to the working folder, which only this repository has, and refused
+  anywhere else with `Refused (STACK_INDEX_REFUSED): there is no index.json in "stack-index".`; `mnema stack add` takes
+  a folder, an archive or the address of a whole repository, so an example's subfolder could not be fetched by address
+  either. The package now carries the index and the example stacks it lists (`dist/stack-index/`, written by the build
+  from `stack-index/index.json` and `packages/stacks/examples/`, a byte-for-byte copy), and `mnema stack index` with no
+  folder reads it: each entry's folder is inside the installed package, and its digest is the one `mnema stack add
+  <folder> --dry-run` shows. A folder given is read as before; one with no `index.json` is refused saying what an index
+  is and that, with no folder, the one that comes with mnema is read. The extension's `mnema.stackIndex` now defaults
+  to empty, meaning that index; set, it is passed as before. A test holds the built-in copy to the repository's file and
+  folders and to the digests (`the-built-in-index-is-the-repositorys.test.ts`).
+
 ## [0.1.4] - 2026-10-29
 
 ### Added

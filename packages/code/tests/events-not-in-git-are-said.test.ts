@@ -12,7 +12,16 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -352,6 +361,109 @@ describe('the events git does not hold', SLOW, () => {
     expect(saysEventsNotInGit(since)).toMatch(
       /origin\/main has had 1 commit since the last one that changed the record\./,
     );
+  });
+
+  it('counts the commits since the last one that changed the record by first parents, after a merge that keeps the branch', () => {
+    const { local, remote } = world();
+    decide(local, 'committed now');
+    const made = mnema(local, ['record', 'commit']);
+    expect(made.status, made.out).toBe(0);
+    const branch = /(mnema-record\/[\w-]+)/.exec(made.out)?.[1] as string;
+    expect(git(local, 'push', '-q', 'origin', branch).status).toBe(0);
+    const forge = join(sandbox, 'forge');
+    expect(git(sandbox, 'clone', '-q', remote, forge).status).toBe(0);
+    expect(git(forge, 'merge', '-q', '--no-ff', '-m', 'merge', `origin/${branch}`).status).toBe(0);
+    expect(git(forge, 'push', '-q', 'origin', 'main').status).toBe(0);
+    // Something waits again, and the merge is what this clone has fetched.
+    decide(local, 'recorded after the cut');
+    expect(git(local, 'fetch', '-q').status).toBe(0);
+    const ctx = { cwd: local, env: { home: join(sandbox, 'home') }, processEnv: env() };
+    expect(readEventsNotInGit(ctx)?.commitsSinceRecordCommit).toBe(0);
+    writeFileSync(join(forge, 'code.txt'), 'x\n');
+    expect(git(forge, 'add', 'code.txt').status).toBe(0);
+    expect(git(forge, 'commit', '-qm', 'work').status).toBe(0);
+    expect(git(forge, 'push', '-q', 'origin', 'main').status).toBe(0);
+    expect(git(local, 'fetch', '-q').status).toBe(0);
+    expect(readEventsNotInGit(ctx)?.commitsSinceRecordCommit).toBe(1);
+  });
+
+  it('never fetches in a partial clone: what it cannot read from the clone is left out, or says nothing', () => {
+    const { local, remote } = world();
+    expect(git(remote, 'config', 'uploadpack.allowFilter', 'true').status).toBe(0);
+    expect(git(remote, 'config', 'uploadpack.allowAnySHA1InWant', 'true').status).toBe(0);
+    const partial = join(sandbox, 'partial');
+    expect(git(sandbox, 'clone', '-q', '--filter=tree:0', `file://${remote}`, partial).status).toBe(
+      0,
+    );
+    expect(git(partial, 'remote', 'set-head', 'origin', 'main').status).toBe(0);
+    decide(partial, 'recorded in the partial clone');
+    // The remote moves on and the partial clone fetches commits only: their trees stay behind.
+    const forge = join(sandbox, 'forge');
+    expect(git(sandbox, 'clone', '-q', remote, forge).status).toBe(0);
+    writeFileSync(join(forge, 'code.txt'), 'x\n');
+    expect(git(forge, 'add', 'code.txt').status).toBe(0);
+    expect(git(forge, 'commit', '-qm', 'work').status).toBe(0);
+    expect(git(forge, 'push', '-q', 'origin', 'main').status).toBe(0);
+    expect(git(partial, 'fetch', '-q').status).toBe(0);
+
+    // The control: the same read WITHOUT the guard does fetch, so the trace below can see one.
+    const traced = join(sandbox, 'trace-control.txt');
+    const control = spawnSync(
+      'git',
+      ['log', '-1', '--first-parent', '--format=%H', 'origin/main', '--', '.mnema'],
+      { cwd: partial, encoding: 'utf-8', env: { ...env(), GIT_TRACE: traced } },
+    );
+    expect(control.status, control.stderr).toBe(0);
+    expect(readFileSync(traced, 'utf-8')).toMatch(/fetch/);
+
+    const trace = join(sandbox, 'trace.txt');
+    const read = readEventsNotInGit({
+      cwd: partial,
+      env: { home: join(sandbox, 'home') },
+      processEnv: { ...env(), GIT_TRACE: trace },
+    });
+    expect(read?.events).toBeGreaterThan(0);
+    // Where git cannot answer it from the clone the count is left out; either way it was not fetched.
+    expect([undefined, 1]).toContain(read?.commitsSinceRecordCommit);
+    expect(existsSync(trace) ? readFileSync(trace, 'utf-8') : '').not.toMatch(/fetch/);
+    expect(local).toBeDefined();
+  });
+
+  it('says nothing when a tail file of HEAD is not in the clone, and does not fetch it', () => {
+    const { local, remote } = world();
+    expect(git(remote, 'config', 'uploadpack.allowFilter', 'true').status).toBe(0);
+    expect(git(remote, 'config', 'uploadpack.allowAnySHA1InWant', 'true').status).toBe(0);
+    const bare = join(sandbox, 'blobless');
+    expect(
+      git(sandbox, 'clone', '-q', '--filter=blob:none', '--no-checkout', `file://${remote}`, bare)
+        .status,
+    ).toBe(0);
+    // The record's files arrive from elsewhere, with an event more than the commit holds. No
+    // mnema runs in the clone: any git read of it could bring the blob in.
+    decide(local, 'above what the clone holds');
+    // And a second key's tail, which HEAD does not hold at all: it would count whole beside the
+    // file that cannot be read, which is why the short count is not said.
+    const second = { ...env(), HOME: join(sandbox, 'second-home') };
+    mkdirSync(second.HOME, { recursive: true });
+    const wrote = spawnSync(
+      process.execPath,
+      [CLI, 'decision', 'record', 'from a second key', 'why'],
+      {
+        cwd: local,
+        encoding: 'utf-8',
+        env: second,
+      },
+    );
+    expect(wrote.status, `${wrote.stdout}${wrote.stderr}`).toBe(0);
+    cpSync(join(local, '.mnema'), join(bare, '.mnema'), { recursive: true });
+    const trace = join(sandbox, 'trace-blobless.txt');
+    const read = readEventsNotInGit({
+      cwd: bare,
+      env: { home: join(sandbox, 'home') },
+      processEnv: { ...env(), GIT_TRACE: trace },
+    });
+    expect(read).toBeUndefined();
+    expect(existsSync(trace) ? readFileSync(trace, 'utf-8') : '').not.toMatch(/fetch/);
   });
 
   it('reads the default branch where the base of record commit reads it, and refuses what it refuses', () => {

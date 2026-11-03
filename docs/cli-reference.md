@@ -1483,6 +1483,8 @@ how many, counting only the first parent so a merged pull request is one; and wh
 current one follows holds commits that changed the record and this clone lacks, it adds that
 `mnema record pull` brings them over the events waiting here.
 
+In a partial clone it never fetches an object to answer: a tail file of `HEAD` the clone does not hold makes the count unknown and nothing is said, and a commit count git cannot read from the clone is left out of the sentence.
+
 It says nothing when no event waits, outside a git repository, with no project record, and where git
 ignores the record's tails (a record you ignore is not one you are told to commit). With
 `mnema switch off session-tally` the closing line is silent, and `status` and `doctor` still say it;
@@ -1706,6 +1708,13 @@ Claude Code, VS Code and Cursor do; each of those folders is read in the host's 
 measured. `mnema stack remove` keeps every file changed since it was written, and `mnema stack check`
 fails when the files or their receipt part from the record. A hook a stack declares stays off until
 `mnema stack enable` shows its script and a person at a terminal types its name.
+
+`mnema stack index` lists the stacks an index names, with the digest each must have, and installs
+nothing (`--json` gives the entries to a program). With no folder it reads the index that comes with
+mnema, in any folder you run it from: the two example stacks of this repository, each with its folder
+inside the installed package, and the plan of `mnema stack add <folder> --dry-run` for that folder
+shows the digest the index lists. With `mnema stack index <folder>` it reads the `index.json` in that
+folder instead; a folder with none is refused. Being listed does not make a stack safe.
 
 After it writes, the install asks `skills-ref` (the validator the Agent Skills specification
 publishes; its command is `agentskills`) about each skill folder it wrote and prints one line each,

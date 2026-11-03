@@ -19,7 +19,7 @@
   },
   "packageManager": "pnpm@10.34.1",
   "scripts": {
-    "build": "tsc -b && node .github/the-binary-runs/mark-it-runnable.mjs && node packages/code/build/the-site-verifier.mjs",
+    "build": "tsc -b && node .github/the-binary-runs/mark-it-runnable.mjs && node packages/code/build/the-site-verifier.mjs && node packages/code/build/the-stack-index.mjs",
     "clean": "tsc -b --clean",
     "typecheck": "tsc -b && pnpm -r --workspace-concurrency=1 exec tsc -p tsconfig.test.json",
     "lint": "biome check --error-on-warnings packages/ plugin/ .github/ .claude-plugin/",

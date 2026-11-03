@@ -12,6 +12,7 @@
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { isStackName, isStackVersion } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { refuse, type StackRefused } from './stack-install.js';
@@ -86,13 +87,22 @@ function entryOf(raw: unknown, at: number, base: string): IndexEntry | string {
 
 /**
  * The index in `folder` (relative to `cwd`), read whole. Its entries' folders are resolved
- * beside it: `path` is the repository's own, and the index sits at the repository's root.
+ * beside it: `path` is the repository's own, and the index sits at the repository's root. The
+ * built-in index passes `base`: its entries sit INSIDE its own folder, at the same relative paths.
  */
-export function readStackIndex(cwd: string, folder: string): StackIndex | StackRefused {
+export function readStackIndex(
+  cwd: string,
+  folder: string,
+  base?: string,
+): StackIndex | StackRefused {
   const dir = resolve(cwd, folder);
   const file = resolve(dir, FILE);
   const shown = JSON.stringify(oneLine(folder));
-  if (!existsSync(file)) return no(`there is no ${FILE} in ${shown}.`);
+  if (!existsSync(file)) {
+    return no(
+      `there is no ${FILE} in ${shown}. An index is a folder holding an ${FILE} that lists stacks: for each, a name, a version, a link and a digest. With no folder given, the index that comes with this installation is read.`,
+    );
+  }
   let text: string;
   try {
     if (statSync(file).size > MOST_BYTES) return no(`${FILE} in ${shown} is too large.`);
@@ -108,16 +118,41 @@ export function readStackIndex(cwd: string, folder: string): StackIndex | StackR
   }
   const stacks = (parsed as { stacks?: unknown } | null)?.stacks;
   if (!Array.isArray(stacks)) return no(`${FILE} in ${shown} has no "stacks" list.`);
-  const base = dirname(dir);
+  const entriesBase = base ?? dirname(dir);
   const entries: IndexEntry[] = [];
   const bad: string[] = [];
   stacks.forEach((raw, at) => {
-    const one = entryOf(raw, at, base);
+    const one = entryOf(raw, at, entriesBase);
     if (typeof one === 'string') bad.push(one);
     else entries.push(one);
   });
   if (bad.length > 0) return no(`${FILE} in ${shown} is not in its form.`, bad);
   return { ok: true, folder: dir, entries };
+}
+
+/**
+ * The index that comes with the installed package: `dist/stack-index/`, which the build writes from
+ * the repository's `stack-index/` and the example stacks it lists. The same address holds in the
+ * built `dist/commands/` and in `src/commands/`, so a run from source finds what the build wrote.
+ */
+export const BUILT_IN_INDEX = fileURLToPath(new URL('../../dist/stack-index', import.meta.url));
+
+/**
+ * The index to read: the one in `folder` when a folder is given, else the built-in one, each entry
+ * of which names its folder inside the installed package.
+ */
+export function readTheIndex(
+  cwd: string,
+  folder?: string,
+  builtIn: string = BUILT_IN_INDEX,
+): StackIndex | StackRefused {
+  if (folder !== undefined) return readStackIndex(cwd, folder);
+  if (!existsSync(resolve(builtIn, FILE))) {
+    return no(
+      `this installation carries no built-in index. Name the folder of an index to read one: its ${FILE} lists the stacks.`,
+    );
+  }
+  return readStackIndex(cwd, builtIn, builtIn);
 }
 
 /** What the index says and does not say, as `stack index` prints it. */

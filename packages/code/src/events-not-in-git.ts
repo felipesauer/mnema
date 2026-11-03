@@ -21,6 +21,11 @@
  * is one; and whether the branch this one follows holds commits that changed the record and this
  * one lacks, which is when `mnema record pull` is what brings them over without a conflict.
  *
+ * NO NETWORK, A PARTIAL CLONE INCLUDED: git runs with `GIT_NO_LAZY_FETCH=1`, so an object a partial
+ * clone does not hold is never fetched to answer. A tail file of HEAD that cannot be read makes the
+ * count unknown and nothing is said (a short number would be false); the commit counts of the
+ * sentence are left out where git cannot answer them (`events-not-in-git-are-said.test.ts`).
+ *
  * SILENT BY CONSTRUCTION. Where nothing waits, outside a git repository, with no public tree, or
  * with the tails ignored by git (a person who ignores the record is not told to commit it), the
  * answer is `undefined` and no line is said.
@@ -181,6 +186,9 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
     ...given,
     ...(given.HOME === undefined && ctx.env.home !== undefined ? { HOME: ctx.env.home } : {}),
     GIT_OPTIONAL_LOCKS: '0',
+    // A partial clone must not fetch to answer this: it reads what the clone holds.
+    GIT_NO_LAZY_FETCH: '1',
+    GIT_TERMINAL_PROMPT: '0',
   };
   for (const name of REPOSITORY_VARIABLES) Reflect.deleteProperty(env, name);
   const gitRun = (args: readonly string[]): Ran => {
@@ -201,12 +209,20 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
   // What HEAD holds of the tails: path (from the record's folder) to blob and size. A repository
   // with no commit yet holds nothing, so everything here waits.
   const held = new Map<string, { readonly oid: string; readonly size: number }>();
-  const listed = gitRun(['ls-tree', '-r', '-l', '-z', 'HEAD', '--', 'tails']);
+  let listed = gitRun(['ls-tree', '-r', '-l', '-z', 'HEAD', '--', 'tails']);
+  // A partial clone that lacks a blob cannot say its size without fetching it (git prints `BAD`
+  // there, or fails): a size that is not a number is unknown, and that file is read or left unreadable.
+  if (listed.status !== 0 && gitRun(['rev-parse', '--verify', '--quiet', 'HEAD']).status === 0) {
+    listed = gitRun(['ls-tree', '-r', '-z', 'HEAD', '--', 'tails']);
+  }
   if (listed.status === 0) {
     for (const entry of listed.out.toString('utf-8').split('\0')) {
-      const parsed = /^\d+ blob ([0-9a-f]+) +(\d+)\t(.+)$/.exec(entry);
+      const parsed = /^\d+ blob ([0-9a-f]+)(?: +(\S+))?\t(.+)$/.exec(entry);
       if (parsed !== null) {
-        held.set(parsed[3] as string, { oid: parsed[1] as string, size: Number(parsed[2]) });
+        held.set(parsed[3] as string, {
+          oid: parsed[1] as string,
+          size: /^\d+$/.test(parsed[2] ?? '') ? Number(parsed[2]) : -1,
+        });
       }
     }
   }
@@ -215,6 +231,7 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
   let tails = 0;
   let oldest: string | undefined;
   let untrackedFile: string | undefined;
+  let unreadable = false;
   for (const id of readdirSync(tailsDir).sort()) {
     const dir = join(tailsDir, id);
     if (!lstatSync(dir).isDirectory()) continue;
@@ -231,7 +248,12 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
       let before = 0;
       if (inHead !== undefined) {
         const blob = gitRun(['cat-file', 'blob', inHead.oid]);
-        if (blob.status !== 0) continue;
+        if (blob.status !== 0) {
+          // An object this clone does not hold (a partial clone), and it is not fetched: the count
+          // would be short, so no count is said.
+          unreadable = true;
+          continue;
+        }
         before = linesOf(blob.out);
       } else {
         untrackedFile ??= path;
@@ -247,7 +269,7 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
     if (waiting > 0) tails++;
     events += waiting;
   }
-  if (events === 0) return undefined;
+  if (events === 0 || unreadable) return undefined;
   // A person who has git ignore the record is not told to commit it.
   if (
     untrackedFile !== undefined &&
@@ -266,7 +288,7 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
   let commitsSinceRecordCommit: number | undefined;
   if (base.ok) {
     defaultBranch = `${base.remote}/${base.branch}`;
-    const last = gitAsk(['log', '-1', '--format=%H', base.commit, '--', '.']);
+    const last = gitAsk(['log', '-1', '--first-parent', '--format=%H', base.commit, '--', '.']);
     if (last !== undefined && last !== '') {
       const counted = Number(
         gitAsk(['rev-list', '--count', '--first-parent', `${last}..${base.commit}`]),
