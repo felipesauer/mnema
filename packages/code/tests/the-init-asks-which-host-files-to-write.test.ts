@@ -667,7 +667,11 @@ describe('on the built binary, under a pseudo-terminal', () => {
     timeout: 60_000,
   }, async () => {
     // The width is the renderer's, learned and never asked of the device by this flow: on a narrow terminal a
-    // note that does not fit beside its row goes under it, and a row that fits is not folded by the layout.
+    // note that does not fit beside its row goes under it, a row of the trail of its own that keeps the guide.
+    // What the product's fold does to a row that was laid out for more is break it with a hang and no guide,
+    // which is the difference this case reads.
+    mkdirSync(join(repo, '.cursor'));
+    writeFileSync(join(repo, 'CLAUDE.md'), '# Mine\n');
     const ran = await atTheDevice(
       [
         asked(HOSTS),
@@ -689,9 +693,9 @@ describe('on the built binary, under a pseudo-terminal', () => {
     for (const row of wide) {
       expect(Math.max(...row.split(' ').map((word) => widthOfText(word))), row).toBeGreaterThan(52);
     }
-    expect(
-      rows.some((row) => row.includes('detected: CLAUDE.md') || row.includes('detected: .cursor/')),
-    ).toBe(false);
+    const underItsRow = rows.filter((row) => row.includes('detected: CLAUDE.md'));
+    expect(underItsRow).toHaveLength(1);
+    expect(underItsRow[0]?.startsWith('\u2502'), underItsRow[0]).toBe(true);
   });
 
   it('keeps every line of the trail on a line of its own where the layout runs for a screen reader', {
