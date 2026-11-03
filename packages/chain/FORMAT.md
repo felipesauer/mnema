@@ -244,7 +244,7 @@ is false the moment they open one: a naive `*.jsonl` glob reads the checkpoints 
 if they were events. The layout, which only ever appeared here incidentally in §8:
 
 ```
-<record>/.gitattributes                         "* -text", written by this product's writer; not part of the proof
+<record>/.gitattributes                         "* -text" and the merge driver of a tail's files, written by this product's writer; not part of the proof
 <record>/.gitignore                             what git leaves out of the tree; not part of the proof
 <record>/.editorconfig                          `unset` for every property an outer EditorConfig could impose on these bytes; written by `init`; not part of the proof
 <record>/README.md                              written by `init`, for a person or an agent who opens the folder; not part of the proof

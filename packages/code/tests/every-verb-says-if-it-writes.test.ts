@@ -314,6 +314,9 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // would measure a refusal. What it does to the record, nothing, and to the repository is
   // measured in `a-commit-hook-only-suggests.test.ts`.
   'commit-hook': CANNOT_BE_EXERCISED,
+  // It pulls from a remote, or is the driver git calls with files of a merge: this harness's
+  // fixture is neither. Both are driven over real git in `a-tail-merges-and-pulls.test.ts`.
+  record: CANNOT_BE_EXERCISED,
   commits: { argv: () => ['commits', 'ADR-1'] },
   why: { argv: () => ['why', 'src'] },
   aging: { argv: () => ['aging'] },
@@ -377,6 +380,10 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
     'not exercised here: it writes one hook file into a git repository, which the fixture is not: ' +
     'neither an event nor a key; `a-commit-hook-only-suggests.test.ts` drives it over a real ' +
     'repository',
+  record:
+    'not exercised here: `pull` needs a git repository with a remote and `merge-tail` the files of a ' +
+    'merge, which the fixture is not; it appends no event, and `a-tail-merges-and-pulls.test.ts` ' +
+    'drives both over real git, with the record verified after the pull',
   promote:
     'the exercise is its listing act, which reads: the copy is what makes it a write and needs a ' +
     'second project holding the same pattern in force, which the fixture is not: through the ' +
@@ -692,6 +699,7 @@ describe('every verb says if it writes', () => {
       'witness',
       'check',
       'commit-hook',
+      'record',
       'key',
       'tail',
       'mcp',
