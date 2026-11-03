@@ -34,7 +34,7 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case 'commit-hook'
             echo 'install uninstall suggest help'
         case 'record'
-            echo 'pull merge-tail help'
+            echo 'pull commit merge-tail help'
         case 'key'
             echo 'restore request enroll github sigstore revoke protect unprotect help'
         case 'tail'
@@ -112,7 +112,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'commits' -d 'show the commits that c
 complete -c mnema -f -n '__mnema_at ""' -a 'aging' -d 'show accepted decisions whose addressed paths changed in many commits since'
 complete -c mnema -f -n '__mnema_at ""' -a 'trailer' -d 'print the commit trailer that ties a commit to a decision'
 complete -c mnema -f -n '__mnema_at ""' -a 'commit-hook' -d 'install or remove an optional git hook that suggests the Mnema-Decision trailer'
-complete -c mnema -f -n '__mnema_at ""' -a 'record' -d 'pull the record over events not yet committed, and merge its tails for git'
+complete -c mnema -f -n '__mnema_at ""' -a 'record' -d 'pull the record over events not yet committed, commit them for a pull request, and merge its tails for git'
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'act on the record\'s own tails: list them, authorize a cut, relink one'
 complete -c mnema -f -n '__mnema_at ""' -a 'doctor' -d 'say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix)'
@@ -756,6 +756,7 @@ complete -c mnema -f -n '__mnema_at "commit-hook suggest"' -l color -x -a 'auto 
 
 # mnema record
 complete -c mnema -f -n '__mnema_at "record"' -a 'pull' -d 'git pull over tails grown here and not yet committed'
+complete -c mnema -f -n '__mnema_at "record"' -a 'commit' -d 'commit the signed record to a branch for a pull request'
 complete -c mnema -f -n '__mnema_at "record"' -a 'merge-tail' -d 'the merge driver git runs for a tail\'s files'
 complete -c mnema -f -n '__mnema_at "record"' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at "record"' -s h -l help
@@ -766,6 +767,13 @@ complete -c mnema -f -n '__mnema_at "record"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "record pull"' -s h -l help
 complete -c mnema -f -n '__mnema_at "record pull"' -s V -l version
 complete -c mnema -f -n '__mnema_at "record pull"' -l color -x -a 'auto always never'
+
+# mnema record commit
+complete -c mnema -f -n '__mnema_at "record commit"' -l through -r
+complete -c mnema -f -n '__mnema_at "record commit"' -l json
+complete -c mnema -f -n '__mnema_at "record commit"' -s h -l help
+complete -c mnema -f -n '__mnema_at "record commit"' -s V -l version
+complete -c mnema -f -n '__mnema_at "record commit"' -l color -x -a 'auto always never'
 
 # mnema record merge-tail
 complete -c mnema -f -n '__mnema_at "record merge-tail"' -s h -l help

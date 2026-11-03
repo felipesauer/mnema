@@ -845,6 +845,49 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the path of a file in the working tree, which a name in it can carry',
   },
+  'record.ts «A branch of this cut is there already, made nothing: {}.» #1': {
+    verdict: 'collapsed',
+    why: 'a branch name read back from git, which a person may have made by hand',
+  },
+  'record.ts «Made {} on {}, verified with verify --since {}; nothing was pushed.» #1': {
+    verdict: 'collapsed',
+    why: 'the branch made and the base, names a remote or a person chose',
+  },
+  'record.ts «Nothing to commit: {} already holds the record here through the last signed checkpoint of each tail.» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the base, as the remote names its default branch',
+    },
+  'record.ts «git keeps no date of when {} was last updated here: \\`git remote update {}\\` reads it again.» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the base and the remote, names a remote or a person chose',
+    },
+  'record.ts «left out: {} event(s) above the cut{}» #1': {
+    verdict: 'collapsed',
+    why: 'the paths of files in the working tree, which a name in it can carry',
+  },
+  'record.ts «next: {}» #1': {
+    verdict: 'collapsed',
+    why: 'the remote and the branch, quoted for a shell: names a remote or a person chose',
+  },
+  'record.ts «tail {}: {} event(s), through seq {}; {} above the cut» #1': {
+    verdict: 'collapsed',
+    why: 'the name of a tail directory in the working tree, which a person can rename',
+  },
+  'record.ts «then: {}» #1': {
+    verdict: 'collapsed',
+    why: 'the forge command, with the remote and branch names a remote or a person chose',
+  },
+  'record.ts «{} ({}): {}» #1': {
+    verdict: 'collapsed',
+    why: "a decision's label, state and title, which its author typed",
+  },
+  'record.ts «{} was last updated here {} h ago: \\`git remote update {}\\` reads it again, and this cut is made on top of it as it is.» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the base and the remote, names a remote or a person chose',
+    },
   'observe.ts «Recorded observation {} about {}» #1': {
     verdict: 'collapsed',
     why: '`about` is not validated: this is the door a forged value enters the record by',
@@ -1095,10 +1138,11 @@ describe('every line this wiring words is classified', () => {
     // 173 with the four lines `record pull` prints.
     // 174 with the line that names the files a pull left in conflict.
     // 175 with the line `verify --since` prints of a tail a relink moved into the record (relinked).
-    // 174 without the line `init` printed of an answer to which host files that was not on the list: the
+    // 185 with the ten lines `record commit` prints.
+    // 175 without the line `init` printed of an answer to which host files that was not on the list: the
     // question is asked with arrows now, and an answer cannot be off the list.
-    // 176 with the two lines `init` prints of the answer it recorded about agents accepting, without a screen.
-    expect(FOUND.sites.length).toBe(176);
+    // 186 with the two lines `init` prints of the answer it recorded about agents accepting, without a screen.
+    expect(FOUND.sites.length).toBe(186);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1118,9 +1162,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(93);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(103);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(83);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(93);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(103);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1278,6 +1322,25 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'record.ts «{}: put back as this checkout held it, the longer side or the only one» #1':
     'needs an untracked tail the branch followed already holds, over a real remote; the built binary ' +
     'prints it over real git in `a-tail-merges-and-pulls.test.ts`',
+  ...Object.fromEntries(
+    [
+      'record.ts «A branch of this cut is there already, made nothing: {}.» #1',
+      'record.ts «Made {} on {}, verified with verify --since {}; nothing was pushed.» #1',
+      'record.ts «Nothing to commit: {} already holds the record here through the last signed checkpoint of each tail.» #1',
+      'record.ts «git keeps no date of when {} was last updated here: \\`git remote update {}\\` reads it again.» #1',
+      'record.ts «left out: {} event(s) above the cut{}» #1',
+      'record.ts «next: {}» #1',
+      'record.ts «tail {}: {} event(s), through seq {}; {} above the cut» #1',
+      'record.ts «then: {}» #1',
+      'record.ts «{} ({}): {}» #1',
+      'record.ts «{} was last updated here {} h ago: \\`git remote update {}\\` reads it again, and this cut is made on top of it as it is.» #1',
+    ].map((key) => [
+      key,
+      'needs a git repository with a remote whose default branch this clone knows, which no ' +
+        'in-process argv here holds; the built binary prints the cut over real git in ' +
+        '`the-record-reaches-git-through-a-pull-request.test.ts`',
+    ]),
+  ),
   'accountability.ts «{} {} ({} with {})» #1':
     'the name is the default the MCP server writes for a client that announced none, the only writer ' +
     'of a run.unannounced; the tag is the fence for one written by hand',

@@ -37,7 +37,8 @@ mnema init
 ```
 
 That founded the record and this machine's identity; nothing is asked of a network. Commit `.mnema/`
-with the repository: every clone reads it.
+with the repository: every clone reads it. The events recorded later reach git the same way, with
+the work, or in a pull request of their own that `mnema record commit` prepares.
 
 At a terminal `mnema init` does not print those lines. It shows what it found around the folder, asks which agent
 hosts should read the mnema instructions (the arrows move, Space marks, Enter confirms, Esc founds nothing) and whether
