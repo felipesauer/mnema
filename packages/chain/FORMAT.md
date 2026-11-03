@@ -1566,7 +1566,13 @@ this product's, and the tests named below hold both readers beside this document
   that kind up to v1. If a newer mnema wrote the line, read the record with it.* The second reader
   names the pair and what the table it read declares of the kind. Nothing in a record says which
   version wrote a line, and no field is added to say it, so the refusal names the version that
-  does not read the line rather than the one that does. This product's `verify` fails on it.
+  does not read the line rather than the one that does. This product's `verify` fails on it. A checkpoint or a tail proof under
+  a scheme of its family a reader does not read is refused the same way, before its other keys:
+  *a checkpoint scheme this reader does not know: '\<a later scheme\>': mnema \<version\> reads
+  mnema-checkpoint/1 and mnema-checkpoint/2. If a newer mnema wrote the line, read the record
+  with it.* The second reader names the scheme and the schemes it reads. A value that is no
+  scheme of the family is named alone. Versions released before 0.1.5 name no version in this
+  refusal, and refuse every second-scheme line as a scheme they do not know.
 - **Forward, from 0.1.5: a version reads past a kind it does not know, and names it (ADR-113).** A
   line whose `kind` no row of a reader's table declares at any `v` is checked for everything that
   does not need what it says: it is a JSON object whose envelope meets the `envelope` declarations
@@ -1586,13 +1592,11 @@ this product's, and the tests named below hold both readers beside this document
   line. `x.from-the-future` is reserved for the published vector of this rule: no version of the
   catalog will declare it. Versions released before 0.1.5 refuse such a line as the bullet above
   refuses a version ahead, naming *it reads no version of that kind*, and nothing is done for
-  them. A checkpoint or a tail proof under
-  a scheme of its family a reader does not read is refused the same way, before its other keys:
-  *a checkpoint scheme this reader does not know: '\<a later scheme\>': mnema \<version\> reads
-  mnema-checkpoint/1 and mnema-checkpoint/2. If a newer mnema wrote the line, read the record
-  with it.* The second reader names the scheme and the schemes it reads. A value that is no
-  scheme of the family is named alone. Versions released before 0.1.5 name no version in this
-  refusal, and refuse every second-scheme line as a scheme they do not know.
+  them. What a reader does not read it cannot apply, and that cuts one way: a future kind that
+  RESTRICTS (a new revocation, a narrower role, a move it would refuse) is not applied by an older
+  reader, which may then say verified where the newer one refuses. Nor does a reader count a key
+  such a line would introduce: `mnema tail prune` asks which keys a tail introduces of the lines it
+  reads (`keysATailHolds`), so a key a future kind enrols is not among the keys it refuses to cut.
 - **A rule of authenticity or of legality is never loosened within an existing `kind` and `v`.**
   What a line may carry (§4.1), which key may sign it (§6.2), who may take a note or a link back
   (§6.4), which moves a workflow allows (§6.7) and which writing of a decision is its text (§6.8)

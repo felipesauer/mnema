@@ -1286,6 +1286,11 @@ def _say_unread_kinds(
         return  # Section 4.1 has already said no event could be rebuilt.
     by_kind: dict[str, tuple[int, list[str]]] = {}
     for tail, entries in entries_by_tail.items():
+        # A tail holding a line section 4.1 refused names nothing here, as the product reads nothing
+        # of such a tail: a line refused for its envelope was not read past, and the sentence below
+        # says a line's hash, chain, signer and checkpoint were checked, which would be false of it.
+        if not all(_rebuilds(declarations, entry) for entry in entries):
+            continue
         for entry in entries:
             kind = entry.event.get("kind")
             if not isinstance(kind, str) or schema.declares_kind(declarations, kind):
@@ -1302,6 +1307,15 @@ def _say_unread_kinds(
             "and checkpoint were checked and what they say was not read and none of it applied "
             "(a newer mnema wrote them)",
         )
+
+
+def _rebuilds(declarations: schema.Schema, entry: Entry) -> bool:
+    """Whether section 4.1 takes the line's event, read or read past."""
+    try:
+        schema.rebuild(declarations, entry.event)
+    except Refusal:
+        return False
+    return True
 
 
 def _holds_nothing(tail_dir: str) -> bool:

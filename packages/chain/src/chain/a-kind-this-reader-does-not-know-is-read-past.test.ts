@@ -280,32 +280,45 @@ describe('what reading past does not loosen', () => {
     expect(there.verdict).toBe(controlThere.verdict);
   });
 
-  it('a malformed envelope is refused, whatever the kind, in both readers', () => {
-    const kp = generateKeyPair();
-    const anchor = deriveAnchor(kp.fingerprint);
-    const founded = identityFounded(head(kp, anchor, '2026-11-03T00:00:01.000Z', anchor), {
-      foundingFp: kp.fingerprint,
-    });
-    writeTail(kp, [
-      asLine(founded),
-      asLine({
-        v: 1,
-        kind: FUTURE,
-        ...head(kp, anchor, '2026-11-03T00:00:02.000Z', 'f-1'),
-        beside: 'a top-level key no envelope declares',
-        payload: {},
-      }),
-    ]);
-    const here = verify(root, catalogUpcasters());
-    expect(here.ok).toBe(false);
-    expect(here.issues.map((issue) => issue.detail)).toEqual([
-      expect.stringContaining(`event "${FUTURE}" has an unknown event field "beside"`),
-    ]);
-    const there = secondReading(root);
-    expect(there.verdict).toBe('REFUSED');
-    expect(there.findings.filter((f) => f.level === 'FAIL').map((f) => f.what)).toEqual([
-      expect.stringContaining("carries top-level field(s) ['beside']"),
-    ]);
+  it('a malformed envelope is refused, whatever the kind, and named as no kind read past, in both readers', () => {
+    // Each case is a line of a kind the readers do not know whose envelope is out of its
+    // declarations: refused for that, by both, and so NOT a line read past. Neither reader may say
+    // of it that its hash, chain, signer and checkpoint were checked: the census note is absent.
+    const cases: { readonly line: Line; readonly product: string; readonly second: string }[] = [
+      {
+        line: { v: 1, kind: FUTURE, beside: 'a top-level key no envelope declares', payload: {} },
+        product: `event "${FUTURE}" has an unknown event field "beside"`,
+        second: "carries top-level field(s) ['beside']",
+      },
+      {
+        line: { v: 1, kind: '', payload: {} },
+        product: 'needs a non-empty string at kind',
+        second: 'an event with no `kind`',
+      },
+    ];
+    for (const { line, product, second } of cases) {
+      rmSync(root, { recursive: true, force: true });
+      mkdirSync(root);
+      const kp = generateKeyPair();
+      const anchor = deriveAnchor(kp.fingerprint);
+      const founded = identityFounded(head(kp, anchor, '2026-11-03T00:00:01.000Z', anchor), {
+        foundingFp: kp.fingerprint,
+      });
+      writeTail(kp, [
+        asLine(founded),
+        asLine({ ...head(kp, anchor, '2026-11-03T00:00:02.000Z', 'f-1'), ...line }),
+      ]);
+      const here = verify(root, catalogUpcasters());
+      expect(here.ok).toBe(false);
+      expect(here.issues.map((issue) => issue.detail)).toEqual([expect.stringContaining(product)]);
+      expect(here.census.filter((note) => note.kind === 'unread-kind')).toEqual([]);
+      const there = secondReading(root);
+      expect(there.verdict).toBe('REFUSED');
+      expect(there.findings.filter((f) => f.level === 'FAIL').map((f) => f.what)).toEqual([
+        expect.stringContaining(second),
+      ]);
+      expect(there.findings.filter((f) => f.section === '7.1')).toEqual([]);
+    }
   });
 
   it('a KNOWN kind carrying a field its contract does not declare is still refused, in both', () => {

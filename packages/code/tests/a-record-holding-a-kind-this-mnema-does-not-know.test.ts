@@ -291,10 +291,13 @@ describe('a record a newer mnema added a kind to', { timeout: 120_000 }, () => {
     // its checkpoint signed over it.
     expect(listTails({ root: record() })).toEqual([tail]);
     const entries = readTailEntries({ root: record() }, tail, catalogUpcasters());
-    const [unread] = entries.filter((entry) => entry.event.kind === FUTURE);
+    const at = entries.findIndex((entry) => entry.event.kind === FUTURE);
+    const unread = entries[at];
+    const next = entries[at + 1];
     expect(unread).toBeDefined();
-    expect(entries.at(-1)?.link.prev).not.toBeNull();
-    expect((entries.at(-1)?.link.seq ?? 0) > (unread?.link.seq ?? 0)).toBe(true);
+    // The writer chained the next line onto the unread one: its `prev` is that line's hash.
+    expect(next?.link.seq).toBe((unread?.link.seq ?? -2) + 1);
+    expect(next?.link.prev).toBe(unread?.link.hash);
     const verified = mnema('verify', '--require', 'signed');
     expect(verified.status, `${verified.out}${verified.err}`).toBe(0);
     expect(secondReading().verdict).toBe('VERIFIED');
