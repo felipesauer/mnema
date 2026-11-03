@@ -23,6 +23,13 @@ regexTarget = "line"
 regexes = ['''"lib/scan-for-key\.mjs": "[0-9a-f]{64}"''']
 
 [[allowlists]]
+description = "The paid block's manifest lists the sha256 of each kit script too, and the generic-api-key rule reads the two named token.mjs and token.test.mjs as keys: file digests, not secrets."
+condition = "AND"
+paths = ['''measurements/paid-block-2026-11/prereg\.json''']
+regexTarget = "line"
+regexes = ['''"lib/token(\.test)?\.mjs": "[0-9a-f]{64}"''']
+
+[[allowlists]]
 description = "Two raw outputs of the retired p3 measurement folder (gone from the tree, still in the history) that print the public id of a key the tests enrolled."
 paths = [
   '''measurements/p3/results/2026-08-18/raw/attack-[56]\.txt''',

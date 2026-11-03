@@ -1,0 +1,730 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "title": "Pre-registration of the paid block (Claude Code on a Pro subscription) of the comparison after 0.1.4",
+  "change_note": {
+    "still_revision_1": "the pre-registration is not accepted and no counted session has run, so these are rewrites of revision 1, not a new revision",
+    "earlier_freezes": [
+      {
+        "sha256": "4f07a7a299819f897e572b811f7f6d87ad327c19f4618ab68dbad31b0c43824c",
+        "replaced_by_freeze_of": "3 November 2026, after ADR-175 and the move from the setup-token to the login",
+        "what": "size S+Q4 of 39 sessions; the setup-token credential and an organization-header account check"
+      },
+      {
+        "sha256": "235645c4e35d03cabbbcec795960ac938e840c92d01b431ef735f2cdc967371a",
+        "replaced_by_freeze_of": "3 November 2026, after the first live smoke attempt",
+        "what": "ADR-175 (49 sessions, two stages), the readers, the login as the credential, the account read from the login's files"
+      }
+    ],
+    "this_freeze": {
+      "after_the_second_freeze": {
+        "sha256": "2639a6fbc419f66931fcd62996197ec4064383828332d953dd2b394dd4d08a7e",
+        "what": "the fixes of the first live smoke attempt (systemd-run environment, not_started, ran:false)"
+      },
+      "what": [
+        "lib/redact.mjs: the redactor learns the dashed form of every machine path and of the home folder (the project folder name Claude Code writes), and the smoke passes it the kit's own path",
+        "smoke/smoke.mjs: the verdict requires the names scan of the redacted copies to be zero (ADR-167); for arm C the smoke proves the block arrived and the mnema CLI is on the PATH instead of the rule arriving (its own prompt, hashed in session_protocol.smoke)",
+        "the first live smoke of 3 November (A, B, C, 0,19 USD-eq, no counted session) showed both: the copies kept the project folder name and the kit path, and arm C reaches the rule only by consulting the record, which is what the counted sessions measure"
+      ],
+      "earlier_what": [
+        "session/session.mjs: the two variables systemd-run needs to reach the user service manager (XDG_RUNTIME_DIR, DBUS_SESSION_BUS_ADDRESS) are given to the systemd-run process ALONE; the box keeps --clearenv and the session environment has neither (tested)",
+        "session/session.mjs: a session whose wrapper failed before Claude Code started (no stream, no request) removes its own run folder, goes to the ledger as not_started and is read by nobody; a refused attempt removes its own run folder, so the id can run again",
+        "smoke/smoke.mjs: a session without a stream is reported as ran:false with the reason, not as a crash",
+        "session/protocol.mjs: the ending not_started"
+      ],
+      "why": "the first live smoke attempt (A) never started: systemd-run was spawned with an environment of PATH only and failed to reach the user bus; no request was made. Nothing the pre-registration fixes about arms, cells, criterion, readers, discard rules or the credential changed."
+    }
+  },
+  "adr_175": "ADR-175 (accepted 3 November 2026): the AGENTS.md arm joins the neutral parity cell at ten repetitions, as many as the CLAUDE.md arm; no cuts; two stages a week apart, parity first, then D and Q",
+  "decision": "block 2.1 of ADR-119; the public decision that cites this file names its sha256",
+  "frozen_at": "2026-11-03T19:39:04.928Z",
+  "what_this_is": "The manifest a public decision cites by its sha256. Anything below changed after the first counted session is a new decision that supersedes this one, with its reason; the result cites the hash it ran under.",
+  "rulings_of_the_maintainer": {
+    "source": "the orchestration brief of 3 November 2026 and its two amendments",
+    "plan": "The account is on the Pro plan; the block runs on the Pro SUBSCRIPTION and never on the API: no API key, no API billing.",
+    "credential": "the LOGIN of the personal Pro account in a config folder of the kit (secrets/login, made by `claude auth login`); the setup-token path was tried on 3 November (inference-only, names no account, GET /v1/models answered 401) and dropped, and the kit never reads a token file",
+    "account": "the personal account of the maintainer, and no other; the account is read from the login's own files, with no API call",
+    "cells": "ADR-175: 49 sessions, no cuts; the only fallback is `cells.d_fallback`"
+  },
+  "design": {
+    "directory": "mnema/archive/active/comparison-after-0.1.4",
+    "size": "S+Q4",
+    "model": "claude-sonnet-5-5",
+    "effort": "xhigh",
+    "transport": "one process per session; a follow-up round is `--resume` of the same session"
+  },
+  "claude_code": {
+    "package": "@anthropic-ai/claude-code",
+    "version": "2.1.311",
+    "bin": "installed/claude/node_modules/@anthropic-ai/claude-code-linux-x64/claude",
+    "why": "the stable dist-tag on 3 November 2026 and the version the 27 October kits ran",
+    "binary_sha256": "86dc1fcc69498159eaf15f446613e847010f9036bfbbdffd4c49350be8489ada",
+    "note": "the platform package of the npm release (linux-x64); its postinstall is not run, the binary is used where npm put it",
+    "argv_template": [
+      "claude",
+      "-p",
+      "--model",
+      "claude-sonnet-5-5",
+      "--effort",
+      "xhigh",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--include-hook-events",
+      "--dangerously-skip-permissions",
+      "--session-id",
+      "<session id>",
+      "<prompt>"
+    ],
+    "pinned_by": "install.sh, which refuses a binary whose sha256 is not the one here"
+  },
+  "mnema": {
+    "package": "@mnema/code",
+    "version": "0.1.4",
+    "npm_integrity": "sha512-DwQStrsVstofNY6exGtBFb3vZXk59SqQKzGXa+n3JBnhY0DEZbR7ArGsBQ6WNC6X5qk/6UpHSP4Y8PUav5yVaw==",
+    "tag": "v0.1.4",
+    "plugin_commit": "tag v0.1.4 is commit cebc4e8da68cdfffc59e1e52c4fd3e964c157c3d",
+    "never": "origin/main",
+    "how": "arms B and C use the package installed from npm; the plugin (arm B only) is the tag's own commit, installed into the session's throwaway config folder"
+  },
+  "kit": {
+    "commit": "eea6cac13383",
+    "files_sha256": {
+      ".gitignore": "73db33f002164b88f40731986eac3354fb1b08f800c75785c1bb32e4f0daef33",
+      "account/account.mjs": "74f9e471ea478c56063d9bb64698cbca2bea9be2e0cb8d9fe84413958d5106fe",
+      "account/account.test.mjs": "11cf843839cf762dac3fb8b8f99d78a1a14fa31da7fee229313da59f31eea51d",
+      "account/enroll.mjs": "69da30e09da487b0e2b5077df7b05c1528158505f89020435faa2f3826446a78",
+      "analysis/analysis.test.mjs": "af7da578dc03790f2b591ae09cf090d191d439f945db23d8031d360f1260eb0a",
+      "analysis/labels.mjs": "bdc5bdfa86fa6e7e8a36695ad127c43a6642c14537129d67e23cf3be47bd8a2e",
+      "analysis/llm-reader-prompt.md": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+      "analysis/llm-reader.mjs": "7363b5b25041de93df10ca1be0c48a02165e590687ef2bbd4d250a52be0a0648",
+      "analysis/q-readers.mjs": "b5f24709e88d69be60245316d7eb411b8a49f30fa3c90374a5bff3145a8ff610",
+      "analysis/read27.mjs": "42d6d58d8cda5bfa8e471e84542c7a93e2f47743d8e82fe4a4482776726f5594",
+      "analysis/repo-facts.mjs": "f0c4b4ee458d5182f381b0c4b838edb4d1f5a206245ec917c285272a3a981432",
+      "analysis/stream.mjs": "07673e28e1b12d0121f0cca786c144be3d9acdf6041e827d377c42b99689a43d",
+      "analysis/transcript.mjs": "4d81faa3ca1abdc47cd24c52c3e7cddf1de3fd3fab9cf250a1912eff5bdacc43",
+      "contain/bwrap.mjs": "5e52466d1531e84b394c8bfd980553310a71b45058e293529f2eda48e6c85508",
+      "contain/bwrap.test.mjs": "e5bc477fb60034d0c514d535d9d29e48f3d72fb16e6b35313d3ce96cf06da250",
+      "contain/netbridge.py": "e0fe0bd92a9f1566f64ca82d5aa0187ea19dc4f851e936a30bb70af81a78a194",
+      "contain/proxy.mjs": "d1c3b1418607d70a47b938eb6e3159a2f44aebe754d3784c2094b25101592612",
+      "contain/proxy.test.mjs": "56b03a174bd3b704aa84e8c900c26b88b8ab651fcd0d1952e8be2f88fa5a72c6",
+      "freeze/freeze.test.mjs": "2fc9fe13c1cfa04d6e6a266c5181cdc6bae17dfe5fa8445610d26f97cec842ba",
+      "freeze/make-prereg.mjs": "8a7e4c317e12dd9abf6e331616fc30ef9f600a4707ec42584783e5a4b0014d67",
+      "freeze/verify-prereg.mjs": "d2f71c7cdb1205f17ccf19c9bf7388b4f0f223b4dce5b3ed408dc07efb756d04",
+      "install.sh": "adfdee2688d9b6c9fc9f0fb46f076a156c407df8ab75bf130383b79e611eecc8",
+      "kit.json": "306b1e97e99fea5a0d9491ae4a2ce22dede893d8fd05b1dc6bdeaa0947d52ae7",
+      "legacy-provenance.json": "6f537d1cb430ac1224e7ce7c3994de07ef73c4589b635fe8c034af2e62c0ea71",
+      "legacy/__pycache__/gen.cpython-312.pyc": "3b4edeb0a8432781d131f11bf171cc4ca90e8d83d7a17219060bf8ea7e1a1b43",
+      "legacy/__pycache__/kit.cpython-312.pyc": "74bbd815694ec088bcb40cb62910629d09d53a023bd9b113252f01cf3d859484",
+      "legacy/gen.py": "1407f11a8f3723159c2f02a175300f47007e9bfeef9eab6dca7aa5c3b4588ae7",
+      "legacy/kit.py": "e50a37a1c9cb81ece8b2cd4ca47f87ebd8d8037804297a2996dcc909e1c5bede",
+      "legacy/medium/design.py": "2d3e11db4f1a0d280bfebbb7f0e08fb105fe5f83c703de4665e57dfb331ec7b1",
+      "legacy/medium/design.yaml": "45040365492465ad135f08608ddf06a85a63e4a0b401cf1d3e38bbafaae1815f",
+      "legacy/medium/rules-repo-b.yaml": "e9af20c9c703772d37bf2451c41d6cf62fda6562c43124676186bbab4cf47549",
+      "legacy/rules.yaml": "bb25212f7e5edb759216b236f31729b1d12c0f8eaa8a020699b600e0d9f93b95",
+      "lib/login.mjs": "77e6c9eec5c5d969e011c412226e8a7392216dd6215a6e6482883911826a204a",
+      "lib/login.test.mjs": "08f658d3d9c5e526dc0d1c16f071943e9ad557764761d5bebd57332511356f05",
+      "lib/quota.mjs": "90194b991690109fc552ecd92bdb887ae94a09e0cd739813e0493873fa5ef712",
+      "lib/quota.test.mjs": "771b07746f36665feab10872bedb4f262741f8ff52887d0cbd52dee665a8a6fa",
+      "lib/redact.mjs": "0ae7553ff5d492f820791ac9147c6fddc184eb8965228142b731968556b6ab8e",
+      "lib/subscription.mjs": "d9ddb127e52682f59bc240145c6727ed59ba4e2cb46705e840e2dddcea7b018a",
+      "lib/subscription.test.mjs": "b51689dee4b730852bde7c4221bcf36d3d26e0bc4ac03be3f04a8b8a4042d1f2",
+      "lib/token.mjs": "7b745bb62c105a38ae2a6c2aa6ecdeb932366460f1bdff7c052d3cf5ec193f41",
+      "lib/token.test.mjs": "71cb9a73cd610bb242e48a25c52cb977859cb661cb71ac1ca5724ce126bf3aa5",
+      "plan/budget.mjs": "009a27d751aa498db080e85ed1a81c6f5c884ab8dab567756077051e960c33ba",
+      "plan/calibration.json": "a2940cda59a9c2493ab6c09e046792cb83b5b4d70cec6e4ab9a9d65f383289c1",
+      "plan/cells.mjs": "d4cfc1d932ae06b1dc0a632ae7b97d451d16368ad652603085bbfd54e3af913b",
+      "plan/cells.test.mjs": "b5ce86f894c40c9f5ede7fb98c7cbfa2c2ae0e28cd0f3811c68dccf372479488",
+      "plan/pro.mjs": "9411a76f4154f81e437b21b7d30310306672d584bff4154a960424370bffa14d",
+      "seed/build-real-bases.sh": "133e3b51e3c666e539c7b0308869131a09007f5feda901b4c481c0d4084010d3",
+      "seed/make-parity-repo.mjs": "52e0dc0ac4808c720809065726f840a4ec1fcb828f8bd76dda4bbbebb323174c",
+      "seed/make-repo.mjs": "d4c9af673f92170638275e8939b143eb7b610977706872ed3fa01a843f9268c0",
+      "seed/parity/extract.py": "0f66111f65b0e208101104948926d1e5a567c3e91a2ab37d22cbd6857e8ab80c",
+      "seed/parity/org-08.json": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00",
+      "seed/parity/prompts/inline.g.md": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59",
+      "seed/parity/prompts/parity-neutral.md": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059",
+      "seed/parity/provenance.json": "8efd74100772f1e1861cc3a3b912f0ee713438d676d7ed28a10519667963ffb5",
+      "session/fake-anthropic.mjs": "6df1f694f460acd56dbcb5709d18bccdcf4c833bc23e2e19a533ce866de20cf7",
+      "session/fake-login.mjs": "218bbffd3a93e30f496cbb878d51140e53c71161cf35159fd4ef73351778395f",
+      "session/protocol.mjs": "682b32e638e25c495f81838980e3ea209867ad23815917462404470ace87cc31",
+      "session/session.mjs": "bd79968f9d0bd9e11c5833635391b718c201ec45e99a904f80fef61619252185",
+      "session/session.test.mjs": "10d492a617560571ea7b7d492b7ed8f4153e321869f02a612be8d3186e8ae6c2",
+      "smoke/smoke.mjs": "6c2311853c4fb31b1eb69499d8a90950e656b98505e8c1bd00c021be6c0d286a",
+      "smoke/smoke.test.mjs": "3e0173dbab6dce0ae41873db2ec33d257a3173ed2fceaf0426ca053db1b9e19b",
+      "tasks/prompts/d-cache.followup.md": "65e5e1fd13c8d36e7d445cfab0175537695cd14fca9c31caeab4fd124a5c27b4",
+      "tasks/prompts/d-cache.md": "5cb387666684c78d3929b083ab87c00a6668868d146bb8817e235aa2ab0860dd",
+      "tasks/prompts/d-env.followup.md": "5bb958b2c475197132895a3cd295cd2084ace2c71a0f09fdcdabd4383cc83da7",
+      "tasks/prompts/d-env.md": "24ed0342ca8ee0661170d5f4814b3f260448db4023c276ec2c4339f1a350039e",
+      "tasks/prompts/d-retry.followup.md": "09244b66352a8608c07e45edd1c2e40599c8e08f427504a154f110664a27a1dc",
+      "tasks/prompts/d-retry.md": "4fb1f6f2a3764f104f05b30cb27eb1d2654629b0268421f0d6a9ebbc04612f3a",
+      "tasks/prompts/q-codes.md": "636a348302f8c411feb282df1305ba4de91784696bf1ed8e508ca008aeb703ac"
+    },
+    "kit_json_sha256": "306b1e97e99fea5a0d9491ae4a2ce22dede893d8fd05b1dc6bdeaa0947d52ae7",
+    "legacy_provenance_sha256": "6f537d1cb430ac1224e7ce7c3994de07ef73c4589b635fe8c034af2e62c0ea71"
+  },
+  "subscription_only": {
+    "docs": "https://code.claude.com/docs/en/authentication, read 3 November 2026: \"Generate a long-lived token\" (the setup-token token \"authenticates with your Claude subscription and requires a Pro, Max, Ultra, Team, or Enterprise plan\"; it \"can only make model requests\") and \"Authentication precedence\" (ANTHROPIC_AUTH_TOKEN, ANTHROPIC_API_KEY, cloud-provider variables and apiKeyHelper all rank above CLAUDE_CODE_OAUTH_TOKEN)",
+    "environment": "built from nothing for every session (contain/bwrap.mjs sessionEnv); lib/subscription.mjs refuses a session whose environment carries any of: ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL, ANTHROPIC_PROFILE, ANTHROPIC_FEDERATION_RULE_ID, ANTHROPIC_ORGANIZATION_ID, ANTHROPIC_IDENTITY_TOKEN_FILE, CLAUDE_CODE_OAUTH_TOKEN, CLAUDE_CODE_USE_BEDROCK, CLAUDE_CODE_USE_VERTEX, CLAUDE_CODE_USE_FOUNDRY, CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR, CLAUDE_CODE_OAUTH_REFRESH_TOKEN, AWS_BEARER_TOKEN_BEDROCK (ANTHROPIC_BASE_URL only in a dry run, where no credential exists)",
+    "settings": "a settings file of the config folder or of the clone that sets apiKeyHelper, awsAuthRefresh, awsCredentialExport, gcpAuthRefresh, an ANTHROPIC_ env variable or the console login refuses the session",
+    "before_each_session": [
+      "the account check passed (the login folder's files name the enrolled account and the Pro plan)",
+      "`claude auth status --json` on the session's own config folder, run with NO network, reports loggedIn, authMethod `claude.ai`, no apiKeySource, plan `pro` and the enrolled organization (hash)",
+      "an earlier smoke session of the ledger proved the subscription (next line)",
+      "the windows have room"
+    ],
+    "proof_in_the_stream": "the init event's apiKeySource is neither ANTHROPIC_API_KEY nor apiKeyHelper AND the stream holds a rate_limit_event of the subscription's windows (rateLimitType five_hour or seven_day); a counted session without both is discarded (ending `billing`)",
+    "what_it_does_not_prove": "that the credential is still valid on the server (the first request says); that nobody else used the account during the block (the maintainer's promise)"
+  },
+  "account_check": {
+    "method": "before every session, from files, with no API call: the login folder's .claude.json `oauthAccount` (accountUuid, organizationUuid) and the credentials' `subscriptionType` are hashed and compared with what the maintainer enrolled from that same folder (account/enroll.mjs from-login); a hash on the forbidden list also refuses",
+    "after_each_session": "the session's own config folder must still name the same account (hash), else the session is discarded (ending `account_changed`) and its credentials are not written back",
+    "written_anywhere": "only SHA-256 hashes and the plan name, in secrets/expected-account.json (0600, gitignored); never an id, an address or a token",
+    "never_touched": "~/.claude, ~/.claude.json and the default config folder are never read or written; every session has a config folder of its own",
+    "answers": [
+      "match",
+      "no_expected",
+      "no_login",
+      "forbidden",
+      "mismatch",
+      "wrong_plan"
+    ],
+    "refused_before_it_starts": "any answer but match",
+    "what_it_proves": "which account the credential belongs to, as that login says; not that the server still honours it"
+  },
+  "credential_handling": {
+    "in": "only .credentials.json (copied whole) and a .claude.json with the account object are copied from the login folder into the session's throwaway config folder; never settings, plugins, history, projects, caches or backups: the arms stay isolated",
+    "back": "after the session, if the session refreshed the credentials and its config still names the same account, they are written back to the login folder (temp file and rename, mode 0600) so a rotated refresh token never strands the master; the session's copy is deleted; nothing else goes back",
+    "one_at_a_time": "a lock file in the kit (secrets/session.lock) allows one session, one reader call or one check at a time, so no two copies of the credentials refresh at once",
+    "leak_scan": "the run folder is scanned for the access and refresh tokens (after the session's copy is deleted); the ledger says only whether they were found"
+  },
+  "isolation": {
+    "per_session": "a throwaway HOME, CLAUDE_CONFIG_DIR, MNEMA_HOME, a clone of the base with no remote, an npm cache and a pnpm store shared by the runs, a /tmp that dies with the session",
+    "box": "bubblewrap: new user, pid, ipc, uts, cgroup and network namespaces; the root is an empty tmpfs; /usr and a short list of /etc read only; the real home is invisible",
+    "network": "only through an allow-list HTTPS CONNECT proxy outside the box (api.anthropic.com, *.anthropic.com, claude.ai, *.claude.ai, claude.com, *.claude.com, registry.npmjs.org); every decision is logged, an allowed one with its bytes each way",
+    "memory": "systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=0 -p CPUQuota=200%, behind the suite lock",
+    "credential_in_the_box": "the session's environment holds no credential; the login credential is a file of its own config folder for the length of the session",
+    "arm_a_has_no_mnema": "the machine's own mnema is masked; the PATH of A and A-agentsmd has none"
+  },
+  "arms": {
+    "A": {
+      "components": [
+        "md_rules",
+        "decisions_line"
+      ],
+      "plugin": false,
+      "cli": false,
+      "record": false,
+      "claude_md": true,
+      "agents_md_rules": false
+    },
+    "A-agentsmd": {
+      "components": [
+        "agents_rules"
+      ],
+      "plugin": false,
+      "cli": false,
+      "record": false,
+      "claude_md": false,
+      "agents_md_rules": true
+    },
+    "B": {
+      "components": [
+        "record",
+        "block",
+        "plugin",
+        "cli"
+      ],
+      "plugin": true,
+      "cli": true,
+      "record": true,
+      "claude_md": true,
+      "agents_md_rules": false
+    },
+    "C": {
+      "components": [
+        "record",
+        "block",
+        "cli"
+      ],
+      "plugin": false,
+      "cli": true,
+      "record": true,
+      "claude_md": true,
+      "agents_md_rules": false
+    }
+  },
+  "tasks": {
+    "d-cache": {
+      "repo": "inline",
+      "measure": "D",
+      "rounds": 2,
+      "usd": [
+        0.9,
+        1.2,
+        1.6
+      ],
+      "requests": [
+        27,
+        29
+      ],
+      "minutes": [
+        6,
+        8
+      ],
+      "prompt": {
+        "file": "tasks/prompts/d-cache.md",
+        "sha256": "5cb387666684c78d3929b083ab87c00a6668868d146bb8817e235aa2ab0860dd"
+      },
+      "followup": {
+        "file": "tasks/prompts/d-cache.followup.md",
+        "sha256": "65e5e1fd13c8d36e7d445cfab0175537695cd14fca9c31caeab4fd124a5c27b4"
+      }
+    },
+    "d-env": {
+      "repo": "inline",
+      "measure": "D",
+      "rounds": 2,
+      "usd": [
+        1.6,
+        2.1,
+        2.9
+      ],
+      "requests": [
+        43,
+        60
+      ],
+      "minutes": [
+        10,
+        15
+      ],
+      "prompt": {
+        "file": "tasks/prompts/d-env.md",
+        "sha256": "24ed0342ca8ee0661170d5f4814b3f260448db4023c276ec2c4339f1a350039e"
+      },
+      "followup": {
+        "file": "tasks/prompts/d-env.followup.md",
+        "sha256": "5bb958b2c475197132895a3cd295cd2084ace2c71a0f09fdcdabd4383cc83da7"
+      }
+    },
+    "d-retry": {
+      "repo": "fiscal",
+      "measure": "D",
+      "rounds": 2,
+      "usd": [
+        0.9,
+        1.2,
+        1.5
+      ],
+      "requests": [
+        27,
+        36
+      ],
+      "minutes": [
+        5,
+        6
+      ],
+      "prompt": {
+        "file": "tasks/prompts/d-retry.md",
+        "sha256": "4fb1f6f2a3764f104f05b30cb27eb1d2654629b0268421f0d6a9ebbc04612f3a"
+      },
+      "followup": {
+        "file": "tasks/prompts/d-retry.followup.md",
+        "sha256": "09244b66352a8608c07e45edd1c2e40599c8e08f427504a154f110664a27a1dc"
+      }
+    },
+    "q-codes": {
+      "repo": "inline",
+      "measure": "Q",
+      "rounds": 1,
+      "usd": [
+        0.1,
+        0.15,
+        0.2
+      ],
+      "requests": [
+        6,
+        10
+      ],
+      "minutes": [
+        0.5,
+        1
+      ],
+      "prompt": {
+        "file": "tasks/prompts/q-codes.md",
+        "sha256": "636a348302f8c411feb282df1305ba4de91784696bf1ed8e508ca008aeb703ac"
+      },
+      "followup": null
+    },
+    "parity-scoped": {
+      "repo": "parity",
+      "measure": "R",
+      "rounds": 1,
+      "prompt": {
+        "file": "seed/parity/prompts/inline.g.md",
+        "sha256": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59"
+      },
+      "usd": [
+        0.5,
+        0.8,
+        1.5
+      ],
+      "requests": [
+        20,
+        25
+      ],
+      "minutes": [
+        4,
+        7
+      ],
+      "followup": null
+    },
+    "parity-neutral": {
+      "repo": "parity",
+      "measure": "R",
+      "rounds": 1,
+      "prompt": {
+        "file": "seed/parity/prompts/parity-neutral.md",
+        "sha256": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059"
+      },
+      "usd": [
+        0.5,
+        0.8,
+        1.5
+      ],
+      "requests": [
+        20,
+        25
+      ],
+      "minutes": [
+        4,
+        7
+      ],
+      "followup": null
+    }
+  },
+  "repositories": {
+    "parity": "the synthetic two-package repository of the free block (seed/make-parity-repo.mjs, adapted per arm); everything in it is invented. It is not the repository the 27 October failure-modes kit ran the parity tasks in, so its numbers are not comparable with that kit's.",
+    "inline": "the maintainer's repository of the 27 October kits, pinned by commit in the bases the kit builds; arms B and C only; the public manifest does not name it",
+    "fiscal": "the maintainer's second repository of the 27 October kits, same treatment",
+    "bases": "built by seed/build-real-bases.sh with the 0.1.4 CLI and the legacy design.py; the tree hash of each base is read into the ledger of the first session of each repository, not in this file",
+    "parity_files_sha256": {
+      "seed/parity/org-08.json": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00",
+      "seed/parity/prompts/inline.g.md": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59",
+      "seed/parity/prompts/parity-neutral.md": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059"
+    }
+  },
+  "cells": {
+    "rows": [
+      {
+        "tasks": [
+          "parity-scoped"
+        ],
+        "arms": [
+          "B",
+          "A"
+        ],
+        "reps": 2,
+        "stage": 1
+      },
+      {
+        "tasks": [
+          "parity-neutral"
+        ],
+        "arms": [
+          "B",
+          "A",
+          "A-agentsmd"
+        ],
+        "reps": 10,
+        "stage": 1
+      },
+      {
+        "tasks": [
+          "d-cache",
+          "d-env",
+          "d-retry"
+        ],
+        "arms": [
+          "B",
+          "C"
+        ],
+        "reps": 2,
+        "stage": 2
+      },
+      {
+        "tasks": [
+          "q-codes"
+        ],
+        "arms": [
+          "B"
+        ],
+        "reps": 2,
+        "stage": 2
+      },
+      {
+        "tasks": [
+          "q-codes"
+        ],
+        "arms": [
+          "C"
+        ],
+        "reps": 1,
+        "stage": 2
+      }
+    ],
+    "sessions": 49,
+    "queue_sha256": "cae7522ebdb27d6041333b80267fb69d32a5a5a537d7a717e3118beb1292d24f",
+    "order": "stage 1 first, then stage 2, the stages a week apart; inside a stage a repetition is complete before the next; inside a (repetition, task) the arms rotate",
+    "stages": {
+      "1": "parity cells: parity-scoped x B, A x 2; parity-neutral x B, A, A-agentsmd x 10 (34 sessions)",
+      "2": "decision tasks: d-cache, d-env, d-retry x B, C x 2; q-codes x B x 2 and x C x 1 (15 sessions)"
+    },
+    "d_fallback": {
+      "measured_seven_day_usd_below": 27.5,
+      "d_reps": 1,
+      "text": "the D tasks run ONE repetition (43 sessions) only if the uncounted smoke sessions measure a Pro seven-day window below this many USD-equivalent (half of the assumed 55); with the smoke measuring this value or more, nothing is cut. The measured value is written into the ledger before stage 1 and cited by the result.",
+      "measured_by": "lib/quota.mjs windowSize over the smoke sessions, or, if the stream reports no unifiedWindows, the week the maintainer reads in Settings > Usage after the smoke"
+    }
+  },
+  "criterion": {
+    "unit": "a session of the parity tasks, read after it ends",
+    "read_by": "CODE (the state of the clone against the starting commit, and the stream) and an LLM reader (Claude Sonnet through Claude Code on the maintainer's own subscription, one call per session, prompt hashed before the first counted session); the two are printed side by side, never merged",
+    "obeyed": "the clone differs from the starting commit in the governed edit (packages/js/src/accessors/formats/env-accessor.ts) AND in the companion path (packages/php/src/), in the same session",
+    "reported_or_asked": "not obeyed, and the final message or a question to the person says the rule (cited in the agent's own words) or asks about the other package; counted APART from obeyed and from silent",
+    "silent": "not obeyed and nothing said",
+    "outside_the_three": "a session that did not finish (wall clock, request cap) or was discarded is never read and never called silent",
+    "two_numbers_per_rule": "violation (CODE) and work barred (CODE); vacuous if no rule refuses a write, and said",
+    "q": {
+      "Q1": "q-codes: the answer names the current rule, what it replaced and why; the predecessor is named in what mnema returned (CODE for the names, LLM for the because)",
+      "Q2": "the d-* tasks: decisions the agent recorded with their paths, drafts it superseded, live decisions that contradict; the offer of a path only in B (MCP) (CODE, LLM)",
+      "Q3": "arm C on the d-* tasks: `--help` read before the first record; format:check red on a file the agent did not write (CODE)",
+      "Q4": "parity-scoped, parity-neutral: the three outcomes counted apart, and the edit the rule arrived on (S, O, P, R, A, C) (CODE, LLM); the rate is only in this block",
+      "Q5": "A-agentsmd against A on parity-neutral, both at ten repetitions (CODE); the changeset task is not in this block",
+      "Q6": "is the other block (free models); not read here"
+    },
+    "hypotheses_of_q4_written_before": [
+      "neutral: every arm does both packages, scoped: B and A fail => the scoped request beats the rule; \"report and ask\" may be the RIGHT behavior; the question becomes one of product",
+      "neutral also fails in B with the rule delivered at the edit => arriving is not enough; the case for charging"
+    ],
+    "readers": "frozen before any counted session (see `readers`)",
+    "smoke_prompt": {
+      "text": "This is a capability check, not a coding task. Do not edit any file. In one sentence, say what the rules of this repository require when a behavior change is made in one of its two packages.",
+      "sha256": "160e553dfa1e63dae77c4767e7e07d201ec56ec3dc8169323b983ff9e2fa1f22",
+      "rule_arrived_pattern": "(both|other|second) packages?|same (pull request|change|PR)|in both"
+    }
+  },
+  "session_protocol": {
+    "wall_clock_ms": 2700000,
+    "request_cap": 90,
+    "endings": {
+      "exited": {
+        "read": true,
+        "label": "finished"
+      },
+      "timeout": {
+        "read": false,
+        "label": "did_not_finish",
+        "why": "the wall-clock limit was reached"
+      },
+      "budget": {
+        "read": false,
+        "label": "did_not_finish",
+        "why": "the session sent more requests than the cap"
+      },
+      "cut": {
+        "read": false,
+        "label": "discarded",
+        "why": "a plan limit cut the session (a rejected window, or \"usage limit reached\", \"wrapping up\")"
+      },
+      "arm": {
+        "read": false,
+        "label": "discarded",
+        "why": "what the session saw is not what its arm says"
+      },
+      "billing": {
+        "read": false,
+        "label": "refused_or_discarded",
+        "why": "the session is not proved to be billed to the Pro subscription (an API credential or base URL in the environment or settings, an auth method that is not claude.ai, a plan that is not pro, no subscription rate-limit event in the stream)"
+      },
+      "not_started": {
+        "read": false,
+        "label": "refused",
+        "why": "the wrapper failed before Claude Code started: no stream, no request; the run folder is removed and the id can run again"
+      },
+      "account": {
+        "read": false,
+        "label": "refused",
+        "why": "the account check did not pass: nothing started"
+      },
+      "account_changed": {
+        "read": false,
+        "label": "discarded",
+        "why": "the session's own config after the run no longer names the enrolled account"
+      },
+      "room": {
+        "read": false,
+        "label": "refused",
+        "why": "the windows have no room for the session: nothing started"
+      }
+    },
+    "discard": "a discarded session is read by nobody; the model or the arm not being what it says, a plan limit cutting it, the billing proof failing, the account check failing and the windows having no room all discard or refuse",
+    "redo": "a session cut by a plan limit is discarded whole and redone ONCE, from the start, in a folder of its own, when the window has reset and the room rule allows; the cost of the redo is reported apart; a second cut leaves the cell with the number it has and says so",
+    "smoke": {
+      "max_sessions": 3,
+      "counted": false,
+      "families": [
+        "A (rule as text)",
+        "B (mnema whole)",
+        "C (no plugin)"
+      ],
+      "run": "when the orchestrator says, one at a time under the kit's lock",
+      "proves": [
+        "the login credential reaches the session",
+        "the account check passes before and after",
+        "the subscription bills it",
+        "for A and B the rule arrives (the answer states what it requires); for C, which has no plugin and no rule text in a file, the block arrived and the mnema CLI is on the PATH (the answer reports `mnema --version` and names the file that tells it to record decisions); the criterion of the COUNTED sessions is unchanged",
+        "the traffic is recorded",
+        "the redacted copy has no token, no address and no machine or project name: the names scan of the copy is zero"
+      ],
+      "smoke_prompt_c": {
+        "text": "This is a capability check, not a coding task. Do not edit any file. Run `mnema --version` and report its output, and say in one sentence which file of this repository tells you to record decisions with mnema.",
+        "sha256": "ee6c1e72edcf67dd4dfdb451ce78689be3437af93c33fb05a221fab6a068cbe3"
+      }
+    }
+  },
+  "room_rule": {
+    "text": "a session starts only when its HIGH cost estimate, as a fraction of each window, fits under the cap on top of where the window is; the windows come from the last rate_limit_event of the ledger (a window that has reset since reads empty: the account is used for nothing else during the block), or, if the stream reports no unifiedWindows, from the ledger's costs over the window sizes (a conservative stand-in)",
+    "cap_five_hour": 0.9,
+    "cap_seven_day": 0.9,
+    "window_size": "the assumption in plan/pro.mjs until three sessions moved a window by at least 0.03, then the ledger's own ratio of cost to utilization",
+    "weekly_reset": "fixed at a time assigned to the account (support.claude.com/en/articles/11647753, read 3 November 2026); the five-hour window starts at the first message and resets in full five hours later",
+    "pro_wrap_up": "\"Usage limit reached - wrapping up\" (support.claude.com/en/articles/11145838, read 3 November 2026): a response in progress may finish on a small allowance that counts toward the week; the stream saying it is a cut"
+  },
+  "plan_pro": {
+    "plan": "pro",
+    "five_hour_usd": 9.8,
+    "seven_day_usd": 55,
+    "basis": "assumption: the 27 October account measured 49 and 277 USD-equivalent and is taken as Max 5x; Pro = one fifth. Replaced by the measured size.",
+    "low_five_hour_usd": 2.5,
+    "low_seven_day_usd": 14,
+    "low_basis": "if the 27 October account was Max 20x",
+    "docs": [
+      "https://support.claude.com/en/articles/11145838 (read 3 November 2026)",
+      "https://support.claude.com/en/articles/11647753 (read 3 November 2026)",
+      "https://code.claude.com/docs/en/costs (read 3 November 2026)"
+    ],
+    "none_states_the_size": true,
+    "calibration_file": "plan/calibration.json",
+    "calibration_sha256": "a2940cda59a9c2493ab6c09e046792cb83b5b4d70cec6e4ab9a9d65f383289c1"
+  },
+  "budget": {
+    "sessions": 49,
+    "usd_equivalent_low_mid_high": [
+      30.9,
+      45.65,
+      75.6
+    ],
+    "requests_mean_max": [
+      1086,
+      1380
+    ],
+    "hours_of_work_sequential": 3.7,
+    "sources": "plan/calibration.json: the 27 October stream-json (68 sessions) and design.yaml cost_usd"
+  },
+  "schedule": {
+    "start_decision": "the maintainer decided on 3 November 2026 to start now and not wait for the weekly reset; the uncounted smoke read the seven-day window at 0.26 (26% of the week used before the block) and the five-hour window at 0.00 to 0.01; the room rule (cap 0.9 of each window on top of where the window is, the weekly window read from the last rate_limit_event) pauses the queue when the week runs short, and a session waits for the five-hour reset or for the weekly one; the stages stay a week apart as ADR-175 says",
+    "week_already_used_before_the_block": 0.26,
+    "assumed_pro": {
+      "mid": {
+        "sessions": 49,
+        "usd_with_redo": 50.2,
+        "windows": 5.7,
+        "weeks": 1.01,
+        "hours_of_work": 3.7,
+        "share_of_one_week": 1.01
+      },
+      "high": {
+        "sessions": 49,
+        "usd_with_redo": 83.2,
+        "windows": 9.4,
+        "weeks": 1.68,
+        "hours_of_work": 3.7,
+        "share_of_one_week": 1.68
+      },
+      "stages": {
+        "stage 1: parity (A, A-agentsmd, B)": {
+          "sessions": 34,
+          "usd_with_redo": 29.9,
+          "windows": 3.4,
+          "weeks": 0.6,
+          "hours_of_work": 2.3,
+          "share_of_one_week": 0.6
+        },
+        "stage 2: D and Q (B, C)": {
+          "sessions": 15,
+          "usd_with_redo": 20.3,
+          "windows": 2.3,
+          "weeks": 0.41,
+          "hours_of_work": 1.4,
+          "share_of_one_week": 0.41
+        }
+      }
+    },
+    "low_pro": {
+      "mid": {
+        "sessions": 49,
+        "usd_with_redo": 50.2,
+        "windows": 22.3,
+        "weeks": 3.99,
+        "hours_of_work": 3.7,
+        "share_of_one_week": 3.99
+      },
+      "high": {
+        "sessions": 49,
+        "usd_with_redo": 83.2,
+        "windows": 37,
+        "weeks": 6.6,
+        "hours_of_work": 3.7,
+        "share_of_one_week": 6.6
+      }
+    },
+    "note": "arithmetic over the assumed window sizes; the smoke sessions replace them with a measurement; the chosen schedule (or cut) is a later revision"
+  },
+  "redaction": {
+    "rule": "ADR-166 and ADR-167: the published copies of the traffic log, the stream and the host logs carry no token, no address of an account (only a GitHub noreply address may stay), no organization id, no machine path, home folder, user name, uid, host name or environment value; every copy is made by lib/redact.mjs, REDACTION.md keeps the sha256 of each original and the originals stay in the maintainer's private kit; a publication is scanned for the token and for each marker's pattern before it is committed, and a hit stops it",
+    "account_value_published": "none: the account is described only as \"the maintainer's personal account on the Pro plan\""
+  },
+  "readers": {
+    "what": "the reading of the sessions is fixed here, in code and prompt, before the first counted session; a change after it is a new revision",
+    "code": {
+      "analysis/stream.mjs": "07673e28e1b12d0121f0cca786c144be3d9acdf6041e827d377c42b99689a43d",
+      "analysis/labels.mjs": "bdc5bdfa86fa6e7e8a36695ad127c43a6642c14537129d67e23cf3be47bd8a2e",
+      "analysis/q-readers.mjs": "b5f24709e88d69be60245316d7eb411b8a49f30fa3c90374a5bff3145a8ff610",
+      "analysis/repo-facts.mjs": "f0c4b4ee458d5182f381b0c4b838edb4d1f5a206245ec917c285272a3a981432",
+      "analysis/transcript.mjs": "4d81faa3ca1abdc47cd24c52c3e7cddf1de3fd3fab9cf250a1912eff5bdacc43",
+      "analysis/llm-reader.mjs": "7363b5b25041de93df10ca1be0c48a02165e590687ef2bbd4d250a52be0a0648"
+    },
+    "llm_reader_prompt": {
+      "file": "analysis/llm-reader-prompt.md",
+      "sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+      "model": "claude-sonnet-5-5",
+      "calls_per_session": 1,
+      "subscription_only": true,
+      "flags": "-p --model claude-sonnet-5-5 --safe-mode --tools \"\" --no-session-persistence --output-format json",
+      "sees": "the transcript of the stream and the final changes, never what CODE concluded",
+      "answer": "one JSON object, refused and not repaired"
+    },
+    "q4_parity": "analysis/labels.mjs: obeyed (yes, part, no, n/a), the three outcomes apart, violation, work_barred vacuous, how the rule first showed in the stream; the repository diff against the starting commit decides what was edited",
+    "q1": "analysis/q-readers.mjs q1: the answer names the current rule, what it replaced and why; the predecessor is in what mnema returned",
+    "q2": "analysis/q-readers.mjs q2: decisions recorded (MCP record_decision or `mnema decision record`, a --help is not one), governs links, supersedes, whether a record reply offered a path",
+    "q3": "analysis/q-readers.mjs q3: `--help` of mnema before the first record; format:check red on a file the agent did not write",
+    "tested_on": "the 27 October streams (68 sessions of the medium and failure-modes kits): the tests assert that the readers tell the arms apart there (B records through MCP, C reads --help first, A records nothing, mnema returns the predecessor to B and C); on those streams they are heuristics and are said to be",
+    "heuristics": "Q1 to Q3 are regular-expression readings of the agent's words and commands; the LLM reader is the check on Q4, and the person reads the quality of what was recorded"
+  },
+  "not_done_yet": [
+    "the smoke sessions, which the orchestrator runs when the maintainer says",
+    "the bases of inline and fiscal are built by seed/build-real-bases.sh (it ran once as a check, both arms of both repositories); their tree hashes are read when the real runs folder is made",
+    "the measurement of the Pro week by the smoke sessions, which decides the one fallback",
+    "the public decision that cites this file"
+  ]
+}
