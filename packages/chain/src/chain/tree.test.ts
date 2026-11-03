@@ -214,14 +214,24 @@ describe('ensureTree: a .gitattributes that keeps git from rewriting line ends',
     }
   });
 
-  it('is, byte for byte, the file the record this repository keeps carries', () => {
-    // That tree was not written by `ensureTree`: nothing in this repository writes to its own
-    // record, so the file was put there by hand when the rule came in. Nothing else holds the
-    // two together, and the day one changes alone, the record this repository keeps stops
-    // having what every tree the product writes has.
-    const kept = fileURLToPath(new URL('../../../../.mnema/.gitattributes', import.meta.url));
+  it('is the file the record this repository keeps carries: every rule, and nothing a write would add', () => {
+    // That tree was not founded by this version of `ensureTree`: its file is the one an older tree
+    // carries, with each line a later version appends added at its end by the product's own writer.
+    // So its comments are the old tree's, and what is held is what matters: the same rules as a new
+    // tree, and a file the next write leaves as it is. The day a rule changes alone, either the
+    // record this repository keeps stops having what every tree the product writes has, or its next
+    // write changes a committed file, and this goes red.
+    const kept = readFileSync(
+      fileURLToPath(new URL('../../../../.mnema/.gitattributes', import.meta.url)),
+      'utf-8',
+    );
+    const rulesOf = (text: string): string[] =>
+      text.split('\n').filter((line) => line.length > 0 && !line.startsWith('#'));
     ensureTree({ root });
-    expect(readFileSync(kept, 'utf-8')).toBe(readFileSync(attributes(), 'utf-8'));
+    expect(rulesOf(kept)).toEqual(rulesOf(readFileSync(attributes(), 'utf-8')));
+    writeFileSync(attributes(), kept, 'utf-8');
+    ensureTree({ root });
+    expect(readFileSync(attributes(), 'utf-8')).toBe(kept);
   });
 
   it('writes it into a tree made before it existed, at the next write, and touches nothing else', () => {

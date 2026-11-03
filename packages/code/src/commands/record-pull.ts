@@ -83,7 +83,13 @@ export interface RecordPullDone {
   readonly restored: readonly string[];
   /** Where the files are that could not be put back, when there are any. */
   readonly keptAside?: { readonly dir: string; readonly paths: readonly string[] };
-  /** The verdict over the record after the pull, or undefined when git's pull failed. */
+  /**
+   * What the pull left unresolved although git answered 0: the paths git holds in conflict (the
+   * autostash put back over a file of the record that is not a tail, which no driver joins), and
+   * whether the autostash is still in git's stash. Absent when the pull left neither.
+   */
+  readonly unresolved?: { readonly conflicted: readonly string[]; readonly stashKept: boolean };
+  /** The verdict over the record after the pull, or undefined when the pull failed or left a conflict. */
   readonly verdict?: VerifyDone;
 }
 
@@ -211,7 +217,9 @@ export function runRecordPull(ctx: RecordPullContext): RecordPullDone | RecordPu
     renameSync(join(top, path), join(asideDir, path));
   }
 
-  // 4. The pull, with the driver on this one command line.
+  // 4. The pull, with the driver on this one command line. The stash before it is read so that an
+  // autostash git could not put back cleanly, and so kept, is told apart from one of the person's.
+  const stashBefore = said(git(ctx, top, ['rev-parse', '-q', '--verify', 'refs/stash']));
   const pull = git(ctx, top, [
     '-c',
     `merge.${MERGE_DRIVER}.name=mnema: keep the longer side of a tail that only grows`,
@@ -246,14 +254,29 @@ export function runRecordPull(ctx: RecordPullContext): RecordPullDone | RecordPu
   }
   if (kept.length === 0) rmSync(asideDir, { recursive: true, force: true });
 
+  // Git answers 0 when its autostash comes back with conflicts: it says so, and keeps the stash.
+  // A file of the record that is not a tail (its .gitattributes, say) is merged as text, so this
+  // is where such a conflict shows, and a pull that left one is not a pull that succeeded.
+  const conflicted = [
+    ...new Set(
+      git(ctx, top, ['ls-files', '-u', '-z'])
+        .out.toString('utf-8')
+        .split('\0')
+        .filter((entry) => entry.includes('\t'))
+        .map((entry) => entry.slice(entry.indexOf('\t') + 1)),
+    ),
+  ];
+  const stashAfter = said(git(ctx, top, ['rev-parse', '-q', '--verify', 'refs/stash']));
+  const stashKept = stashAfter !== undefined && stashAfter !== stashBefore;
   const done = {
     ok: true as const,
     upstream,
     pulled,
     restored,
     ...(kept.length > 0 ? { keptAside: { dir: asideDir, paths: kept } } : {}),
+    ...(conflicted.length > 0 || stashKept ? { unresolved: { conflicted, stashKept } } : {}),
   };
-  if (pull.status !== 0) return done;
+  if (pull.status !== 0 || done.unresolved !== undefined) return done;
 
   // 5. The verdict over the record the pull left.
   const verdict = runVerify({

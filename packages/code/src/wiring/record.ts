@@ -76,13 +76,20 @@ export function registerRecord(program: Command, wiring: Wiring): Declared {
         });
         return;
       }
-      if (result.pulled.status !== 0) {
+      const failed = result.pulled.status !== 0 || result.unresolved !== undefined;
+      if (failed) {
         for (const line of result.pulled.said.split('\n')) {
           if (line !== '') io.err(render(fact(line)));
         }
       }
       for (const path of result.restored) {
-        io.out(render(fact(onOneLine`${path}: put back, with the events this checkout adds`)));
+        io.out(
+          render(
+            fact(
+              onOneLine`${path}: put back as this checkout held it, the longer side or the only one`,
+            ),
+          ),
+        );
       }
       if (result.keptAside !== undefined) {
         io.err(
@@ -92,6 +99,29 @@ export function registerRecord(program: Command, wiring: Wiring): Declared {
             ),
           ),
         );
+      }
+      if (result.unresolved !== undefined) {
+        const { conflicted, stashKept } = result.unresolved;
+        if (conflicted.length > 0) {
+          io.err(
+            render(
+              fact(
+                onOneLine`git pull from ${result.upstream} left these files in conflict: ${someOf(conflicted)}; resolve them, then commit or check them out.`,
+              ),
+            ),
+          );
+        }
+        if (stashKept) {
+          io.err(
+            render(
+              fact(
+                'the local changes git set aside for the pull are still in its stash (`git stash list`); `git stash drop` once they are resolved.',
+              ),
+            ),
+          );
+        }
+        io.fail();
+        return;
       }
       if (result.pulled.status !== 0) {
         io.err(

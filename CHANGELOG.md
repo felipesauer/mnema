@@ -18,7 +18,9 @@ with its own changelog.
   `record pull` refuses, writing nothing, when a file outside `.mnema/` has changes or when a tail file here and on the
   branch followed is not one the start of the other (a fork, named with the line where the sides part); otherwise it
   runs `git pull --autostash` with the driver given on that one command line, puts back a file of the record git did
-  not track yet, and verifies the record. It writes no git configuration. `mnema init`, and the first write to a record
+  not track yet, and verifies the record. It writes no git configuration, and it fails, printing what git said, when the
+  pull fails or git puts its autostash back with conflicts (a file of the record that is not a tail merges as text).
+  `mnema init`, and the first write to a record
   made before it, add `tails/*/*.jsonl merge=mnema-tail` to the record's `.gitattributes`; `mnema record merge-tail` is
   the driver (the longer side wins byte for byte; a fork keeps your side, exits 1 and says where the sides part), and
   git runs it only where its configuration names it: `mnema doctor` says where it does not, and `mnema doctor --fix

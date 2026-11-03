@@ -231,6 +231,92 @@ describe('mnema record pull', SLOW, () => {
   });
 });
 
+describe('mnema record pull, where git does not end clean', SLOW, () => {
+  /** `local` and the branch it follows each with a commit the other lacks, and events uncommitted here. */
+  function diverged(): { local: string; segment: string; before: Buffer } {
+    const { local, other } = world();
+    writeFileSync(join(other, 'theirs.txt'), 'theirs\n');
+    expect(git(other, 'add', 'theirs.txt').status).toBe(0);
+    expect(git(other, 'commit', '-qm', 'theirs').status).toBe(0);
+    expect(git(other, 'push', '-q', 'origin', 'main').status).toBe(0);
+    writeFileSync(join(local, 'ours.txt'), 'ours\n');
+    expect(git(local, 'add', 'ours.txt').status).toBe(0);
+    expect(git(local, 'commit', '-qm', 'ours').status).toBe(0);
+    expect(mnema(local, 'task', 'create', 'two').status).toBe(0);
+    const segment = join(theTail(local), '000001.jsonl');
+    return { local, segment, before: readFileSync(join(local, segment)) };
+  }
+
+  it('fails, with what git said, and leaves the local events where they were, when git will not reconcile', () => {
+    const { local, segment, before } = diverged();
+    const pulled = pull(local);
+    if (!pulled.ok) throw new Error(JSON.stringify(pulled));
+    expect(pulled.pulled.status).not.toBe(0);
+    expect(pulled.pulled.said).toMatch(/divergent branches/);
+    expect(pulled.verdict).toBeUndefined();
+    expect(readFileSync(join(local, segment)).equals(before)).toBe(true);
+  });
+
+  it('rebases where the person set pull.rebase, keeping the local events, and verifies', () => {
+    const { local, segment, before } = diverged();
+    expect(git(local, 'config', 'pull.rebase', 'true').status).toBe(0);
+    const pulled = pull(local);
+    if (!pulled.ok) throw new Error(JSON.stringify(pulled));
+    expect(pulled.pulled.status).toBe(0);
+    expect(pulled.unresolved).toBeUndefined();
+    expect(readFileSync(join(local, segment)).equals(before)).toBe(true);
+    expect(readFileSync(join(local, 'theirs.txt'), 'utf-8')).toBe('theirs\n');
+    expect(pulled.verdict?.record.ok).toBe(true);
+  });
+
+  it('fails when the autostash comes back in conflict over a file of the record that is not a tail', () => {
+    const { local, other } = world();
+    const attributes = join('.mnema', '.gitattributes');
+    writeFileSync(
+      join(other, attributes),
+      `${readFileSync(join(other, attributes), 'utf-8')}*.a -diff\n`,
+    );
+    expect(git(other, 'commit', '-qam', 'theirs').status).toBe(0);
+    expect(git(other, 'push', '-q', 'origin', 'main').status).toBe(0);
+    writeFileSync(
+      join(local, attributes),
+      `${readFileSync(join(local, attributes), 'utf-8')}*.b -diff\n`,
+    );
+    expect(mnema(local, 'task', 'create', 'two').status).toBe(0);
+
+    const pulled = pull(local);
+    if (!pulled.ok) throw new Error(JSON.stringify(pulled));
+    // Git answered 0: what makes it a failure is what it left.
+    expect(pulled.pulled.status).toBe(0);
+    expect(pulled.unresolved).toEqual({ conflicted: ['.mnema/.gitattributes'], stashKept: true });
+    expect(pulled.verdict).toBeUndefined();
+  });
+
+  it('refuses a file of the record that is not a tail and holds other bytes than upstream', () => {
+    const { local, other } = world();
+    const stray = join('.mnema', 'keys', 'stray.pub');
+    writeFileSync(join(other, stray), 'theirs\n');
+    expect(git(other, 'add', stray).status).toBe(0);
+    expect(git(other, 'commit', '-qm', 'stray').status).toBe(0);
+    expect(git(other, 'push', '-q', 'origin', 'main').status).toBe(0);
+    writeFileSync(join(local, stray), 'ours\n');
+
+    const refused = pull(local);
+    if (refused.ok || refused.reason !== 'NOT_A_PREFIX') throw new Error(JSON.stringify(refused));
+    expect(refused.found.map((one) => one.path)).toEqual([stray]);
+    expect(refused.found[0]?.said).toMatch(/holds other bytes than on origin\/main/);
+    expect(readFileSync(join(local, stray), 'utf-8')).toBe('ours\n');
+  });
+
+  it('refuses, changing nothing, where the remote cannot be read', () => {
+    const { local } = world();
+    expect(git(local, 'remote', 'set-url', 'origin', join(sandbox, 'gone.git')).status).toBe(0);
+    const refused = pull(local);
+    if (refused.ok || refused.reason !== 'FETCH_FAILED') throw new Error(JSON.stringify(refused));
+    expect(refused.said).toMatch(/gone\.git/);
+  });
+});
+
 describe('the driver record pull hands git', SLOW, () => {
   it("is this installation's node and script, quoted for the shell git runs it through", () => {
     expect(driverCommand('/opt/a b/node', "/x/it's/cli.js")).toBe(
