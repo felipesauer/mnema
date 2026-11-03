@@ -210,6 +210,14 @@ describe('the events git does not hold', SLOW, () => {
     expect(said.status).toContain('Not in git yet:');
     expect(said.doctor).toMatch(new RegExp(`to do · record-in-git: ${sentence.source}`));
     expect(said.closing).toMatch(sentence);
+    // Both additions ride one message: the events-not-in-git sentence ends the first line, and the
+    // decisions still proposed are counted on the second.
+    const [first, second, ...rest] = said.closing.split('\n');
+    expect(first).toMatch(sentence);
+    expect(second).toMatch(
+      /^\d+ decisions? recorded since it opened still awaits? a person’s judgement: `mnema decision review`\.$/,
+    );
+    expect(rest).toEqual([]);
     const json = JSON.parse(said.json) as { eventsNotInGit: Record<string, unknown> };
     expect(json.eventsNotInGit).toMatchObject({
       events,

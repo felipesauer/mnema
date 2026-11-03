@@ -209,7 +209,9 @@ export function runSessionTally(
       ]);
     }
     const events = readEventsNotInGit({ cwd: ctx.cwd, env: ctx.env });
-    const proposals = journal.decisions.filter((one) => one.state === INITIAL_DECISION_STATE).length;
+    const proposals = journal.decisions.filter(
+      (one) => one.state === INITIAL_DECISION_STATE,
+    ).length;
     const line = tallyLine({
       files: journal.filesEdited,
       decisions: journal.decisions.length,
