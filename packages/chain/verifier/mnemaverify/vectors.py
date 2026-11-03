@@ -162,12 +162,28 @@ def _check_against_the_declarations(rows: list, path: str, report: Report) -> No
         report.unchecked("4.1", refusal.what, declarations.DEFAULT_SCHEMA, "G08")
         return
     rebuilt = 0
+    read_past: list[str] = []
     for row in rows:
         name = row.get("name", "<unnamed>")
         try:
             result = declarations.rebuild(published, row["event"])
         except Refusal as refusal:
             report.fail("4.1", f"vector {name}: {refusal.what}", path, "G08")
+            continue
+        if result.contract is None:
+            # Section 7.1: a kind no contract declares is read past. Its envelope is rebuilt and
+            # its payload left unread, so the rebuild is the event without its payload.
+            envelope = {key: value for key, value in row["event"].items() if key != "payload"}
+            if canonical_bytes(result.event) != canonical_bytes(envelope):
+                report.fail(
+                    "4.1",
+                    f"vector {name}, of a kind no contract declares, does not rebuild to its "
+                    "envelope",
+                    path,
+                    "G08",
+                )
+                continue
+            read_past.append(row["kind"])
             continue
         if canonical_bytes(result.event) != canonical_bytes(row["event"]):
             report.fail(
@@ -187,8 +203,16 @@ def _check_against_the_declarations(rows: list, path: str, report: Report) -> No
             path,
             "G08",
         )
+    if read_past:
+        report.ok(
+            "7.1",
+            f"{len(read_past)} published vector(s) of a kind no contract declares "
+            f"({', '.join(sorted(set(read_past)))}) read past: the envelope rebuilt, the payload "
+            "not read",
+            path,
+        )
     kinds_declared = {kind for kind, _ in published.contracts}
-    missing = sorted({row["kind"] for row in rows} - kinds_declared)
+    missing = sorted({row["kind"] for row in rows} - kinds_declared - set(read_past))
     if missing:
         report.fail(
             "4.1", f"the vectors carry kind(s) the declarations do not: {missing}", path, "G08"

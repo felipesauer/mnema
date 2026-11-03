@@ -26,7 +26,7 @@
  */
 
 import { oneLine } from '../one-line.js';
-import type { Entry } from './entry.js';
+import { type ChainEntry, readEntries } from './entry.js';
 import { framedTextDigest } from './hash.js';
 import { tailFingerprint } from './layout.js';
 
@@ -411,7 +411,7 @@ export interface RelinksRead {
 }
 
 /** One entry as the rule reads it. */
-type EntryRead = Entry;
+type EntryRead = ChainEntry;
 
 /**
  * Where the identity fold refused an event, by tail and seq, over the tails it is handed: what
@@ -471,7 +471,7 @@ export function relinkedNaming(
 ): RelinksRead {
   const found: { readonly relink: RelinkRead; readonly covered: boolean }[] = [];
   for (const [host, entries] of entriesByTail) {
-    for (const entry of entries) {
+    for (const entry of readEntries(entries)) {
       const event = entry.event;
       if (event.kind !== 'tail.relinked') continue;
       const { tail, from: source, into, throughHash, eventCount } = event.payload;

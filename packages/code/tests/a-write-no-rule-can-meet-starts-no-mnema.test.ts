@@ -268,7 +268,7 @@ describe('the gate of a host whose hooks are processes', () => {
     await did('memory', 'a note kept global', '--scope', 'global');
     const segment = theSegment(resolveTrees(repo, { home }).global);
     const last = readFileSync(segment, 'utf-8').trimEnd().split('\n').at(-1) as string;
-    appendFileSync(segment, `${last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"')}\n`);
+    appendFileSync(segment, `${last.replace('"v":1,', '"v":9,')}\n`);
     for (const host of ['cursor', 'vscode', 'qwen'] as const) {
       const met = aWrite(host, 'src/billing/invoice.ts');
       expect(met.started, host).toBe(1);
@@ -345,7 +345,6 @@ describe('the gate of a host whose hooks are processes', () => {
     expect(last).toMatch(/"payload":\{"/);
     const refused: Record<string, string> = {
       'not JSON': 'not json at all',
-      'a kind it does not know': last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"'),
       'a version it does not know': last.replace(/"v":1\b/, '"v":2'),
       'a field it does not know': last.replace('"payload":{"', '"payload":{"aaa_unknown":1,"'),
       'a field of the wrong shape': last.replace(/"at":"[^"]+"/, '"at":"yesterday"'),

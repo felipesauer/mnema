@@ -618,6 +618,8 @@ describe('on the built binary, under a pseudo-terminal', () => {
     expect(ran.code).toBe(0);
     expect(written()).toEqual([AGENTS, COPILOT_RULE, CURSOR_RULE]);
     expect(ran.bytes).toContain('Founded');
+    // The trail is continuous: no blank row between a frame and the line after it.
+    expect(withoutSequences(ran.bytes)).not.toMatch(/\r?\n\r?\n/);
   });
 
   const asked = (screen: string) => ({ until: arrivedSince(screen), what: `showed ${screen}` });

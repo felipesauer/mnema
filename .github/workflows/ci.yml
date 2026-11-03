@@ -228,6 +228,7 @@ jobs:
           pnpm exec vitest run
           packages/action/src/world.test.ts
           packages/chain/src/chain/a-key-file-that-holds-no-key-is-refused.test.ts
+          packages/chain/src/chain/a-kind-this-reader-does-not-know-is-read-past.test.ts
           packages/chain/src/chain/a-reformat-is-named-only-where-the-signatures-prove-it.test.ts
           packages/chain/src/chain/a-refused-line-hides-nothing-else-in-its-tail.test.ts
           packages/chain/src/chain/a-tail-is-not-forked.test.ts
@@ -248,6 +249,7 @@ jobs:
           packages/chain/src/chain/the-writer-names-the-record.test.ts
           packages/chain/src/format-doc.test.ts
           packages/code/src/site/the-verdict-in-the-browser.test.ts
+          packages/code/tests/a-record-holding-a-kind-this-mnema-does-not-know.test.ts
           packages/code/tests/a-record-no-tail-holds-is-refused.test.ts
           packages/code/tests/a-relinked-tail-passes-since.test.ts
           packages/code/tests/a-tail-that-holds-keys-is-not-cut-without-naming-them.test.ts

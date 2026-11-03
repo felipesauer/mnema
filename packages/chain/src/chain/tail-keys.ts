@@ -25,7 +25,7 @@
  * revoked is treated as one that may write.
  */
 
-import type { Entry } from './entry.js';
+import { type ChainEntry, readEntries } from './entry.js';
 import { tailFingerprint } from './layout.js';
 import { tailWaiversIn } from './waiver.js';
 
@@ -48,13 +48,13 @@ export interface KeyATailHolds {
  * `writerTail`, when given, is the tail a waiver about to be written lands on.
  */
 export function keysATailHolds(
-  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+  entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
   tail: string,
   writerTail?: string,
 ): KeyATailHolds[] {
   const revoked = new Set<string>();
   for (const entries of entriesByTail.values()) {
-    for (const { event } of entries) {
+    for (const { event } of readEntries(entries)) {
       if (event.kind === 'key.revoked') revoked.add(event.payload.revokedFp);
       else if (event.kind === 'agent.retired') revoked.add(event.payload.agentFp);
       else if (event.kind === 'checker.retired') revoked.add(event.payload.checkerFp);
@@ -71,7 +71,7 @@ export function keysATailHolds(
 
   const held: KeyATailHolds[] = [];
   const seen = new Set<string>();
-  for (const { event } of entriesByTail.get(tail) ?? []) {
+  for (const { event } of readEntries(entriesByTail.get(tail) ?? [])) {
     let fp: string;
     let how: KeyIntroduction;
     if (event.kind === 'identity.founded') [fp, how] = [event.payload.foundingFp, 'founded'];

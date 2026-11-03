@@ -35,7 +35,7 @@
 
 import type { CatalogEvent } from '../events/catalog.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
-import type { Entry } from './entry.js';
+import { type ChainEntry, readEntries } from './entry.js';
 import { type ChainLayout, tailFingerprint } from './layout.js';
 import { readTail } from './store.js';
 
@@ -96,7 +96,7 @@ export function tailStanding(
  * the anchor is the last entry's and not the first's. Nothing is decided here that
  * was not decided there.
  */
-export function standingOf(entries: readonly Entry[]): TailStanding | undefined {
+export function standingOf(entries: readonly ChainEntry[]): TailStanding | undefined {
   const last = entries.at(-1);
   if (last === undefined) return undefined;
   return { throughHash: last.link.hash, eventCount: entries.length, who: last.event.who };
@@ -184,10 +184,12 @@ export interface TailWaiver {
  * what keeps a waiver from ever curing a break: a present, corrupt tail is verified
  * exactly as it always was, waiver or no waiver.
  */
-export function tailWaiversIn(entriesByTail: ReadonlyMap<string, readonly Entry[]>): TailWaiver[] {
+export function tailWaiversIn(
+  entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
+): TailWaiver[] {
   const waivers: TailWaiver[] = [];
   for (const [declaredOn, entries] of entriesByTail) {
-    for (const entry of entries) {
+    for (const entry of readEntries(entries)) {
       const waiver = entry.event;
       if (waiver.kind !== 'tail.pruned') continue;
       waivers.push({

@@ -18,7 +18,7 @@
  *   - THE BACKUP KEY IS SAID BEFORE THE OTHER NEXT STEPS, and only on the run that made it.
  */
 
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -246,6 +246,35 @@ describe('the frames', () => {
     expect(at(60).some((row) => row.includes('Found the project') && row.includes('Leave'))).toBe(
       false,
     );
+  });
+});
+
+describe('the next steps', () => {
+  it('say for each host what docs/hosts.md says for it, and for Cursor the server and the plugin, not a bare "installed"', () => {
+    const summary = frames(80).find((frame) => frame.name === 'the summary')?.lines ?? [];
+    const text = summary
+      .map((line) => renderPlain(line))
+      .join('\n')
+      .replace(/\n\u2502\s+/g, ' ');
+    const hosts = readFileSync(new URL('../../../docs/hosts.md', import.meta.url), 'utf-8');
+    expect(text).toContain(
+      'Cursor: its command-line agent picks up the Claude Code plugin installed on this machine',
+    );
+    expect(text).toContain('`mnema mcp`');
+    expect(text).not.toContain('installed on the same machine');
+    expect(hosts).toContain('picks up a plugin installed in Claude Code on the same machine');
+    expect(hosts).toContain('mnema mcp');
+    expect(text).toContain('claude plugin marketplace add felipesauer/mnema');
+    expect(text).toContain('codex plugin marketplace add felipesauer/mnema');
+  });
+
+  it('keep the trail continuous: no row of a frame is blank, every one starts with a mark or the guide', () => {
+    for (const { name, lines } of frames(80)) {
+      for (const line of lines) {
+        const row = renderPlain(line);
+        expect(row.trim(), name).not.toBe('');
+      }
+    }
   });
 });
 

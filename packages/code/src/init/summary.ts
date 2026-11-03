@@ -144,6 +144,29 @@ interface NextStep {
   readonly commands: readonly string[];
 }
 
+/**
+ * What a host needs, as `docs/hosts.md` says it for that host. Cursor's command-line agent and VS Code's agent
+ * read the plugin Claude Code installs (the server is the same `mnema mcp`), so each says that, with the
+ * Claude Code commands under it where Claude Code was not among the hosts chosen, and VS Code the one more
+ * command its settings need. The Claude Code and Codex steps are the table's own commands.
+ */
+function hostStep(id: (typeof HOST_ROWS)[number]['id'], claudeIsChosen: boolean): NextStep {
+  const install = HOSTS[id].install;
+  if ('commands' in install) return { says: `${NAMED[id]}:`, commands: install.commands };
+  const claude = HOSTS.claude.install;
+  const plugin = 'commands' in claude && !claudeIsChosen ? claude.commands : [];
+  if (id === 'vscode') {
+    return {
+      says: 'VS Code: its agent reads the Claude Code plugin, whose server is `mnema mcp`; install it, then:',
+      commands: [...plugin, 'mnema doctor --fix vscode'],
+    };
+  }
+  return {
+    says: 'Cursor: its command-line agent picks up the Claude Code plugin installed on this machine, whose server is `mnema mcp`.',
+    commands: plugin,
+  };
+}
+
 /** The next steps, in the order they are numbered. */
 function nextSteps(founded: Founded): readonly NextStep[] {
   const { result, answers } = founded;
@@ -163,12 +186,7 @@ function nextSteps(founded: Founded): readonly NextStep[] {
   }
   for (const row of HOST_ROWS) {
     if (!answers.marks.has(hostMark(row.id))) continue;
-    const install = HOSTS[row.id].install;
-    steps.push(
-      'commands' in install
-        ? { says: `${NAMED[row.id]}:`, commands: install.commands }
-        : { says: `${NAMED[row.id]}: ${install.words}`, commands: [] },
-    );
+    steps.push(hostStep(row.id, answers.marks.has(hostMark('claude'))));
   }
   for (const base of around?.neverImported ?? []) {
     steps.push({

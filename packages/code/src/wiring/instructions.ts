@@ -76,6 +76,8 @@ export function registerInstructions(program: Command, wiring: Wiring): Declared
       const {
         changeLine,
         checkInstructions,
+        leftOut,
+        leftOutLine,
         chosenOnDisk,
         EVERY_HOST_FILE,
         instructionsAreCurrent,
@@ -86,6 +88,8 @@ export function registerInstructions(program: Command, wiring: Wiring): Declared
       if (opts.check === true) {
         const files = checkInstructions(root);
         for (const file of files) io.out(render(fact(stateLine(file))));
+        const out = leftOut(root);
+        if (out.length > 0) io.out(render(fact(leftOutLine(out))));
         if (!instructionsAreCurrent(files)) io.fail();
         return;
       }
@@ -121,6 +125,10 @@ export function registerInstructions(program: Command, wiring: Wiring): Declared
       const files =
         opts.remove === true ? removeInstructions(root) : writeInstructions(root, choice, yours);
       for (const file of files) io.out(render(fact(changeLine(file))));
+      if (opts.remove !== true && choice === undefined && yours === undefined) {
+        const out = leftOut(root);
+        if (out.length > 0) io.out(render(fact(leftOutLine(out))));
+      }
       if (files.some((file) => file.did === 'refused' || file.did === 'failed')) io.fail();
     });
   return readsTheRecord(verb);

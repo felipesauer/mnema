@@ -58,6 +58,7 @@ import {
   openChainForWriting,
   orderedSegments,
   projectionCachePath,
+  readEntries,
   readTail,
   subjectEvents,
   tailDir,
@@ -1101,7 +1102,7 @@ describe('clocks that disagree, with nothing cited: fixed and not endorsed', () 
 function tailsOnDisk(root: string) {
   return listTails({ root }).map((tail) => ({
     key: tail,
-    entries: readTail({ root }, tail, upcasters).entries.map((entry) => ({
+    entries: readEntries(readTail({ root }, tail, upcasters).entries).map((entry) => ({
       event: entry.event,
       id: identity(entry.event),
       at: entry.event.at,

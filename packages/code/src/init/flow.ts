@@ -26,6 +26,7 @@ import { theScreens } from '../choice/asked.js';
 import type { CompletionWord } from '../completion/tree.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
+import { withoutSequences } from '../presentation/width.js';
 import { type Keystroke, keystrokesOf } from '../repl/editing.js';
 import type { Leaving } from '../repl/leaving.js';
 import type { CliIo } from '../wiring/io.js';
@@ -97,7 +98,9 @@ function watched(output: NodeJS.WriteStream): {
       if (property === 'write') {
         return (chunk: string | Uint8Array, ...rest: unknown[]): boolean => {
           const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf-8');
-          if (text.length > 0) last = text.slice(-1);
+          // Only what is drawn counts: the sequences the library writes after a frame do not move the cursor.
+          const shown = withoutSequences(text);
+          if (shown.length > 0) last = shown.slice(-1);
           return (target.write as (...all: unknown[]) => boolean)(chunk, ...rest);
         };
       }
@@ -139,6 +142,8 @@ export async function putTheQuestion<State, Answer>(
         ),
       );
       screen.close();
+      // Where the library left no line break (the screen reader's mode) one is given, so the line printed next
+      // is not glued to the last row; everywhere else its frame already ends with one and nothing is added.
       if (!page.endsALine()) terminal.output.write('\n');
       resolve(result);
     };

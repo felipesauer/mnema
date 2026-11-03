@@ -275,11 +275,39 @@ function targetsOf(
 ): readonly InstructionsTarget[] {
   const onDisk = chosenOnDisk(project);
   const chosen = choice ?? (onDisk.length > 0 ? onDisk : EVERY_HOST_FILE);
+  // WHERE NOBODY WAS ASKED AND NOTHING WAS GIVEN, THE DISK IS THE CHOICE (ADR-177): a file of the person's with
+  // no block, in a project where another file holds one, was left out and counts as not chosen.
+  const out = choice === undefined && yours === undefined ? leftOut(project) : [];
   return INSTRUCTIONS_TARGETS.filter((target) => {
     if (target.when === 'always') return chosen.includes(target.path);
     if (yours !== undefined && !yours.includes(target.path)) return false;
+    if (out.includes(target.path)) return false;
     return existsAsALink(join(project, target.path));
   });
+}
+
+/**
+ * The person's own files that are there with no block while another instructions file holds one: the ones
+ * `mnema init` was told to leave out (ADR-177). Read from the disk, so nothing is recorded; a project where no
+ * file holds a block has left nothing out. `the-instructions-left-out-are-said.test.ts` holds it.
+ */
+export function leftOut(project: string): readonly string[] {
+  const peeks = peekInstructions(project);
+  const holdsOne = peeks.some((peek) =>
+    ['current', 'outdated', 'edited'].includes(peek.found.state),
+  );
+  if (!holdsOne) return [];
+  return peeks
+    .filter((peek) => !peek.own && peek.exists && peek.found.state === 'missing')
+    .filter(
+      (peek) => INSTRUCTIONS_TARGETS.find((target) => target.path === peek.path)?.when === 'exists',
+    )
+    .map((peek) => peek.path);
+}
+
+/** The one line that says which files were left out, and the command that adds the block if it is wanted. */
+export function leftOutLine(paths: readonly string[]): string {
+  return `${paths.join(', ')} ${paths.length === 1 ? 'was' : 'were'} left out: no block there while another file holds it counts as not chosen; \`mnema instructions --all-hosts\` adds it.`;
 }
 
 /** What one file of the instructions is before a write: the facts a person is shown before anything is written. */

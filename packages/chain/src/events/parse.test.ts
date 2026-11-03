@@ -19,7 +19,7 @@ import {
 } from './build.js';
 import { canonicalStringify } from './canonical.js';
 import type { CatalogEvent } from './catalog.js';
-import { EventParseError, parseEvent, toCanonical, unreadableReason } from './parse.js';
+import { EventParseError, parseEvent, readEvent, toCanonical, unreadableReason } from './parse.js';
 import { UpcasterRegistry } from './upcaster.js';
 
 const reg = new UpcasterRegistry();
@@ -882,5 +882,70 @@ describe('parseEvent: the citation `after` (hashes?)', () => {
     ['null', null],
   ])('refuses one that is %s', (_name, after) => {
     expect(() => parseEvent(cited(after), reg)).toThrow(EventParseError);
+  });
+});
+
+describe('readEvent: a kind this reader does not know is read past, its envelope checked (ADR-113)', () => {
+  const ENVELOPE = '"at":"2026-07-21T00:00:00.000Z","signerFp":"fp","subject":"s","who":"h"';
+  const line = (kind: string, rest = '"payload":{"anything":[1,{"x":null}]},"v":7') =>
+    `{${ENVELOPE},"kind":${JSON.stringify(kind)},${rest}}`;
+
+  it('answers the envelope, rebuilt, and nothing of the payload', () => {
+    expect(readEvent(line('x.from-the-future'), reg)).toEqual({
+      unread: {
+        v: 7,
+        kind: 'x.from-the-future',
+        at: '2026-07-21T00:00:00.000Z',
+        who: 'h',
+        signerFp: 'fp',
+        subject: 's',
+      },
+    });
+  });
+
+  it('reads a known kind as parseEvent does', () => {
+    const known = `{${ENVELOPE},"kind":"run.ended","payload":{},"v":1}`;
+    expect(readEvent(known, reg)).toEqual({ event: parseEvent(known, reg) });
+  });
+
+  it('takes a name every object answers to for a kind it does not know, not for a catalog kind', () => {
+    // `toString` was read as a catalog kind with an empty payload: the table was asked through
+    // the prototype every object has.
+    for (const kind of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+      expect(readEvent(line(kind, '"payload":{},"v":1'), reg)).toHaveProperty('unread');
+      expect(() => parseEvent(line(kind, '"payload":{},"v":1'), reg)).toThrow(
+        /it reads no version of that kind/,
+      );
+    }
+  });
+
+  it('refuses an envelope out of its declarations, whatever the kind', () => {
+    const refusals: [string, RegExp][] = [
+      [`{${ENVELOPE},"extra":1,"kind":"x.k","payload":{},"v":1}`, /unknown event field "extra"/],
+      [
+        `{"at":"2026-07-21T00:00:00.000Z","kind":"x.k","payload":{},"signerFp":"fp","subject":"s","v":1}`,
+        /needs a non-empty string at who/,
+      ],
+      [`{${ENVELOPE},"kind":"x.k","payload":[],"v":1}`, /needs an object payload/],
+      [`{${ENVELOPE},"kind":"x.k","v":1}`, /needs an object payload/],
+      [`{${ENVELOPE},"kind":"x.k","payload":{},"v":0}`, /invalid version/],
+      [
+        `{"at":"2026-07-21","kind":"x.k","payload":{},"signerFp":"fp","subject":"s","v":1,"who":"h"}`,
+        /ISO-8601/,
+      ],
+    ];
+    for (const [text, said] of refusals) {
+      expect(() => readEvent(text, reg), text).toThrow(EventParseError);
+      expect(() => readEvent(text, reg), text).toThrow(said);
+    }
+  });
+
+  it('still refuses a KNOWN kind at a version it does not hold, and one with a field it does not declare', () => {
+    expect(() => readEvent(`{${ENVELOPE},"kind":"run.ended","payload":{},"v":2}`, reg)).toThrow(
+      /it reads that kind up to v1/,
+    );
+    expect(() =>
+      readEvent(`{${ENVELOPE},"kind":"run.ended","payload":{"extra":1},"v":1}`, reg),
+    ).toThrow(/unknown payload field "extra"/);
   });
 });

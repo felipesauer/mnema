@@ -103,7 +103,8 @@ export class UpcasterRegistry {
    */
   upcast(event: VersionedEvent): CatalogEvent {
     const kind = event.kind;
-    const latest = this.latest[kind];
+    // By the table's OWN keys: a kind named `toString` is no kind, whatever every object answers.
+    const latest = Object.hasOwn(this.latest, kind) ? this.latest[kind] : undefined;
     if (latest === undefined || event.v > latest) {
       throw new UpcasterError(notHeld(kind, event.v, latest));
     }

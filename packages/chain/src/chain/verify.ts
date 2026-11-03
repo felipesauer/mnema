@@ -120,7 +120,15 @@ import {
 } from './checkpoint.js';
 import { decisionTexts } from './decision-text.js';
 import { type IdentityResolution, type RetiredElsewhere, resolveIdentity } from './enrollment.js';
-import { describeLinkBreak, type Entry, linkBreakAt, sealEntry } from './entry.js';
+import {
+  type ChainEntry,
+  describeLinkBreak,
+  type Entry,
+  isRead,
+  linkBreakAt,
+  readEntries,
+  sealEntry,
+} from './entry.js';
 import { contentRoot, entryHash } from './hash.js';
 import {
   type ChainLayout,
@@ -230,7 +238,26 @@ export type CensusNote =
   | UnnamedTailNote
   | RelinkedTailNote
   | RelinkUncoveredNote
-  | RelinkedTailAbsentNote;
+  | RelinkedTailAbsentNote
+  | UnreadKindNote;
+
+/**
+ * Lines of a `kind` this binary does not know (ADR-113, FORMAT.md section 7.1), one note per kind:
+ * what a newer mnema wrote. Each line was checked for everything that does not need what it says
+ * (its envelope, its entry hash, its place in the chain, its signer's membership at its point, the
+ * checkpoint over it) and none of it was read or applied. Said, never a break: the exit is what the
+ * rest of the record earns, and the same line with one byte changed is a broken hash like any.
+ */
+export interface UnreadKindNote {
+  readonly kind: 'unread-kind';
+  /** The kind the lines carry, which this binary does not know. */
+  readonly eventKind: string;
+  /** How many lines carry it. */
+  readonly lines: number;
+  /** The tails they are in, in the order the tails were read. */
+  readonly tails: readonly string[];
+  readonly detail: string;
+}
 
 /**
  * A tail its owner relinked into this record, and the relink counts (FORMAT.md section 6.11):
@@ -935,7 +962,7 @@ export function relinksReadAt(
 ): RelinksRead {
   const keysOf = layouts.map((layout) => committedKeys(layout));
   const keys = eitherKeys(keysOf);
-  const entriesByTail = new Map<string, readonly Entry[]>();
+  const entriesByTail = new Map<string, readonly ChainEntry[]>();
   const checkpointsByTail = new Map<string, readonly Checkpoint[]>();
   const keysByTail = new Map<string, CommittedKeys>();
   layouts.forEach((layout, at) => {
@@ -952,7 +979,7 @@ export function relinksReadAt(
   const joined = new Set<string>();
   const hosts = new Set<string>();
   for (const [tail, entries] of entriesByTail) {
-    for (const entry of entries) {
+    for (const entry of readEntries(entries)) {
       if (entry.event.kind !== 'tail.relinked') continue;
       hosts.add(tail);
       joined.add(entry.event.payload.into);
@@ -1127,7 +1154,7 @@ function verifyReading(
   // once per key (store.ts). It is made HERE, per call, so no verdict reads a key an
   // earlier verdict read.
   const keys = committedKeys(layout);
-  const entriesByTail = new Map<string, readonly Entry[]>();
+  const entriesByTail = new Map<string, readonly ChainEntry[]>();
   const issuesByTail = new Map<string, TailIssue[]>();
   const checkpointedByTail = new Map<string, number>();
   // The checkpoints each tail was PROVEN over, and how many events it holds: what an
@@ -1322,6 +1349,7 @@ function verifyReading(
     ...citationsNotHeld(identity.citations),
     ...clocksBehind(identity.citations),
     ...agentsNamed(identity.agents),
+    ...unreadKinds(counted, entriesByTail),
     ...(record.state === 'named' ? record.unnamed.map(unnamedTail) : []),
     ...relinks.counted.map(
       ({ relink, detail }): RelinkedTailNote => ({
@@ -1659,7 +1687,7 @@ function keysWithoutTail(
  */
 function foreignNotes(
   tails: readonly string[],
-  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+  entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
 ): (ForeignRetractionNote | ForeignRewriteNote)[] {
   const authors = new Map<string, string>();
   for (const { event } of mergedOrder(entriesByTail).order) {
@@ -1705,13 +1733,15 @@ function foreignNotes(
  * moves the workflow does not allow left out of the judgment, as the product's read judges it.
  */
 export function decisionTextsOf(
-  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+  entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
 ): Map<string, Entry> {
   const { order, entryAt, held } = mergedOrder(entriesByTail);
   const texts = new Map<string, Entry>();
   for (const [id, index] of decisionTexts(order, held, illegalMoves(order, held))) {
     const { tail, position } = order[index] as (typeof order)[number];
-    texts.set(id, entryAt(tail, position));
+    // The order holds only lines this binary reads, so the text is one.
+    const text = entryAt(tail, position);
+    if (isRead(text)) texts.set(id, text);
   }
   return texts;
 }
@@ -1724,7 +1754,7 @@ export function decisionTextsOf(
  */
 function decisionRewrites(
   tails: readonly string[],
-  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+  entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
 ): DecisionRewriteNote[] {
   const texts = decisionTextsOf(entriesByTail);
   const found: DecisionRewriteNote[] = [];
@@ -1756,24 +1786,29 @@ function decisionRewrites(
  * The merged order of every tail of one record ("Reading many tails" in FORMAT.md): each event
  * with its tail's index and its position in it, and the citations the order honoured.
  */
-function mergedOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>) {
+function mergedOrder(entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>) {
   const tails = [...entriesByTail].map(([tail, entries]) => ({ tail, entries }));
-  const entryAt = (tail: number, position: number): Entry =>
-    (tails[tail] as (typeof tails)[number]).entries[position] as Entry;
+  const entryAt = (tail: number, position: number): ChainEntry =>
+    (tails[tail] as (typeof tails)[number]).entries[position] as ChainEntry;
   const merged = causalOrder(
     tails.map(({ tail, entries }) => ({ tree: 0, tail, length: entries.length })),
     {
-      at: (tail, position) => (entryAt(tail, position).event as CatalogEvent).at,
+      at: (tail, position) => entryAt(tail, position).event.at,
       hash: (tail, position) => entryAt(tail, position).link.hash,
-      after: (tail, position) => (entryAt(tail, position).event as CatalogEvent).after,
+      after: (tail, position) => entryAt(tail, position).event.after,
     },
   );
   const cursors = tails.map(() => 0);
-  const order = merged.steps.map((tail) => {
+  // A line of a kind this binary does not know takes its place in the order (its `at`, its hash and
+  // its citations order the lines around it) and is then left out of what is judged: its position
+  // still counts, so a citation of a line past it resolves where it did.
+  const order: { event: CatalogEvent; tail: number; position: number }[] = [];
+  for (const tail of merged.steps) {
     const position = cursors[tail] as number;
     cursors[tail] = position + 1;
-    return { event: entryAt(tail, position).event as CatalogEvent, tail, position };
-  });
+    const entry = entryAt(tail, position);
+    if (isRead(entry)) order.push({ event: entry.event, tail, position });
+  }
   return { tails, entryAt, order, held: merged.held };
 }
 
@@ -1783,7 +1818,7 @@ function mergedOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>) {
  * repeated byte for byte is one move read twice, as the reading in `@mnema/core` holds it.
  */
 function decisionDivergences(
-  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+  entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
 ): DecisionDivergenceNote[] {
   const { tails, entryAt, order, held } = mergedOrder(entriesByTail);
   const notApplied = illegalMoves(order, held);
@@ -1833,7 +1868,9 @@ function decisionDivergences(
  * every tail and named in that order. The order is merged again here rather than borrowed from
  * the identity fold, so the census asks the same function the readers ask (`illegalMoves`).
  */
-function movesNotApplied(entriesByTail: ReadonlyMap<string, readonly Entry[]>): IllegalMoveNote[] {
+function movesNotApplied(
+  entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
+): IllegalMoveNote[] {
   const { tails, entryAt, order, held } = mergedOrder(entriesByTail);
   return [...illegalMoves(order, held)].map(([index, ruling]) => {
     const { event, tail, position } = order[index] as (typeof order)[number];
@@ -1861,13 +1898,13 @@ function movesNotApplied(entriesByTail: ReadonlyMap<string, readonly Entry[]>): 
  */
 function foreignLinkRetractions(
   tails: readonly string[],
-  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+  entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
 ): ForeignLinkRetractionNote[] {
   const edge = (subject: string, target: string, rel: string) =>
     JSON.stringify([subject, target, rel]);
   const asserters = new Map<string, string[]>();
   for (const tail of tails) {
-    for (const { event } of entriesByTail.get(tail) ?? []) {
+    for (const { event } of readEntries(entriesByTail.get(tail) ?? [])) {
       if (event.kind !== 'knowledge.linked') continue;
       const key = edge(event.subject, event.payload.target, event.payload.rel);
       const whos = asserters.get(key) ?? [];
@@ -1877,7 +1914,7 @@ function foreignLinkRetractions(
   }
   const found: ForeignLinkRetractionNote[] = [];
   for (const tail of tails) {
-    for (const { event, link } of entriesByTail.get(tail) ?? []) {
+    for (const { event, link } of readEntries(entriesByTail.get(tail) ?? [])) {
       if (event.kind !== 'link.retracted') continue;
       const { target, rel } = event.payload;
       const authors = asserters.get(edge(event.subject, target, rel));
@@ -2098,7 +2135,7 @@ function keyWithoutTailDetail(waivers: readonly TailWaiver[], declaredFor?: stri
  * contiguously from 0; each entry's `prev` must equal the previous entry's
  * recomputed hash; each stored `hash` must match the recomputation.
  */
-function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIssue[]): void {
+function verifyHashChain(tail: string, entries: readonly ChainEntry[], issues: TailIssue[]): void {
   let expectedPrev: string | null = null;
   let expectedSeq = 0;
   for (const entry of entries) {
@@ -2201,7 +2238,7 @@ type SignaturesChecked = 'every' | 'the-chain';
 function verifyCheckpoints(
   keys: CommittedKeys,
   tail: string,
-  entries: readonly Entry[] | undefined,
+  entries: readonly ChainEntry[] | undefined,
   stored: readonly Checkpoint[],
   issues: TailIssue[],
   signatures: SignaturesChecked = 'every',
@@ -2224,7 +2261,7 @@ function verifyCheckpoints(
 function verifyCheckpointsOnce(
   keys: CommittedKeys,
   tail: string,
-  entries: readonly Entry[] | undefined,
+  entries: readonly ChainEntry[] | undefined,
   stored: readonly Checkpoint[],
   issues: TailIssue[],
   signatures: SignaturesChecked,
@@ -2417,7 +2454,7 @@ export const TAIL_SIGNER_MISMATCH = 'tail-signer-mismatch';
  */
 function verifyTailSigner(
   tail: string,
-  entries: readonly Entry[],
+  entries: readonly ChainEntry[],
   checkpoints: readonly Checkpoint[],
   issues: TailIssue[],
 ): void {
@@ -2596,6 +2633,50 @@ function anotherRecord(groups: Extract<RecordNaming, { state: 'several' }>['grou
 /** "tail" or "tails", as many as a group holds. */
 function tailsWord(count: number): string {
   return count === 1 ? 'tail' : 'tails';
+}
+
+/**
+ * One {@link UnreadKindNote} per kind this binary does not know, in the order the kinds are first
+ * met across `tails`. The second reader words the same sentence (`_say_unread_kinds` in
+ * `mnemaverify/record.py`).
+ */
+function unreadKinds(
+  tails: readonly string[],
+  entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
+): UnreadKindNote[] {
+  const byKind = new Map<string, { lines: number; tails: string[] }>();
+  for (const tail of tails) {
+    for (const entry of entriesByTail.get(tail) ?? []) {
+      if (isRead(entry)) continue;
+      const seen = byKind.get(entry.event.kind) ?? { lines: 0, tails: [] };
+      seen.lines += 1;
+      if (!seen.tails.includes(tail)) seen.tails.push(tail);
+      byKind.set(entry.event.kind, seen);
+    }
+  }
+  return [...byKind].map(([eventKind, { lines, tails: where }]) => ({
+    kind: 'unread-kind',
+    eventKind,
+    lines,
+    tails: where,
+    detail: unreadKindSentence(eventKind, lines, where),
+  }));
+}
+
+/**
+ * The sentence both readers say of the lines of one kind they do not know: the kind, how many, the
+ * tails, and that nothing they say was read or applied.
+ */
+export function unreadKindSentence(
+  eventKind: string,
+  lines: number,
+  tails: readonly string[],
+): string {
+  return (
+    `${lines} line(s) of kind ${oneLine(JSON.stringify(eventKind))} in tail(s) ${tails.map(oneLine).join(', ')}: ` +
+    'a kind this reader does not know, so their hash, chain, signer and checkpoint were checked ' +
+    'and what they say was not read and none of it applied (a newer mnema wrote them)'
+  );
 }
 
 /** The census note of a tail that names no record beside tails that name one. */
@@ -2814,6 +2895,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => str
     `${count} relink(s) above their tail's last checkpoint, which count for nothing (see census: informational, not a break)`,
   'relinked-tail-absent': (count) =>
     `${count} relink(s) of a tail that is not here (see census: informational, not a break)`,
+  'unread-kind': (count) =>
+    `${count} kind(s) this reader does not know, checked and not read (see census: informational, not a break)`,
 };
 
 /** One clause per kind of note present, in the order the kinds are declared in. */

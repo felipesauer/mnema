@@ -88,7 +88,7 @@ import {
 import { isOlderThan } from '../version.js';
 import { mergeDriverLines } from './doctor-merge-driver.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
-import { checkInstructions, stateLine } from './instructions.js';
+import { checkInstructions, leftOut, leftOutLine, stateLine } from './instructions.js';
 import { stacksHere } from './stack-inspect.js';
 import { EDITORCONFIG_NAME, README_NAME, whatIsMissing } from './the-record-page.js';
 import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
@@ -949,13 +949,18 @@ function keyMetadataFindings(ctx: DoctorContext): Finding[] {
 function instructionsFindings(ctx: DoctorContext): Finding[] {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) return [];
-  return checkInstructions(dirname(trees.projectPublic))
+  const root = dirname(trees.projectPublic);
+  const said = checkInstructions(root)
     .filter((file) => file.found.state !== 'current')
     .map((file) => ({
       topic: 'instructions' as const,
       state: 'attention' as const,
       line: stateLine(file),
     }));
+  const out = leftOut(root);
+  return out.length === 0
+    ? said
+    : [...said, { topic: 'instructions' as const, state: 'fine' as const, line: leftOutLine(out) }];
 }
 
 /**

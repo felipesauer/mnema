@@ -11,9 +11,11 @@
  *
  * FORWARD. A record holding a line whose `kind` and `v` no row of a reader's table declares is
  * what a newer writer leaves for an older reader. Built here signed, chained and checkpointed, so
- * the only thing wrong with it is that the reader does not hold its contract, and both readers have
- * to refuse it by naming the pair, what they do hold of that kind, and, for this product, the
- * version of mnema that refuses.
+ * the only thing wrong with it is that the reader does not hold its contract. For a `v` ahead of the
+ * one a reader holds of a kind it knows, both readers refuse it by naming the pair, what they do
+ * hold of that kind, and, for this product, the version of mnema that refuses. For a kind a reader
+ * holds no version of, they used to refuse it the same way; since ADR-113 both read past it and name
+ * the kind (`a-kind-this-reader-does-not-know-is-read-past.test.ts` holds what that does not loosen).
  */
 
 import { spawnSync } from 'node:child_process';
@@ -83,7 +85,7 @@ describe('backward: a record an earlier binary wrote is read by this one', () =>
   });
 });
 
-describe('forward: a contract this reader does not hold is refused by naming it', () => {
+describe('forward: a newer version of a kind is refused by name, a kind not known is read past', () => {
   let root: string;
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'mnema-promise-forward-'));
@@ -154,21 +156,19 @@ describe('forward: a contract this reader does not hold is refused by naming it'
     return there.findings.filter((f) => f.level === 'FAIL').map((f) => `${f.section}: ${f.what}`);
   }
 
-  it('a kind this reader has no version of: refused, naming the pair and this mnema', () => {
+  it('a kind this reader has no version of: read past by both, verified, the kind named', () => {
     recordWith('memory.foretold', 1);
-    expect(productIssues()).toEqual([
-      expect.stringContaining(
-        `line 3: entry event is invalid: mnema ${READER_VERSION} does not read "memory.foretold" ` +
-          'at v1: it reads no version of that kind. If a newer mnema wrote the line, read the ' +
-          'record with it.',
-      ),
+    const here = verify(root, catalogUpcasters());
+    expect(here.issues).toEqual([]);
+    expect(here.ok).toBe(true);
+    expect(here.census.filter((note) => note.kind === 'unread-kind').map((n) => n.lines)).toEqual([
+      1,
     ]);
-    expect(secondRefusals()).toEqual([
-      expect.stringContaining(
-        '4.1: no published contract declares memory.foretold@1: the table this reader read ' +
-          'declares no version of memory.foretold.',
-      ),
-    ]);
+    const there = secondReading(root);
+    expect(there.verdict).toBe('VERIFIED');
+    expect(
+      there.findings.filter((f) => f.section === '7.1').map((f) => f.what.slice(0, 45)),
+    ).toEqual(['1 line(s) of kind "memory.foretold" in tail(s']);
   });
 
   it('a version ahead of the one this reader holds: refused, naming both versions', () => {
