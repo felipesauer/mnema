@@ -25,7 +25,7 @@ with its own changelog.
   appends after it and signs over it. Binaries released before this one keep refusing such a line. The published
   vectors gain one of a kind no version declares, `x.from-the-future` (41 vectors), which moves the content root over
   all vectors from `a827adaa28e739a941a592efc04ac2c02fe228867069a940179719188d814d61` to
-  `b27e63923f8efd23d6e97c311610b5857ea9b16678b7f094eb2d63f40d51202d`. A kind named `toString` (or any name every
+  `f01492a6daaceef614955ccdc6b5ae0236d09619c6ae806c957cc370654d8996`. A kind named `toString` (or any name every
   JavaScript object answers to) was read as a catalog kind with an empty payload; it is now a kind the reader does not
   know.
 

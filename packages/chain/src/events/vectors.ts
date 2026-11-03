@@ -646,7 +646,7 @@ export const UNREAD_VECTORS: readonly UnreadVector[] = [
       at: VECTOR_AT,
       who: VECTOR_WHO,
       signerFp: VECTOR_SIGNER_FP,
-      subject: 'f-1',
+      subject: MEMORY_ID,
       which: 'claude',
       payload: { says: 'what a newer mnema means by it', count: 2 },
     },

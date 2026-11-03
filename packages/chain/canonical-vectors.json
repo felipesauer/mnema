@@ -755,14 +755,14 @@
         "at": "2026-07-21T00:00:00.000Z",
         "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
         "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
-        "subject": "f-1",
+        "subject": "019f81f8-e400-7001-8000-000000000001",
         "which": "claude",
         "payload": {
           "says": "what a newer mnema means by it",
           "count": 2
         }
       },
-      "sha256": "29d70e0af4007763ab92c9e99f650c06567e3595e45359b516e56aa64d1f53f7"
+      "sha256": "eed4b316b9d3a77c3b7353433364972d03d5ef705e5eeccfc1b3996dd9cd42e6"
     }
   ],
   "chain": {
@@ -780,7 +780,7 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "b27e63923f8efd23d6e97c311610b5857ea9b16678b7f094eb2d63f40d51202d"
+    "contentRootOverAllVectors": "f01492a6daaceef614955ccdc6b5ae0236d09619c6ae806c957cc370654d8996"
   },
   "signedMessages": {
     "key": {

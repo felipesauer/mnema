@@ -182,7 +182,8 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-describe('a record a newer mnema added a kind to', () => {
+// Each case runs the binary a dozen times over; under the full suite one takes longer than the default.
+describe('a record a newer mnema added a kind to', { timeout: 120_000 }, () => {
   it('is verified by both readers, every line signed, the kind named once', () => {
     const decided = mnema('decision', 'record', 'Use Postgres', 'The team knows it.');
     expect(decided.status, decided.err).toBe(0);
@@ -263,7 +264,11 @@ describe('a record a newer mnema added a kind to', () => {
 
   it('arrives in a commit that verify --since holds to the base, and passes', () => {
     const vcs = (...args: string[]) =>
-      spawnSync('git', args, { cwd: repo, env: ENV(), encoding: 'utf-8' });
+      spawnSync('git', args, {
+        cwd: repo,
+        env: { ...ENV(), GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
+        encoding: 'utf-8',
+      });
     expect(mnema('decision', 'record', 'Use Postgres', 'The team knows it.').status).toBe(0);
     expect(vcs('add', '.mnema').status).toBe(0);
     expect(vcs('commit', '-qm', 'the record').status).toBe(0);
