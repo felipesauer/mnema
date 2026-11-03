@@ -127,6 +127,8 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
     'git runs it inside every commit made with the hook installed, and outside a project it writes nothing and exits zero, because a suggestion must never cost a commit',
   'stack list':
     'it lists the receipts of the three trees that exist, the global one among them; with none it says so',
+  'stack index':
+    'with no folder it reads the index that comes with the installed package, and with one it reads the folder it is given: neither holds a record; with no index.json in a folder given it says so',
   'stack check':
     'the same receipts, checked against their files; with none installed there is nothing to depart from',
   tally:
@@ -210,9 +212,6 @@ const THE_PARSER_ANSWERED_FIRST =
 const NO_SUCH_STACK_HERE =
   'it looks for a stack by name in the receipts of every tree that exists; outside a project the project trees have none, and it says that no such stack is installed';
 
-const NO_STACK_INDEX_HERE =
-  'it reads a folder of stack entries that it is given, which is true wherever it is run and holds no record; with no index.json in the folder it says so';
-
 const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
   task: THE_PARSER_ANSWERED_FIRST,
   decision: THE_PARSER_ANSWERED_FIRST,
@@ -222,7 +221,6 @@ const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
   'stack disable': NO_SUCH_STACK_HERE,
   'stack enable': NO_SUCH_STACK_HERE,
   'stack export': NO_SUCH_STACK_HERE,
-  'stack index': NO_STACK_INDEX_HERE,
   'stack show': NO_SUCH_STACK_HERE,
   audit: THE_PARSER_ANSWERED_FIRST,
   run: THE_PARSER_ANSWERED_FIRST,
