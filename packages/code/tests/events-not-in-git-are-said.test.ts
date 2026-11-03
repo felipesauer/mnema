@@ -56,7 +56,7 @@ function git(cwd: string, ...args: string[]): { status: number; out: string } {
   const ran = spawnSync('git', ['-c', 'init.defaultBranch=main', ...args], {
     cwd,
     encoding: 'utf-8',
-    env: env(),
+    env: { ...env(), GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
   });
   return { status: ran.status ?? -1, out: `${ran.stdout}${ran.stderr}` };
 }

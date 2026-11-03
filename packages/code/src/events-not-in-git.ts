@@ -174,9 +174,16 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
   const tailsDir = join(record, 'tails');
   if (!existsSync(tailsDir)) return undefined;
 
-  const env: NodeJS.ProcessEnv = { ...(ctx.processEnv ?? process.env), GIT_OPTIONAL_LOCKS: '0' };
+  const given = ctx.processEnv ?? process.env;
+  // The process's own HOME where it has one (the user's git configuration is read from it), and
+  // the one this run was handed where it has none, as the doctor's other reads of the repository do.
+  const env: NodeJS.ProcessEnv = {
+    ...given,
+    ...(given.HOME === undefined && ctx.env.home !== undefined ? { HOME: ctx.env.home } : {}),
+    GIT_OPTIONAL_LOCKS: '0',
+  };
   for (const name of REPOSITORY_VARIABLES) Reflect.deleteProperty(env, name);
-  const run = (args: readonly string[]): Ran => {
+  const gitRun = (args: readonly string[]): Ran => {
     const ran = spawnSync('git', ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args], {
       cwd: record,
       env,
@@ -185,16 +192,16 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
     });
     return { status: ran.status ?? -1, out: ran.stdout ?? Buffer.alloc(0) };
   };
-  const ask: Ask = (args) => {
-    const ran = run(args);
+  const gitAsk: Ask = (args) => {
+    const ran = gitRun(args);
     return ran.status === 0 ? ran.out.toString('utf-8').trim() : undefined;
   };
-  if (ask(['rev-parse', '--is-inside-work-tree']) !== 'true') return undefined;
+  if (gitAsk(['rev-parse', '--is-inside-work-tree']) !== 'true') return undefined;
 
   // What HEAD holds of the tails: path (from the record's folder) to blob and size. A repository
   // with no commit yet holds nothing, so everything here waits.
   const held = new Map<string, { readonly oid: string; readonly size: number }>();
-  const listed = run(['ls-tree', '-r', '-l', '-z', 'HEAD', '--', 'tails']);
+  const listed = gitRun(['ls-tree', '-r', '-l', '-z', 'HEAD', '--', 'tails']);
   if (listed.status === 0) {
     for (const entry of listed.out.toString('utf-8').split('\0')) {
       const parsed = /^\d+ blob ([0-9a-f]+) +(\d+)\t(.+)$/.exec(entry);
@@ -223,7 +230,7 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
       const here = readFileSync(file);
       let before = 0;
       if (inHead !== undefined) {
-        const blob = run(['cat-file', 'blob', inHead.oid]);
+        const blob = gitRun(['cat-file', 'blob', inHead.oid]);
         if (blob.status !== 0) continue;
         before = linesOf(blob.out);
       } else {
@@ -244,7 +251,7 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
   // A person who has git ignore the record is not told to commit it.
   if (
     untrackedFile !== undefined &&
-    run(['check-ignore', '-q', '--', untrackedFile]).status === 0
+    gitRun(['check-ignore', '-q', '--', untrackedFile]).status === 0
   ) {
     return undefined;
   }
@@ -254,21 +261,21 @@ export function readEventsNotInGit(ctx: EventsNotInGitContext): EventsNotInGit |
     oldest === undefined
       ? undefined
       : Math.max(0, Math.floor((now - Date.parse(oldest)) / 3_600_000));
-  const base = theDefaultBranch(ask);
+  const base = theDefaultBranch(gitAsk);
   let defaultBranch: string | undefined;
   let commitsSinceRecordCommit: number | undefined;
   if (base.ok) {
     defaultBranch = `${base.remote}/${base.branch}`;
-    const last = ask(['log', '-1', '--format=%H', base.commit, '--', '.']);
+    const last = gitAsk(['log', '-1', '--format=%H', base.commit, '--', '.']);
     if (last !== undefined && last !== '') {
       const counted = Number(
-        ask(['rev-list', '--count', '--first-parent', `${last}..${base.commit}`]),
+        gitAsk(['rev-list', '--count', '--first-parent', `${last}..${base.commit}`]),
       );
       if (Number.isInteger(counted)) commitsSinceRecordCommit = counted;
     }
   }
   // The branch this one follows, as this clone last read it: what `mnema record pull` pulls.
-  const pullDue = Number(ask(['rev-list', '--count', 'HEAD..@{upstream}', '--', '.']) ?? 0);
+  const pullDue = Number(gitAsk(['rev-list', '--count', 'HEAD..@{upstream}', '--', '.']) ?? 0);
 
   return {
     events,
