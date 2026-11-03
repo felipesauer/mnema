@@ -188,6 +188,40 @@ describe('mnema record commit', SLOW, () => {
     expect(mnema(apart, 'verify', '--since', 'origin/main').status).toBe(0);
   });
 
+  it('carries a tail the base lacks with its tail proof and the key that signs it', () => {
+    const { local } = world();
+    const held = git(local, 'ls-tree', '-r', '--name-only', 'origin/main', '.mnema').out;
+    // A second key writing here opens a tail, and puts its key, that git does not track yet.
+    const second = { ...env(), HOME: join(sandbox, 'second-home') };
+    mkdirSync(second.HOME, { recursive: true });
+    const wrote = spawnSync(
+      process.execPath,
+      [CLI, 'decision', 'record', 'from a second key', 'why'],
+      {
+        cwd: local,
+        encoding: 'utf-8',
+        env: second,
+      },
+    );
+    expect(wrote.status, `${wrote.stdout}${wrote.stderr}`).toBe(0);
+    const made = commitIn(local);
+    if (!made.ok || made.kind !== 'made') throw new Error(JSON.stringify(made));
+    const added = git(local, 'diff', '--name-only', '--diff-filter=A', 'origin/main', made.commit)
+      .out.split('\n')
+      .filter(Boolean);
+    const opened = made.tails.find((cut) => !held.includes(cut.tail));
+    if (opened === undefined) throw new Error(JSON.stringify(made.tails));
+    const fp = opened.tail.slice(0, opened.tail.lastIndexOf('-'));
+    expect(added.sort()).toEqual(
+      [
+        `.mnema/keys/${fp}.pub`,
+        `.mnema/tails/${opened.tail}/000001.jsonl`,
+        `.mnema/tails/${opened.tail}/checkpoints.jsonl`,
+        `.mnema/tails/${opened.tail}/tailproof.json`,
+      ].sort(),
+    );
+  });
+
   it('leaves out the events above the last checkpoint, and counts them', () => {
     const { local } = world();
     decide(local, 'one');
