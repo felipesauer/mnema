@@ -8,7 +8,7 @@
  * names; it believes the bytes it is handed exactly as far as it reads them.
  */
 
-import { catalogUpcasters, decisionTextsOf, type Entry, parseEntry } from '@mnema/chain';
+import { type ChainEntry, catalogUpcasters, decisionTextsOf, parseEntry } from '@mnema/chain';
 
 /** One event of the record, reduced to what the report reads. */
 export interface RecordedEvent {
@@ -99,11 +99,11 @@ export interface DecisionLabel {
  */
 export function decisionLabels(texts: readonly string[]): Map<string, DecisionLabel> {
   const upcasters = catalogUpcasters();
-  const byTail = new Map<string, Entry[]>();
+  const byTail = new Map<string, ChainEntry[]>();
   for (const text of texts) {
     for (const line of text.split('\n')) {
       if (line.trim() === '') continue;
-      let entry: Entry;
+      let entry: ChainEntry;
       try {
         entry = parseEntry(line, upcasters);
       } catch {

@@ -352,6 +352,7 @@ export {
 export type { Envelope, Which, Who } from './events/envelope.js';
 export {
   EventParseError,
+  isCatalogEvent,
   parseEvent,
   type ReadEvent,
   readEvent,

@@ -53,8 +53,9 @@ export function aFile(project: TheProject, path: string, content: string): strin
 
 /**
  * A line the reader refuses, appended to the project's public tail: a copy of its last line under
- * a kind no mnema knows, as a newer mnema's line reads to an older one. Returns the segment's
- * bytes after it, so a case can say nothing more was appended.
+ * a version of its kind no mnema wrote. It used to be a kind no mnema knows, which a reader reads
+ * past since ADR-113 rather than refusing. Returns the segment's bytes after it, so a case can say
+ * nothing more was appended.
  */
 export function aLineTheReaderRefuses(project: TheProject): string {
   const tails = join(project.dir, '.mnema', 'tails');
@@ -63,8 +64,8 @@ export function aLineTheReaderRefuses(project: TheProject): string {
   const segment = join(tails, tail, '000001.jsonl');
   const sound = readFileSync(segment, 'utf-8');
   const last = sound.trimEnd().split('\n').at(-1) ?? '';
-  if (!/"kind":"[a-z.]+"/.test(last)) throw new Error(`setup: no kind in ${segment}`);
-  const bytes = `${sound}${last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"')}\n`;
+  if (!last.includes('"v":1,')) throw new Error(`setup: no version in ${segment}`);
+  const bytes = `${sound}${last.replace('"v":1,', '"v":9,')}\n`;
   writeFileSync(segment, bytes);
   return bytes;
 }

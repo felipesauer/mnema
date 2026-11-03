@@ -113,6 +113,15 @@ export function readsKind(kind: string): boolean {
 }
 
 /**
+ * Whether an event a reading holds is one this reader reads, rather than one it read past: for a
+ * reading that carries both in one order (the merge orders by every line's `at` and citations,
+ * and a fold applies only what it reads).
+ */
+export function isCatalogEvent(event: CatalogEvent | UnreadEvent): event is CatalogEvent {
+  return readsKind(event.kind);
+}
+
+/**
  * Parses one event, as {@link parseEvent} does, except for a `kind` this reader does not know:
  * that line is not refused, it is checked for everything that does not need its payload (a JSON
  * object, a whole-number `v`, every envelope field well formed, no top-level key the envelope does
