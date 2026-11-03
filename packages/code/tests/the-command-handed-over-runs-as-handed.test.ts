@@ -475,8 +475,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the read named in the known limits of the entry on the rules a project inherits, as one that does not list the addresses the origin holds, in the entry on the VS Code extension that no longer asks it for each proposal, and among the readings that say an agent name no client announced; the reference hands it over with the id',
   },
   'CHANGELOG.md: mnema stack add': {
-    times: 1,
-    why: 'the verb named, beside its removal, as what writes the adoption kinds; the entry above hands the line over with <source>',
+    times: 2,
+    why: 'the verb named, beside its removal, as what writes the adoption kinds, and in the entry on the index that comes with the package, where it takes the folder of an entry; the entry above hands the line over with <source>',
   },
   'CHANGELOG.md: mnema stack remove': {
     times: 1,
@@ -776,7 +776,7 @@ export const HANDED_OVER: Readonly<
   '.claude/rules/mnema-instructions.md': { line: 2 },
   '.github/instructions/mnema-instructions.instructions.md': { line: 2 },
   'AGENTS.md': { line: 2, name: 1 },
-  'CHANGELOG.md': { line: 83, name: 169, flag: 4 },
+  'CHANGELOG.md': { line: 84, name: 172, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
@@ -806,7 +806,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/src/chain/relink-plan.ts': { name: 4 },
   'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 4 },
-  'docs/cli-reference.md': { line: 129, name: 161, flag: 2 },
+  'docs/cli-reference.md': { line: 131, name: 162, flag: 2 },
   'packages/code/README.md': { line: 8, name: 14 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 5, name: 1 },
@@ -902,7 +902,7 @@ export const HANDED_OVER: Readonly<
   'packages/core/src/workflow/identity-operations.ts': { name: 1 },
   'packages/core/src/workflow/prune-operations.ts': { line: 1, name: 1 },
   'packages/sdk/README.md': { line: 2, name: 4 },
-  'packages/stacks/README.md': { line: 1, name: 2 },
+  'packages/stacks/README.md': { line: 1, name: 3 },
   'packages/vscode/CHANGELOG.md': { name: 1 },
   'packages/vscode/README.md': { line: 20, name: 24 },
   'packages/vscode/media/walkthrough/verify.md': { name: 1 },
@@ -921,7 +921,7 @@ export const HANDED_OVER: Readonly<
   'plugin/hooks/hand-over.mjs': { line: 1 },
   'plugin/hooks/the-gate-kit.mjs': { name: 2 },
   'plugin/skills/recording-decisions/SKILL.md': { line: 1, name: 1 },
-  'stack-index/README.md': { line: 1 },
+  'stack-index/README.md': { line: 1, name: 1 },
 };
 
 // ---------------------------------------------------------------------------
