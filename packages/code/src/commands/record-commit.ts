@@ -64,6 +64,7 @@ import { dirname, join } from 'node:path';
 import { checkpointHash, ensureTree, parseCheckpoint } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type DecisionFacts, nameOf, readDecisionFacts } from '../decisions-in-git.js';
+import { theDefaultBranch } from '../events-not-in-git.js';
 import { withTreesRead } from '../tree-sources.js';
 import { joinGrownTail } from './record-merge-tail.js';
 import { EDITORCONFIG_NAME, README_NAME } from './the-record-page.js';
@@ -532,29 +533,13 @@ function cut(
   if (links.length > 0) return { ok: false, reason: 'A_LINK', paths: links };
 
   // 1. The base: the default branch of the remote, as this clone last read it.
-  const remotes = (said(git(ctx, top, ['remote'])) ?? '').split('\n').filter(Boolean);
-  const current = said(git(ctx, top, ['symbolic-ref', '--quiet', '--short', 'HEAD']));
-  const followed =
-    current === undefined ? undefined : said(git(ctx, top, ['config', `branch.${current}.remote`]));
-  const remote =
-    followed !== undefined && remotes.includes(followed)
-      ? followed
-      : remotes.length === 1
-        ? remotes[0]
-        : remotes.includes('origin')
-          ? 'origin'
-          : undefined;
-  if (remote === undefined) return { ok: false, reason: 'NO_REMOTE', remotes };
-  const headRef = said(git(ctx, top, ['symbolic-ref', '--quiet', `refs/remotes/${remote}/HEAD`]));
-  const tracking = `refs/remotes/${remote}/`;
-  const commit =
-    headRef === undefined
-      ? undefined
-      : said(git(ctx, top, ['rev-parse', '--verify', '--quiet', `${headRef}^{commit}`]));
-  if (headRef === undefined || commit === undefined) {
-    return { ok: false, reason: 'NO_DEFAULT_BRANCH', remote };
+  const theBase = theDefaultBranch((args) => said(git(ctx, top, args)));
+  if (!theBase.ok) {
+    return theBase.reason === 'NO_REMOTE'
+      ? { ok: false, reason: 'NO_REMOTE', remotes: theBase.remotes }
+      : { ok: false, reason: 'NO_DEFAULT_BRANCH', remote: theBase.remote };
   }
-  const branch = headRef.slice(tracking.length);
+  const { remote, headRef, branch, commit } = theBase;
   const updated = said(
     git(ctx, top, ['reflog', 'show', '-1', '--date=unix', '--format=%gd', headRef]),
   );

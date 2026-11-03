@@ -35,7 +35,7 @@ CLI and the MCP tools behave identically, because they are the same call.
   tree it landed in.
 - **Reads that answer questions**: where things stand (`status`: the live work, the
   adopted patterns, the decisions in force, and what is still waiting on somebody to
-  rule on it), where you left off and what is still in flight (`resume`: the last run,
+  rule on it, and, where the record is in git, the events no commit holds yet), where you left off and what is still in flight (`resume`: the last run,
   and the runs the actor has open), what the workflow allows next (`task next`), and
   whether a move would be allowed at all (`task guard`, a dry run that records nothing).
 - **Audit reads**: an entity's history across trees (`timeline`), what it is
@@ -123,7 +123,9 @@ CLI and the MCP tools behave identically, because they are the same call.
   never refuses or asks and records no refusal or asking. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
   the last response, it prints one line saying how many files they wrote and how
   many decisions were recorded in the project since the session opened, counted off the
-  transcript the host names and off the record: no model is called and nothing is
+  transcript the host names and off the record, and, when events of the record are in no git
+  commit yet, one sentence more saying how many (see [Being told what no commit holds
+  yet](#being-told-what-no-commit-holds-yet)): no model is called and nothing is
   recorded. The line goes out as the reply's `systemMessage`; which host shows it was not
   measured. `mnema switch off session-tally` stops it. The same command keeps the session journal (see
   [The session journal](#the-session-journal)), a small file on this machine that lets the next `Stop` read only
@@ -1455,6 +1457,42 @@ the cut ends: run again with nothing new it says the branch is there, and once t
 it says there is nothing to commit. After the pull request merges, `record pull` brings the branch
 followed back over the events that stayed out.
 
+### Being told what no commit holds yet
+
+Nothing commits the events a writer appends, so `mnema status`, `mnema doctor` and the end of a
+session say what is still in none. The count is, per tail of the project's committed tree, the
+complete lines of each segment file here above the lines of the same file in `HEAD`; a tail git does
+not track at all counts whole. It reads no network and writes nothing, and it asks git for the size of each
+tail file in `HEAD` and for the content only of a file whose size differs. What is only staged is not
+counted as held: the question is what a commit already carries.
+
+```sh
+mnema status        # a "Not in git yet:" section; `--json` adds an `eventsNotInGit` key
+mnema doctor        # "to do · record-in-git: ..."
+```
+
+The sentence reads:
+
+> 3 events of this record are not in a git commit yet (the oldest was written 3 hours ago): `mnema record commit` prepares them as a branch for a pull request and prints the commands to run next; it pushes nothing.
+
+It names the command and does not ask for it: the person, or the agent
+the person asked, runs what `record commit` prints. The age is the oldest waiting event's own time, and
+it is marked old past 24 hours: `(the oldest was written 2 days ago, which is old: past 24 hours)`;
+that limit is fixed, not a setting. Where the default branch (the one `record commit` takes as its base,
+as this clone last read it) has had commits since the last one that changed `.mnema/`, the sentence says
+how many, counting only the first parent so a merged pull request is one; and where the branch the
+current one follows holds commits that changed the record and this clone lacks, it adds that
+`mnema record pull` brings them over the events waiting here.
+
+In a partial clone it never fetches an object to answer: a tail file of `HEAD` the clone does not hold makes the count unknown and nothing is said, and a commit count git cannot read from the clone is left out of the sentence.
+
+It says nothing when no event waits, outside a git repository, with no project record, and where git
+ignores the record's tails (a record you ignore is not one you are told to commit). With
+`mnema switch off session-tally` the closing line is silent, and `status` and `doctor` still say it;
+the closing line comes after a response that wrote a file, as that line always has. `status --json` carries the
+key only while something waits, and its value is `events`, `tails`, `oldestAt`, `oldestHours`, `old`,
+`defaultBranch`, `commitsSinceRecordCommit` and `pullDue`.
+
 ### Pulling a record that grew here
 
 A tail only grows, and a writer appends to it without committing. A pull request carries those
@@ -1583,6 +1621,10 @@ and which projects of `~/.claude.json` (the one inside `$CLAUDE_CONFIG_DIR` when
 exists included (`claude mcp remove` does not reach them; the line says what to delete). It reads
 files on this machine and, asked alone, writes nothing; it does not ask the registry, so a package
 that is published and not installed here is outside what it can say.
+
+In a project whose record is in a git repository it also says when events of the record are in no
+git commit yet, with `mnema record commit` (see [Being told what no commit holds
+yet](#being-told-what-no-commit-holds-yet)).
 
 Where this machine holds an agent key it also says, for each, in which of the trees it reaches the record enrols
 it, and says when `MNEMA_AGENT_KEY` in the environment of the `doctor` itself names one this machine does not hold, and

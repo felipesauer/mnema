@@ -30,6 +30,18 @@ with its own changelog.
   person; `--yes` never answers it. With no terminal, and with none of these flags, the lines are the ones `init` has
   always printed. A person's file left unchecked stays left out (ADR-177): `mnema instructions --check`, `mnema doctor` and `mnema instructions` without a terminal say so in one line and no longer ask for the block in it. A file the write would refuse (read-only, a directory in its place, no permission on its folder) is shown by the plan as `leave` with the reason, and what `init` says of it names `mnema instructions --all-hosts`, the form that adds the block once the permission is fixed. The question by number (`HOST_FILES_NOT_UNDERSTOOD`) is gone: an answer cannot be off the list now.
 
+- **`mnema status`, `mnema doctor` and the end of a session say the events of the record that no git commit holds yet
+  (ADR-104).** Measured in this repository, an event waited 10.8 h on average for the commit that carries it and 78
+  were waiting at once, and nothing said so. Per tail of the committed tree it counts the lines above what `HEAD` holds
+  (a tail git does not track counts whole; 9 ms where nothing waits and 31 to 43 ms with 514 events waiting, on this
+  repository's own record, no network), with the age of the oldest, marked old past 24 hours, how many commits reached
+  the default branch since the last one that changed `.mnema/`, and, when the branch followed holds commits that changed
+  the record, `mnema record pull`. The one sentence names `mnema record commit`, which prepares a branch and pushes
+  nothing. `status` prints it under `Not in git yet:` and `status --json` carries it as `eventsNotInGit`, only while
+  something waits, the one key beside the derivation; `doctor` lists it as `record-in-git`; the closing line of a session
+  carries it after the count it already says, under `session-tally`. Nothing is said when nothing waits, outside git, with
+  no record, or where git ignores the record.
+
 - **A line of a kind this mnema does not know is read past, not refused, in both readers (ADR-113, `FORMAT.md` section
   7.1).** A newer mnema adds a kind; until now every older binary refused the whole record over the first line of it.
   From this version such a line is checked for everything that does not need what it says: its envelope against the

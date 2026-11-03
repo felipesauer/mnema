@@ -34,7 +34,7 @@ in [the command reference](cli-reference.md#switching-off-what-mnema-hands-to-a-
 | `after-a-compaction` | on | the sentence a conversation is handed right after it was compacted, saying what entered the project's record since the session opened, and what it did beside it (decisions by label, notes copied, files edited, questions answered with no decision after), read from its journal | `mnema switch off after-a-compaction` |
 | `session-journal` | on | the session journal: with it off, no file is kept of what a session did with the record, and nothing can say, to a later session, to a compaction or on the run that closes, what this one did. The journal is a file on this machine, outside the record, holding ids and counts and none of the session’s words | `mnema switch off session-journal` |
 | `agent-mirror` | on | the mirror of what a session hands to other agents: with it on, a `PostToolUse` hook on the host’s `Agent` tool records a private task for the session and a private handoff for each dispatch (its short description and the path of a brief file, never the prompt), and the session’s end closes the task with the count. It needs `session-journal` on, and records nothing to the tree a clone gets | `mnema switch off agent-mirror` |
-| `session-tally` | on | the line a session’s `Stop` hook prints: how many files its own tool calls wrote and how many decisions were recorded since it opened | `mnema switch off session-tally` |
+| `session-tally` | on | the line a session’s `Stop` hook prints: how many files its own tool calls wrote and how many decisions were recorded since it opened, and how many events of the record are in no git commit yet | `mnema switch off session-tally` |
 
 <!-- End of the generated table. -->
 

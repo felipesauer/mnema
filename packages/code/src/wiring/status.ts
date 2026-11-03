@@ -29,7 +29,10 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
       '--actor <id>',
       `the identity whose session to report: ${ACTOR_HELP}. Omitted, it is the identity this machine writes as in this project, and the report says so.`,
     )
-    .option('--json', 'emit the faithful opening context as JSON')
+    .option(
+      '--json',
+      'emit the faithful opening context as JSON; while events of the record are in no git commit yet, one more key, `eventsNotInGit`, says how many',
+    )
     .action(async (opts: { actor?: string; json?: boolean }) => {
       const { anchorText } = await import('../anchors.js');
       const { runStatus } = await import('../commands/status.js');
@@ -50,7 +53,16 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
       if (opts.json === true) {
         // The faithful object, the same one the agent surface serves (indented here, not
         // there), which is the property that keeps one derivation from becoming two.
-        io.out(JSON.stringify(result.status, null, 2));
+        // The one field beside it, present only when events wait in no commit.
+        io.out(
+          JSON.stringify(
+            result.notInGit === undefined
+              ? result.status
+              : { ...result.status, eventsNotInGit: result.notInGit },
+            null,
+            2,
+          ),
+        );
         return;
       }
       writeLines(
@@ -59,13 +71,14 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
           render,
           result.status,
           anchorText(result.anchors, result.status.resume.actor),
-          // The two facts on this screen that are not the derivation's: both are read
-          // from the disk and neither is in `--json`, which serves the opening context
-          // as derived and nothing else (`commands/status.ts`).
+          // The facts on this screen that are not the derivation's: read from the disk
+          // and from git, and only the last of them is in `--json`, as the one key
+          // `eventsNotInGit` beside the opening context (`commands/status.ts`).
           result.outside,
           result.neverImported,
           result.runsByTree,
           result.asThisMachine,
+          result.notInGit,
         ),
       );
     });
