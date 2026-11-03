@@ -29,6 +29,20 @@ with its own changelog.
   JavaScript object answers to) was read as a catalog kind with an empty payload; it is now a kind the reader does not
   know.
 
+- **`mnema record commit` cuts the committed record at a signed checkpoint onto a branch for a pull request
+  (ADR-104, ADR-145).** It builds a commit on the remote's default branch as this clone last read it
+  (`refs/remotes/<remote>/HEAD`; it reads nothing from the network, refuses where that ref is missing and says how old
+  the base is), without touching the working tree, the index or HEAD: each tail of `.mnema/` through its last signed
+  checkpoint, or with `--through <decision>` the tail that records it through the first checkpoint that covers the
+  recording, never below the base, with a new tail's proof and the key files the cut names, and the files `init`
+  writes beside the record where the base holds none of them (so a first commit carries `* -text`); nothing of the
+  private tree, the events above the cut counted, the other files of `.mnema/` that differ named as left out. It refuses when a
+  tail file of the base is not the start of the one here (pointing at `record pull`), signs the commit when
+  `commit.gpgSign` is set, as `git commit` would, and verifies the tree apart at the signed level and with `--since`
+  the base before it makes the branch, `mnema-record/<labels>-<digest of the cut>`. It prints `git push -u` and the
+  command that opens the pull request (`gh pr create` for GitHub, `glab mr create` for GitLab, a sentence otherwise),
+  and runs neither; `--json` says the same. Run again with nothing new, it says the branch is there.
+
 - **`mnema tail relink <tail>... [--into <record>] --reason <text>` writes the owner's relink, and `mnema doctor --fix
   private-tree` relinks a private tree that names another record before it moves it (ADR-155, ADR-157).** Each relink is
   signed by the key the relinked tail's id names, which the machine must hold (the person's, or an agent's kept there),
