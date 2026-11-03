@@ -68,6 +68,7 @@ describe('what is stored', () => {
       generation: 4,
       frontier: frontierOver(['/x/000001.jsonl']),
       breaks: [{ tail: 'a-tail', seq: 3, detail: 'seq gap: expected 3, found 4' }],
+      unread: [{ kind: 'x.from-the-future', tail: 'a-tail', subject: 'a-subject' }],
       sealed: { '/x/000001.jsonl': '10:1' },
     };
     writeMeta(db, meta);
