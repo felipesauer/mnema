@@ -33,6 +33,12 @@
  * switched off, reads the whole transcript as before and keeps no file. The counts the line
  * carries come from the journal's reading, so the line says the same thing either way.
  *
+ * IT ALSO SAYS WHAT NO GIT COMMIT HOLDS YET, in the same line and under the same switch: where events
+ * of the record are above what HEAD holds, the sentence of `events-not-in-git.ts` follows the two
+ * counts (`events-not-in-git-are-said.test.ts`). It is a fact about the record and not about the
+ * session, and it keeps the rule above: it states what waits and names the verb that prepares it, and
+ * asks nobody to run it. It is read where the counts are, after a response that wrote a file.
+ *
  * WHERE THE LINE LANDS IS THE HOST'S. It is written as the `systemMessage` of the reply, the field
  * every hook reply may carry, and which host shows it, to whom, was not measured.
  */
@@ -40,6 +46,7 @@
 import { dirname } from 'node:path';
 import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, INITIAL_DECISION_STATE, resolveTrees } from '@mnema/core';
+import { readEventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js';
 import { SESSION_JOURNAL_CHANNEL, SESSION_TALLY_CHANNEL } from '../record-framing.js';
 import {
   exclusivelyOn,
@@ -96,7 +103,6 @@ function tallyLine(input: {
   readonly files: number;
   readonly decisions: number;
   readonly copied: number;
-  readonly waiting: number;
 }): string {
   return (
     `Since this session opened, its own tool calls wrote ` +
@@ -104,8 +110,7 @@ function tallyLine(input: {
     `${counted(input.decisions, 'decision was', 'decisions were')} recorded in this project’s record` +
     (input.copied === 0
       ? '.'
-      : `, and ${counted(input.copied, 'note', 'notes')} of this host’s memory ${input.copied === 1 ? 'was' : 'were'} copied into this machine’s private tree.`) +
-    waitingLine(input.waiting)
+      : `, and ${counted(input.copied, 'note', 'notes')} of this host’s memory ${input.copied === 1 ? 'was' : 'were'} copied into this machine’s private tree.`)
   );
 }
 
@@ -203,15 +208,20 @@ export function runSessionTally(
         'The transcript carries no instant, so no decision could be counted against it.',
       ]);
     }
+    const events = readEventsNotInGit({ cwd: ctx.cwd, env: ctx.env });
+    const proposals = journal.decisions.filter((one) => one.state === INITIAL_DECISION_STATE).length;
+    const line = tallyLine({
+      files: journal.filesEdited,
+      decisions: journal.decisions.length,
+      copied: journal.notes.length,
+    });
     return {
       ok: true,
       reply: {
-        systemMessage: tallyLine({
-          files: journal.filesEdited,
-          decisions: journal.decisions.length,
-          copied: journal.notes.length,
-          waiting: journal.decisions.filter((one) => one.state === INITIAL_DECISION_STATE).length,
-        }),
+        systemMessage:
+          events === undefined
+            ? `${line}${waitingLine(proposals)}`
+            : `${line} ${saysEventsNotInGit(events)}${waitingLine(proposals)}`,
       },
       notes: [],
     };

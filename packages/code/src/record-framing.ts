@@ -824,7 +824,9 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'nothing to the tree a clone gets',
   'session-tally':
     'the line a session’s `Stop` hook prints: how many files its own tool calls ' +
-    'wrote and how many decisions were recorded since it opened, and, on a second line, how many of them still await a person',
+    'wrote and how many decisions were recorded since it opened, and how many events of the ' +
+    'record are in no git commit yet, and, on a second line, how many of those decisions still ' +
+    'await a person',
 };
 
 /**

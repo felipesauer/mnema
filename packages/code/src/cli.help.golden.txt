@@ -530,7 +530,9 @@ $ mnema status --help
 |                 prefix that names one identity here). Omitted, it is the
 |                 identity this machine writes as in this project, and the report
 |                 says so.
-|   --json        emit the faithful opening context as JSON
+|   --json        emit the faithful opening context as JSON; while events of the
+|                 record are in no git commit yet, one more key, `eventsNotInGit`,
+|                 says how many
 |   -h, --help    display help for command
 
 ### mnema brief --help
@@ -1461,7 +1463,10 @@ $ mnema tally --help
 | What it reads and what it prints:
 |   The JSON a host hands a hook on stdin, with the transcript it names. On stdout, the reply
 |   the host reads: a `systemMessage` saying how many files this session’s own tool calls
-|   wrote and how many decisions were recorded in this project since it opened (and, on a second line, how many of them still await a person), or {} when
+|   wrote and how many decisions were recorded in this project since it opened, and, when
+|   events of the record are in no git commit yet, how many (`mnema record commit` is what
+|   prepares them), and, on a second line, how many of those decisions still await a
+|   person, or {} when
 |   the hook is not Stop, the session wrote no file in the last response, there is no project
 |   here, or the transcript cannot be read.
 |   It writes nothing to the record. When the hook names its session it also keeps a small file on
