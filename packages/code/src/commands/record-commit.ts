@@ -202,7 +202,9 @@ function lineEnds(bytes: Uint8Array): number[] {
 const SEGMENT = /^\d{6}\.jsonl$/;
 const CHECKPOINTS = 'checkpoints.jsonl';
 const TAILPROOF = 'tailproof.json';
-const FINGERPRINT = /^[0-9a-f]{64}$/;
+const KEY_FILE = /^([0-9a-f]{64})\.pub$/;
+/** A tail's segments and checkpoints, from the record's folder: their lines are counted as events. */
+const TAIL_LINES = /^tails\/[^/]+\/(?:\d{6}\.jsonl|checkpoints\.jsonl)$/;
 
 /** One event of a tail, as the cut needs to read it. */
 interface EventLine {
@@ -211,27 +213,26 @@ interface EventLine {
   readonly seq: number | undefined;
   readonly kind: string | undefined;
   readonly subject: string | undefined;
-  readonly adr: string | undefined;
 }
 
+/**
+ * What the cut reads of a line: where it ends, its seq, its kind and subject. It is not where a
+ * line is judged: a line this misreads is in the tree the readers rule on before any branch.
+ */
 function readEvent(segment: string, line: Buffer, end: number): EventLine {
+  let stored: { event?: { kind?: string; subject?: string }; link?: { seq?: number } } = {};
   try {
-    const stored = JSON.parse(line.toString('utf-8')) as {
-      event?: { kind?: unknown; subject?: unknown; payload?: { adr?: unknown } };
-      link?: { seq?: unknown };
-    };
-    const text = (value: unknown) => (typeof value === 'string' ? value : undefined);
-    return {
-      segment,
-      end,
-      seq: typeof stored.link?.seq === 'number' ? stored.link.seq : undefined,
-      kind: text(stored.event?.kind),
-      subject: text(stored.event?.subject),
-      adr: text(stored.event?.payload?.adr),
-    };
+    stored = JSON.parse(line.toString('utf-8'));
   } catch {
-    return { segment, end, seq: undefined, kind: undefined, subject: undefined, adr: undefined };
+    // Read as nothing: the readers refuse it.
   }
+  return {
+    segment,
+    end,
+    seq: stored.link?.seq,
+    kind: stored.event?.kind,
+    subject: stored.event?.subject,
+  };
 }
 
 /** A tail of the committed tree as this clone holds it. */
@@ -405,7 +406,7 @@ export function runRecordCommit(
     headRef === undefined
       ? undefined
       : said(git(ctx, top, ['rev-parse', '--verify', '--quiet', `${headRef}^{commit}`]));
-  if (headRef === undefined || !headRef.startsWith(tracking) || commit === undefined) {
+  if (headRef === undefined || commit === undefined) {
     return { ok: false, reason: 'NO_DEFAULT_BRANCH', remote };
   }
   const branch = headRef.slice(tracking.length);
@@ -511,22 +512,17 @@ export function runRecordCommit(
   const cuts: TailCut[] = [];
   const ends: string[] = [];
   const moved = new Set<string>();
-  const labelOf = new Map<string, string>();
   let leftEvents = 0;
+  const through = throughTail;
   for (const tail of tails) {
-    for (const event of tail.events) {
-      if (event.kind === 'decision.recorded' && event.subject !== undefined && event.adr) {
-        labelOf.set(event.subject, event.adr);
-      }
-    }
     const at = (name: string) => `${recordDir}tails/${tail.id}/${name}`;
-    const baseEvents = tail.segments.reduce((sum, segment) => {
-      const theirs = heldBytes(at(segment));
-      return sum + (theirs === undefined ? 0 : lineEnds(theirs).length);
-    }, 0);
+    const baseEvents = tail.segments.reduce(
+      (sum, segment) => sum + lineEnds(heldBytes(at(segment)) ?? Buffer.alloc(0)).length,
+      0,
+    );
     const wanted =
-      throughTail?.id === tail.id
-        ? tail.checkpoints.findIndex((one) => one.toSeq >= (throughTail?.seq ?? 0))
+      through !== undefined && through.id === tail.id
+        ? tail.checkpoints.findIndex((one) => one.toSeq >= through.seq)
         : tail.checkpoints.length - 1;
     // Never below what the base holds: the first checkpoint that covers all of it, if that is later.
     const floor = tail.checkpoints.findIndex((one) => one.toSeq + 1 >= baseEvents);
@@ -537,7 +533,6 @@ export function runRecordCommit(
       continue;
     }
     const carried = checkpoint.toSeq + 1;
-    const lastCarried = tail.events[carried - 1];
     let grew = false;
     const put = (name: string, bytes: Buffer) => {
       const theirs = heldBytes(at(name));
@@ -561,10 +556,10 @@ export function runRecordCommit(
     const witness = join(tailsDir, tail.id, 'witness');
     if (existsSync(witness)) {
       for (const name of readdirSync(witness).sort()) {
-        if (!covered.has(name.split('.')[0] ?? '')) continue;
+        if (!covered.has(name.slice(0, name.indexOf('.')))) continue;
         const bytes = readFileSync(join(witness, name));
-        const theirs = heldBytes(at(`witness/${name}`));
-        if (theirs === undefined || !theirs.equals(bytes)) writes.set(at(`witness/${name}`), bytes);
+        if (!heldBytes(at(`witness/${name}`))?.equals(bytes))
+          writes.set(at(`witness/${name}`), bytes);
       }
     }
     for (const event of tail.events.slice(baseEvents, carried)) {
@@ -575,7 +570,7 @@ export function runRecordCommit(
     cuts.push({
       tail: tail.id,
       events: carried - baseEvents,
-      throughSeq: lastCarried?.seq ?? checkpoint.toSeq,
+      throughSeq: checkpoint.toSeq,
       left: Math.max(0, tail.events.length - carried),
     });
   }
@@ -585,9 +580,9 @@ export function runRecordCommit(
   const keysDir = join(record, 'keys');
   if (existsSync(keysDir)) {
     for (const name of readdirSync(keysDir).sort()) {
-      const fp = name.endsWith('.pub') ? name.slice(0, -4) : '';
+      const fp = KEY_FILE.exec(name)?.[1];
       const path = `${recordDir}keys/${name}`;
-      if (!FINGERPRINT.test(fp) || held.has(path)) continue;
+      if (fp === undefined || held.has(path)) continue;
       const named =
         cuts.some((cut) => cut.tail.startsWith(`${fp}-`)) ||
         carriedBytes.some((bytes) => bytes.includes(fp));
@@ -605,16 +600,9 @@ export function runRecordCommit(
       .split('\0'),
   ]);
   const leftFiles = [...differing]
-    .filter((path) => path !== '' && !writes.has(path))
-    .filter((path) => {
-      const rest = path.slice(recordDir.length).split('/');
-      const name = rest[2] ?? '';
-      return !(
-        rest[0] === 'tails' &&
-        rest.length === 3 &&
-        (SEGMENT.test(name) || name === CHECKPOINTS)
-      );
-    })
+    .filter(
+      (path) => path !== '' && !writes.has(path) && !TAIL_LINES.test(path.slice(recordDir.length)),
+    )
     .sort();
   const left: LeftOut = { events: leftEvents, files: leftFiles };
   if (writes.size === 0) return { ok: true, kind: 'nothing', base, left };
@@ -662,18 +650,11 @@ export function runRecordCommit(
     // 4. The readers, over the tree checked out alone, before any branch exists.
     const checked = checkTree(ctx, top, scratch, tree, recordDir, commit);
     if (!checked.ok) return { ok: false, reason: 'DOES_NOT_VERIFY', said: checked.said };
-    const facts = new Map(checked.decisions.map((one) => [one.id, one]));
-    const decisions: CutDecision[] = [...moved]
-      .map((id) => {
-        const fact = facts.get(id);
-        return {
-          id,
-          adr: fact?.adr ?? labelOf.get(id) ?? id,
-          state: fact?.state ?? 'unknown',
-          title: fact?.title ?? '',
-        };
-      })
-      .sort((a, b) => labelNumber(a.adr) - labelNumber(b.adr) || (a.id < b.id ? -1 : 1));
+    // The decisions the cut records or moves, as the tree the readers ruled on reads them.
+    const decisions: CutDecision[] = checked.decisions
+      .filter((one) => moved.has(one.id))
+      .map(({ id, adr, state, title }) => ({ id, adr, state, title }))
+      .sort((a, b) => labelNumber(a.adr) - labelNumber(b.adr));
     const labels = decisions.map((one) => one.adr);
     const events = cuts.reduce((sum, cut) => sum + cut.events, 0);
     const title = cutTitle(labels, events);
@@ -690,8 +671,8 @@ export function runRecordCommit(
     });
     const shape = { base, branch: name, title, body, tails: cuts, decisions, left, next };
     if (existing !== undefined) {
-      const tip = said(git(ctx, top, ['rev-parse', '--verify', `refs/heads/${existing}^{commit}`]));
-      return { ok: true, kind: 'exists', commit: tip ?? '', ...shape };
+      const tip = git(ctx, top, ['rev-parse', '--verify', `refs/heads/${existing}^{commit}`]);
+      return { ok: true, kind: 'exists', commit: tip.out.toString('utf-8').trim(), ...shape };
     }
 
     // 5. The commit, signed where the clone's configuration says `git commit` signs, and its branch.
@@ -739,19 +720,18 @@ function checkTree(
   | { readonly ok: false; readonly said: string[] } {
   const repo = join(scratch, 'checkout');
   mkdirSync(repo);
-  const objects = said(
-    git(ctx, top, ['rev-parse', '--path-format=absolute', '--git-path', 'objects']),
-  );
-  const steps: Ran[] = [git(ctx, repo, ['init', '-q', '--template=', '.'])];
-  if (objects !== undefined && steps[0]?.status === 0) {
-    writeFileSync(join(repo, '.git', 'objects', 'info', 'alternates'), `${objects}\n`);
-    const path = recordDir.slice(0, -1);
-    steps.push(git(ctx, repo, ['read-tree', `--prefix=${recordDir}`, `${tree}:${path}`]));
-    steps.push(git(ctx, repo, ['checkout-index', '-a']));
-  }
+  // The object store of a clone, a worktree's included: rev-parse answers it wherever `top` is.
+  const objects = git(ctx, top, ['rev-parse', '--path-format=absolute', '--git-path', 'objects']);
+  const init = git(ctx, repo, ['init', '-q', '--template=', '.']);
+  writeFileSync(join(repo, '.git', 'objects', 'info', 'alternates'), objects.out.toString('utf-8'));
+  const steps = [
+    init,
+    git(ctx, repo, ['read-tree', `--prefix=${recordDir}`, `${tree}:${recordDir.slice(0, -1)}`]),
+    git(ctx, repo, ['checkout-index', '-a']),
+  ];
   const broke = steps.find((step) => step.status !== 0);
-  if (objects === undefined || broke !== undefined) {
-    return { ok: false, said: [`the tree could not be checked out: ${broke?.err.trim() ?? ''}`] };
+  if (broke !== undefined) {
+    return { ok: false, said: [`the tree could not be checked out: ${broke.err.trim()}`] };
   }
   const root = join(repo, recordDir.slice(0, -1));
   const verdict = runVerify({
@@ -761,19 +741,11 @@ function checkTree(
     global: false,
   });
   const problems: string[] = [];
-  if (!verdict.ok) problems.push('verify found no record in the tree');
-  else if (!verdict.record.ok || !verdict.requirementMet) {
-    problems.push(
-      `verify: ${verdict.record.ok ? `the tree reads ${verdict.record.level}, short of fully-signed` : 'the tree does not verify'}`,
-    );
+  if (!verdict.ok || !verdict.record.ok || !verdict.requirementMet) {
+    problems.push('verify: the tree does not verify at the signed level');
   }
-  const since = sinceBase({ recordRoot: root, rev: base });
-  if (!sinceHolds(since)) {
-    problems.push(
-      since.kind === 'refused'
-        ? `verify --since: ${since.why}`
-        : `verify --since: ${[...since.findings.map((one) => `${one.file} ${one.what}`), ...since.arrived.unnamed.map((tail) => `${tail} names no record`), ...since.arrived.foreign.flatMap((group) => group.tails.map((tail) => `${tail} names another record`))].join(', ')}`,
-    );
+  if (!sinceHolds(sinceBase({ recordRoot: root, rev: base }))) {
+    problems.push(`verify --since: the tree is not the record of ${base} grown`);
   }
   if (problems.length > 0) return { ok: false, said: problems };
   return { ok: true, decisions: decisionsOf(root) };

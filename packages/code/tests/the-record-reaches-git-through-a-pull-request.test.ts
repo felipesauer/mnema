@@ -26,7 +26,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { nextCommands, remoteHost, runRecordCommit } from '../src/commands/record-commit.js';
+import {
+  cutBranch,
+  cutTitle,
+  nextCommands,
+  remoteHost,
+  runRecordCommit,
+} from '../src/commands/record-commit.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -390,6 +396,89 @@ describe('mnema record commit', SLOW, () => {
     const plain = mnema(local, 'record', 'commit');
     expect(plain.out).toContain(`git push -u origin ${said.branch}`);
     expect(plain.out).toMatch(/ADR-1 \(proposed\): one/);
+  });
+});
+
+describe('mnema record commit, where there is nothing to cut from', SLOW, () => {
+  it('refuses outside a project, and outside a repository', () => {
+    const empty = join(sandbox, 'empty');
+    mkdirSync(empty);
+    expect(commitIn(empty)).toEqual({ ok: false, reason: 'NO_PROJECT' });
+    expect(mnema(empty, 'init', '--all-hosts').status).toBe(0);
+    expect(commitIn(empty)).toEqual({ ok: false, reason: 'NOT_A_REPOSITORY' });
+  });
+
+  it('refuses a repository with no remote, and one with several the branch does not follow', () => {
+    const alone = join(sandbox, 'alone');
+    expect(git(sandbox, 'init', '-q', alone).status).toBe(0);
+    expect(mnema(alone, 'init', '--all-hosts').status).toBe(0);
+    expect(commitIn(alone)).toEqual({ ok: false, reason: 'NO_REMOTE', remotes: [] });
+    expect(git(alone, 'remote', 'add', 'one', join(sandbox, 'one.git')).status).toBe(0);
+    expect(git(alone, 'remote', 'add', 'two', join(sandbox, 'two.git')).status).toBe(0);
+    expect(commitIn(alone)).toEqual({ ok: false, reason: 'NO_REMOTE', remotes: ['one', 'two'] });
+    const said = mnema(alone, 'record', 'commit');
+    expect(said.status).toBe(1);
+    expect(said.out).toMatch(/several remotes \(one, two\)/);
+  });
+
+  it('refuses a --through that names no decision, or one no checkpoint covers', () => {
+    const { local } = world();
+    decide(local, 'one');
+    expect(commitIn(local, 'ADR-9')).toEqual({
+      ok: false,
+      reason: 'NO_SUCH_DECISION',
+      typed: 'ADR-9',
+    });
+    // The checkpoints back to the base's, the recording stands above every one of them.
+    const tail = theTail(local);
+    expect(git(local, 'checkout', 'HEAD', '--', `${tail}/checkpoints.jsonl`).status).toBe(0);
+    expect(commitIn(local, 'ADR-1')).toEqual({ ok: false, reason: 'NOT_COVERED', typed: 'ADR-1' });
+  });
+
+  it('refuses where the base holds more of a tail than this clone does', () => {
+    const { local } = world();
+    decide(local, 'one');
+    const made = commitIn(local);
+    if (!made.ok || made.kind !== 'made') throw new Error(JSON.stringify(made));
+    // The base moves to the cut, as a merged pull request would, and this clone loses its lines.
+    expect(git(local, 'update-ref', 'refs/remotes/origin/main', made.commit).status).toBe(0);
+    const tail = theTail(local);
+    expect(git(local, 'checkout', 'HEAD', '--', `${tail}/000001.jsonl`).status).toBe(0);
+    const refused = commitIn(local);
+    if (refused.ok || refused.reason !== 'NOT_A_PREFIX') throw new Error(JSON.stringify(refused));
+    expect(refused.found.map((one) => one.said)).toEqual([
+      `${tail}/000001.jsonl: origin/main holds more of it than this clone does.`,
+    ]);
+  });
+
+  it('says how old the base is', () => {
+    const { local } = world();
+    const later = runRecordCommit(
+      {
+        cwd: local,
+        env: { home: join(sandbox, 'home') },
+        processEnv: env(),
+        now: Date.now() + 5 * 3600 * 1000 + 60_000,
+      },
+      {},
+    );
+    if (!later.ok) throw new Error(JSON.stringify(later));
+    expect(later.base.hoursOld).toBe(5);
+  });
+});
+
+describe('what a cut is named', () => {
+  it('titles the cut by the labels it carries, or by its events', () => {
+    expect(cutTitle([], 1)).toBe('Record 1 event');
+    expect(cutTitle([], 3)).toBe('Record 3 events');
+    expect(cutTitle(['ADR-4'], 2)).toBe('Record ADR-4');
+    expect(cutTitle(['ADR-4', 'ADR-6', 'ADR-9'], 9)).toBe('Record 3 decisions, ADR-4 to ADR-9');
+  });
+
+  it('names the branch by the labels and the digest', () => {
+    expect(cutBranch([], '0123456789ab')).toBe('mnema-record/events-0123456789ab');
+    expect(cutBranch(['ADR-4'], 'ab')).toBe('mnema-record/adr-4-ab');
+    expect(cutBranch(['ADR-4', 'ADR-9'], 'ab')).toBe('mnema-record/adr-4-to-9-ab');
   });
 });
 
