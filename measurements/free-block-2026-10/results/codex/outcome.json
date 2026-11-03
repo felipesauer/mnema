@@ -1,0 +1,11 @@
+{
+  "ended": "exited",
+  "exit": 0,
+  "wall_ms": 117827,
+  "version": "codex-cli 0.161.0",
+  "ended_reason": null,
+  "key_scan": {
+    "scanned_files": 5582,
+    "files_with_a_key": 0
+  }
+}

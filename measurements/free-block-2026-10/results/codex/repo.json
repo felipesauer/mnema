@@ -1,0 +1,94 @@
+{
+  "start": "b9a8fd8f9a071073cd67fc88bb2deb8ba583fe8b",
+  "changed": [
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. Also accepts `export KEY=value` (shell style). */",
+        "      // Handle optional \"export \" prefix (shell style)",
+        "      let rest = line;",
+        "      if (rest.startsWith('export ')) {",
+        "        rest = rest.slice(7);",
+        "      }",
+        "      const eq = rest.indexOf('=');",
+        "      const key = rest.slice(0, eq).trim();",
+        "      let value = rest.slice(eq + 1).trim();"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const eq = line.indexOf('=');",
+        "      const key = line.slice(0, eq).trim();",
+        "      let value = line.slice(eq + 1).trim();"
+      ],
+      "sha256_end": "0c76d7407f3e2e449aacc4bd3ec4b46cfe778ea9fbca8637343a79f507c8976a"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "",
+        "test('accepts export KEY=value (shell style)', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport PORT=3000\\n');",
+        "  assert.equal(env.get('HOST'), 'localhost');",
+        "  assert.equal(env.get('PORT'), '3000');",
+        "});",
+        "",
+        "test('mixes plain and export lines', () => {",
+        "  const env = new EnvAccessor('HOST=localhost\\nexport PORT=3000\\n');",
+        "  assert.deepEqual(env.all(), { HOST: 'localhost', PORT: '3000' });",
+        "});",
+        "",
+        "test('export with quoted values', () => {",
+        "  const env = new EnvAccessor('export A=\"one two\"\\nexport B=\\'three\\'\\n');",
+        "  assert.equal(env.get('A'), 'one two');",
+        "  assert.equal(env.get('B'), 'three');",
+        "});"
+      ],
+      "removed": [],
+      "sha256_end": "6ae60fcc92103ba4c4a2540f7df186a395a957d9dff28aacac4e294e713e68d5"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. Also accepts `export KEY=value` (shell style). */",
+        "            // Handle optional \"export \" prefix (shell style)",
+        "            $rest = $line;",
+        "            if (str_starts_with($rest, 'export ')) {",
+        "                $rest = substr($rest, 7);",
+        "            }",
+        "            $eq = strpos($rest, '=');",
+        "            $key = trim(substr($rest, 0, $eq));",
+        "            $value = trim(substr($rest, $eq + 1));"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $eq = strpos($line, '=');",
+        "            $key = trim(substr($line, 0, $eq));",
+        "            $value = trim(substr($line, $eq + 1));"
+      ],
+      "sha256_end": "59951203bf0d5f3e8ade7b27629e91492c495ffd15b865fddccacd13d9fc109c"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "// export prefix tests",
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport PORT=3000\\n\");",
+        "check('accepts export KEY=value (shell style)', $env->get('HOST') === 'localhost' && $env->get('PORT') === '3000');",
+        "",
+        "$env = new EnvAccessor(\"HOST=localhost\\nexport PORT=3000\\n\");",
+        "check('mixes plain and export lines', $env->all() === ['HOST' => 'localhost', 'PORT' => '3000']);",
+        "",
+        "$env = new EnvAccessor(\"export A=\\\"one two\\\"\\nexport B='three'\\n\");",
+        "check('export with quoted values', $env->get('A') === 'one two' && $env->get('B') === 'three');",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "0da1327889dd2fbdbd097011f9bd8ae1f6d6b6fe48e5d67951d0994a416ac200"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

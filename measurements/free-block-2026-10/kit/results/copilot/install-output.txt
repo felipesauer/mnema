@@ -1,0 +1,7 @@
+version: Run 'copilot update' to check for updates.
+$ @github/copilot plugin marketplace add -> exit 0
+Marketplace "mnema" added successfully.
+
+$ @github/copilot plugin install mnema@mnema -> exit 0
+Plugin "mnema" installed successfully. Installed 3 skills.
+Enabled "mnema@mnema". It is loaded live from <KIT>/plugin-tag/plugin, so edits take effect on the next session – nothing was copied.

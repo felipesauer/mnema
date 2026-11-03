@@ -1,0 +1,5 @@
+2026-10-29T20:42:27.300Z #1 POST /chat/completions refused (relay_model)
+2026-10-29T20:42:34.501Z #2 POST /chat/completions 200 4060ms served=[nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia]
+2026-10-29T20:42:36.218Z #3 POST /chat/completions 200 1590ms served=[nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia]
+2026-10-29T20:42:39.021Z #4 POST /chat/completions 200 2710ms served=[nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia]
+2026-10-29T20:42:40.902Z #5 POST /chat/completions 200 1804ms served=[nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia]

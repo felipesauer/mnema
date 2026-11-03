@@ -1,0 +1,51 @@
+{
+  "host": "codex",
+  "kind": "measured",
+  "mode": "live",
+  "at": "2026-11-03T00:02:49.806Z",
+  "version": "codex-cli 0.161.0",
+  "start_commit": "b9a8fd8f9a071073cd67fc88bb2deb8ba583fe8b",
+  "kit_commit": "3e3bdba3ba0b14b0709a49476abf406f8a23933d",
+  "kit_code_clean": true,
+  "prompt_sha256": "0e5e79a50e12b9720d2c0c513311a0bf4fe841d2042442ce545622230047f13d",
+  "argv": [
+    "codex",
+    "exec",
+    "--json",
+    "--sandbox",
+    "workspace-write",
+    "-c",
+    "approval_policy=\"never\"",
+    "--skip-git-repo-check",
+    "<neutral prompt>"
+  ],
+  "rule_sha256": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00",
+  "prereg_verify": {
+    "ok": true,
+    "exit": 0,
+    "advisory": false
+  },
+  "budget_requests": 24,
+  "units": 24,
+  "cost_per_request": 1,
+  "wall_clock_ms": 1800000,
+  "before": {
+    "status": 200,
+    "isFreeTier": true,
+    "limit": 50,
+    "apiUsed": 0,
+    "ledgerRequests": 0,
+    "ledgerUnits": 0,
+    "used": 0,
+    "remaining": 50
+  },
+  "arm": {
+    "rules_js": true,
+    "rules_php": true,
+    "js_tests_pass": true,
+    "js_accepts_export": false,
+    "php_tests_pass": true,
+    "php_accepts_export": false
+  },
+  "kit_files_left_in_the_working_directory": []
+}

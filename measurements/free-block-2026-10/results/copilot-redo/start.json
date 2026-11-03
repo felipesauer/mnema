@@ -1,0 +1,47 @@
+{
+  "host": "copilot",
+  "kind": "measured",
+  "mode": "live",
+  "at": "2026-11-02T22:31:19.688Z",
+  "version": "GitHub Copilot CLI 1.0.104.",
+  "start_commit": "8894f10dcaa49a980171582343a9b871ebe19352",
+  "kit_commit": "d033803d92c0b62546cbb06e2006ba8240e7ee44",
+  "kit_code_clean": true,
+  "prompt_sha256": "0e5e79a50e12b9720d2c0c513311a0bf4fe841d2042442ce545622230047f13d",
+  "argv": [
+    "copilot",
+    "-p",
+    "<neutral prompt>",
+    "--allow-all",
+    "--no-color"
+  ],
+  "rule_sha256": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00",
+  "prereg_verify": {
+    "ok": true,
+    "exit": 0,
+    "advisory": false
+  },
+  "budget_requests": 24,
+  "units": 24,
+  "cost_per_request": 1,
+  "wall_clock_ms": 1800000,
+  "before": {
+    "status": 200,
+    "isFreeTier": true,
+    "limit": 50,
+    "apiUsed": 11,
+    "ledgerRequests": 12,
+    "ledgerUnits": 12,
+    "used": 12,
+    "remaining": 38
+  },
+  "arm": {
+    "rules_js": true,
+    "rules_php": true,
+    "js_tests_pass": true,
+    "js_accepts_export": false,
+    "php_tests_pass": true,
+    "php_accepts_export": false
+  },
+  "kit_files_left_in_the_working_directory": []
+}

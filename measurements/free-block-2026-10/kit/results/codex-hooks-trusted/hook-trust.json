@@ -1,0 +1,47 @@
+{
+  "pluginFiles": 48,
+  "before": [
+    {
+      "key": "mnema@mnema:hooks/codex.json:pre_tool_use:0:0",
+      "trustStatus": "untrusted"
+    },
+    {
+      "key": "mnema@mnema:hooks/codex.json:post_tool_use:0:0",
+      "trustStatus": "untrusted"
+    },
+    {
+      "key": "mnema@mnema:hooks/codex.json:session_start:0:0",
+      "trustStatus": "untrusted"
+    },
+    {
+      "key": "mnema@mnema:hooks/codex.json:session_start:0:1",
+      "trustStatus": "untrusted"
+    }
+  ],
+  "after": [
+    {
+      "key": "mnema@mnema:hooks/codex.json:pre_tool_use:0:0",
+      "trustStatus": "trusted",
+      "event": "preToolUse",
+      "matcher": "apply_patch"
+    },
+    {
+      "key": "mnema@mnema:hooks/codex.json:post_tool_use:0:0",
+      "trustStatus": "trusted",
+      "event": "postToolUse",
+      "matcher": "request_user_input"
+    },
+    {
+      "key": "mnema@mnema:hooks/codex.json:session_start:0:0",
+      "trustStatus": "trusted",
+      "event": "sessionStart",
+      "matcher": null
+    },
+    {
+      "key": "mnema@mnema:hooks/codex.json:session_start:0:1",
+      "trustStatus": "trusted",
+      "event": "sessionStart",
+      "matcher": null
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+version: WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("<RUNS>/ab-runs/codex-1793306625427/codex"))
+$ @openai/codex plugin marketplace add -> exit 0
+Added marketplace `mnema` from <KIT>/plugin-tag.
+Installed marketplace root: <KIT>/plugin-tag
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("<RUNS>/ab-runs/codex-1793306625427/codex"))
+
+$ @openai/codex plugin add mnema@mnema -> exit 0
+Added plugin `mnema` from marketplace `mnema`.
+Installed plugin root: <RUNS>/ab-runs/codex-1793306625427/codex/plugins/cache/mnema/mnema/0.1.4
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("<RUNS>/ab-runs/codex-1793306625427/codex"))

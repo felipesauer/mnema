@@ -1,0 +1,8 @@
+# What install.sh rebuilds, and what a run leaves behind: never committed.
+/installed/*/node_modules/
+/installed/*/package.json
+/installed/*/package-lock.json
+/mnema-pkg/
+/plugin-tag/
+/runs/
+*.key

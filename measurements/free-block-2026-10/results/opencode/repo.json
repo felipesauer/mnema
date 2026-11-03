@@ -1,0 +1,76 @@
+{
+  "start": "bded547224a485ae5780b9f4c741387986f407a5",
+  "changed": [
+    {
+      "path": ".mnema/tails/76a66f22c7a4b662f512d7afef1245a7261d1282298d58d099da6e34214ed004-139601e0f6567182760bd2ff5eaa54a8/000001.jsonl",
+      "status": "M",
+      "added": [
+        "{\"event\":{\"at\":\"2026-11-02T22:27:37.556Z\",\"kind\":\"channel.served\",\"payload\":{},\"signerFp\":\"76a66f22c7a4b662f512d7afef1245a7261d1282298d58d099da6e34214ed004\",\"subject\":\"edit-rules-push\",\"v\":1,\"which\":\"opencode\",\"who\":\"mnid:b52dc436d871192a18fdce94eef636e3648811953d33a995dd4f67c702551698\"},\"link\":{\"hash\":\"d204b0b541298a94c7fca099c67fb0612f02414f7211956ce1e5381ab17b7c27\",\"prev\":\"0f29fc5db6cf9c48a222fb75871b61914b48101c0ebff5db3e283f1b53283008\",\"seq\":9,\"tail\":\"76a66f22c7a4b662f512d7afef1245a7261d1282298d58d099da6e34214ed004-139601e0f6567182760bd2ff5eaa54a8\"}}"
+      ],
+      "removed": [],
+      "sha256_end": "de8552387be4299fb306eee84d08e1ecd9bc689fc9ce462bb632ebf6dc066f7d"
+    },
+    {
+      "path": ".mnema/tails/76a66f22c7a4b662f512d7afef1245a7261d1282298d58d099da6e34214ed004-139601e0f6567182760bd2ff5eaa54a8/checkpoints.jsonl",
+      "status": "M",
+      "added": [
+        "{\"contentRoot\":\"3b5a97c1f5dfcaf602a3c7ca1b87bb5f29254c973b6a2cf99b6cac85433b19d9\",\"fromSeq\":9,\"prev\":\"333244f29421d7e7a2ca920ce19aa25a17e8c53d8a3ff1fb6c61726a72107bd8\",\"scheme\":\"mnema-checkpoint/1\",\"sig\":\"73308de5650671d5f4785e853cb93751faf5e037151d15c2458fdfeb95600d24f82cce2a13a1e7e9e30e1e81bf0c68fcf34d5af85d5a53bb221f6ad4d790860e\",\"signerFp\":\"76a66f22c7a4b662f512d7afef1245a7261d1282298d58d099da6e34214ed004\",\"tail\":\"76a66f22c7a4b662f512d7afef1245a7261d1282298d58d099da6e34214ed004-139601e0f6567182760bd2ff5eaa54a8\",\"toSeq\":9}"
+      ],
+      "removed": [],
+      "sha256_end": "3c809dfcbae753e77e646a11487874bc8512434e8d20c643bafcf4a9eef23105"
+    },
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "      let line = raw.trim();",
+        "      if (line.startsWith('export ')) line = line.slice(7);"
+      ],
+      "removed": [
+        "      const line = raw.trim();"
+      ],
+      "sha256_end": "3997b2532caf241c0161cbb3ae889b0385926f970d4f51f9f93971353b2b1bfa"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads export KEY=value lines', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport PORT=3000\\n');",
+        "  assert.equal(env.get('HOST'), 'localhost');",
+        "  assert.equal(env.get('PORT'), '3000');",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "2a111de1f8138ce32669eadd3b2381feb0c346ff0c61cf323850c37cc854df68"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "            if (str_starts_with($line, 'export ')) {",
+        "                $line = substr($line, 7);",
+        "            }"
+      ],
+      "removed": [],
+      "sha256_end": "bcb6b34dcaf8731820f71af0e72772b64099edb4d440e6963cba205daa84554b"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport PORT=3000\\n\");",
+        "check('reads export KEY=value lines', $env->get('HOST') === 'localhost' && $env->get('PORT') === '3000');",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "d97d900c1668426c9515c5ee2b514c1979a8100c75d337407d4ea202572aa6f3"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": [
+    ".opencode/plugins/mnema.js",
+    "opencode.json"
+  ]
+}

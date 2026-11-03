@@ -1,0 +1,5 @@
+{
+  "exit": 0,
+  "ended": "exited",
+  "version": "version: WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"<RUNS>/abfb-step2/runs/codex-1793308855794/codex\"))"
+}

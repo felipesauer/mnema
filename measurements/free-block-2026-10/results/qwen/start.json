@@ -1,0 +1,49 @@
+{
+  "host": "qwen",
+  "kind": "measured",
+  "mode": "live",
+  "at": "2026-10-31T05:07:57.095Z",
+  "version": "0.26.1",
+  "start_commit": "e30637400ebbad9582a3af9b72d811102eb51f2b",
+  "kit_commit": "b5e09167382f1305b956ec0f045e733d6ad99b44",
+  "kit_code_clean": true,
+  "prompt_sha256": "0e5e79a50e12b9720d2c0c513311a0bf4fe841d2042442ce545622230047f13d",
+  "argv": [
+    "qwen",
+    "-p",
+    "<neutral prompt>",
+    "--approval-mode",
+    "yolo",
+    "-m",
+    "<model id>"
+  ],
+  "rule_sha256": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00",
+  "prereg_verify": {
+    "ok": true,
+    "exit": 0,
+    "advisory": false
+  },
+  "budget_requests": 50,
+  "units": 50,
+  "cost_per_request": 1,
+  "wall_clock_ms": 1800000,
+  "before": {
+    "status": 200,
+    "isFreeTier": true,
+    "limit": 50,
+    "apiUsed": 0,
+    "ledgerRequests": 0,
+    "ledgerUnits": 0,
+    "used": 0,
+    "remaining": 50
+  },
+  "arm": {
+    "rules_js": true,
+    "rules_php": true,
+    "js_tests_pass": true,
+    "js_accepts_export": false,
+    "php_tests_pass": true,
+    "php_accepts_export": false
+  },
+  "kit_files_left_in_the_working_directory": []
+}

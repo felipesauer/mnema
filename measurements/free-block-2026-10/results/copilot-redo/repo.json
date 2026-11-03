@@ -1,0 +1,90 @@
+{
+  "start": "8894f10dcaa49a980171582343a9b871ebe19352",
+  "changed": [
+    {
+      "path": ".mnema/tails/600f47d5ac10974fb00643d7d47672eca067e7a807fe1d6aeeefac25d262af0b-38282272d05f56bc1b06dd4c1f1c0b7a/000001.jsonl",
+      "status": "M",
+      "added": [
+        "{\"event\":{\"at\":\"2026-11-02T22:31:45.951Z\",\"kind\":\"channel.served\",\"payload\":{},\"signerFp\":\"600f47d5ac10974fb00643d7d47672eca067e7a807fe1d6aeeefac25d262af0b\",\"subject\":\"edit-rules-push\",\"v\":1,\"which\":\"copilot\",\"who\":\"mnid:5542c88d33a1ff5c67941bfef9146e53a509a989c734b0b55bf9b1e2ddf986e5\"},\"link\":{\"hash\":\"cbfd3c3c7207d96530ad4bab62b52354470c1966eefc82c6980756225eaca778\",\"prev\":\"016d0da50268bbd7c917a313e2b32d776943e2dcb57884ff621aba452310eded\",\"seq\":9,\"tail\":\"600f47d5ac10974fb00643d7d47672eca067e7a807fe1d6aeeefac25d262af0b-38282272d05f56bc1b06dd4c1f1c0b7a\"}}"
+      ],
+      "removed": [],
+      "sha256_end": "191953c34eb49c46fa6d93777e7e487b0bd5f9017f8bdd220633931c52c150f9"
+    },
+    {
+      "path": ".mnema/tails/600f47d5ac10974fb00643d7d47672eca067e7a807fe1d6aeeefac25d262af0b-38282272d05f56bc1b06dd4c1f1c0b7a/checkpoints.jsonl",
+      "status": "M",
+      "added": [
+        "{\"contentRoot\":\"b1e9cabc10127179e4d109c131199739f370a51d988225b6b2ce81378df20a01\",\"fromSeq\":9,\"prev\":\"12f81dc55f8878bafba57bcf3a4348dea0b29659bc65f052d5421c02703459cd\",\"scheme\":\"mnema-checkpoint/1\",\"sig\":\"c1ba2699e9237263814bc43f6eaed142d77089d99fd96fd2ede051f7de54cfec9c73515a4441261a61bec152f7960b356410ec562a8e9d58ceaa972e2b51b606\",\"signerFp\":\"600f47d5ac10974fb00643d7d47672eca067e7a807fe1d6aeeefac25d262af0b\",\"tail\":\"600f47d5ac10974fb00643d7d47672eca067e7a807fe1d6aeeefac25d262af0b-38282272d05f56bc1b06dd4c1f1c0b7a\",\"toSeq\":9}"
+      ],
+      "removed": [],
+      "sha256_end": "9eb4770a12741fe032270becb06bbe66127a92ad2d05d1e82fefb7f061e35e6d"
+    },
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "      const withoutExport = line.startsWith('export ') ? line.slice(7) : line;",
+        "      const eq = withoutExport.indexOf('=');",
+        "      const key = withoutExport.slice(0, eq).trim();",
+        "      let value = withoutExport.slice(eq + 1).trim();"
+      ],
+      "removed": [
+        "      const eq = line.indexOf('=');",
+        "      const key = line.slice(0, eq).trim();",
+        "      let value = line.slice(eq + 1).trim();"
+      ],
+      "sha256_end": "940efaebfa2d8d16e9f86929b09ec7504609ef27a24fe2405baf7d73d23d870f"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "",
+        "test('accepts export KEY=value lines', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport PORT=3000\\n');",
+        "  assert.equal(env.get('HOST'), 'localhost');",
+        "  assert.equal(env.get('PORT'), '3000');",
+        "});",
+        "",
+        "test('mixes export and plain lines', () => {",
+        "  const env = new EnvAccessor('export A=1\\nB=2\\nexport C=3\\n');",
+        "  assert.deepEqual(env.all(), { A: '1', B: '2', C: '3' });",
+        "});"
+      ],
+      "removed": [],
+      "sha256_end": "4f630cedbbed2e6a0404474356a363f2cf0d40bf16dece87185c01cd26544bb0"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "            $withoutExport = str_starts_with($line, 'export ') ? substr($line, 7) : $line;",
+        "            $eq = strpos($withoutExport, '=');",
+        "            $key = trim(substr($withoutExport, 0, $eq));",
+        "            $value = trim(substr($withoutExport, $eq + 1));"
+      ],
+      "removed": [
+        "            $eq = strpos($line, '=');",
+        "            $key = trim(substr($line, 0, $eq));",
+        "            $value = trim(substr($line, $eq + 1));"
+      ],
+      "sha256_end": "2b0ce2272d70b3c3c1bdde232e2983c84453776cd3ba3d0a6d82f616fb27eeba"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport PORT=3000\\n\");",
+        "check('accepts export KEY=value lines', $env->get('HOST') === 'localhost' && $env->get('PORT') === '3000');",
+        "",
+        "$env = new EnvAccessor(\"export A=1\\nB=2\\nexport C=3\\n\");",
+        "check('mixes export and plain lines', $env->all() === ['A' => '1', 'B' => '2', 'C' => '3']);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "80e2404fb73fd08b25e350b2489420d609b622020eec56b696c0a4293a8e806e"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}
