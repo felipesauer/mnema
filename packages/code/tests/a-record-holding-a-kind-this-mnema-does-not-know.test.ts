@@ -156,9 +156,13 @@ describe('a record a newer mnema added a kind to', { timeout: 120_000 }, () => {
 
     const status = mnema('status');
     expect(status.status, status.err).toBe(0);
-    // The line that names what a newer mnema wrote is the one thing status adds
-    // (`a-record-says-where-a-newer-mnema-wrote.test.ts`); everything else is what it was.
-    expect(status.out.replace(/^A newer mnema wrote .*\n/m, '')).toBe(before.status);
+    // The line that names what a newer mnema wrote is the one thing status adds above the
+    // heading the line is counted under (`a-record-says-where-a-newer-mnema-wrote.test.ts`), and
+    // the line is an event no commit holds yet, counted under its own heading
+    // (`events-not-in-git.ts`); the reading beneath is what must not move.
+    const reading = (screen: string) =>
+      (screen.split('\nNot in git yet:')[0] as string).replace(/^A newer mnema wrote .*\n/m, '');
+    expect(reading(status.out)).toBe(reading(before.status));
     const show = mnema('show', id as string);
     expect(show.status, show.err).toBe(0);
     expect(show.out).toBe(before.show);

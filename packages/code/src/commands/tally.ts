@@ -33,6 +33,12 @@
  * switched off, reads the whole transcript as before and keeps no file. The counts the line
  * carries come from the journal's reading, so the line says the same thing either way.
  *
+ * IT ALSO SAYS WHAT NO GIT COMMIT HOLDS YET, in the same line and under the same switch: where events
+ * of the record are above what HEAD holds, the sentence of `events-not-in-git.ts` follows the two
+ * counts (`events-not-in-git-are-said.test.ts`). It is a fact about the record and not about the
+ * session, and it keeps the rule above: it states what waits and names the verb that prepares it, and
+ * asks nobody to run it. It is read where the counts are, after a response that wrote a file.
+ *
  * WHERE THE LINE LANDS IS THE HOST'S. It is written as the `systemMessage` of the reply, the field
  * every hook reply may carry, and which host shows it, to whom, was not measured.
  */
@@ -40,6 +46,7 @@
 import { dirname } from 'node:path';
 import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { readEventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js';
 import { SESSION_JOURNAL_CHANNEL, SESSION_TALLY_CHANNEL } from '../record-framing.js';
 import {
   exclusivelyOn,
@@ -191,14 +198,16 @@ export function runSessionTally(
         'The transcript carries no instant, so no decision could be counted against it.',
       ]);
     }
+    const waiting = readEventsNotInGit({ cwd: ctx.cwd, env: ctx.env });
+    const line = tallyLine({
+      files: journal.filesEdited,
+      decisions: journal.decisions.length,
+      copied: journal.notes.length,
+    });
     return {
       ok: true,
       reply: {
-        systemMessage: tallyLine({
-          files: journal.filesEdited,
-          decisions: journal.decisions.length,
-          copied: journal.notes.length,
-        }),
+        systemMessage: waiting === undefined ? line : `${line} ${saysEventsNotInGit(waiting)}`,
       },
       notes: [],
     };
