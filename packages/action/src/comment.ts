@@ -37,16 +37,30 @@ const MOST_IN_A_COMMENT = 65536;
 const CUT_NOTICE =
   '\n\nThe rest of this comment was cut: GitHub accepts at most 65536 characters.\n';
 
+/** The tag `verify --since` ends its note with, of a tail that arrived before the record has a name. */
+const UNNAMED_RECORD = '(unnamed-record)';
+
+/** The tag `verify --since` ends its line with, of a tail a relink moved into the record since the base. */
+const RELINKED = '(relinked)';
+
+/**
+ * The lines `verify --since` said of a tail its owner relinked into the record since the base
+ * (FORMAT.md section 6.11): a fact on a pass and on a failure alike, never a failure itself.
+ */
+const relinkedLines = (said: string): string[] =>
+  said
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.endsWith(RELINKED));
+
 /** Whether there is anything on the pull request worth a comment of its own. */
 export const worthSaying = (report: Report): boolean =>
   !report.verification.passed ||
   report.record.total > 0 ||
   report.governed.length > 0 ||
   report.severalRecords.length > 0 ||
+  relinkedLines(report.verification.said).length > 0 ||
   report.checks?.passed === false;
-
-/** The tag `verify --since` ends its note with, of a tail that arrived before the record has a name. */
-const UNNAMED_RECORD = '(unnamed-record)';
 
 /** The longest stretch of `verify`'s own words the comment quotes. */
 const MOST_QUOTED = 1500;
@@ -177,6 +191,17 @@ export function renderComment(report: Report): string {
         (held) =>
           `- record \`${plain(held.name.slice(0, 12))}\`: ${held.tails.map((tail) => `\`${plain(tail)}\``).join(', ')}`,
       ),
+    );
+  }
+  const relinked = relinkedLines(report.verification.said);
+  if (relinked.length > 0) {
+    out.push(
+      '',
+      'Tails of another record their owner relinked into this one since the base, a relink both readers count:',
+      '',
+      '```',
+      relinked.join('\n').slice(0, MOST_QUOTED).replaceAll('```', "'''"),
+      '```',
     );
   }
   if (report.notAsked > 0) {

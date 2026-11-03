@@ -1040,6 +1040,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
   'packages/code/tests/a-refusal-leaves-nothing.test.ts': 13,
   'packages/code/tests/a-refused-group-flag-leaves-the-record.test.ts': 7,
+  'packages/code/tests/a-relinked-tail-passes-since.test.ts': 7,
   'packages/code/tests/a-report-is-built-from-an-allowlist.test.ts': 10,
   'packages/code/tests/a-report-needs-a-person.test.ts': 19,
   'packages/code/tests/a-retired-agent-key-without-a-tail-is-called-retired.test.ts': 7,

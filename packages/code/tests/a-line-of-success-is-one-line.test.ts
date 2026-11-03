@@ -963,6 +963,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the revision as typed, a tail id read off the disk, and whether the base held a record: chosen on disk',
     },
+  'verify.ts «{}: tail {} {}, record {}..., relinked into this record by its own key, {} event(s) from {} (relinked)» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the revision as typed, a tail id, a record name, a count and an instant read off the disk, and whether the base held the tail: chosen on disk',
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -1084,7 +1089,8 @@ describe('every line this wiring words is classified', () => {
     // 169 with the five lines `tail relink` prints of a relink it wrote.
     // 173 with the four lines `record pull` prints.
     // 174 with the line that names the files a pull left in conflict.
-    expect(FOUND.sites.length).toBe(174);
+    // 175 with the line `verify --since` prints of a tail a relink moved into the record (relinked).
+    expect(FOUND.sites.length).toBe(175);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1104,9 +1110,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(93);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(94);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(81);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(93);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(94);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1389,6 +1395,9 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'verify.ts «{}: tail {} arrived since and names no record, and {}: the record has no name yet, so a tail grafted from another record written before 0.1.5 cannot be told from its own; a note, not a failure, until a mnema from 0.1.5 on writes here and names it (unnamed-record)» #1':
     'needs a base commit with no named tail and a tail written before records were named ' +
     'grafted after it; driven through the binary in `a-tail-that-arrives-is-held-to-the-base.test.ts`',
+  'verify.ts «{}: tail {} {}, record {}..., relinked into this record by its own key, {} event(s) from {} (relinked)» #1':
+    'needs a base commit and a tail of another record relinked after it by its owner; driven ' +
+    'through the binary in `a-relinked-tail-passes-since.test.ts`',
   'verify.ts «reformatted {}: {}» #1':
     'needs a record a formatter rewrote, which is file surgery and not an argv; driven in ' +
     '`the-verdict-tells-the-truth.test.ts`',

@@ -35,6 +35,7 @@ import {
   arrivedSince,
   genesisTail,
   type RecordNaming,
+  type RelinkCounted,
   recordName,
   recordOf,
   type TheRecordRead,
@@ -75,14 +76,37 @@ export function recordNamedIn(roots: readonly string[]): RecordNaming {
 /**
  * What arrived at `here` since the record at `base` ({@link arrivedSince}): the tails new since
  * it that name no record, and those that name another record than it, each directory's tails
- * checked under its own keys. `verify --since` asks it, with the base taken out of git.
+ * checked under its own keys, and named on each side as the readers name them once the relinks
+ * that count there are applied ({@link relinksNamedAt}). `verify --since` asks it, with the base
+ * taken out of git whole, so a relink the base held is read from the base's own bytes.
  */
 export function arrivalsSince(
   base: ChainLayout,
   here: ChainLayout,
   upcasters: UpcasterRegistry,
 ): Arrivals {
-  return arrivedSince(namesOfTails(base), () => firstEntries(base, upcasters), namesOfTails(here));
+  const there = relinksNamedAt(base, upcasters);
+  const now = relinksNamedAt(here, upcasters);
+  return arrivedSince(there.named, () => firstEntries(base, upcasters), now.named, {
+    base: there.counted,
+    here: now.counted,
+  });
+}
+
+/**
+ * What each tail at `layout` names once the relinks that count are applied, and those relinks:
+ * the readers' rule (`relinkedNaming`, through `relinksReadAt`), asked only where the tails name
+ * two records or more by their own artifacts, the one shape a relink that counts leaves (its tail
+ * names the record it leaves, its host the one it joins), as {@link tailsReadAt} asks it.
+ */
+function relinksNamedAt(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+): { named: ReadonlyMap<string, string | undefined>; counted: readonly RelinkCounted[] } {
+  const named = namesOfTails(layout);
+  if (recordOf(named).state !== 'several') return { named, counted: [] };
+  const read = relinksReadAt([layout], upcasters, named);
+  return { named: read.named, counted: read.counted };
 }
 
 /**
