@@ -2711,7 +2711,7 @@ describe('every value this layer puts on a line is classified', () => {
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(140);
     expect(count('minted')).toBe(290);
-    expect(count('composed')).toBe(99);
+    expect(count('composed')).toBe(100);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(140);
   });
 

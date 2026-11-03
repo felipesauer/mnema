@@ -249,6 +249,10 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'verified at the commit pointed at: a break there is the answer `unverified`, which the ' +
     'brief’s section says in words and prints no decision under, so a notice about this ' +
     'project’s chain has nothing to attach to',
+  'commands/doctor.ts':
+    'it reads the tails only to count the lines a newer mnema wrote that this one reads past, and ' +
+    'serves no record content: its one finding about the record is that count, in a checklist ' +
+    'about the machine, and whether the chain chains is `mnema verify`’s to say',
   'commands/decision.ts':
     'a decision is a write, answered by the write; the one thing it reads afterwards is the ' +
     'decisions the new one cites, to name the command that would replace each, and it serves no ' +
