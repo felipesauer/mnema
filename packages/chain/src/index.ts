@@ -137,6 +137,7 @@ export type {
   Arrivals,
   RecordGroup,
   RecordNaming,
+  RelinkArrived,
   TheRecordRead,
 } from './chain/record-name.js';
 export {

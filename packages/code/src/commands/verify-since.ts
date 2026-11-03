@@ -30,6 +30,13 @@
  * record. A tail the base already held is not asked again: an unnamed one stays the census note
  * the bare verdict gives it.
  *
+ * A TAIL ITS OWNER RELINKED (ADR-155, FORMAT.md section 6.11) is named on each side as both
+ * readers name it, the relinks that count there applied, the base's read out of the commit's own
+ * bytes: so a change that brings a tail of another record and its owner's relink of it passes
+ * where the relink counts, and is refused as `another-record` where it does not. Each tail a relink
+ * moves into the record since the base is said, a fact and never a refusal (`relinked`); the
+ * readers already refuse what a relink lacks (`a-relinked-tail-passes-since.test.ts`).
+ *
  * WHAT IT DOES NOT DO. It reads git and never the network: `<rev>` must already be in the
  * clone (a shallow CI checkout has no base, and is refused by name rather than passed). It
  * rules on the COMMITTED tree only: the private tree never travels, so git holds nothing of
@@ -154,6 +161,8 @@ export function sinceBase(ask: {
   }
   const files = listed.toString('utf-8').split('\0').filter(Boolean);
   const findings: SinceFinding[] = [];
+  // The bytes the commit held of each file read here, so the base is not taken out of git twice.
+  const read = new Map<string, Buffer>();
   for (const file of files) {
     const onDisk = join(top, file);
     if (!existsSync(onDisk)) {
@@ -165,26 +174,30 @@ export function sinceBase(ask: {
     if (held === null) {
       return { kind: 'refused', rev, why: `git could not read ${file} at that commit` };
     }
+    read.set(file, held);
     const now = readFileSync(onDisk);
     if (now.length < held.length || !now.subarray(0, held.length).equals(held)) {
       findings.push({ file, what: 'rewritten' });
     }
   }
-  const arrived = arrivedSinceTheCommit(top, commit, record, files, recordRoot);
+  const arrived = arrivedSinceTheCommit(top, commit, record, files, recordRoot, read);
   if (arrived === null) {
     return { kind: 'refused', rev, why: 'git could not read the record that commit held' };
   }
   return { kind: 'read', rev, commit, held: files.length, findings, arrived };
 }
 
-/** A tail's file that says what the tail names, or where its first entry is. */
-const NAMES_OR_BEGINS = /^tails\/([^/]+)\/(?:tailproof\.json|checkpoints\.jsonl|(\d{6})\.jsonl)$/;
+/** A tail's file that says what the tail names, or holds its entries. */
+const NAMES_OR_HOLDS = /^tails\/[^/]+\/(?:tailproof\.json|checkpoints\.jsonl|\d{6}\.jsonl)$/;
 
 /**
  * WHAT ARRIVED SINCE THE COMMIT: the tails on disk the commit did not hold, held to the record
  * the commit's tails were (`arrivalsSince`). The base is read as the commit held it, never off
- * the disk a pull request may have changed: each tail's proof, its checkpoints and its first
- * segment, and the keys, are taken out of git into a directory of its own, removed after.
+ * the disk a pull request may have changed: each tail's proof, its checkpoints and every segment,
+ * and the keys, are taken out of git into a directory of its own, removed after. Every segment,
+ * and not the first alone, because the base's tails are named as the readers name them, a relink
+ * the base held counting there (FORMAT.md section 6.11), and a relink may sit in any segment of its
+ * tail; the bytes already read to compare a file are not asked of git again (`read`).
  */
 function arrivedSinceTheCommit(
   top: string,
@@ -192,32 +205,17 @@ function arrivedSinceTheCommit(
   record: string,
   files: readonly string[],
   recordRoot: string,
+  read: ReadonlyMap<string, Buffer>,
 ): Arrivals | null {
   const prefix = record === '' ? '' : `${record}/`;
-  const wanted: string[] = [];
-  const firstSegment = new Map<string, string>();
-  for (const file of files) {
+  const wanted = files.filter((file) => {
     const inRecord = file.slice(prefix.length);
-    if (inRecord.startsWith('keys/')) {
-      wanted.push(file);
-      continue;
-    }
-    const matched = NAMES_OR_BEGINS.exec(inRecord);
-    if (matched === null) continue;
-    const segment = matched[2];
-    if (segment === undefined) {
-      wanted.push(file);
-      continue;
-    }
-    const tail = matched[1] as string;
-    const first = firstSegment.get(tail);
-    if (first === undefined || file < first) firstSegment.set(tail, file);
-  }
-  wanted.push(...firstSegment.values());
+    return inRecord.startsWith('keys/') || NAMES_OR_HOLDS.test(inRecord);
+  });
   const base = mkdtempSync(join(tmpdir(), 'mnema-since-'));
   try {
     for (const file of wanted) {
-      const bytes = git(top, ['cat-file', 'blob', `${commit}:${file}`]);
+      const bytes = read.get(file) ?? git(top, ['cat-file', 'blob', `${commit}:${file}`]);
       if (bytes === null) return null;
       const into = join(base, file.slice(prefix.length));
       mkdirSync(dirname(into), { recursive: true });

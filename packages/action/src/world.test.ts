@@ -408,3 +408,72 @@ describe('a pull request that brings a tail the base is not the record of', () =
     }
   }, 120_000);
 });
+
+describe('a pull request that brings a tail and its owner’s relink of it', () => {
+  const WITNESSED = join(
+    import.meta.dirname,
+    '../../chain/src/chain/__fixtures__/witnessed-record',
+  );
+  const MUTATE = join(import.meta.dirname, '../../chain/verifier/mutate.py');
+
+  /**
+   * A trunk holding record Y alone, and a branch bringing a tail of X by Y's founder and that key's
+   * relink of it into Y, built by `mutate.py` as the readers' tests build it, every signature real.
+   */
+  function theRepository(): { repo: string; base: string; relinked: string } {
+    const record = join(sandbox, 'relinked-record');
+    cpSync(WITNESSED, record, { recursive: true });
+    const built = spawnSync('python3', [MUTATE, 'relinked-by-the-genesis-founder', record], {
+      encoding: 'utf-8',
+    });
+    expect(built.status, built.stderr).toBe(0);
+    const repo = join(sandbox, 'repo-relinked');
+    const home = join(sandbox, 'home-relinked');
+    for (const dir of [repo, home]) mkdirSync(dir);
+    git(repo, 'init', '-q', '-b', 'main');
+    cpSync(join(record, 'keys'), join(repo, '.mnema', 'keys'), { recursive: true });
+    const tails = readdirSync(join(record, 'tails'));
+    const copy = (tail: string): void =>
+      cpSync(join(record, 'tails', tail), join(repo, '.mnema', 'tails', tail), { recursive: true });
+    const genesis = (tail: string): boolean => tail.endsWith('ab'.repeat(16));
+    for (const tail of tails.filter(genesis)) copy(tail);
+    git(repo, 'add', '.mnema');
+    git(repo, 'commit', '-q', '-m', 'the trunk');
+    const base = gitOut(repo, 'rev-parse', 'HEAD');
+    git(repo, 'switch', '-q', '-c', 'relinked');
+    for (const tail of tails.filter((tail) => !genesis(tail))) copy(tail);
+    git(repo, 'add', '.mnema');
+    git(repo, 'commit', '-q', '-m', 'the tail and its relink');
+    vi.stubEnv('HOME', home);
+    const relinked = tails.find((tail) => tail.endsWith('cd'.repeat(16))) as string;
+    return { repo, base, relinked };
+  }
+
+  it('passes, and the comment says the tail the relink moved into the record', async () => {
+    const { repo, base, relinked } = theRepository();
+    let comment = '';
+    const github = {
+      changedFiles: async () =>
+        gitOut(repo, 'diff', '--name-only', `${base}..HEAD`)
+          .split('\n')
+          .filter(Boolean)
+          .map((path) => ({ path })),
+      reviews: async () => [],
+      upsertComment: async (body: string) => {
+        comment = body;
+        return 'created';
+      },
+    };
+    const world = worldAt(repo, github as never, { info() {}, warning() {} }, {});
+    const verdict = await judge(world, {
+      baseSha: base,
+      author: 'author',
+      requireApprovalForAsks: false,
+    });
+    expect(verdict, comment).toEqual({ failed: false, reasons: [] });
+    expect(comment).toContain('their owner relinked into this one since the base');
+    expect(comment).toContain(`tail ${relinked} arrived since, record `);
+    expect(comment).toContain('relinked into this record by its own key, 2 event(s) from ');
+    expect(comment).not.toContain('(another-record)');
+  }, 120_000);
+});

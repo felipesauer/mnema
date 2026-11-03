@@ -533,6 +533,26 @@ derives, which is the one a writer from 0.1.5 on gives a record written before),
 other name, or a revision whose genesis tail is not found, is refused as `another-record`
 with the line above.
 
+**A tail its owner relinked is held to the record the relink names.** A tail of another record
+its owner relinked into this one (`tail.relinked`, `FORMAT.md` section 6.11) is named, at
+`<rev>` and on disk, as both readers name it where the relink counts: the revision's tails read
+out of git whole, the disk's as they are. So a change that brings a tail of another record and its
+owner's relink of it passes, and so does a change that brings the relink alone of a tail `<rev>`
+already held (the way back after two `mnema init` were merged). Each tail a relink moves into the
+record since `<rev>` is said on stdout, a fact and not a failure:
+
+```text
+since <rev> (<commit>): tail <id> arrived since, record <name>..., relinked into this record by its own key, <n> event(s) from <at> (relinked)
+```
+
+(`was in the record there` in place of `arrived since` where `<rev>` held the tail). A relink that
+counted at `<rev>` already is not said again; the bare verdict's census says every relink that
+counts (`relinked-tail`). A relink that does not count (above its tail's last checkpoint, or by a
+key the record gave no membership) moves nothing: a tail that arrived is still refused as
+`another-record` with the line above, and `verify` refuses the directory either way. `--since` refuses nothing for a relink
+itself. With `--json`, the tails are in `since.arrived.relinked`, with the record each came from,
+how many events it holds, its first `at` and whether `<rev>` held it.
+
 Two honest changes can leave a record two names, and this is where they are caught,
 before the merge: the record's genesis tail removed by hand or cut by mnema 0.1.4 while a
 branch named the record from it (see the `tail prune` verb), and two branches that moved to
@@ -1124,7 +1144,10 @@ agent's key signs names the agent the record enrolled that key as, whatever is d
 is the other record the directory names when it holds two (as `verify` prints it, the
 first 12 characters are enough), and is asked for when it holds three or more. The relinked tail
 is frozen at its head: a checkout whose own tail it was writes in a new tail from then on, here or
-after it pulls the relink.
+after it pulls the relink. The relink can be written before the merge or after it: bring the trunk
+into the branch and relink there, and the pull request passes `verify --since` (and the Action)
+where it was refused as `another-record`; or relink after the merge, and the pull request that
+brings the relink passes. Either says the tail it moved (`(relinked)`, under `--since` above).
 
 **Only the founder's keys relink.** The relink counts when its key holds a membership the record
 joined gave it: the key that founded the identity of the record's genesis tail, or a key that

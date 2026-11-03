@@ -20,7 +20,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { catalogUpcasters } from '../events/registry.js';
 import { verify } from './chain.js';
-import { tailsReadAt } from './tail-names.js';
+import { arrivalsSince, tailsReadAt } from './tail-names.js';
 
 const VERIFIER_DIR = fileURLToPath(new URL('../../verifier/', import.meta.url));
 const VERIFIER = join(VERIFIER_DIR, 'mnema_verify.py');
@@ -191,5 +191,52 @@ describe('the namer of the surfaces names a directory as verify does', () => {
   it('reads a relinked directory whole, where before it read nothing of it', () => {
     const record = mutated('relinked-tail');
     expect(tailsReadAt({ root: record }).read).toHaveLength(3);
+  });
+});
+
+describe('what arrived since a base (arrivalsSince), under the names a relink gives', () => {
+  /** The record `name` builds, and a base that held only its tail `ab`, the genesis of Y. */
+  function baseAndHere(name: string): { base: string; here: string } {
+    const here = mutated(name);
+    const base = join(root, `${name}-base`);
+    cpSync(here, base, { recursive: true });
+    for (const tail of readdirSync(join(base, 'tails'))) {
+      if (!tail.endsWith('ab'.repeat(16))) rmSync(join(base, 'tails', tail), { recursive: true });
+    }
+    return { base, here };
+  }
+
+  it('holds no tail of another record where the relink counts, and says the relinked tail', () => {
+    const { base, here } = baseAndHere('relinked-by-the-genesis-founder');
+    const arrived = arrivalsSince({ root: base }, { root: here }, catalogUpcasters());
+    expect(arrived.foreign).toEqual([]);
+    expect(arrived.relinked).toEqual([
+      {
+        tail: relinkedTailOf(here),
+        from: expect.stringMatching(/^[0-9a-f]{64}$/),
+        events: 2,
+        firstAt: expect.stringMatching(/^\d{4}-/),
+        held: false,
+      },
+    ]);
+    expect(arrived.relinked[0]?.from).not.toBe(arrived.records[0]);
+  });
+
+  it.each(['relink-uncovered', 'relinked-by-a-key-that-founded-itself-here'])(
+    'still names the tail as another record where the relink does not count: %s',
+    (name) => {
+      const { base, here } = baseAndHere(name);
+      const arrived = arrivalsSince({ root: base }, { root: here }, catalogUpcasters());
+      expect(arrived.foreign.flatMap((group) => group.tails)).toEqual([relinkedTailOf(here)]);
+      expect(arrived.relinked).toEqual([]);
+    },
+  );
+
+  it('reads the base whole: a relink that counted there is not said again', () => {
+    const record = mutated('relinked-by-the-genesis-founder');
+    const arrived = arrivalsSince({ root: record }, { root: record }, catalogUpcasters());
+    expect(arrived.foreign).toEqual([]);
+    expect(arrived.relinked).toEqual([]);
+    expect(arrived.records).toHaveLength(1);
   });
 });
