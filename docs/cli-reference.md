@@ -465,6 +465,19 @@ one ends its verdict with `record: unnamed (written before 0.1.5): a tail of ano
 not be told from this record's own`, exit 0. A binary from before 0.1.5 reads a record holding
 a named line as unreadable, exit 1.
 
+**A line of a kind this mnema does not know is read past, and named.** From 0.1.5, a line whose
+kind no version this binary reads declares (one a newer mnema wrote) is checked for everything that
+does not need what it says: its envelope, its entry hash, its place in the chain, that its signer
+is a member at its point, and the checkpoint over it. Nothing it says is read or applied. `verify`
+names each such kind once, `census [unread-kind] <tree> <kind>: N line(s) of kind "<kind>" in
+tail(s) <tails>: a kind this reader does not know, …`, with the clause `N kind(s) this reader does
+not know, checked and not read`, and the exit is what the rest of the record earns; `--json`
+carries it as the census note `unread-kind`. The same line with one byte of its payload changed is
+a broken hash, and signed by a key no identity enrolled it is refused, as any line. A version of a
+kind ahead of the one this binary reads is still refused by name, exit 1, and a binary before 0.1.5
+refuses an unknown kind the same way (`FORMAT.md` section 7.1). The other commands serve the record
+without the line, saying nothing of it yet.
+
 **A record in which no tail holds anything is refused.** No `tails/` directory, no tail
 directory in it, or only tails that hold nothing: such a record asserts no fact, and `verify`
 fails it by name at every `--require`, exit 1: the one-line verdict says `local integrity

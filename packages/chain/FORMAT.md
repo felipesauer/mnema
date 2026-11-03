@@ -72,7 +72,10 @@ The vectors are **exemplars, not a schema**: one event per kind, plus the cases 
 carry a rule of their own: a second `task.created` whose title is written in NFD, three
 `task.transitioned` (a birth, a move that carries proof fields, a move the task workflow
 allows), and a second `memory.captured` that carries the citation `after` (§4.1), from
-which a required field and an optional one that happens to be present look identical. The
+which a required field and an optional one that happens to be present look identical. The last
+vector is of a kind no version of the catalog declares, `x.from-the-future`: its digest is taken
+like any other's and it is folded into the content root over all vectors, and a reader that
+checks it against `event-schema.json` reads it past rather than refusing it (§7.1). The
 schema is the other artifact, `event-schema.json`, described in §4.1.
 
 ## 1. Canonicalization: an event becomes bytes
@@ -450,9 +453,12 @@ admits a reader applies, and §6.7 is its normative statement.
 
 - **A contract is selected by `kind` and `v` together**, which is the pair every
   event already carries (§7). A reader looks up the row whose `kind` and `v` both
-  match the line, and **refuses a line whose pair no row declares**: a version
-  ahead of the table is a contract the reader does not have, not one it may guess
-  at. The refusal names the pair and what the reader holds of that kind (§7.1).
+  match the line, and **refuses a line of a kind it declares whose pair no row
+  declares**: a version ahead of the table is a contract the reader does not have,
+  not one it may guess at. The refusal names the pair and what the reader holds of
+  that kind (§7.1). A line of a kind **no row declares at any version** is not
+  refused: its envelope is held to the `envelope` declarations below, its payload
+  must be a JSON object and is not read, and the reader reads past it (§7.1).
   A kind that gains a second version gains a second row; the file's shape does
   not change, which is what makes such a change one visible row in a diff.
 - **The top-level keys of an event are the keys of `envelope`, plus `payload`.**
@@ -1024,7 +1030,8 @@ name every committed key with no tail"). A record written before this kind
 existed carries no declaration, so its backup reads as any other key with no tail; this
 product's `verify` still says it as a backup on the machine that made it, from that machine's
 own registration, and the words of the note say why elsewhere. A binary from before this kind
-refuses to read a record that holds one, as it does any kind it does not know (§4.1)
+refuses to read a record that holds one, as every binary before 0.1.5 does any kind it does not
+know (§7.1)
 (`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`,
 `packages/code/src/commands/verify.test.ts`).
 
@@ -1535,13 +1542,16 @@ published rather than described.
 
 **`after` moved no `v`.** It is envelope, not a payload contract, and both digests are
 taken over the written form as they always were. A reader from before it refuses a record
-that carries one, because the envelope is closed (§4.1): the consequence a new kind has too.
+that carries one, because the envelope is closed (§4.1): the consequence a new kind had too,
+for every reader before 0.1.5. Since 0.1.5 a reader reads a new kind past and names it (§7.1); a
+new envelope field it still refuses, because the envelope is what it checks of every line.
 
 ### 7.1 What one version promises another
 
 From the first version of this product published to the npm registry, 0.1.0, every version keeps two
-promises about the records the others wrote, and one rule that makes the second possible. They
-are this product's, and the test named below holds both readers beside this document to them.
+promises about the records the others wrote, and one rule that makes the second possible. From
+0.1.5 it keeps a third, about a kind it does not know, which joins the promise of 1.0. They are
+this product's, and the tests named below hold both readers beside this document to them.
 
 - **Backward: a version reads every record an earlier one wrote.** Every line a published
   version wrote is read by every later one under the contract its `kind` and `v` selected,
@@ -1549,15 +1559,34 @@ are this product's, and the test named below holds both readers beside this docu
   is taken over the line as written (§7, above). A later version does not refuse such a line for
   its shape, except where the tightening below says otherwise. This is a promise about reading the
   lines, not about the verdict over them (below).
-- **Forward: a version refuses by name what it cannot read.** A line whose `kind` and `v` no row
-  of a reader's table declares is refused (§4.1), never guessed at and never skipped, and the
-  refusal names the pair, what the reader reads of that kind, and, in this product, which mnema
-  refuses: *mnema \<version\> does not read "memory.foretold" at v1: it reads no version of that
-  kind. If a newer mnema wrote the line, read the record with it.* (or *it reads that kind up to
-  v1*, for a version ahead of the one it holds). The second reader names the pair and what the
-  table it read declares of the kind. Nothing in a record says which version wrote a line, and no
-  field is added to say it, so the refusal names the version that does not read the line rather
-  than the one that does. This product's `verify` fails on it. A checkpoint or a tail proof under
+- **Forward: a version refuses by name a version of a kind it cannot read.** A line whose `kind` a
+  reader's table declares, at a `v` no row declares, is refused (§4.1), never guessed at and never
+  skipped, and the refusal names the pair, what the reader reads of that kind, and, in this
+  product, which mnema refuses: *mnema \<version\> does not read "memory.captured" at v2: it reads
+  that kind up to v1. If a newer mnema wrote the line, read the record with it.* The second reader
+  names the pair and what the table it read declares of the kind. Nothing in a record says which
+  version wrote a line, and no field is added to say it, so the refusal names the version that
+  does not read the line rather than the one that does. This product's `verify` fails on it.
+- **Forward, from 0.1.5: a version reads past a kind it does not know, and names it (ADR-113).** A
+  line whose `kind` no row of a reader's table declares at any `v` is checked for everything that
+  does not need what it says: it is a JSON object whose envelope meets the `envelope` declarations
+  (no key beside them and `payload`, every field under its rule, `payload` a JSON object), its entry
+  hash (§3) and its place in its tail (§4) hold, its signer is a key valid for its `who` at its
+  point (§6.2, the rule every fact not of an enrolment kind meets, with the roles of a checker and
+  an agent key), and a checkpoint covers it or it is counted unsigned like any line (§6). Its
+  payload is not read, and nothing it says is applied: no key it would enrol or revoke, no move it
+  would make, no note it would take back. It keeps its place in the merged order ("Reading many
+  tails"), by its `at` and its citations, and is then left out of every fold. The reader names it
+  in an informational line, one per kind, which moves neither the verdict nor the exit: *1 line(s)
+  of kind "x.from-the-future" in tail(s) \<tail\>: a kind this reader does not know, so their
+  hash, chain, signer and checkpoint were checked and what they say was not read and none of it
+  applied (a newer mnema wrote them)*, the same words in both readers, and the product's `--json`
+  carries it as the census note `unread-kind`. A tampered payload is a broken entry hash, a signer
+  no identity enrolled is refused, and an envelope out of its declarations is refused, as for any
+  line. `x.from-the-future` is reserved for the published vector of this rule: no version of the
+  catalog will declare it. Versions released before 0.1.5 refuse such a line as the bullet above
+  refuses a version ahead, naming *it reads no version of that kind*, and nothing is done for
+  them. A checkpoint or a tail proof under
   a scheme of its family a reader does not read is refused the same way, before its other keys:
   *a checkpoint scheme this reader does not know: '\<a later scheme\>': mnema \<version\> reads
   mnema-checkpoint/1 and mnema-checkpoint/2. If a newer mnema wrote the line, read the record
@@ -1569,7 +1598,9 @@ are this product's, and the test named below holds both readers beside this docu
   (§6.4), which moves a workflow allows (§6.7) and which writing of a decision is its text (§6.8)
   stay what they were for every `kind` and `v`
   that already exists. A new permission, one between records included, is a new `kind` or a new
-  `v`, which a version from before it refuses by naming the version, as above. The envelope is
+  `v`: a new `v` a version from before it refuses by naming the version, as above, and a new kind
+  a version from 0.1.5 reads past and names, applying none of it, so it holds the lines the
+  permission would admit to its own rules, and those never admit more than they did. The envelope is
   shared by every kind, so it gains no field within an existing `kind` and `v` either, as `after`
   did before the first publication. This is what keeps the forward promise whole: a permission
   added inside an existing pair would be read by a version from before it as a forged, illegal or
@@ -1578,14 +1609,20 @@ are this product's, and the test named below holds both readers beside this docu
   another record, and so a kind of its own, which a version from before it refuses as a kind it does not
   read.
 
-`packages/chain/src/chain/the-promise-between-versions.test.ts` holds a record to each promise.
+`packages/chain/src/chain/the-promise-between-versions.test.ts` holds a record to each promise,
+and `packages/chain/src/chain/a-kind-this-reader-does-not-know-is-read-past.test.ts` holds the
+third to what it does not loosen: the payload byte changed, the signer no identity enrolled, the
+line above the last checkpoint, an envelope out of its declarations, and a known kind with a field
+its contract does not declare, each in both readers.
+`packages/code/tests/a-record-holding-a-kind-this-mnema-does-not-know.test.ts` holds this
+product's surfaces to it over a record its binary wrote.
 Backward, `__fixtures__/written-by-an-earlier-binary`, a record this product's command line wrote
 on 15 October 2026 and that is never written again: an identity with its backup key, a note
 taken back, three decisions accepted, superseded and rejected, a task blocked, sent back from
 review, approved, reopened and completed, a link that governs a path: both readers verify it,
 every move applied, nothing refused. Forward, a signed, chained and checkpointed record whose
-third line carries a kind no version declares, and then a version ahead of the one declared:
-both readers refuse it with the words above.
+third line carries a version ahead of the one declared: both readers refuse it with the words
+above; and the same record with a kind no version declares, which both read past and name.
 
 **What the promise does not cover.**
 
@@ -1622,9 +1659,17 @@ both readers refuse it with the words above.
   an agent. What a published writer can still produce is the case between two records: a member
   enrolling, in a record that never held the `agent.enrolled`, a copy of a key another record
   made an agent. That is not refused by this rule and is said below.
-- **Reading forward.** No version reads a pair it does not hold: it refuses. A reader that
-  skipped the line and read the rest would say a record verifies with facts in it that it cannot
-  judge.
+- **Reading forward.** No version reads a version of a kind ahead of the one it holds: it
+  refuses. This sentence used to say no version reads a pair it does not hold at all, because a
+  reader that skipped the line and read the rest would say a record verifies with facts in it that
+  it cannot judge; ADR-113 chose to read a kind it does not know past and say so instead, since
+  refusing made every kind added break every reader installed. What that costs is stated here: a
+  reader from 0.1.5 verifies a record holding such a line, and what it serves of the record is what
+  it reads, without what the line says. A newer kind that changes who may sign (a revocation it
+  writes), what state a decision is in, or which note stands, is not applied by it: it accepts what
+  the newer one would refuse there, and serves a state the newer one would not. The census line is
+  what says so, and naming those lines on the surfaces that serve the record is not yet this
+  product's; a person who sees it reads the record with the newer mnema.
 - **The order between tails.** It rests on the writers' clocks and on what each cites ("Reading
   many tails"), a limit stated there and outside this promise.
 
