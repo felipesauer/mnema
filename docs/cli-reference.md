@@ -1881,7 +1881,7 @@ a URL. The dry run cannot catch that. You can, by opening two of the files it wr
 
 ### What a recorded decision says of its state
 
-Right after "Recorded decision ADR-n (id)", `mnema decision record` and the `record_decision` tool say that the decision is born
+Right after "Recorded decision ADR-n (id)", the command that records a decision and the `record_decision` tool say that the decision is born
 `proposed`, so not yet in force, and who accepts it. To an agent (the tool, and the command with `--which`), while `agent-accepts` is on:
 if the person dictated it, or chose it among options the agent offered (a recommended one included), it accepts it at once, with
 `decision_transition` (action `accept`) or `mnema decision move accept <id> --which <agent>`, the note quoting the answer; one

@@ -51,9 +51,11 @@ $ mnema task create 'Read the release notes' --scope global
 |   Landed in the global tree: personal and cross-project, outside any repository.
 $ mnema decision record 'Keep the runbook in the record' 'a wiki page nobody owns goes stale' --alternatives 'a shared spreadsheet: it has no history and nobody reviews it'
 | Recorded decision ADR-1 (<decision-runbook>)
+|   Born proposed, so not yet in force. A person accepts it with `mnema decision review`.
 |   Landed in the public tree: committed with the repository, so it reaches every clone.
 $ mnema decision record 'Keep the runbook in the wiki' 'it is where we look'
 | Recorded decision ADR-2 (<decision-wiki>)
+|   Born proposed, so not yet in force. A person accepts it with `mnema decision review`.
 |   Landed in the public tree: committed with the repository, so it reaches every clone.
 $ mnema skill create 'One slice per PR' --body 'A slice is one reviewable change with its tests.'
 | Proposed skill "One slice per PR" (<skill-slices>)
@@ -258,7 +260,7 @@ $ mnema switch
 |   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept: a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on: `mnema switch on edit-first-write-gate`
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree, and so is each answer the person gave to a question the agent asked. Off until switched on  ·  off until switched on: `mnema switch on user-corrections`
-|   choice-settled         on   the sentence handed to the agent after a question it asked the person was answered: that a choice may have been settled there and which tool records it. It reads which tool ran and writes nothing
+|   choice-settled         on   the sentence handed to the agent after a question it asked the person was answered: that a choice may have been settled there, which tool records it and which accepts it (or that a person accepts it, where `agent-accepts` is off). It reads which tool ran and whether `agent-accepts` is on, and writes nothing
 |   host-memory-mirror     on   the copy of the host’s own memory: with it on, a `PostToolUse` hook copies each note Claude Code writes to its memory directory into this machine’s private tree, once per content, leaving out the index `MEMORY.md` and the notes about the person (`type: user`)
 |   decision-file-written  on   the line beside a write to a file that holds decisions (an ADR, a plan, a ledger, a rules file) the record cites nowhere, naming the command that reads it into the record, once per session and file
 |   subagent-handback      on   the return of a subagent that ends its final reply without the block of decisions the record asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; off, a subagent stops as it would without the plugin
@@ -267,7 +269,7 @@ $ mnema switch
 |   after-a-compaction     on   the sentence a conversation is handed right after it was compacted, saying what entered the project's record since the session opened, and what it did beside it (decisions by label, notes copied, files edited, questions answered with no decision after), read from its journal
 |   session-journal        on   the session journal: with it off, no file is kept of what a session did with the record, and nothing can say, to a later session, to a compaction or on the run that closes, what this one did. The journal is a file on this machine, outside the record, holding ids and counts and none of the session’s words
 |   agent-mirror           on   the mirror of what a session hands to other agents: with it on, a `PostToolUse` hook on the host’s `Agent` tool records a private task for the session and a private handoff for each dispatch (its short description and the path of a brief file, never the prompt), and the session’s end closes the task with the count. It needs `session-journal` on, and records nothing to the tree a clone gets
-|   session-tally          on   the line a session’s `Stop` hook prints: how many files its own tool calls wrote and how many decisions were recorded since it opened
+|   session-tally          on   the line a session’s `Stop` hook prints: how many files its own tool calls wrote and how many decisions were recorded since it opened, and, on a second line, how many of them still await a person
 $ mnema switch off edit-rules-push --reason 'noisy while porting'
 | Switched edit-rules-push off
 |   Landed in the public tree: committed with the repository, so it reaches every clone.
@@ -283,7 +285,7 @@ $ mnema switch
 |   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept: a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on: `mnema switch on edit-first-write-gate`
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree, and so is each answer the person gave to a question the agent asked. Off until switched on  ·  off until switched on: `mnema switch on user-corrections`
-|   choice-settled         on   the sentence handed to the agent after a question it asked the person was answered: that a choice may have been settled there and which tool records it. It reads which tool ran and writes nothing
+|   choice-settled         on   the sentence handed to the agent after a question it asked the person was answered: that a choice may have been settled there, which tool records it and which accepts it (or that a person accepts it, where `agent-accepts` is off). It reads which tool ran and whether `agent-accepts` is on, and writes nothing
 |   host-memory-mirror     on   the copy of the host’s own memory: with it on, a `PostToolUse` hook copies each note Claude Code writes to its memory directory into this machine’s private tree, once per content, leaving out the index `MEMORY.md` and the notes about the person (`type: user`)
 |   decision-file-written  on   the line beside a write to a file that holds decisions (an ADR, a plan, a ledger, a rules file) the record cites nowhere, naming the command that reads it into the record, once per session and file
 |   subagent-handback      on   the return of a subagent that ends its final reply without the block of decisions the record asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; off, a subagent stops as it would without the plugin
@@ -292,7 +294,7 @@ $ mnema switch
 |   after-a-compaction     on   the sentence a conversation is handed right after it was compacted, saying what entered the project's record since the session opened, and what it did beside it (decisions by label, notes copied, files edited, questions answered with no decision after), read from its journal
 |   session-journal        on   the session journal: with it off, no file is kept of what a session did with the record, and nothing can say, to a later session, to a compaction or on the run that closes, what this one did. The journal is a file on this machine, outside the record, holding ids and counts and none of the session’s words
 |   agent-mirror           on   the mirror of what a session hands to other agents: with it on, a `PostToolUse` hook on the host’s `Agent` tool records a private task for the session and a private handoff for each dispatch (its short description and the path of a brief file, never the prompt), and the session’s end closes the task with the count. It needs `session-journal` on, and records nothing to the tree a clone gets
-|   session-tally          on   the line a session’s `Stop` hook prints: how many files its own tool calls wrote and how many decisions were recorded since it opened
+|   session-tally          on   the line a session’s `Stop` hook prints: how many files its own tool calls wrote and how many decisions were recorded since it opened, and, on a second line, how many of them still await a person
 $ mnema switch on edit-rules-push
 | Switched edit-rules-push on
 |   Landed in the public tree: committed with the repository, so it reaches every clone.

@@ -89,10 +89,10 @@ with its own changelog.
 - **The product says when an agent accepts a decision it recorded, in every repository (ADR-173).** A decision is born
   `proposed`; where the person dictated it, or chose it among the options an agent offered (a recommended one included),
   the agent accepts it at once, with a note quoting the answer, and one it concluded alone waits for the person. It is
-  said in four places, always under the switch `agent-accepts`: the reply of `record_decision` and of `mnema decision
-  record` (a line after "Recorded decision ADR-n": the state, and `decision_transition` or `mnema decision move accept`
-  while the switch is on, or that only a person accepts while it is off; `mnema decision record` with no `--which` says
-  a person accepts it with `mnema decision review`); the sentence `mnema settled` hands the agent after a question the
+  said in four places, always under the switch `agent-accepts`: the reply of `record_decision` and of the command that
+  records one (a line after "Recorded decision ADR-n": the state, and `decision_transition` or `mnema decision move accept
+  <id>` while the switch is on, or that only a person accepts while it is off; the command with no `--which` says a
+  person accepts it with `mnema decision review`); the sentence `mnema settled` hands the agent after a question the
   person answered (it records and accepts, or says a person accepts); the block `mnema init` and `mnema instructions`
   write, now `v4` (one sentence in place of the parenthesis, and `mnema instructions` replaces a `v3` block, which is
   kept, as it replaced the earlier ones; a block somebody edited is never overwritten); and the `Stop` line of
