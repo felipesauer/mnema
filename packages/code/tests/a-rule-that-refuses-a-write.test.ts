@@ -256,12 +256,14 @@ const OTHER_TREES = [
   },
 ] as const;
 
-/** Appends to `segment` a copy of its last line under a kind no mnema knows; returns the bytes. */
+/** Appends to `segment` a copy of its last line under a version of its kind no mnema wrote; returns the bytes. */
 function aLineTheReaderRefusesIn(segment: string): string {
   const sound = readFileSync(segment, 'utf-8');
   const last = sound.trimEnd().split('\n').at(-1) as string;
-  expect(last).toMatch(/"kind":"[a-z.]+"/);
-  const bytes = `${sound}${last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"')}\n`;
+  // A version of its kind no mnema wrote: refused by name. A kind no mnema knows is not a line the
+  // reader refuses since ADR-113 (it reads it past), so it no longer makes a line unreadable.
+  expect(last).toContain('"v":1,');
+  const bytes = `${sound}${last.replace('"v":1,', '"v":9,')}\n`;
   writeFileSync(segment, bytes);
   return bytes;
 }
@@ -436,7 +438,7 @@ describe('the verb a command host runs', () => {
 
   it('refuses every write, in every host, when a stored line of the record cannot be read, and records nothing', () => {
     // THE RECORD DECIDES THE REFUSAL, AND A RECORD THAT CANNOT BE READ CANNOT SAY THERE IS NONE. A
-    // line the reader refuses (not JSON, a kind it does not know as a newer mnema's line is, a
+    // line the reader refuses (not JSON, a version of its kind no mnema wrote, a
     // field it does not know, bytes that are not canonical) is answered `deny`, with the reader's
     // own refusal in the reason: at a path no rule addresses too, because which rules address it
     // is exactly what cannot be read.
@@ -448,7 +450,7 @@ describe('the verb a command host runs', () => {
     expect(last.startsWith('{"')).toBe(true);
     const corrupted: Record<string, string> = {
       'not JSON': 'not json at all',
-      'a kind it does not know': last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"'),
+      'a version of its kind it does not read': last.replace('"v":1,', '"v":9,'),
       'a field it does not know': last.replace('"payload":{"', '"payload":{"aaa_unknown":1,"'),
       'bytes that are not canonical': `{ ${last.slice(1)}`,
     };
@@ -471,9 +473,9 @@ describe('the verb a command host runs', () => {
       // Nothing was appended: a `channel.refused` cites a rule, and no rule could be read.
       expect(readFileSync(segment, 'utf-8')).toBe(bytes);
     }
-    writeFileSync(segment, `${sound}${corrupted['a kind it does not know']}\n`);
-    expect(decided(verb('gemini', 'src/free.ts').reply).reason).toContain(
-      'does not read "bogus.kind" at v1: it reads no version of that kind. If a newer mnema wrote the line, read the record with it.',
+    writeFileSync(segment, `${sound}${corrupted['a version of its kind it does not read']}\n`);
+    expect(decided(verb('gemini', 'src/free.ts').reply).reason).toMatch(
+      /does not read "[a-z.]+" at v9: it reads that kind up to v1\. If a newer mnema wrote the line, read the record with it\./,
     );
     writeFileSync(segment, sound);
     expect(decided(verb('gemini', 'src/billing/invoice.ts').reply).reason).toContain(refusing);
@@ -784,7 +786,7 @@ describe('the MCP tool Claude Code’s hook calls', () => {
     const segment = theSegment();
     const sound = readFileSync(segment, 'utf-8');
     const last = sound.trimEnd().split('\n').at(-1) as string;
-    const bytes = `${sound}${last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"')}\n`;
+    const bytes = `${sound}${last.replace('"v":1,', '"v":9,')}\n`;
     writeFileSync(segment, bytes);
     for (const path of ['src/billing/invoice.ts', 'src/free.ts']) {
       const specific = tool(path)['hookSpecificOutput'] as Record<string, string> | undefined;

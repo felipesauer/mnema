@@ -40,6 +40,7 @@ import {
   checkpointHash,
   keyPairFromPrivatePem,
   parseEntry,
+  readEntries,
   sealEntry,
   serializeCheckpoint,
   serializeEntry,
@@ -170,7 +171,7 @@ function rewrittenBySigner(dir: string): void {
   const tail = tailDir(dir);
   const segment = join(tail, '000001.jsonl');
   const upcasters = catalogUpcasters();
-  const entries = lines(segment).map((line) => parseEntry(line, upcasters));
+  const entries = readEntries(lines(segment).map((line) => parseEntry(line, upcasters)));
   const fingerprint = (tail.split('/').pop() as string).split('-')[0] as string;
   const keyFile = join(home, '.mnema', 'identity', 'keys', `${fingerprint}.key`);
   const keyPair = keyPairFromPrivatePem(readFileSync(keyFile, 'utf-8'));

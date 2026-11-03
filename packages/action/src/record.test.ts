@@ -2,11 +2,14 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  canonicalStringify,
   decisionBirth,
   decisionRecorded,
   decisionTransitioned,
+  entryHash,
   identityFounded,
   openChainForWriting,
+  writtenAsStored,
 } from '@mnema/chain';
 import { afterEach, describe, expect, it } from 'vitest';
 import { decisionLabels, eventsAdded, readEvents, whatItDoes } from './record.js';
@@ -167,5 +170,44 @@ describe('decisionLabels', () => {
 
   it('labels a decision by its first writing, not its last, when one id is written again later', () => {
     expect(decisionLabels(record(20)).get('d1')).toEqual({ adr: 'ADR-1', title: 'Use SQLite' });
+  });
+
+  it('reads past a line of a kind this mnema does not know, chained after the accept (ADR-113)', () => {
+    const texts = record(20);
+    // The tail holding the accept, one line longer: a kind no version declares, chained after it.
+    const at = texts.findIndex((text) => text.includes('"action":"accept"'));
+    const tail = texts[at] as string;
+    const last = JSON.parse(tail.trimEnd().split('\n').at(-1) as string) as {
+      event: { who: string; signerFp: string };
+      link: { tail: string; seq: number; hash: string };
+    };
+    const event = {
+      v: 1,
+      kind: 'x.from-the-future',
+      at: new Date(Date.UTC(2026, 9, 27, 12, 0, 30)).toISOString(),
+      who: last.event.who,
+      signerFp: last.event.signerFp,
+      subject: 'd1',
+      payload: { title: 'Use MongoDB', adr: 'ADR-1' },
+    };
+    const seq = last.link.seq + 1;
+    const hash = entryHash({
+      event: writtenAsStored(event),
+      tail: last.link.tail,
+      seq,
+      prev: last.link.hash,
+    });
+    const link = { tail: last.link.tail, seq, prev: last.link.hash, hash };
+    const grown = `${tail}${canonicalStringify({ event, link })}\n`;
+    const read = texts.map((text, index) => (index === at ? grown : text));
+
+    expect(decisionLabels(read).get('d1')).toEqual({ adr: 'ADR-1', title: 'Use SQLite' });
+    // What the pull request adds is counted by its kind, and moves no decision.
+    const added = eventsAdded(texts.flatMap(readEvents), read.flatMap(readEvents));
+    expect(whatItDoes(added, decisionLabels(read))).toEqual({
+      total: 1,
+      byKind: [['x.from-the-future', 1]],
+      decisions: [],
+    });
   });
 });

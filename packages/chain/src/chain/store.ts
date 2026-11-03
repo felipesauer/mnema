@@ -13,8 +13,8 @@ import { decodeStoredBytes, StoredJsonError } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { type Checkpoint, parseCheckpoint } from './checkpoint.js';
 import {
+  type ChainEntry,
   describeLinkBreak,
-  type Entry,
   type HeldLinkAt,
   linkBreakAt,
   parseEntry,
@@ -233,7 +233,7 @@ export function orderedSegments(layout: ChainLayout, tailId: string): string[] {
 
 /** What one segment file held: its entries, and whether its end was a partial write. */
 interface SegmentRead {
-  readonly entries: Entry[];
+  readonly entries: ChainEntry[];
   /** The file's last line was dropped by the torn-fragment rule. */
   readonly partialFinalLine: boolean;
   /**
@@ -326,14 +326,14 @@ function entriesOfSegment(
   refused: RefusedLine | undefined,
   relaid?: RelaidLine,
 ): SegmentRead {
-  const entryOf = (stored: string): Entry => parseEntry(stored, upcasters);
+  const entryOf = (stored: string): ChainEntry => parseEntry(stored, upcasters);
   const relaidEntryOf = relaying(entryOf, relaid, file);
   // Read as BYTES: each line is decoded by {@link parseStoredLine}, which refuses one
   // that is not UTF-8 instead of reading U+FFFD in its place.
   const raw = readFileSync(file);
   const endsWithNewline = raw.at(-1) === NEWLINE;
   const lines = splitLines(raw);
-  const entries: Entry[] = [];
+  const entries: ChainEntry[] = [];
   let partialFinalLine = false;
   // Hoisted over the loop: the locus costs nothing per line and is read only when
   // a line refuses to parse. See {@link parseStoredLine}.
@@ -399,7 +399,7 @@ export interface LinkBreak {
 
 /** What a whole tail held: its entries, and what the read had to tolerate. */
 export interface TailRead {
-  readonly entries: Entry[];
+  readonly entries: ChainEntry[];
   /**
    * The tail's last line was a partial write, dropped by the torn-fragment rule.
    * Ambiguous by nature (an interrupted append leaves exactly this, and so does
@@ -454,7 +454,7 @@ export function readTail(
   relaid?: RelaidLine,
 ): TailRead {
   const segments = orderedSegments(layout, tailId);
-  const entries: Entry[] = [];
+  const entries: ChainEntry[] = [];
   let partialFinalLine = false;
   let boundary: TailBoundary | undefined;
   for (let s = 0; s < segments.length; s += 1) {
@@ -502,7 +502,7 @@ export function readTail(
  */
 export function firstLinkBreakFrom(
   tailId: string,
-  entries: readonly Entry[],
+  entries: readonly ChainEntry[],
   from: number,
   after: string | null,
   below?: HeldLinkAt,
@@ -535,7 +535,7 @@ export function readTailEntries(
   layout: ChainLayout,
   tailId: string,
   upcasters: UpcasterRegistry,
-): Entry[] {
+): ChainEntry[] {
   return readTail(layout, tailId, upcasters).entries;
 }
 
@@ -569,12 +569,12 @@ export function readTailTip(
   tailId: string,
   upcasters: UpcasterRegistry,
   minSeq: number,
-): Entry[] {
+): ChainEntry[] {
   const segments = orderedSegments(layout, tailId);
-  const tip: Entry[] = [];
+  const tip: ChainEntry[] = [];
   for (let s = segments.length - 1; s >= 0; s -= 1) {
     const file = segments[s] as string;
-    const parse = (line: string): Entry => parseEntry(line, upcasters);
+    const parse = (line: string): ChainEntry => parseEntry(line, upcasters);
     let reachedCoverage = false;
     // An empty segment yields nothing and moves no boundary: the last one can
     // be empty because a recovering writer truncated a torn fragment out of it,
@@ -603,7 +603,7 @@ function sizeOf(file: string): number {
 /** What a resumed reading of a tail found: the arrivals, and where it now stands. */
 export interface TailSince {
   /** The entries past the boundary, in seq order: empty for a tail that did not move. */
-  readonly arrivals: Entry[];
+  readonly arrivals: ChainEntry[];
   /** Where this reading stopped, for the reading after it. */
   readonly boundary: TailBoundary;
 }
@@ -656,11 +656,11 @@ export function readTailSince(
   // One byte of slack for the newline a torn final line may lack: the reading that set the
   // boundary counted it, and the file never held it.
   if (sizeOf(boundary.segment) < boundary.bytes - 1) return undefined;
-  const arrivals: Entry[] = [];
+  const arrivals: ChainEntry[] = [];
   let reached: TailBoundary | undefined;
   for (let s = segments.length - 1; s >= at; s -= 1) {
     const file = segments[s] as string;
-    const parse = (line: string): Entry => parseEntry(line, upcasters);
+    const parse = (line: string): ChainEntry => parseEntry(line, upcasters);
     for (const found of locatedFromEnd(file, s === segments.length - 1, parse)) {
       // A line STARTING before the boundary is at or below it: the walk has reached what
       // the previous reading covered, and everything pushed so far is new. Only the

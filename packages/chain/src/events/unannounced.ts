@@ -18,7 +18,7 @@
 import type { CatalogEvent } from './catalog.js';
 
 /** The envelope fields the reading needs: the signer, the subject, the run, the kind. */
-type Marked = Pick<CatalogEvent, 'kind' | 'signerFp' | 'subject' | 'run'>;
+type Marked = Pick<CatalogEvent, 'signerFp' | 'subject' | 'run'> & { readonly kind: string };
 
 /** The key a marked run is held under: the signer and the run, which no fingerprint can hold. */
 function keyOf(signerFp: string, run: string): string {

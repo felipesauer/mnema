@@ -38,7 +38,7 @@ import {
   type VersionedEvent,
 } from '../events/upcaster.js';
 import { openChainForWriting, verify } from './chain.js';
-import type { Entry } from './entry.js';
+import { type Entry, readEntries } from './entry.js';
 import { contentRoot, eventBytes, writtenAsBuilt } from './hash.js';
 import { listTails, readTailCheckpoints, readTailEntries } from './store.js';
 import type { ChainWriter } from './writer.js';
@@ -143,7 +143,7 @@ function tailIdOf(): string {
 
 /** The `v` of an event as it sits on the line, read off the written form. */
 function writtenVersionsOf(registry: UpcasterRegistry): number[] {
-  return readTailEntries({ root }, tailIdOf(), registry).map(
+  return readEntries(readTailEntries({ root }, tailIdOf(), registry)).map(
     (e) => (e.written.value as { v: number }).v,
   );
 }
@@ -175,7 +175,7 @@ describe('a chain written before a version bump still proves itself', () => {
     // green below would be the green of an empty registry, which is exactly the
     // green this defect hid behind. The reading climbs to v2; the record does not
     // move, and `identity.founded` (no rung) stays where it was on both sides.
-    const entries = readTailEntries({ root }, tailIdOf(), registry);
+    const entries = readEntries(readTailEntries({ root }, tailIdOf(), registry));
     expect(entries.map((e) => e.event.v)).toEqual([1, 2, 2, 2]);
     expect(writtenVersionsOf(registry)).toEqual([1, 1, 1, 1]);
 
@@ -192,7 +192,7 @@ describe('a chain written before a version bump still proves itself', () => {
     writeChainBeforeTheBump({ checkpoint: true });
     const registry = afterTheBump();
 
-    const entries = readTailEntries({ root }, tailIdOf(), registry);
+    const entries = readEntries(readTailEntries({ root }, tailIdOf(), registry));
     expect(entries.map((e) => e.event.v)).toEqual([1, 2, 2, 2]); // the ladder fired
 
     const result = verify(root, registry);
@@ -208,7 +208,7 @@ describe('a chain written before a version bump still proves itself', () => {
     // reason and this whole file would be theatre.
     writeChainBeforeTheBump({ checkpoint: true });
     const registry = afterTheBump();
-    const entries = readTailEntries({ root }, tailIdOf(), registry);
+    const entries = readEntries(readTailEntries({ root }, tailIdOf(), registry));
     const checkpoint = readTailCheckpoints({ root }, tailIdOf())[0];
 
     expect(contentRoot(entries.map((e) => e.written))).toBe(checkpoint?.contentRoot);
@@ -250,7 +250,7 @@ describe('the lift still does its job: the proof was not bought with the reading
     // quietly destroy the reason upcasters exist. Both directions are checked:
     // the lift that removes a field and the lift that adds one.
     writeChainBeforeTheBump({ checkpoint: true });
-    const entries = readTailEntries({ root }, tailIdOf(), afterTheBump());
+    const entries = readEntries(readTailEntries({ root }, tailIdOf(), afterTheBump()));
 
     const run = theOnly(entries, 'run.started');
     expect((run.event.payload as { goal?: string }).goal).toBeUndefined();
@@ -278,7 +278,7 @@ describe('the lift still does its job: the proof was not bought with the reading
       'identity.founded': 2,
     }).register({ kind: 'identity.founded', from: 1 }, bumpsTheVersion);
 
-    const entries = readTailEntries({ root }, tailIdOf(), registry);
+    const entries = readEntries(readTailEntries({ root }, tailIdOf(), registry));
     expect(theOnly(entries, 'identity.founded').event.v).toBe(2); // the ladder fired
 
     const result = verify(root, registry);
@@ -327,7 +327,7 @@ describe('why this stayed invisible', () => {
     // either way and the mistake has no observable consequence, until the first
     // version bump makes it a chain-wide claim of tampering.
     writeChainBeforeTheBump({ checkpoint: true });
-    const entries = readTailEntries({ root }, tailIdOf(), catalogUpcasters());
+    const entries = readEntries(readTailEntries({ root }, tailIdOf(), catalogUpcasters()));
 
     expect(entries).toHaveLength(4); // not a vacuous loop
     for (const entry of entries) {
@@ -354,7 +354,7 @@ describe('why this stayed invisible', () => {
       rewritesEverything,
     );
 
-    const entries = readTailEntries({ root }, tailIdOf(), registry);
+    const entries = readEntries(readTailEntries({ root }, tailIdOf(), registry));
     const task = theOnly(entries, 'task.created');
     expect((task.event.payload as { title: string }).title).toBe('a title v2 invented');
 

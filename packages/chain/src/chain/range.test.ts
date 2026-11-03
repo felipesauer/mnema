@@ -15,7 +15,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { memoryCaptured } from '../events/build.js';
-import { type Entry, sealEntry } from './entry.js';
+import { type ChainEntry, sealEntry } from './entry.js';
 import { deriveAnchor, generateKeyPair } from './keys.js';
 import { entriesBetween } from './range.js';
 
@@ -24,7 +24,7 @@ const TAIL = `${fingerprint}-0123456789abcdef0123456789abcdef`;
 const WHO = deriveAnchor(fingerprint);
 
 /** A sealed entry at `seq`; `nth` keeps two entries at one seq distinct in content. */
-function entryAt(seq: number, nth = 0): Entry {
+function entryAt(seq: number, nth = 0): ChainEntry {
   return sealEntry({
     event: memoryCaptured(
       {
@@ -42,14 +42,14 @@ function entryAt(seq: number, nth = 0): Entry {
 }
 
 /** A tail holding entries at these seqs, in this order: a fresh object for each. */
-function tailOf(seqs: readonly number[]): Entry[] {
+function tailOf(seqs: readonly number[]): ChainEntry[] {
   return seqs.map((seq, i) => entryAt(seq, i));
 }
 
 /** Positions in `entries` of what the route answered, and of what the filter answers. */
-function bothAnswers(entries: readonly Entry[], fromSeq: number, toSeq: number) {
+function bothAnswers(entries: readonly ChainEntry[], fromSeq: number, toSeq: number) {
   const position = new Map(entries.map((entry, i) => [entry, i]));
-  const at = (found: readonly Entry[]) => found.map((entry) => position.get(entry));
+  const at = (found: readonly ChainEntry[]) => found.map((entry) => position.get(entry));
   return {
     route: at(entriesBetween(entries)(fromSeq, toSeq)),
     filter: at(entries.filter((e) => e.link.seq >= fromSeq && e.link.seq <= toSeq)),
