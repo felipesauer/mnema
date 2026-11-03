@@ -19,6 +19,7 @@ import type { Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { hookTextOf } from '../host-names.js';
+import { newerLinesSentence } from '../record-integrity.js';
 import { briefDocument, briefWithin, HOW_TO_REGENERATE, STACKS_SECTION_MOST } from './brief.js';
 import {
   CLAUDE_CODE_CEILING,
@@ -1070,5 +1071,37 @@ describe('what the copy a hook carries says of the stacks adopted for the projec
     const hook = hookWith({ adopted: adopted(30), departures: ['a'] }, crowded);
     expect(printedLength(hook)).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
     expect(hook.join('\n')).toContain('Stacks adopted for this project (30)');
+  });
+});
+
+describe('the hook’s copy beside the line about what a newer mnema wrote', () => {
+  const crowded = governance({
+    decisions: Array.from({ length: 80 }, (_, at) => decision(at + 1, `A call ${'x'.repeat(70)}`)),
+  });
+  /** The widest sentence the line can be: three kinds of the longest name, in the greatest counts. */
+  const widest = newerLinesSentence({
+    lines: 9_999_999,
+    kinds: [
+      { kind: 'k'.repeat(200), lines: 9_999_997 },
+      { kind: 'k'.repeat(200), lines: 1 },
+      { kind: 'k'.repeat(200), lines: 1 },
+      { kind: 'k'.repeat(200), lines: 1 },
+    ],
+  });
+
+  it('is at most 480 characters, whatever the kinds are called', () => {
+    expect(widest.length).toBeLessThanOrEqual(480);
+  });
+
+  it('is part of what has to fit: the copy and the line together stay under the ceiling', () => {
+    const alone = briefWithin(crowded, roomBeside([]));
+    const beside = briefWithin(crowded, roomBeside([widest]));
+    expect(printedLength(alone)).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+    // What the host measures is the copy with the line appended to it.
+    expect(printedLength(beside) + printedLength([widest])).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+    // The line was paid for out of the list's end, whole rules at a time, and the cut says so.
+    const rules = (lines: readonly string[]) => lines.filter((line) => line.startsWith('- **'));
+    expect(rules(beside).length).toBeLessThanOrEqual(rules(alone).length);
+    expect(beside.join('\n')).toContain('Left out of this text:');
   });
 });
