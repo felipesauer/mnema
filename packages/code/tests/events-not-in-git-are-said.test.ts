@@ -120,7 +120,7 @@ function waiting(checkout: string): number {
 }
 
 /** What a host hands the Stop hook: a transcript in which one file was written. */
-function stopPayload(checkout: string): string {
+function stopPayload(checkout: string, session?: string): string {
   const at = (s: number) => `2020-01-01T00:00:0${s}.000Z`;
   const transcript = join(sandbox, 'session.jsonl');
   writeFileSync(
@@ -164,6 +164,7 @@ function stopPayload(checkout: string): string {
     hook_event_name: 'Stop',
     transcript_path: transcript,
     cwd: checkout,
+    ...(session !== undefined ? { session_id: session } : {}),
   });
 }
 
@@ -306,6 +307,13 @@ describe('the events git does not hold', SLOW, () => {
     expect(mnema(local, ['switch', 'off', 'session-tally']).status).toBe(0);
     const said = surfaces(local);
     expect(said.closing).toBe('');
+    // Also where the session is named, so a journal is kept and the line is the switch's alone.
+    const journaled = mnema(local, ['tally'], stopPayload(local, 'a-session'));
+    expect(journaled.stdout.trim()).toBe('{}');
+    expect(mnema(local, ['switch', 'on', 'session-tally']).status).toBe(0);
+    const spoken = mnema(local, ['tally'], stopPayload(local, 'a-session'));
+    expect(spoken.stdout).toMatch(/not in a git commit yet/);
+    expect(mnema(local, ['switch', 'off', 'session-tally']).status).toBe(0);
     expect(said.status).toMatch(/not in a git commit yet/);
     expect(said.doctor).toMatch(/record-in-git/);
   });
