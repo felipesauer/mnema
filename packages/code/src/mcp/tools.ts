@@ -142,7 +142,7 @@ import {
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
-import { agentMayAccept } from '../agent-accepts.js';
+import { type AcceptState, acceptStateHere, agentMayAccept } from '../agent-accepts.js';
 import { editRulesTold, firstWriteNotice, readThePush } from '../edit-rules-push.js';
 import { type FileBehindAPath, fileOfTheOrigin } from '../file-behind-a-path.js';
 import { reachOfAddress, readGoverningRules } from '../governed-tree.js';
@@ -317,6 +317,11 @@ export type RecordDecisionResult =
          * decisions it cites that it could replace. Nothing is linked and nothing is moved.
          */
         readonly offered: readonly string[];
+        /**
+         * Whether an agent may accept it (`agent-accepts` is not off), read after the write: the
+         * reply words when to accept by it (`stateOfANewDecision`).
+         */
+        readonly agentsAccept: AcceptState;
         /**
          * Set when the decision was already on the record (same title, rationale and
          * alternatives, in force or awaiting a judgement): nothing was written, `id` and `adr` are the
@@ -962,6 +967,7 @@ export function runRecordDecision(
     ...routedTo(session, route),
     ...forwardReplacement(recorded),
     offered: repeated ? [] : offersBesideADecision(session, route, input, recorded),
+    agentsAccept: agentsAcceptInThisSession(session),
     ...(repeated ? { alreadyRecorded: true as const } : {}),
   };
 }
@@ -1764,6 +1770,18 @@ function ambiguousLabel(message: string): {
   readonly message: string;
 } {
   return { ok: false, code: 'AMBIGUOUS_LABEL', message };
+}
+
+/**
+ * Whether an agent may accept a decision here (`agent-accepts` is not off). A record this session
+ * cannot read is `unreadable`: the reply then says so and leaves the accept to a person.
+ */
+function agentsAcceptInThisSession(session: Session): AcceptState {
+  try {
+    return acceptStateHere(workspaceCaches(session));
+  } catch {
+    return 'unreadable';
+  }
 }
 
 /**
