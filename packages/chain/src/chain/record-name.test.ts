@@ -278,12 +278,14 @@ describe('the tails that arrived since a base', () => {
       unnamed: [],
       noted: [],
       foreign: [],
+      relinked: [],
     });
     expect(arrivedSince(base, none, named([TAIL, x]))).toEqual({
       records: [x],
       unnamed: [],
       noted: [],
       foreign: [],
+      relinked: [],
     });
   });
 
@@ -293,6 +295,7 @@ describe('the tails that arrived since a base', () => {
       unnamed: [OTHER],
       noted: [],
       foreign: [],
+      relinked: [],
     });
   });
 
@@ -303,6 +306,7 @@ describe('the tails that arrived since a base', () => {
       unnamed: [],
       noted: [],
       foreign: [],
+      relinked: [],
     });
   });
 
@@ -313,6 +317,7 @@ describe('the tails that arrived since a base', () => {
       unnamed: [],
       noted: [],
       foreign: [{ name: y, tails: [OTHER, THIRD] }],
+      relinked: [],
     });
   });
 
@@ -325,6 +330,7 @@ describe('the tails that arrived since a base', () => {
       unnamed: [],
       noted: [],
       foreign: [],
+      relinked: [],
     });
     const graft = named([TAIL, undefined], [OTHER, undefined], [THIRD, y]);
     expect(arrivedSince(base, older, graft)).toEqual({
@@ -332,6 +338,7 @@ describe('the tails that arrived since a base', () => {
       unnamed: [],
       noted: [],
       foreign: [{ name: y, tails: [THIRD] }],
+      relinked: [],
     });
   });
 
@@ -343,6 +350,7 @@ describe('the tails that arrived since a base', () => {
       unnamed: [],
       noted: [OTHER],
       foreign: [],
+      relinked: [],
     });
   });
 
@@ -352,6 +360,7 @@ describe('the tails that arrived since a base', () => {
       unnamed: [],
       noted: [OTHER],
       foreign: [],
+      relinked: [],
     });
   });
 
@@ -363,12 +372,14 @@ describe('the tails that arrived since a base', () => {
       unnamed: [],
       noted: [],
       foreign: [],
+      relinked: [],
     });
     expect(arrivedSince(base, older, named([TAIL, undefined], [OTHER, y]))).toEqual({
       records: [x],
       unnamed: [],
       noted: [],
       foreign: [{ name: y, tails: [OTHER] }],
+      relinked: [],
     });
   });
 
@@ -379,6 +390,56 @@ describe('the tails that arrived since a base', () => {
       unnamed: [],
       noted: [],
       foreign: [{ name: x, tails: [TAIL] }],
+      relinked: [],
+    });
+  });
+
+  describe('a tail its owner relinked (FORMAT.md section 6.11)', () => {
+    const HOST = `${'ab'.repeat(32)}-${'ef'.repeat(16)}`;
+    const FIRST_AT = '2026-03-01T00:00:00.000Z';
+    // What `relinkedNaming` counts of the relink of TAIL, out of record x, into record y.
+    const counted = {
+      relink: {
+        host: HOST,
+        seq: 0,
+        signerFp: 'ab'.repeat(32),
+        tail: TAIL,
+        source: x,
+        into: y,
+        throughHash: '1'.repeat(64),
+        eventCount: 2,
+      },
+      events: 2,
+      firstAt: FIRST_AT,
+      detail: 'the census line',
+    };
+    // The names a reader gives the directory once the relink counts: TAIL under y.
+    const relinkedHere = named([OTHER, y], [TAIL, y], [HOST, y]);
+
+    it('is no tail of another record, and is said as arrived where the base did not hold it', () => {
+      const said = arrivedSince(named([OTHER, y]), none, relinkedHere, {
+        base: [],
+        here: [counted],
+      });
+      expect(said.foreign).toEqual([]);
+      expect(said.relinked).toEqual([
+        { tail: TAIL, from: x, events: 2, firstAt: FIRST_AT, held: false },
+      ]);
+    });
+
+    it('is said as held where the base held the tail under the record it left', () => {
+      const base = named([OTHER, y], [TAIL, x]);
+      const said = arrivedSince(base, none, relinkedHere, { base: [], here: [counted] });
+      expect(said.foreign).toEqual([]);
+      expect(said.relinked).toEqual([
+        { tail: TAIL, from: x, events: 2, firstAt: FIRST_AT, held: true },
+      ]);
+    });
+
+    it('is not said again where the relink counted at the base already', () => {
+      const base = named([OTHER, y], [TAIL, y], [HOST, y]);
+      const said = arrivedSince(base, none, relinkedHere, { base: [counted], here: [counted] });
+      expect(said.relinked).toEqual([]);
     });
   });
 

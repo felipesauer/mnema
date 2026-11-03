@@ -139,7 +139,13 @@ import {
 import type { UnreadableLineError } from './lines.js';
 import { illegalMoves } from './moves.js';
 import { entriesBetween } from './range.js';
-import { type RecordNaming, type RelinkRead, recordOf, relinkedNaming } from './record-name.js';
+import {
+  type RecordNaming,
+  type RelinkRead,
+  type RelinksRead,
+  recordOf,
+  relinkedNaming,
+} from './record-name.js';
 import {
   type CommittedKeys,
   committedKeys,
@@ -895,6 +901,19 @@ export function relinkedNamingAt(
   upcasters: UpcasterRegistry,
   named: ReadonlyMap<string, string | undefined>,
 ): RecordNaming {
+  return recordOf(relinksReadAt(layout, upcasters, named).named);
+}
+
+/**
+ * What {@link relinkedNaming} reads of the relinks at `layout`, read as {@link relinkedNamingAt}
+ * reads them: each tail's name once the relinks that count are applied, and those relinks. `verify
+ * --since` asks it of the base and of the disk (`arrivalsSince`, `tail-names.ts`).
+ */
+export function relinksReadAt(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+  named: ReadonlyMap<string, string | undefined>,
+): RelinksRead {
   const keys = committedKeys(layout);
   const entriesByTail = new Map<string, readonly Entry[]>();
   const checkpointsByTail = new Map<string, readonly Checkpoint[]>();
@@ -927,13 +946,11 @@ export function relinkedNamingAt(
     );
     coveredThrough.set(tail, coverage.covered);
   }
-  return recordOf(
-    relinkedNaming(
-      named,
-      entriesByTail,
-      coveredThrough,
-      (entries, covered) => resolveIdentity(layout, entries, covered, keys).issues,
-    ).named,
+  return relinkedNaming(
+    named,
+    entriesByTail,
+    coveredThrough,
+    (entries, covered) => resolveIdentity(layout, entries, covered, keys).issues,
   );
 }
 

@@ -221,6 +221,30 @@ export interface Arrivals {
   readonly noted: readonly string[];
   /** The tails new since the base that name a record the base is not, one group per name. */
   readonly foreign: readonly { readonly name: string; readonly tails: readonly string[] }[];
+  /**
+   * The tails a relink moves into the record here and did not move at the base (FORMAT.md section
+   * 6.11), whether the base held the tail or it arrived since: a fact, never a refusal.
+   */
+  readonly relinked: readonly RelinkArrived[];
+}
+
+/** A tail a relink that counts here, and did not count at the base, moved into the record. */
+export interface RelinkArrived {
+  readonly tail: string;
+  /** The record the tail's own artifacts name, which the relink moved it out of. */
+  readonly from: string;
+  /** How many events the tail holds. */
+  readonly events: number;
+  /** The `at` of its first entry. */
+  readonly firstAt: string;
+  /** Whether the base held the tail (it was in the record there) or it arrived since. */
+  readonly held: boolean;
+}
+
+/** The relinks that count at the base and here, as {@link relinkedNaming} reads each side. */
+export interface RelinksOnBothSides {
+  readonly base: readonly RelinkCounted[];
+  readonly here: readonly RelinkCounted[];
 }
 
 /**
@@ -238,11 +262,21 @@ export interface Arrivals {
  * the base's record (where no tail of the base names it, the name its genesis tail derives, which
  * is the one a writer gives a record written before records were named), and another name, or
  * a base whose genesis is not found, puts it with the tails of another record.
+ *
+ * A TAIL ITS OWNER RELINKED (FORMAT.md section 6.11, ADR-155) is asked under the name the relink
+ * gives it: `base` and `here` are what each tail names once the relinks that count on that side
+ * are applied ({@link relinkedNaming}, the readers' own rule), so a change that brings a tail of
+ * another record and its owner's relink of it holds no tail of another record where the relink
+ * counts, and still does where it does not. `relinks` are the relinks that counted on each side;
+ * those that count here and did not at the base are said in `relinked`, as a fact and never a
+ * refusal, since the readers already refuse what a relink lacks (`record-name.test.ts`, "a tail
+ * its owner relinked").
  */
 export function arrivedSince(
   base: ReadonlyMap<string, string | undefined>,
   firsts: () => Iterable<{ readonly tail: string; readonly at: string }>,
   here: ReadonlyMap<string, string | undefined>,
+  relinks: RelinksOnBothSides = { base: [], here: [] },
 ): Arrivals {
   const named = new Set([...base.values()].filter((name) => name !== undefined));
   const carried = named.size > 0;
@@ -275,6 +309,20 @@ export function arrivedSince(
     foreign: [...foreign]
       .map(([name, tails]) => ({ name, tails }))
       .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),
+    relinked: relinks.here
+      .filter(
+        ({ relink }) =>
+          !relinks.base.some(
+            (there) => there.relink.tail === relink.tail && there.relink.into === relink.into,
+          ),
+      )
+      .map(({ relink, events, firstAt }) => ({
+        tail: relink.tail,
+        from: relink.source,
+        events,
+        firstAt,
+        held: base.has(relink.tail),
+      })),
   };
 }
 
