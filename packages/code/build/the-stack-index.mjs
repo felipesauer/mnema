@@ -33,6 +33,6 @@ mkdirSync(out, { recursive: true });
 cpSync(index, join(out, 'index.json'));
 for (const entry of stacks) {
   if (typeof entry.path !== 'string') continue;
-  cpSync(join(root, entry.path), join(out, entry.path), { recursive: true, errorOnExist: true });
+  cpSync(join(root, entry.path), join(out, entry.path), { recursive: true, force: false, errorOnExist: true });
 }
 copyFileSync(join(root, 'LICENSE'), join(root, 'packages', 'code', 'LICENSE'));

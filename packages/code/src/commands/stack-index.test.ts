@@ -54,9 +54,18 @@ describe('reading the index of stacks', () => {
   it('says, for a folder with no index.json, what an index is and that no folder reads the built-in one', () => {
     const read = readStackIndex(checkout, 'stack-index');
     if (read.ok) throw new Error('read an index that is not there');
-    expect(read.lines?.join('\n')).toContain('An index is a folder holding an index.json');
-    expect(read.lines?.join('\n')).toContain(
-      'With no folder given, the index that comes with this installation is read.',
+    expect(read.lines).toBeUndefined();
+    expect(read.message).toBe(
+      'there is no index.json in "stack-index". An index is a folder holding an index.json that lists stacks: for each, a name, a version, a link and a digest. With no folder given, the index that comes with this installation is read.',
+    );
+  });
+
+  it('says, when the installation carries no built-in index, to name the folder of one', () => {
+    const read = readTheIndex(checkout, undefined, join(checkout, 'nothing-built-in'));
+    if (read.ok) throw new Error('read an index that is not there');
+    expect(read.lines).toBeUndefined();
+    expect(read.message).toBe(
+      'this installation carries no built-in index. Name the folder of an index to read one: its index.json lists the stacks.',
     );
   });
 

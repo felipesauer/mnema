@@ -133,9 +133,8 @@ describe('the built binary, run from a folder that is no checkout', () => {
   it('refuses a folder with no index.json, and says what an index is and what no folder reads', () => {
     const ran = mnema('stack', 'index', 'nowhere');
     expect(ran.status).not.toBe(0);
-    expect(ran.err).toContain('STACK_INDEX_REFUSED');
-    expect(ran.err).toContain('there is no index.json in "nowhere"');
-    expect(ran.err).toContain('An index is a folder holding an index.json that lists stacks');
-    expect(ran.err).toContain('With no folder given, the index that comes with this installation');
+    expect(ran.err.trim()).toBe(
+      'Refused (STACK_INDEX_REFUSED): there is no index.json in "nowhere". An index is a folder holding an index.json that lists stacks: for each, a name, a version, a link and a digest. With no folder given, the index that comes with this installation is read.',
+    );
   });
 });

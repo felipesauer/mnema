@@ -99,10 +99,9 @@ export function readStackIndex(
   const file = resolve(dir, FILE);
   const shown = JSON.stringify(oneLine(folder));
   if (!existsSync(file)) {
-    return no(`there is no ${FILE} in ${shown}.`, [
-      `An index is a folder holding an ${FILE} that lists stacks: for each, a name, a version, a link and a digest.`,
-      'With no folder given, the index that comes with this installation is read.',
-    ]);
+    return no(
+      `there is no ${FILE} in ${shown}. An index is a folder holding an ${FILE} that lists stacks: for each, a name, a version, a link and a digest. With no folder given, the index that comes with this installation is read.`,
+    );
   }
   let text: string;
   try {
@@ -142,14 +141,18 @@ export const BUILT_IN_INDEX = fileURLToPath(new URL('../../dist/stack-index', im
  * The index to read: the one in `folder` when a folder is given, else the built-in one, each entry
  * of which names its folder inside the installed package.
  */
-export function readTheIndex(cwd: string, folder?: string): StackIndex | StackRefused {
+export function readTheIndex(
+  cwd: string,
+  folder?: string,
+  builtIn: string = BUILT_IN_INDEX,
+): StackIndex | StackRefused {
   if (folder !== undefined) return readStackIndex(cwd, folder);
-  if (!existsSync(resolve(BUILT_IN_INDEX, FILE))) {
-    return no('this installation carries no built-in index.', [
-      `Give the folder of an index, with an ${FILE} in it: mnema stack index <folder>.`,
-    ]);
+  if (!existsSync(resolve(builtIn, FILE))) {
+    return no(
+      `this installation carries no built-in index. Name the folder of an index to read one: its ${FILE} lists the stacks.`,
+    );
   }
-  return readStackIndex(cwd, BUILT_IN_INDEX, BUILT_IN_INDEX);
+  return readStackIndex(cwd, builtIn, builtIn);
 }
 
 /** What the index says and does not say, as `stack index` prints it. */
