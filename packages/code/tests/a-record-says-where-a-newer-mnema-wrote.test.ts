@@ -147,6 +147,10 @@ describe('a record a newer mnema wrote a line into', { timeout: 120_000 }, () =>
       lines: 1,
       kinds: [{ kind: FUTURE, lines: 1 }],
     });
+    // Beside the key that says how many events no commit holds yet: the record here is not committed,
+    // so both are in the same answer, and neither hides the other.
+    expect(JSON.parse(json.out)).toHaveProperty('eventsNotInGit');
+    expect(status.out).toContain('Not in git yet:');
   });
 
   it('keeps saying it after a known line is written behind it, in this process and the next', () => {
