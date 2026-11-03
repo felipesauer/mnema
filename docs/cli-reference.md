@@ -1424,9 +1424,12 @@ decision is cut through the first checkpoint that covers the recording, and the 
 their last. The cut never goes below what the base holds, and it does not look at a decision's state:
 a proposed decision is committed, and reads as proposed. The commit carries the segments and
 checkpoints cut there, a new tail's proof and each key file a line of the cut names; nothing of
-the private tree, and no file the cut does not need. The
-events above the cut stay out and are counted, and the other files of `.mnema/` that differ from the
-base (its `README.md`, say) are named as left out: commit those with git.
+the private tree. Where the base holds none of the files `mnema init` writes beside the record
+(`.gitattributes`, `.gitignore`, `README.md`, `.editorconfig`), they go in too, so the first commit
+of a record carries `* -text` and the tails' merge line. The events above the cut stay out and are
+counted; a file of `.mnema/` the base already holds stays as the base has it, and every other file
+that differs from the base (an `inherit.json`, say) stays out too, each named as left out: commit
+those with git.
 
 It builds the commit with git's plumbing on top of the base, signed when `commit.gpgSign` is set, as
 `git commit` would sign it. Before a branch exists, the tree is checked out apart and verified at the

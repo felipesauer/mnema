@@ -24,9 +24,13 @@
  *      (the key that signs a tail, a key it enrols or declares), all asked of the binary in
  *      `the-record-reaches-git-through-a-pull-request.test.ts`. It is also meant to carry the
  *      witness files of the checkpoints it carries, which no case there asks: it holds no witness.
- *      Nothing of the private tree, the global tree or any file outside the record's folder; the
- *      files that are not part of the proof (`README.md`, `.gitattributes`, `inherit.json`) stay
- *      as the base has them, and are named when they differ.
+ *      Nothing of the private tree, the global tree or any file outside the record's folder. The
+ *      files `init` writes beside the record ({@link whatInitWritesInTheRecord}: `.gitattributes`
+ *      with `* -text` and the tails' merge line, `.gitignore`, `README.md`, `.editorconfig`) go in
+ *      with a cut where the base holds none of them, so the first commit of a record carries
+ *      them; one the base holds stays as the base has it, and is named when this clone's differs.
+ *      Every other file (`inherit.json`, what a person leaves) stays as the base has it, named
+ *      when it differs.
  *   3. THE COMMIT is built with git's plumbing over the base's tree: blobs, a temporary index,
  *      `write-tree`, `commit-tree` and `update-ref` of a new branch. The working tree, the index and
  *      HEAD are not touched. `commit-tree` does not read `commit.gpgSign` (measured on git 2.55: it
@@ -57,11 +61,12 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { checkpointHash, parseCheckpoint } from '@mnema/chain';
+import { checkpointHash, ensureTree, parseCheckpoint } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type DecisionFacts, nameOf, readDecisionFacts } from '../decisions-in-git.js';
 import { withTreesRead } from '../tree-sources.js';
 import { joinGrownTail } from './record-merge-tail.js';
+import { EDITORCONFIG_NAME, README_NAME } from './the-record-page.js';
 import { runVerify } from './verify.js';
 import { sinceBase, sinceHolds } from './verify-since.js';
 
@@ -282,6 +287,22 @@ function readTail(dir: string, id: string): LocalTail {
     }
   }
   return { id, segments, events, checkpoints, bytes };
+}
+
+/**
+ * The names of the files `init` writes in the record's folder, asked of init's own code rather
+ * than listed here: what `ensureTree` writes into an empty folder (its `.gitignore` and
+ * `.gitattributes`), and the page and the `.editorconfig` `complete` leaves beside them. A file
+ * init comes to write is named here without this module changing.
+ */
+export function whatInitWritesInTheRecord(): readonly string[] {
+  const scratch = mkdtempSync(join(tmpdir(), 'mnema-what-init-writes-'));
+  try {
+    ensureTree({ root: scratch });
+    return [...readdirSync(scratch), README_NAME, EDITORCONFIG_NAME].sort();
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
 }
 
 /** The decisions of the committed tree at `root` (its `.mnema/`), read in memory. */
@@ -587,6 +608,18 @@ export function runRecordCommit(
         cuts.some((cut) => cut.tail.startsWith(`${fp}-`)) ||
         carriedBytes.some((bytes) => bytes.includes(fp));
       if (named) writes.set(path, readFileSync(join(keysDir, name)));
+    }
+  }
+
+  // With a cut, the files `init` writes beside the record, where the base holds none of them: so
+  // the first commit of a record carries `* -text` and the tails' merge line. One the base holds
+  // stays as the base has it, and is named below when this clone's differs.
+  if (writes.size > 0) {
+    for (const name of whatInitWritesInTheRecord()) {
+      const path = `${recordDir}${name}`;
+      if (!held.has(path) && existsSync(join(record, name))) {
+        writes.set(path, readFileSync(join(record, name)));
+      }
     }
   }
 

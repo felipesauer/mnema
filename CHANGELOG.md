@@ -17,8 +17,9 @@ with its own changelog.
   (`refs/remotes/<remote>/HEAD`; it reads nothing from the network, refuses where that ref is missing and says how old
   the base is), without touching the working tree, the index or HEAD: each tail of `.mnema/` through its last signed
   checkpoint, or with `--through <decision>` the tail that records it through the first checkpoint that covers the
-  recording, never below the base, with a new tail's proof and the key files the cut names; nothing of the private
-  tree, the events above the cut counted, the other files of `.mnema/` that differ named as left out. It refuses when a
+  recording, never below the base, with a new tail's proof and the key files the cut names, and the files `init`
+  writes beside the record where the base holds none of them (so a first commit carries `* -text`); nothing of the
+  private tree, the events above the cut counted, the other files of `.mnema/` that differ named as left out. It refuses when a
   tail file of the base is not the start of the one here (pointing at `record pull`), signs the commit when
   `commit.gpgSign` is set, as `git commit` would, and verifies the tree apart at the signed level and with `--since`
   the base before it makes the branch, `mnema-record/<labels>-<digest of the cut>`. It prints `git push -u` and the

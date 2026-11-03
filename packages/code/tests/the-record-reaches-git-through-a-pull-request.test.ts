@@ -32,6 +32,7 @@ import {
   nextCommands,
   remoteHost,
   runRecordCommit,
+  whatInitWritesInTheRecord,
 } from '../src/commands/record-commit.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
@@ -229,6 +230,55 @@ describe('mnema record commit', SLOW, () => {
         `.mnema/tails/${opened.tail}/tailproof.json`,
       ].sort(),
     );
+  });
+
+  it('carries the files init writes when the base holds no record, byte for byte', () => {
+    const remote = join(sandbox, 'remote.git');
+    const local = join(sandbox, 'local');
+    expect(git(sandbox, 'init', '-q', '--bare', remote).status).toBe(0);
+    expect(git(sandbox, 'clone', '-q', remote, local).status).toBe(0);
+    writeFileSync(join(local, 'code.txt'), 'the work\n');
+    expect(git(local, 'add', 'code.txt').status).toBe(0);
+    expect(git(local, 'commit', '-qm', 'the work').status).toBe(0);
+    expect(git(local, 'push', '-q', 'origin', 'main').status).toBe(0);
+    expect(git(local, 'remote', 'set-head', 'origin', 'main').status).toBe(0);
+    expect(mnema(local, 'init', '--all-hosts').status).toBe(0);
+    decide(local, 'one');
+    const made = commitIn(local);
+    if (!made.ok || made.kind !== 'made') throw new Error(JSON.stringify(made));
+    const names = whatInitWritesInTheRecord();
+    expect(names).toEqual(['.editorconfig', '.gitattributes', '.gitignore', 'README.md']);
+    for (const name of names) {
+      expect(git(local, 'show', `${made.commit}:.mnema/${name}`).out, name).toBe(
+        readFileSync(join(local, '.mnema', name), 'utf-8'),
+      );
+    }
+    expect(git(local, 'show', `${made.commit}:.mnema/.gitattributes`).out).toMatch(
+      /^\* -text$[\s\S]*merge=mnema-tail/m,
+    );
+  });
+
+  it('keeps an older file init writes as the base holds it, and names it', () => {
+    const remote = join(sandbox, 'remote.git');
+    const local = join(sandbox, 'local');
+    expect(git(sandbox, 'init', '-q', '--bare', remote).status).toBe(0);
+    expect(git(sandbox, 'clone', '-q', remote, local).status).toBe(0);
+    expect(mnema(local, 'init', '--all-hosts').status).toBe(0);
+    // The base holds the .gitattributes of a record made before the tails' merge line existed.
+    const older = "# Managed by mnema: this file governs only mnema's own tree.\n* -text\n";
+    writeFileSync(join(local, '.mnema', '.gitattributes'), older);
+    expect(git(local, 'add', '.').status).toBe(0);
+    expect(git(local, 'commit', '-qm', 'the record').status).toBe(0);
+    expect(git(local, 'push', '-q', 'origin', 'main').status).toBe(0);
+    expect(git(local, 'remote', 'set-head', 'origin', 'main').status).toBe(0);
+    // The next write gives this clone's copy the line it lacks.
+    decide(local, 'one');
+    expect(readFileSync(join(local, '.mnema', '.gitattributes'), 'utf-8')).toMatch(/merge=/);
+    const made = commitIn(local);
+    if (!made.ok || made.kind !== 'made') throw new Error(JSON.stringify(made));
+    expect(git(local, 'show', `${made.commit}:.mnema/.gitattributes`).out).toBe(older);
+    expect(made.left.files).toEqual(['.mnema/.gitattributes']);
+    expect(mnema(local, 'record', 'commit').out).toContain('.mnema/.gitattributes');
   });
 
   it('leaves out the events above the last checkpoint, and counts them', () => {
