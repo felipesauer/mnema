@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fixMergeDriver, mergeDriverLines } from '../src/commands/doctor-merge-driver.js';
 import { driverCommand, runRecordPull } from '../src/commands/record-pull.js';
+import { type CliIo, run } from '../src/program.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -314,6 +315,94 @@ describe('mnema record pull, where git does not end clean', SLOW, () => {
     const refused = pull(local);
     if (refused.ok || refused.reason !== 'FETCH_FAILED') throw new Error(JSON.stringify(refused));
     expect(refused.said).toMatch(/gone\.git/);
+  });
+});
+
+describe('mnema record pull, as the command line words it', SLOW, () => {
+  /**
+   * The verb in process, standing in `cwd` with this sandbox's environment: what it said and
+   * whether it failed. Only for the ends where git never runs the driver, since in process the
+   * driver this command hands git would be the test runner's own script.
+   */
+  async function wired(cwd: string): Promise<{ text: string; failed: boolean }> {
+    const saved = { cwd: process.cwd(), env: { ...process.env } };
+    const lines: string[] = [];
+    let failed = false;
+    const io: CliIo = {
+      out: (line) => lines.push(line),
+      err: (line) => lines.push(line),
+      fail: () => {
+        failed = true;
+      },
+    };
+    try {
+      Object.assign(process.env, env());
+      process.chdir(cwd);
+      await run(['record', 'pull'], io);
+    } finally {
+      process.chdir(saved.cwd);
+      for (const key of Object.keys(process.env)) {
+        if (!(key in saved.env)) delete process.env[key];
+      }
+      Object.assign(process.env, saved.env);
+    }
+    return { text: lines.join('\n'), failed };
+  }
+
+  it('names the files a pull left in conflict and the stash git kept, and fails', async () => {
+    const { local, other } = world();
+    const attributes = join('.mnema', '.gitattributes');
+    writeFileSync(
+      join(other, attributes),
+      `${readFileSync(join(other, attributes), 'utf-8')}*.a -diff\n`,
+    );
+    expect(git(other, 'commit', '-qam', 'theirs').status).toBe(0);
+    expect(git(other, 'push', '-q', 'origin', 'main').status).toBe(0);
+    writeFileSync(
+      join(local, attributes),
+      `${readFileSync(join(local, attributes), 'utf-8')}*.b -diff\n`,
+    );
+    const said = await wired(local);
+    expect(said.failed).toBe(true);
+    expect(said.text).toMatch(/left these files in conflict: \.mnema\/\.gitattributes/);
+    expect(said.text).toMatch(/still in its stash/);
+    expect(said.text).not.toMatch(/Pulled/);
+  });
+
+  it('says what git said when the pull fails, and fails', async () => {
+    const { local, other } = world();
+    writeFileSync(join(other, 'theirs.txt'), 'theirs\n');
+    expect(git(other, 'add', 'theirs.txt').status).toBe(0);
+    expect(git(other, 'commit', '-qm', 'theirs').status).toBe(0);
+    expect(git(other, 'push', '-q', 'origin', 'main').status).toBe(0);
+    writeFileSync(join(local, 'ours.txt'), 'ours\n');
+    expect(git(local, 'add', 'ours.txt').status).toBe(0);
+    expect(git(local, 'commit', '-qm', 'ours').status).toBe(0);
+    const said = await wired(local);
+    expect(said.failed).toBe(true);
+    expect(said.text).toMatch(/divergent branches/);
+    expect(said.text).toMatch(/git pull from origin\/main failed/);
+  });
+
+  it('words each refusal: a fork, and a remote it cannot read', async () => {
+    const { local, other } = world();
+    const segment = join(theTail(local), '000001.jsonl');
+    writeFileSync(
+      join(other, segment),
+      `${readFileSync(join(other, segment), 'utf-8')}{"forged":1}\n`,
+    );
+    expect(git(other, 'commit', '-qam', 'a fork').status).toBe(0);
+    expect(git(other, 'push', '-q', 'origin', 'main').status).toBe(0);
+    expect(mnema(local, 'task', 'create', 'two').status).toBe(0);
+    const forked = await wired(local);
+    expect(forked.failed).toBe(true);
+    expect(forked.text).toMatch(/Nothing was pulled or written: .*a fork/);
+    expect(git(local, 'remote', 'set-url', 'origin', join(sandbox, 'gone.git')).status).toBe(0);
+    const unread = await wired(local);
+    expect(unread.failed).toBe(true);
+    expect(unread.text).toMatch(
+      /Reading the branch followed from its remote failed, and nothing was changed/,
+    );
   });
 });
 
