@@ -41,7 +41,7 @@ import {
   serializeCheckpoint,
   signCheckpoint,
 } from './checkpoint.js';
-import type { Entry } from './entry.js';
+import type { ChainEntry } from './entry.js';
 import { generateKeyPair } from './keys.js';
 import { KeyMadeMeanwhileError, loadOrCreateKeyPair, persistKeyPair } from './keystore.js';
 import { type ChainLayout, checkpointsPath, segmentPath, tailDir } from './layout.js';
@@ -144,7 +144,7 @@ function linesInLastSegment(): number {
  * at the boundary instead of handing back whole segments), so the agreement is
  * stated over exactly what the tip promises.
  */
-function tipAgreesWithTheWholeTail(minSeq: number): Entry[] {
+function tipAgreesWithTheWholeTail(minSeq: number): ChainEntry[] {
   const all = readTailEntries(layout(), tailIdOf(), upcasters);
   const tip = readTailTip(layout(), tailIdOf(), upcasters, minSeq);
   expect(tip.filter((e) => e.link.seq > minSeq)).toEqual(all.filter((e) => e.link.seq > minSeq));

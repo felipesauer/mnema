@@ -49,12 +49,19 @@ import {
   eventBytes,
   ROOT_DOMAIN,
   writtenAsBuilt,
+  writtenAsStored,
 } from '../chain/hash.js';
 import { type CanonicalValue, canonicalBytes, canonicalStringify } from './canonical.js';
 import { type CatalogEvent, type EventKind, LATEST_VERSION } from './catalog.js';
-import { parseEvent, toCanonical, unreadableReason } from './parse.js';
+import { parseEvent, readEvent, readsKind, toCanonical, unreadableReason } from './parse.js';
 import { catalogUpcasters } from './registry.js';
-import { CANONICAL_VECTORS, canonicalVectors, VECTORS_FILE } from './vectors.js';
+import {
+  CANONICAL_VECTORS,
+  canonicalVectors,
+  publishedVectors,
+  UNREAD_VECTORS,
+  VECTORS_FILE,
+} from './vectors.js';
 
 /** The published artifact's shape, as this test reads it. */
 interface Artifact {
@@ -103,9 +110,36 @@ describe('the vectors cover the catalog, and the type is what keeps them coverin
   });
 
   it('lists in the published file exactly the vectors the module holds, in order', () => {
-    expect(artifact.vectors.map((row) => row.name)).toEqual(vectors.map((v) => v.name));
-    expect(artifact.vectors.map((row) => row.kind)).toEqual(vectors.map((v) => v.event.kind));
+    const listed = publishedVectors();
+    expect(artifact.vectors.map((row) => row.name)).toEqual(listed.map((v) => v.name));
+    expect(artifact.vectors.map((row) => row.kind)).toEqual(listed.map((v) => v.kind));
+    // The catalog's vectors first, then the ones of a kind no version declares, at least one.
+    expect(listed.slice(0, vectors.length).map((v) => v.name)).toEqual(vectors.map((v) => v.name));
+    expect(UNREAD_VECTORS.length).toBeGreaterThan(0);
   });
+});
+
+describe('a vector of a kind no version declares: hashed like any, read past by the reader', () => {
+  for (const { name, event } of UNREAD_VECTORS) {
+    it(`${name} hashes to the digest the published file declares`, () => {
+      const row = published.get(name);
+      if (row === undefined) throw new Error(`no row named "${name}" in the published artifact`);
+      expect(digest(canonicalBytes(event as CanonicalValue))).toBe(row.sha256);
+      expect(canonicalStringify(row.event)).toBe(canonicalStringify(event as CanonicalValue));
+    });
+
+    it(`${name} is of a kind this reader does not know, and is read past rather than refused`, () => {
+      expect(readsKind(event.kind)).toBe(false);
+      const read = readEvent(canonicalStringify(event as CanonicalValue), catalogUpcasters());
+      // Its envelope, rebuilt, and nothing of its payload.
+      const { payload: _unread, ...envelope } = event;
+      expect(read).toEqual({ unread: envelope });
+      // The reader that asks for a catalog event still refuses it, naming the kind.
+      expect(() =>
+        parseEvent(canonicalStringify(event as CanonicalValue), catalogUpcasters()),
+      ).toThrow(/it reads no version of that kind/);
+    });
+  }
 });
 
 describe('canonicalization golden vectors: the byte format must not drift silently', () => {
@@ -187,7 +221,7 @@ describe('the published artifact says what the code says', () => {
 
   it('carries the empty fold, and the fold over every vector in the file’s order', () => {
     expect(contentRoot([])).toBe(artifact.chain.emptyRoot);
-    expect(contentRoot(vectors.map((v) => writtenAsBuilt(v.event)))).toBe(
+    expect(contentRoot(publishedVectors().map((v) => writtenAsStored(v.value)))).toBe(
       artifact.chain.contentRootOverAllVectors,
     );
   });

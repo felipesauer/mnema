@@ -211,11 +211,16 @@ describe('the second reader can be run at all', () => {
     // The 38 rows and the four aggregates, named in the finding so a shrinking vector
     // set cannot pass quietly.
     const said = report.findings.map((f) => f.what).join('\n');
-    expect(said).toMatch(/40 of 40 published vectors reproduce/);
+    expect(said).toMatch(/41 of 41 published vectors reproduce/);
     expect(said).toMatch(/the fold over an empty range reproduces/);
     expect(said).toMatch(/the entry hash of a genesis entry reproduces/);
     expect(said).toMatch(/the entry hash of a linked entry reproduces/);
-    expect(said).toMatch(/the content root over all 40 vectors reproduces/);
+    expect(said).toMatch(/the content root over all 41 vectors reproduces/);
+    // The one of a kind no version declares is read past, its payload unread (section 7.1).
+    expect(said).toMatch(/40 of 41 published vectors rebuild byte-identically/);
+    expect(said).toMatch(
+      /1 published vector\(s\) of a kind no contract declares \(x\.from-the-future\)/,
+    );
     // The signed messages (sections 6, 6.1 and 6.10), counted so a shrinking set cannot pass.
     expect(said).toMatch(/5 of 5 published signed messages reproduce, and their signatures verify/);
     expect(said).toMatch(/the record's name reproduces from its genesis tail/);

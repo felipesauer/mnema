@@ -31,6 +31,7 @@ import {
   catalogUpcasters,
   checkpointHash,
   checkpointMessage,
+  isCatalogEvent,
   readTailCheckpoints,
   readTailEntries,
   witnessDir,
@@ -91,6 +92,8 @@ export function readSigstoreReceipts(
         if (entry.link.seq > tail.checkpointedThrough) break;
         const event = entry.event;
         if (!whoseKey.has(event.signerFp)) whoseKey.set(event.signerFp, event.who);
+        // A line of a kind this binary does not know links no account: what it says is not read.
+        if (!isCatalogEvent(event)) continue;
         if (
           event.kind === 'account.linked' &&
           event.who === event.subject &&

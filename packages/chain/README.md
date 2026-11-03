@@ -294,7 +294,7 @@ guard holds the two byte for byte.
 [`verifier/`](https://github.com/felipesauer/mnema/tree/main/packages/chain/verifier) is the other half of the same idea, and it is what stops
 the paragraph above from being a claim about a document nobody ever implemented: a
 verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
-It reproduces the 40 vectors, the four aggregate digests and the five signed messages, checks T1, T2/T4 and T3
+It reproduces the 41 vectors, the four aggregate digests and the five signed messages, checks T1, T2/T4 and T3
 over real records, judges enrolment, retractions and the moves of a workflow as the
 product does, and refuses the mutations in `verifier/mutate.py` except five: three that
 both readers accept and two it reads as incomplete. It found
@@ -343,13 +343,19 @@ yet been needed; the page does not promise one for a change that has not happene
 product's command line wrote is kept frozen, and both readers have to verify it, every move
 applied (`src/chain/the-promise-between-versions.test.ts`).
 
-**A newer record, read by an older tool.** This does not work, and the format says so: a reader
-refuses a line whose `kind` and `v` no row of its table declares (`FORMAT.md` §4.1). Once a kind
-your binary does not know is in the committed tree, that binary stops reading the whole record,
-not only that event. From the first publication on, the refusal names the kind and version, what
-that binary reads of the kind, and which mnema refuses; nothing in the record says which version
-wrote the line, so it cannot name the one that reads it (`FORMAT.md` §7.1). Read a record with a
-binary at least as new as the newest tool that wrote to it.
+**A newer record, read by an older tool.** A version of a kind ahead of the one a binary reads is
+refused: a reader refuses a line whose `kind` it declares at a `v` no row of its table declares
+(`FORMAT.md` §4.1), and that binary stops reading the whole record, not only that event. The
+refusal names the kind and version, what that binary reads of the kind, and which mnema refuses;
+nothing in the record says which version wrote the line, so it cannot name the one that reads it
+(`FORMAT.md` §7.1). A kind the binary does not know at all is another matter from 0.1.5 on: the
+binary checks the line's envelope, hash, place in the chain, signer and checkpoint, reads none of
+what it says, applies none of it, and names the kind in a line of `verify` that moves neither the
+verdict nor the exit (`FORMAT.md` §7.1, `src/chain/a-kind-this-reader-does-not-know-is-read-past.test.ts`).
+What it then serves of the record is what it reads, without that line: a newer kind that changed a
+key, a decision or a note is not applied by it. Binaries before 0.1.5 refuse such a line as they
+refuse a version ahead. Read a record with a binary at least as new as the newest tool that wrote
+to it.
 
 **What an older tool reads without refusing.** A rule of authenticity or legality is never
 loosened inside a `kind` and `v` that already exist; a new permission is a new one, which an older

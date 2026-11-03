@@ -76,6 +76,7 @@ import {
   checkpointMessage,
   checkpointToWitness,
   completeWitness,
+  isCatalogEvent,
   isEmptyTail,
   listTails,
   meetsRequirement,
@@ -690,6 +691,7 @@ function namesSigstoreIdentity(chains: readonly HeldChain[], identity: string): 
     for (const entry of readTailEntries(chain.layout, chain.tail, upcasters)) {
       if (entry.link.seq > through) break;
       const event = entry.event;
+      if (!isCatalogEvent(event)) continue;
       if (
         event.kind === 'account.linked' &&
         event.who === event.subject &&
