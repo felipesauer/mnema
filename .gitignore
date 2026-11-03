@@ -31,3 +31,7 @@ __pycache__/
 
 # VS Code, downloaded for `install-check`.
 .vscode-test/
+
+# The root LICENSE, copied here by the build of @mnema/code so the packed tarball carries it
+# (packages/code/build/the-stack-index.mjs).
+/packages/code/LICENSE
