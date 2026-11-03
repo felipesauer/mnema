@@ -194,6 +194,30 @@ describe('mnema instructions in a file of the person’s', () => {
     expect(text('AGENTS.md')).toBe(`${THEIRS}\n${INSTRUCTIONS_BLOCK}\n## After\n`);
   });
 
+  it('says when an agent accepts, in the one line about a decision born proposed, and keeps the third version byte for byte', () => {
+    expect(INSTRUCTIONS_VERSION).toBe('v4');
+    const line = INSTRUCTIONS_BODY.split('\n').find((one) => one.includes('born `proposed`'));
+    expect(line).toBe(
+      '- A decision is born `proposed`; once it is accepted it is in force here. If the person dictated it, or chose it among options you offered (a recommended one included), accept it now with `decision_transition` and a note quoting their answer; one you concluded alone waits for the person. An agent’s acceptance is recorded as an agent’s, and `mnema switch off agent-accepts` leaves every acceptance to a person.',
+    );
+    const oldLine =
+      '- A decision is born `proposed`; once it is accepted it is in force here (an acceptance made by an agent is recorded as an agent’s, and `mnema switch off agent-accepts` leaves it to a person).';
+    const v3 = KNOWN_BODIES['v3'] as string;
+    expect(v3).toContain(`${oldLine}\n`);
+    // The two texts differ in that one line and in nothing else.
+    expect(v3.replace(oldLine, '')).toBe(INSTRUCTIONS_BODY.replace(line as string, ''));
+  });
+
+  it('replaces a v3 block with the v4 one in every file the product wrote, and touches nothing outside the markers', () => {
+    const older = `${beginMarker('v3')}\n${KNOWN_BODIES['v3']}${INSTRUCTIONS_END}\n`;
+    put('AGENTS.md', `${THEIRS}\n${older}\n## After\n`);
+    writeInstructions(project);
+    expect(text('AGENTS.md')).toBe(`${THEIRS}\n${INSTRUCTIONS_BLOCK}\n## After\n`);
+    expect(text('AGENTS.md')).toContain(beginMarker('v4'));
+    expect(text('AGENTS.md')).not.toContain(beginMarker('v3'));
+    expect(text('AGENTS.md')).toContain('accept it now with `decision_transition`');
+  });
+
   it('refuses a block of a version it does not know', () => {
     put('AGENTS.md', `${beginMarker('v9')}\nfrom a newer mnema\n${INSTRUCTIONS_END}\n`);
     expect(

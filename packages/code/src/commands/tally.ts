@@ -39,7 +39,7 @@
 
 import { dirname } from 'node:path';
 import { channelIsOn } from '@mnema/context';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { type DiscoveryEnv, INITIAL_DECISION_STATE, resolveTrees } from '@mnema/core';
 import { SESSION_JOURNAL_CHANNEL, SESSION_TALLY_CHANNEL } from '../record-framing.js';
 import {
   exclusivelyOn,
@@ -96,6 +96,7 @@ function tallyLine(input: {
   readonly files: number;
   readonly decisions: number;
   readonly copied: number;
+  readonly waiting: number;
 }): string {
   return (
     `Since this session opened, its own tool calls wrote ` +
@@ -103,8 +104,19 @@ function tallyLine(input: {
     `${counted(input.decisions, 'decision was', 'decisions were')} recorded in this project’s record` +
     (input.copied === 0
       ? '.'
-      : `, and ${counted(input.copied, 'note', 'notes')} of this host’s memory ${input.copied === 1 ? 'was' : 'were'} copied into this machine’s private tree.`)
+      : `, and ${counted(input.copied, 'note', 'notes')} of this host’s memory ${input.copied === 1 ? 'was' : 'were'} copied into this machine’s private tree.`) +
+    waitingLine(input.waiting)
   );
+}
+
+/**
+ * The second line, only when a decision recorded since the session opened is still `proposed`: how
+ * many, and the command a person rules on them with. It is a count and a door, as the first line
+ * is; a session that leaves nothing waiting gets no second line.
+ */
+function waitingLine(waiting: number): string {
+  if (waiting === 0) return '';
+  return `\n${counted(waiting, 'decision recorded since it opened still awaits', 'decisions recorded since it opened still await')} a person’s judgement: \`mnema decision review\`.`;
 }
 
 /** Answers the hook payload `input.payload`: the line, or `{}` when there is nothing to count. */
@@ -198,6 +210,7 @@ export function runSessionTally(
           files: journal.filesEdited,
           decisions: journal.decisions.length,
           copied: journal.notes.length,
+          waiting: journal.decisions.filter((one) => one.state === INITIAL_DECISION_STATE).length,
         }),
       },
       notes: [],

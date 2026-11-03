@@ -19,6 +19,7 @@
 
 import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { agentsAcceptHere } from '../agent-accepts.js';
 import { CHOICE_SETTLED_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
 
@@ -52,11 +53,22 @@ export const QUESTION_TOOLS: ReadonlySet<string> = new Set([
 /** The events that fire after a tool ran: Gemini CLI names it `AfterTool`, the others `PostToolUse`. */
 const AFTER_A_TOOL: ReadonlySet<string> = new Set(['PostToolUse', 'AfterTool']);
 
-/** What the agent is handed: a fact, the tool that records, and that nothing was recorded. */
-export const SETTLED_SENTENCE =
-  'A question to the person was answered here. Where the answer settled a choice, ' +
-  '`record_decision` records it in this project’s record, with the options not taken as ' +
-  '`alternatives`; nothing has been recorded from this answer.';
+/**
+ * What the agent is handed: a fact, the tool that records, the one that accepts and what its note
+ * quotes, and that nothing was recorded. The answer is the person's own word, so a decision it
+ * settled is one the agent accepts at once (a standing rule of this record, the product's default
+ * now); with `agent-accepts` off only a person accepts, and the sentence says so instead.
+ */
+export function settledSentence(agentsAccept: boolean): string {
+  const opening =
+    'A question to the person was answered here. Where the answer settled a choice, ' +
+    '`record_decision` records it in this project’s record, with the options not taken as ' +
+    '`alternatives`';
+  const closing = 'nothing has been recorded from this answer.';
+  return agentsAccept
+    ? `${opening}, and \`decision_transition\` (action \`accept\`) accepts it, the note quoting the answer; ${closing}`
+    : `${opening}; \`agent-accepts\` is off, so a person accepts it (\`mnema decision review\`); ${closing}`;
+}
 
 const SILENT: SettledDone = { ok: true, reply: {} };
 
@@ -83,13 +95,17 @@ export function runSettled(
 
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) return SILENT;
-  const on = withScopedCaches(trees, (sources) => channelIsOn(sources, CHOICE_SETTLED_CHANNEL));
-  if (!on) return SILENT;
+  const read = withScopedCaches(trees, (sources) => ({
+    on: channelIsOn(sources, CHOICE_SETTLED_CHANNEL),
+    agentsAccept: agentsAcceptHere(sources),
+  }));
+  if (!read.on) return SILENT;
+  const sentence = settledSentence(read.agentsAccept);
   return {
     ok: true,
     reply:
       input.reply === 'flat'
-        ? { additionalContext: SETTLED_SENTENCE }
-        : { hookSpecificOutput: { hookEventName: event, additionalContext: SETTLED_SENTENCE } },
+        ? { additionalContext: sentence }
+        : { hookSpecificOutput: { hookEventName: event, additionalContext: sentence } },
   };
 }

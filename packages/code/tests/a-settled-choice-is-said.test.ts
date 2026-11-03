@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import type { DiscoveryEnv } from '@mnema/core';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { QUESTION_TOOLS, runSettled, SETTLED_SENTENCE } from '../src/commands/settled.js';
+import { QUESTION_TOOLS, runSettled, settledSentence } from '../src/commands/settled.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { type CliIo, run } from '../src/program.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
@@ -36,6 +36,9 @@ import { registerSettled } from '../src/wiring/settled.js';
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
 const PLUGIN = join(REPO, 'plugin');
+
+/** What a project that never touched `agent-accepts` is handed: the switch is on by default. */
+const ACCEPTING = settledSentence(true);
 
 let sandbox: string;
 let repo: string;
@@ -133,36 +136,57 @@ describe('mnema settled', () => {
       'request_user_input',
     ]);
     expect(answer(payload('AskUserQuestion'))).toEqual({
-      hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: SETTLED_SENTENCE },
+      hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: ACCEPTING },
     });
     expect(answer(payload('ask_user', { hook_event_name: 'AfterTool' }))).toEqual({
-      hookSpecificOutput: { hookEventName: 'AfterTool', additionalContext: SETTLED_SENTENCE },
+      hookSpecificOutput: { hookEventName: 'AfterTool', additionalContext: ACCEPTING },
     });
     for (const tool of ['request_user_input', 'question']) {
       expect(answer(payload(tool)), tool).toEqual({
-        hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: SETTLED_SENTENCE },
+        hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: ACCEPTING },
       });
     }
   });
 
   it('answers flat where the host reads a top-level additionalContext', () => {
     expect(answer(payload('AskUserQuestion'), 'flat')).toEqual({
-      additionalContext: SETTLED_SENTENCE,
+      additionalContext: ACCEPTING,
     });
   });
 
-  it('says a fact and names the tool, and says it recorded nothing', () => {
-    expect(SETTLED_SENTENCE).toBe(
+  it('says a fact, names the tool that records and the one that accepts, and says it recorded nothing', () => {
+    expect(ACCEPTING).toBe(
       'A question to the person was answered here. Where the answer settled a choice, ' +
         '`record_decision` records it in this project’s record, with the options not taken as ' +
-        '`alternatives`; nothing has been recorded from this answer.',
+        '`alternatives`, and `decision_transition` (action `accept`) accepts it, the note quoting ' +
+        'the answer; nothing has been recorded from this answer.',
     );
   });
 
-  it('tells the agent nothing to do: no word the framing tripwire knows', () => {
-    expect(tellsWhatToDo(SETTLED_SENTENCE)).toBeUndefined();
+  it('says a person accepts it where the switch agent-accepts is off, and the agent accepts again once it is on', async () => {
+    await did('switch', 'off', 'agent-accepts');
+    const off = answer(payload('AskUserQuestion')) as {
+      hookSpecificOutput: { additionalContext: string };
+    };
+    expect(off.hookSpecificOutput.additionalContext).toBe(
+      'A question to the person was answered here. Where the answer settled a choice, ' +
+        '`record_decision` records it in this project’s record, with the options not taken as ' +
+        '`alternatives`; `agent-accepts` is off, so a person accepts it (`mnema decision review`); ' +
+        'nothing has been recorded from this answer.',
+    );
+    expect(off.hookSpecificOutput.additionalContext).not.toContain('decision_transition');
+    await did('switch', 'on', 'agent-accepts');
+    expect(answer(payload('AskUserQuestion'))).toEqual({
+      hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: ACCEPTING },
+    });
+  });
+
+  it('tells the agent nothing to do: no word the framing tripwire knows, in either state', () => {
+    for (const agentsAccept of [true, false]) {
+      expect(tellsWhatToDo(settledSentence(agentsAccept)), String(agentsAccept)).toBeUndefined();
+    }
     // The tripwire is awake: the same sentence with an order in it is caught.
-    expect(tellsWhatToDo(`${SETTLED_SENTENCE} You must record it.`)).toBe('you must');
+    expect(tellsWhatToDo(`${ACCEPTING} You must record it.`)).toBe('you must');
   });
 
   it('is silent for a tool that asks nothing, before a tool runs, and for what is not a payload', () => {
@@ -185,7 +209,7 @@ describe('mnema settled', () => {
     expect(answer(payload('AskUserQuestion'))).toEqual({});
     await did('switch', 'on', 'choice-settled');
     expect(answer(payload('AskUserQuestion'))).toEqual({
-      hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: SETTLED_SENTENCE },
+      hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: ACCEPTING },
     });
   });
 
@@ -218,7 +242,7 @@ describe('mnema settled', () => {
       typeof registerSettled
     >[1]);
     await program.parseAsync(['settled', '--reply', 'flat'], { from: 'user' });
-    expect(out.map((line) => JSON.parse(line))).toEqual([{ additionalContext: SETTLED_SENTENCE }]);
+    expect(out.map((line) => JSON.parse(line))).toEqual([{ additionalContext: ACCEPTING }]);
   });
 });
 
@@ -279,7 +303,7 @@ describe('the plugin hook a host runs after a question', () => {
     const sent = host(payload('AskUserQuestion'));
     expect(sent.status).toBe(0);
     expect(JSON.parse(sent.stdout)).toEqual({
-      hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: SETTLED_SENTENCE },
+      hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: ACCEPTING },
     });
     expect(sent.started).toBe(true);
   });

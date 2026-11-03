@@ -67,3 +67,39 @@ export function acceptedByAnAgent(agent: string): string {
     'Whether agents may accept is a switch: `mnema switch off agent-accepts` stops it.'
   );
 }
+
+/** Who is told the state of a decision just recorded, which decides how the accept is spelled. */
+export type WhoIsTold = 'agent-tool' | 'agent-command' | 'person';
+
+/**
+ * What a decision just recorded says about its own state and about when an agent accepts it: the
+ * one place the rule is worded for the replies of the tool and of the command. A decision is born
+ * `proposed`; where the person dictated it, or chose it among the options an agent offered (a
+ * recommended one included), the agent accepts it at once with a note quoting the answer; where
+ * the agent concluded it alone, it waits for the person. With the switch off only a person accepts.
+ *
+ * It states what the gate allows (`agentMayAccept`) and stops there: the caller reads the switch,
+ * and one that cannot read it passes `false`, the quieter wording.
+ */
+export function stateOfANewDecision(mayAccept: boolean, who: WhoIsTold): string {
+  const born = '  Born proposed, so not yet in force.';
+  const review = '`mnema decision review`';
+  if (who === 'person') return `${born} A person accepts it with ${review}.`;
+  if (!mayAccept) {
+    return `${born} Here only a person accepts it (${review}): \`agent-accepts\` is switched off.`;
+  }
+  const how =
+    who === 'agent-tool'
+      ? '`decision_transition` (action `accept`)'
+      : '`mnema decision move accept <id> --which <agent>`';
+  return (
+    `${born} If the person dictated it, or chose it among options you offered ` +
+    `(a recommended one included), accept it now with ${how}, the note quoting their answer; ` +
+    `if you concluded it alone, it waits for the person (${review}).`
+  );
+}
+
+/** Whether an agent may accept here now: the gate's own answer, asked with no decision in hand. */
+export function agentsAcceptHere(sources: readonly ScopedCache[]): boolean {
+  return agentMayAccept(sources, { action: ACCEPT, agent: 'an-agent' }) === undefined;
+}

@@ -36,6 +36,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { openTreeForWriting, recordDecision } from '@mnema/core/write';
+import { agentsAcceptHere, stateOfANewDecision } from '../agent-accepts.js';
 import {
   type DecisionText,
   decisionsCited,
@@ -159,6 +160,26 @@ export function runDecision(
     ...forwardReplacement(recorded),
     ...('already' in recorded ? { alreadyRecorded: true as const } : {}),
   };
+}
+
+/**
+ * The line `mnema decision record` prints after "Recorded decision ...": the state of the new
+ * decision and who accepts it (`stateOfANewDecision`, the words the tool's reply uses too). An act
+ * declared with `--which` is an agent's and is told when it accepts; any other is a person's. A
+ * switch that cannot be read says the quieter thing.
+ */
+export function stateBesideADecision(
+  ctx: Pick<DecisionContext, 'cwd' | 'env'>,
+  which: string | undefined,
+): string {
+  if (which === undefined) return stateOfANewDecision(false, 'person');
+  let mayAccept = false;
+  try {
+    mayAccept = withScopedCaches(resolveTrees(ctx.cwd, ctx.env), agentsAcceptHere);
+  } catch {
+    // Unread, and so not said to be on.
+  }
+  return stateOfANewDecision(mayAccept, 'agent-command');
 }
 
 /**

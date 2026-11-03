@@ -1,6 +1,13 @@
 import type { ScopedCache } from '@mnema/context';
 import { describe, expect, it } from 'vitest';
-import { AGENT_ACCEPTS_IS_OFF, acceptedByAnAgent, agentMayAccept } from './agent-accepts.js';
+import {
+  AGENT_ACCEPTS_IS_OFF,
+  acceptedByAnAgent,
+  agentMayAccept,
+  agentsAcceptHere,
+  stateOfANewDecision,
+} from './agent-accepts.js';
+import { tellsWhatToDo } from './record-framing.js';
 
 /** One tree whose switch row for the channel says `on`, or no row at all (never switched). */
 function sources(switched: 'never' | 'off' | 'on'): ScopedCache[] {
@@ -51,5 +58,49 @@ describe('what an acceptance by an agent says about itself', () => {
 
   it('is one line however the agent’s name is written', () => {
     expect(acceptedByAnAgent('a\nb')).not.toContain('\n');
+  });
+});
+
+describe('what a decision just recorded says of its state', () => {
+  it('tells an agent through the tool when to accept and when to wait, and a person who accepts', () => {
+    expect(stateOfANewDecision(true, 'agent-tool')).toBe(
+      '  Born proposed, so not yet in force. If the person dictated it, or chose it among options ' +
+        'you offered (a recommended one included), accept it now with `decision_transition` ' +
+        '(action `accept`), the note quoting their answer; if you concluded it alone, it waits ' +
+        'for the person (`mnema decision review`).',
+    );
+    expect(stateOfANewDecision(true, 'agent-command')).toContain(
+      'accept it now with `mnema decision move accept <id> --which <agent>`',
+    );
+    expect(stateOfANewDecision(false, 'person')).toBe(
+      '  Born proposed, so not yet in force. A person accepts it with `mnema decision review`.',
+    );
+  });
+
+  it('says only a person accepts where the switch is off, whoever the agent is', () => {
+    for (const who of ['agent-tool', 'agent-command'] as const) {
+      const said = stateOfANewDecision(false, who);
+      expect(said).toBe(
+        '  Born proposed, so not yet in force. Here only a person accepts it ' +
+          '(`mnema decision review`): `agent-accepts` is switched off.',
+      );
+      expect(said).not.toContain('accept it now');
+    }
+  });
+
+  it('is one line, and tells nothing the framing tripwire knows', () => {
+    for (const mayAccept of [true, false]) {
+      for (const who of ['agent-tool', 'agent-command', 'person'] as const) {
+        const said = stateOfANewDecision(mayAccept, who);
+        expect(said).not.toContain('\n');
+        expect(tellsWhatToDo(said), `${mayAccept} ${who}`).toBeUndefined();
+      }
+    }
+  });
+
+  it('asks the gate: agents accept here unless the switch is off', () => {
+    expect(agentsAcceptHere(sources('never'))).toBe(true);
+    expect(agentsAcceptHere(sources('on'))).toBe(true);
+    expect(agentsAcceptHere(sources('off'))).toBe(false);
   });
 });

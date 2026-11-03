@@ -122,7 +122,7 @@ CLI and the MCP tools behave identically, because they are the same call.
   the record what `before-a-write` asks and records the same one `channel.served` per session, but it
   never refuses or asks and records no refusal or asking. The fifth is `mnema tally`, run at `Stop`: when the session's own tool calls wrote a file in
   the last response, it prints one line saying how many files they wrote and how
-  many decisions were recorded in the project since the session opened, counted off the
+  many decisions were recorded in the project since the session opened (and, on a second line, how many of them are still `proposed`, with `mnema decision review`), counted off the
   transcript the host names and off the record: no model is called and nothing is
   recorded. The line goes out as the reply's `systemMessage`; which host shows it was not
   measured. `mnema switch off session-tally` stops it. The same command keeps the session journal (see
