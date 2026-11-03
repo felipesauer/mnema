@@ -98,8 +98,8 @@ $ mnema --help
 |   trailer         print the commit trailer that ties a commit to a decision
 |   commit-hook     install or remove an optional git hook that suggests the
 |                   Mnema-Decision trailer
-|   record          pull the record over events not yet committed, and merge its
-|                   tails for git
+|   record          pull the record over events not yet committed, commit them for
+|                   a pull request, and merge its tails for git
 |
 | This machine:
 |   key             manage this machine's signing keys
@@ -1181,13 +1181,15 @@ $ mnema commit-hook --help
 $ mnema record --help
 | Usage: mnema record [options] [command]
 |
-| pull the record over events not yet committed, and merge its tails for git
+| pull the record over events not yet committed, commit them for a pull request,
+| and merge its tails for git
 |
 | Options:
 |   -h, --help                                    display help for command
 |
 | Commands:
 |   pull                                          git pull over tails grown here and not yet committed
+|   commit [options]                              commit the signed record to a branch for a pull request
 |   merge-tail <ancestor> <ours> <theirs> [path]  the merge driver git runs for a tail's files
 |   help [command]                                display help for command
 
@@ -2551,6 +2553,24 @@ $ mnema record pull --help
 | Then it runs `git pull --autostash` with the mnema merge driver given on that one command
 | line, puts back a new tail git did not track yet, and verifies the record. It writes no
 | git configuration.
+
+### mnema record commit --help
+$ mnema record commit --help
+| Usage: mnema record commit [options]
+|
+| commit the signed record to a branch for a pull request
+|
+| Options:
+|   --through <decision>  cut the tail that records this decision where it is
+|                         covered
+|   --json                emit what was cut and the commands to run as JSON
+|   -h, --help            display help for command
+|
+| It builds a commit on the remote's default branch as this clone last read it, without
+| touching the working tree, the index or HEAD: each tail of .mnema/ cut through its last
+| signed checkpoint, with the key files the cut names; nothing of the private tree. It
+| verifies that tree, with --since the base, before it makes the branch, then prints the
+| git push and the command that opens the pull request. It pushes nothing.
 
 ### mnema record merge-tail --help
 $ mnema record merge-tail --help

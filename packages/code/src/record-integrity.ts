@@ -273,6 +273,12 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'force; what it serves is the verdict of each check, a notice about the chain would be ' +
     'said to a runner that asked for the results, and `mnema verify` rules on the chain in the ' +
     'same job',
+  'commands/record-commit.ts':
+    'it reads the record for two things: which decision `--through` names, and the label and ' +
+    'state of each decision the cut moves, read off the cut tree only after `verify` at the ' +
+    'signed level and `verify --since` ruled on that tree; a cut whose chain breaks is refused ' +
+    'with what the readers said, and no branch is made, so a notice would have nothing left to ' +
+    'attach to',
   'commands/commit-hook.ts':
     'it serves the title and label of each governing decision into a commit message file the ' +
     'person edits, as `#` lines git drops; that file is not a reading anyone asked the record ' +

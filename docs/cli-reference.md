@@ -1398,6 +1398,49 @@ comments. It needs `mnema` on the `PATH` git runs hooks with; when
 `mnema` is missing or fails, the hook does nothing and the commit goes through. It looks for the
 project from the repository's top directory, so a record kept in a subdirectory draws no suggestion.
 
+### Committing the record through a pull request
+
+A writer appends to a tail and commits nothing, so the record's events reach git when somebody
+commits `.mnema/`. `record commit` makes that commit for a pull request of its own, without
+touching your working tree, your index or the branch you are on.
+
+```sh
+# Cut each tail at its last signed checkpoint onto a new branch, and print what to run next.
+mnema record commit
+
+# Only as far as the checkpoint that covers one decision's recording, in its tail.
+mnema record commit --through ADR-12 --json
+```
+
+The base is the branch the remote calls its default, as this clone last read it: the remote is the
+one the current branch follows, else the only one, else `origin`, and the default branch is the one
+`refs/remotes/<remote>/HEAD` names. It reads nothing from the network: where that ref is missing it
+refuses and says to run `git remote set-head <remote> --auto`, and it says how long ago the base was
+last updated, with `git remote update <remote>` to read it again. Every tail file the base holds must
+be the start of the one here, or it refuses, naming the file, and points at `record pull`.
+
+Each tail is cut through its last signed checkpoint; with `--through`, the tail that records that
+decision is cut through the first checkpoint that covers the recording, and the other tails through
+their last. The cut never goes below what the base holds, and it does not look at a decision's state:
+a proposed decision is committed, and reads as proposed. The commit carries the segments and
+checkpoints cut there, a new tail's proof and each key file a line of the cut names; nothing of
+the private tree. Where the base holds none of the files `mnema init` writes beside the record
+(`.gitattributes`, `.gitignore`, `README.md`, `.editorconfig`), they go in too, so the first commit
+of a record carries `* -text` and the tails' merge line. The events above the cut stay out and are
+counted; a file of `.mnema/` the base already holds stays as the base has it, and every other file
+that differs from the base (an `inherit.json`, say) stays out too, each named as left out: commit
+those with git.
+
+It builds the commit with git's plumbing on top of the base, signed when `commit.gpgSign` is set, as
+`git commit` would sign it. Before a branch exists, the tree is checked out apart and verified at the
+signed level and with `--since` the base; where either fails it refuses and makes no branch. Then it
+prints `git push -u <remote> <branch>` and the command that opens the pull request: `gh pr create`
+for a GitHub remote, `glab mr create` for a GitLab one, a sentence for any other. It pushes nothing
+and runs neither. The branch is `mnema-record/` with the decisions' labels and a digest of where
+the cut ends: run again with nothing new it says the branch is there, and once the base holds the cut
+it says there is nothing to commit. After the pull request merges, `record pull` brings the branch
+followed back over the events that stayed out.
+
 ### Pulling a record that grew here
 
 A tail only grows, and a writer appends to it without committing. A pull request carries those
