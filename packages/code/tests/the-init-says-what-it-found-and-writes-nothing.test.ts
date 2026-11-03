@@ -23,17 +23,18 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { detectAround } from '../src/init/detect.js';
+import { detectAround, saysAboutAFile } from '../src/init/detect.js';
 import { defaultMarks, marksForHosts } from '../src/init/flow.js';
 import { HOST_NAMES_OFFERED, hostMark, readHostsFlag, yoursMark } from '../src/init/hosts.js';
 import { planOf } from '../src/init/plan.js';
 import { shownFrom } from '../src/init/run.js';
-import { INSTRUCTIONS_BLOCK } from '../src/instructions-block.js';
+import { INSTRUCTIONS_BLOCK, KNOWN_BODIES } from '../src/instructions-block.js';
 import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
@@ -127,6 +128,35 @@ describe('what is found', () => {
 
     writeFileSync(join(repo, '.git', 'HEAD'), '0123456789abcdef0123456789abcdef01234567\n');
     expect(detectAround(repo).git?.branch).toBeUndefined();
+  });
+
+  it('reads the branch through the pointer a worktree leaves, and says none where the pointer or the head cannot be read', () => {
+    const real = join(sandbox, 'gitdir');
+    mkdirSync(real);
+    writeFileSync(join(real, 'HEAD'), 'ref: refs/heads/feature/x\n');
+    writeFileSync(join(repo, '.git'), `gitdir: ${real}\n`);
+    expect(detectAround(repo).git?.branch).toBe('feature/x');
+    writeFileSync(join(repo, '.git'), 'not a pointer\n');
+    expect(detectAround(repo).git?.branch).toBeUndefined();
+    writeFileSync(join(repo, '.git'), `gitdir: ${join(sandbox, 'nowhere')}\n`);
+    expect(detectAround(repo).git?.branch).toBeUndefined();
+  });
+
+  it('says an earlier block, and a file that cannot be written through, as what they are', () => {
+    const earlier = `# Mine\n<!-- mnema:begin v2 (written by mnema; \`mnema instructions --remove\` takes it out) -->\n${KNOWN_BODIES.v2}<!-- mnema:end -->\n`;
+    writeFileSync(join(repo, 'AGENTS.md'), earlier);
+    symlinkSync(join(sandbox, 'outside.md'), join(repo, 'CLAUDE.md'));
+    const said = Object.fromEntries(
+      detectAround(repo).found.map((found) => [found.path, found.what]),
+    );
+    expect(said['AGENTS.md']).toBe('holds an earlier mnema block');
+    expect(said['CLAUDE.md']).toContain('left as it is:');
+    const peek = detectAround(repo).files.get('AGENTS.md');
+    expect(
+      peek === undefined
+        ? ''
+        : saysAboutAFile({ ...peek, own: true, found: { state: 'missing', exists: false } }),
+    ).toBe('not there yet');
   });
 
   it('says no repository where there is none', () => {

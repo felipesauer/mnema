@@ -195,6 +195,19 @@ describe('the answer of an agent', { timeout: 60_000 }, () => {
   });
 });
 
+describe('where there is no project to record in', () => {
+  it('says so and records nothing, for the person and for an agent', () => {
+    for (const by of [
+      { given: 'flag' as const },
+      { given: 'flag' as const, agent: 'claude-code' },
+    ]) {
+      const recorded = recordWhoMayAccept({ cwd: repo, env: { home } }, 'no', by);
+      expect(recorded.ok).toBe(false);
+      if (!recorded.ok) expect(recorded.message).toContain('no project');
+    }
+  });
+});
+
 describe('nothing is asked or recorded', { timeout: 60_000 }, () => {
   it('without a terminal and without `--accepts`', async () => {
     const heard = await alone(['init']);

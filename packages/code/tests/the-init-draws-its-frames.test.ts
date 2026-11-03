@@ -37,6 +37,7 @@ import {
   hostsPage,
   leftLine,
   planPage,
+  stateOfAFile,
   theFirstScreen,
   trail,
 } from '../src/init/screens.js';
@@ -246,6 +247,55 @@ describe('the frames', () => {
     expect(at(60).some((row) => row.includes('Found the project') && row.includes('Leave'))).toBe(
       false,
     );
+  });
+});
+
+describe('the founding list', () => {
+  it('says each thing a write can have done to a file, in the words of the row', () => {
+    const { done } = { done: factsOfTheFolder().done };
+    const files = (['replaced', 'unchanged', 'refused', 'failed'] as const).map((did) => ({
+      path: `${did}.md`,
+      found: { state: 'missing' as const, exists: true },
+      did,
+      ...(did === 'failed' ? { error: 'permission denied' } : {}),
+    }));
+    const result = {
+      ...done.result,
+      around: {
+        ...(done.result.around as object),
+        instructions: files,
+        foundedBelowTheRoot: true,
+      },
+    } as typeof done.result;
+    const text = foundingPage({ ...done, result }, 80)
+      .map((line) => renderPlain(line))
+      .join('\n');
+    expect(text).toContain('done   replaced.md');
+    expect(text).toContain('block replaced');
+    expect(text).toContain('kept   unchanged.md');
+    expect(text).toContain('left   ');
+    expect(text).toContain('permission denied');
+    const steps = summaryPage({ ...done, result }, 80)
+      .map((line) => renderPlain(line))
+      .join('\n');
+    expect(steps).toContain('This is not the root of the');
+  });
+});
+
+describe('what a row says of a file', () => {
+  it('has a few words for every state a file can be in', () => {
+    const peek = (found: Parameters<typeof stateOfAFile>[0]['found'], exists = true) => ({
+      path: 'x.md',
+      exists,
+      own: false,
+      found,
+    });
+    expect(stateOfAFile(peek({ state: 'missing', exists: false }, false))).toBe('new');
+    expect(stateOfAFile(peek({ state: 'missing', exists: true }))).toBe('yours: block added');
+    expect(stateOfAFile(peek({ state: 'current' }))).toBe('already holds the block');
+    expect(stateOfAFile(peek({ state: 'outdated' }))).toBe('earlier block replaced');
+    expect(stateOfAFile(peek({ state: 'edited', why: 'w' }))).toContain('edited');
+    expect(stateOfAFile(peek({ state: 'blocked', why: 'it is a link' }))).toContain('it is a link');
   });
 });
 
