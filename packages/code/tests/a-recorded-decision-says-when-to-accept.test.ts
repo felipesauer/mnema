@@ -186,7 +186,9 @@ describe('mnema decision record', () => {
     );
     expect(done.failed).toBe(false);
     expect(done.out[0]).toMatch(/^Recorded decision ADR-1 \(/);
-    const id = /^Recorded decision ADR-1 \(([0-9a-f-]{36})\)$/.exec(done.out[0] as string)?.[1] as string;
+    const id = /^Recorded decision ADR-1 \(([0-9a-f-]{36})\)$/.exec(
+      done.out[0] as string,
+    )?.[1] as string;
     expect(done.out[1]).toBe(
       stateOfANewDecision('on', 'agent-command', { id, agent: 'claude-code' }),
     );

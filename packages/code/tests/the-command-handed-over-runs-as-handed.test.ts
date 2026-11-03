@@ -822,7 +822,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/commands/key-request.ts': { line: 2 },
   'packages/code/src/commands/record-commit.ts': { name: 1 },
   'packages/code/src/commands/report.ts': { line: 3 },
-  'packages/code/src/commands/settled.ts': { name: 1 },
+  'packages/code/src/commands/settled.ts': { name: 2 },
   'packages/code/src/commands/site.ts': { name: 1 },
   'packages/code/src/commands/skill-export.ts': { line: 1, name: 2 },
   'packages/code/src/commands/stack-index.ts': { line: 1 },

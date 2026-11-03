@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   AGENT_ACCEPTS_IS_OFF,
   acceptedByAnAgent,
-  agentMayAccept,
   acceptStateHere,
+  agentMayAccept,
   stateOfANewDecision,
 } from './agent-accepts.js';
 import { tellsWhatToDo } from './record-framing.js';
@@ -69,9 +69,9 @@ describe('what a decision just recorded says of its state', () => {
         '(action `accept`), the note quoting their answer; if you concluded it alone, it waits ' +
         'for the person (`mnema decision review`).',
     );
-    expect(stateOfANewDecision('on', 'agent-command', { id: 'abc', agent: 'claude-code' })).toContain(
-      'accept it now with `mnema decision move accept abc --which claude-code`',
-    );
+    expect(
+      stateOfANewDecision('on', 'agent-command', { id: 'abc', agent: 'claude-code' }),
+    ).toContain('accept it now with `mnema decision move accept abc --which claude-code`');
     expect(stateOfANewDecision('off', 'person')).toBe(
       '  Born proposed, so not yet in force. A person accepts it with `mnema decision review`.',
     );
