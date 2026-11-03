@@ -228,7 +228,10 @@ describe('a record a newer mnema added a kind to', { timeout: 120_000 }, () => {
 
     const status = mnema('status');
     expect(status.status, status.err).toBe(0);
-    expect(status.out).toBe(before.status);
+    // The line is an event, and where no commit holds it yet the screen counts it under its own
+    // heading (`events-not-in-git.ts`); the reading above that heading is what must not move.
+    const reading = (screen: string) => screen.split('\nNot in git yet:')[0];
+    expect(reading(status.out)).toBe(reading(before.status));
     const show = mnema('show', id as string);
     expect(show.status, show.err).toBe(0);
     expect(show.out).toBe(before.show);
