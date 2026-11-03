@@ -266,7 +266,7 @@ describe('the founding list', () => {
         instructions: files,
         foundedBelowTheRoot: true,
       },
-    } as typeof done.result;
+    } as unknown as typeof done.result;
     const text = foundingPage({ ...done, result }, 80)
       .map((line) => renderPlain(line))
       .join('\n');
