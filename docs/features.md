@@ -52,8 +52,9 @@ Each line says what it does and what it leaves unproven; the page it points to h
   anything, and `mnema switch off subagent-handback` turns it off. Every switch, where it begins and the command that flips it are in [the table of switches](switches.md).
 - **A question answered is a moment the agent is told about.** In Claude Code, after the agent asked
   the person through `AskUserQuestion` and the answer came back, `mnema settled` hands it one
-  sentence beside the answer: a choice may have been settled there, and `record_decision` records
-  it. It records nothing and reads which tool ran, never the answer; `mnema switch off
+  sentence beside the answer: a choice may have been settled there, `record_decision` records
+  it and `decision_transition` accepts it with a note quoting the answer (a person accepts it,
+  where `agent-accepts` is off). It records nothing and reads which tool ran and that switch, never the answer; `mnema switch off
   choice-settled` turns it off. The other hosts' hooks files carry it on their own question tools,
   documented and not measured.
 - **A task carries its description, and a handoff its brief.** The `--description` of `task create` and

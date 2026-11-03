@@ -44,6 +44,7 @@ with the repository: every clone reads it.
 ```sh
 mnema decision record "Keep money as integer cents" "Float sums drift; cents are exact."
 #> Recorded decision ADR-1 (01a0af84-7eab-7000-8888-79c0dd5690e2)
+#>   Born proposed, so not yet in force. A person accepts it with `mnema decision review`.
 #>   Landed in the public tree: committed with the repository, so it reaches every clone.
 mnema decision move accept ADR-1 --note "Agreed in review."
 #> Decision ADR-1 (01a0af84-7eab-7000-8888-79c0dd5690e2) → accepted

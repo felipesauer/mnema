@@ -146,9 +146,10 @@ document, delivered by the host instead of waited for.
   measured on the event. `mnema switch off subagent-handback` stops it.
 - **A `PostToolUse` hook after a question**, `mnema settled`. After the agent asked the person a
   question through `AskUserQuestion` and the answer came back, it hands the agent one sentence beside
-  the answer: that a choice may have been settled there, and that `record_decision` records it with
-  the options not taken as `alternatives`. It records nothing and reads which tool ran, never the
-  answer. The handler is given the tool it answers (`--tools AskUserQuestion`) and starts no `mnema`
+  the answer: that a choice may have been settled there, that `record_decision` records it with
+  the options not taken as `alternatives`, and that `decision_transition` accepts it with a note
+  quoting the answer (a person accepts it, where `agent-accepts` is off). It records nothing and
+  reads which tool ran and whether `agent-accepts` is on, never the answer. The handler is given the tool it answers (`--tools AskUserQuestion`) and starts no `mnema`
   for any other, because VS Code runs this file's hooks whatever their matcher says. Held against the real Claude Code binary by
   `a-settled-choice-reaches-the-model.test.ts`; the hooks files of Codex, Copilot CLI, Gemini CLI and
   OpenCode carry the same hook on their own question tools, documented and not measured. On until

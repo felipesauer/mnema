@@ -784,8 +784,9 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'question the agent asked. Off until switched on',
   'choice-settled':
     'the sentence handed to the agent after a question it asked the person was answered: that a ' +
-    'choice may have been settled there and which tool records it. It reads which tool ran and ' +
-    'writes nothing',
+    'choice may have been settled there, which tool records it and which accepts it (or that a ' +
+    'person accepts it, where `agent-accepts` is off). It reads which tool ran and whether ' +
+    '`agent-accepts` is on, and writes nothing',
   'host-memory-mirror':
     'the copy of the host’s own memory: with it on, a `PostToolUse` hook copies each note Claude ' +
     'Code writes to its memory directory into this machine’s private tree, once per content, ' +

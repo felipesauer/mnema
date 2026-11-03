@@ -24,6 +24,7 @@ mnema init
 #> …
 mnema decision record "Use SQLite for the cache" "Embedded, and fast enough at our sizes."
 #> Recorded decision ADR-1 (01a14265-a017-7000-a83b-c9516d78ff90)
+#>   Born proposed, so not yet in force. A person accepts it with `mnema decision review`.
 #>   Landed in the public tree: committed with the repository, so it reaches every clone.
 git add .mnema
 git commit -m "Record ADR-1"
