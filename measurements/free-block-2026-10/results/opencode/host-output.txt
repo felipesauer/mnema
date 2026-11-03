@@ -1,0 +1,119 @@
+[0m
+> build · nvidia/nemotron-3-ultra-550b-a55b:free
+[0m
+[0m✱ [0mGlob "**/*"[90m 36 matches[0m
+[0m→ [0mRead packages/js/src/accessors/formats/env-accessor.ts
+[0m→ [0mRead packages/js/tests/env-accessor.test.ts
+[0m
+[0m← [0mEdit packages/js/src/accessors/formats/env-accessor.ts
+Index: <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/js/src/accessors/formats/env-accessor.ts
+===================================================================
+--- <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/js/src/accessors/formats/env-accessor.ts
++++ <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/js/src/accessors/formats/env-accessor.ts
+@@ -5,10 +5,11 @@
+ private readonly values = new Map<string, string>();
+ 
+ constructor(source: string) {
+   for (const raw of source.split(/\r?\n/)) {
+-    const line = raw.trim();
++    let line = raw.trim();
+     if (line === '' || line.startsWith('#')) continue;
++    if (line.startsWith('export ')) line = line.slice(7);
+     const eq = line.indexOf('=');
+     if (eq <= 0) continue;
+     const key = line.slice(0, eq).trim();
+     let value = line.slice(eq + 1).trim();
+
+[0m
+[0m← [0mEdit packages/js/tests/env-accessor.test.ts
+Index: <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/js/tests/env-accessor.test.ts
+===================================================================
+--- <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/js/tests/env-accessor.test.ts
++++ <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/js/tests/env-accessor.test.ts
+@@ -7,8 +7,14 @@
+   assert.equal(env.get('HOST'), 'localhost');
+   assert.equal(env.get('PORT'), '3000');
+ });
+ 
++test('reads export KEY=value lines', () => {
++  const env = new EnvAccessor('export HOST=localhost\nexport PORT=3000\n');
++  assert.equal(env.get('HOST'), 'localhost');
++  assert.equal(env.get('PORT'), '3000');
++});
++
+ test('skips blank lines and comments', () => {
+   const env = new EnvAccessor('# a comment\n\nKEY=value\n');
+   assert.deepEqual(env.all(), { KEY: 'value' });
+ });
+
+[0m
+[0m$ [0mnpm test --workspace packages/js
+npm notice run @synthetic/accessors@0.0.0 test
+npm notice run node --test
+✔ reads KEY=value lines (1.03688ms)
+✔ reads export KEY=value lines (0.158682ms)
+✔ skips blank lines and comments (0.723916ms)
+✔ strips one pair of matching quotes (0.15505ms)
+✔ answers the fallback for a key that is not there (0.175793ms)
+✔ keeps the string values of an object (1.433724ms)
+✔ refuses what is not an object (0.411232ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 125.765595
+[0m
+[0m→ [0mRead packages/php/src/Formats/EnvAccessor.php
+[0m
+[0m← [0mEdit packages/php/src/Formats/EnvAccessor.php
+Index: <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/php/src/Formats/EnvAccessor.php
+===================================================================
+--- <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/php/src/Formats/EnvAccessor.php
++++ <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/php/src/Formats/EnvAccessor.php
+@@ -18,8 +18,11 @@
+ $line = trim($raw);
+ if ($line === '' || str_starts_with($line, '#')) {
+     continue;
+ }
++if (str_starts_with($line, 'export ')) {
++    $line = substr($line, 7);
++}
+ $eq = strpos($line, '=');
+ if ($eq === false || $eq === 0) {
+     continue;
+ }
+
+[0m
+[0m→ [0mRead packages/php/tests/run.php
+[0m
+[0m← [0mEdit packages/php/tests/run.php
+Index: <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/php/tests/run.php
+===================================================================
+--- <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/php/tests/run.php
++++ <RUNS>/ab-runs-live/opencode-measured-1793658431900/project/packages/php/tests/run.php
+@@ -21,8 +21,11 @@
+ 
+ $env = new EnvAccessor("HOST=localhost\nPORT=3000\n");
+ check('reads KEY=value lines', $env->get('HOST') === 'localhost' && $env->get('PORT') === '3000');
+ 
++$env = new EnvAccessor("export HOST=localhost\nexport PORT=3000\n");
++check('reads export KEY=value lines', $env->get('HOST') === 'localhost' && $env->get('PORT') === '3000');
++
+ $env = new EnvAccessor("# a comment\n\nKEY=value\n");
+ check('skips blank lines and comments', $env->all() === ['KEY' => 'value']);
+ 
+ $env = new EnvAccessor("A=\"one two\"\nB='three'\n");
+
+[0m
+[0m$ [0mphp packages/php/tests/run.php
+ok   reads KEY=value lines
+ok   reads export KEY=value lines
+ok   skips blank lines and comments
+ok   strips one pair of matching quotes
+ok   answers the fallback for a key that is not there
+ok   json keeps the string values of an object
+[0m
+Done. Modified both the JavaScript and PHP `EnvAccessor` implementations to accept lines prefixed with `export ` (shell habit), and added tests for this behavior in both packages. All tests pass.

@@ -1,0 +1,58 @@
+{
+  "label": "codex-hooks-trusted",
+  "at": "2026-10-29T21:21:36.548Z",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "provider_tag": "nvidia",
+  "budget": 6,
+  "forwarded": 4,
+  "refusedLocally": 0,
+  "cuts": [],
+  "upstreamStatuses": [
+    200,
+    200,
+    200,
+    200
+  ],
+  "served": {
+    "nvidia/nemotron-3-ultra-550b-a55b:free | ?": 12
+  },
+  "baseline": {
+    "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "provider": "Nvidia"
+  },
+  "invalid": null,
+  "generations": [
+    {
+      "seq": 1,
+      "status": 404
+    },
+    {
+      "seq": 2,
+      "status": 404
+    },
+    {
+      "seq": 3,
+      "status": 404
+    },
+    {
+      "seq": 4,
+      "status": 200,
+      "provider_name": "Nvidia",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
+      "api_type": "completions"
+    }
+  ],
+  "stop": null,
+  "quota_before": {
+    "used": 32,
+    "limit": 50,
+    "remaining": 18,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 32,
+    "ledgerUsed": 28
+  },
+  "quota_after": {
+    "error": "codex-hooks-trusted (after): 40 of 50 used today (account 40, ledger 32), the stop is at 40"
+  },
+  "used_by_this_run": null
+}

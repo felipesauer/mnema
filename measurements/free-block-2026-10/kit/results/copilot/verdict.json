@@ -1,0 +1,77 @@
+{
+  "host": "copilot",
+  "version": "1.0.104",
+  "label": "passed",
+  "why": "the three calls in order, the id carried, the marker said",
+  "directPassed": true,
+  "verdict": {
+    "pass": true,
+    "reasons": [],
+    "requests": 4,
+    "toolCalls": 3,
+    "discoveryCalls": 0,
+    "otherHostCalls": 0,
+    "toolCallsCountingDiscovery": 3,
+    "calls": [
+      {
+        "name": "mnema-governing_rules",
+        "via": null,
+        "argsOk": true,
+        "args": {
+          "path": "src/index.js"
+        },
+        "resultStart": "{\"path\":\"<RUNS>/ab-runs/copilot-1793306450169/proje"
+      },
+      {
+        "name": "mnema-search",
+        "via": null,
+        "argsOk": true,
+        "args": {
+          "term": "capcheck"
+        },
+        "resultStart": "{\"hits\":[{\"id\":\"01a18964-dc21-7000-8504-f639d22e74cf\",\"kind\":\"decision\",\"scope\":\"public\",\"project\":\"<SESSIONS>"
+      },
+      {
+        "name": "mnema-read_record",
+        "via": null,
+        "argsOk": true,
+        "args": {
+          "id": "01a18964-dc21-7000-8504-f639d22e74cf"
+        },
+        "resultStart": "{\"kind\":\"decision\",\"id\":\"01a18964-dc21-7000-8504-f639d22e74cf\",\"scope\":\"public\",\"project\":\"<SESSIONS>"
+      }
+    ],
+    "finalText": "capcheck-7f3a",
+    "offered": [
+      "mnema-governing_rules",
+      "mnema-read_record",
+      "mnema-search"
+    ]
+  },
+  "outcome": {
+    "exit": 0,
+    "ended": "exited",
+    "version": "version: Run 'copilot update' to check for updates."
+  },
+  "forwarded": 4,
+  "used_by_this_run": 4,
+  "quota_before": {
+    "used": 14,
+    "limit": 50,
+    "remaining": 36,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 14,
+    "ledgerUsed": 14
+  },
+  "quota_after": {
+    "used": 18,
+    "limit": 50,
+    "remaining": 32,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 16,
+    "ledgerUsed": 18
+  },
+  "served": {
+    "nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia": 66
+  }
+}

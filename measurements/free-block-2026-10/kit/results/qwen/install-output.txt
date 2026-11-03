@@ -1,0 +1,3 @@
+version: 0.26.1
+$ @qwen-code/qwen-code extensions install <KIT>/plugin-tag/plugin -> exit 0
+Extension "mnema" installed successfully and enabled.

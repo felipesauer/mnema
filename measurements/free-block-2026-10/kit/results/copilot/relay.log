@@ -1,0 +1,4 @@
+2026-10-29T20:41:02.179Z #1 POST /chat/completions 200 4540ms served=[nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia]
+2026-10-29T20:41:08.738Z #2 POST /chat/completions 200 6487ms served=[nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia]
+2026-10-29T20:41:41.515Z #3 POST /chat/completions 200 32750ms served=[nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia]
+2026-10-29T20:41:44.353Z #4 POST /chat/completions 200 2820ms served=[nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia]

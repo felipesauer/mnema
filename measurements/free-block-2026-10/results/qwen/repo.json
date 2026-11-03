@@ -1,0 +1,100 @@
+{
+  "start": "e30637400ebbad9582a3af9b72d811102eb51f2b",
+  "changed": [
+    {
+      "path": ".mnema/tails/0fe874c9393769b03ba304263b8bebb362bd4fd1169d252b2f687cda8fd1218e-c738de43ded6dc6afce4914f4349f2e3/000001.jsonl",
+      "status": "M",
+      "added": [
+        "{\"event\":{\"at\":\"2026-10-31T05:10:26.842Z\",\"kind\":\"channel.served\",\"payload\":{},\"signerFp\":\"0fe874c9393769b03ba304263b8bebb362bd4fd1169d252b2f687cda8fd1218e\",\"subject\":\"edit-rules-push\",\"v\":1,\"which\":\"qwen\",\"who\":\"mnid:db1f998f3bf3a01c655c0d738f8e1cb7c401e5fcb51f381851da5cc725475798\"},\"link\":{\"hash\":\"650706693a7d770b94ba19c8e4cd7645d9738575d4d4810897ab74c31f1abe4e\",\"prev\":\"4f2a08ad90f21321b8550f0c6a050521ea5f09c87aa095b433a142a1a2fc7608\",\"seq\":9,\"tail\":\"0fe874c9393769b03ba304263b8bebb362bd4fd1169d252b2f687cda8fd1218e-c738de43ded6dc6afce4914f4349f2e3\"}}"
+      ],
+      "removed": [],
+      "sha256_end": "645601f0388a3f80d6329659f582cb3064e72cbe3ebd2e590f4834296a97dd96"
+    },
+    {
+      "path": ".mnema/tails/0fe874c9393769b03ba304263b8bebb362bd4fd1169d252b2f687cda8fd1218e-c738de43ded6dc6afce4914f4349f2e3/checkpoints.jsonl",
+      "status": "M",
+      "added": [
+        "{\"contentRoot\":\"18ac1cf24bf0c9a86db9a4d230caeff30836380996ee83e1a16f2aa8ac546d98\",\"fromSeq\":9,\"prev\":\"010e66ff6340f2e563b0c041864522b3290f374ca754dafc04d707b27bd40962\",\"scheme\":\"mnema-checkpoint/1\",\"sig\":\"79cb6be74d4996ca210a32d599d21bf845243cd6928b25ac10c62837bcfad336c38fd45929427344e3882eed15dbd146b3bfb8a918ab7da7870faf108524930d\",\"signerFp\":\"0fe874c9393769b03ba304263b8bebb362bd4fd1169d252b2f687cda8fd1218e\",\"tail\":\"0fe874c9393769b03ba304263b8bebb362bd4fd1169d252b2f687cda8fd1218e-c738de43ded6dc6afce4914f4349f2e3\",\"toSeq\":9}"
+      ],
+      "removed": [],
+      "sha256_end": "6a2a0ffe8fcd577ae4b4fd1b2b913de48134d617bd38048b7444353856ed95e2"
+    },
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines (optionally prefixed with `export `). Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const withoutExport = line.startsWith('export ') ? line.slice(7) : line;",
+        "      const eq = withoutExport.indexOf('=');",
+        "      const key = withoutExport.slice(0, eq).trim();",
+        "      let value = withoutExport.slice(eq + 1).trim();"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const eq = line.indexOf('=');",
+        "      const key = line.slice(0, eq).trim();",
+        "      let value = line.slice(eq + 1).trim();"
+      ],
+      "sha256_end": "ab7ddce21f8dbe8047068d0841cfcb0b915cc2d07fa20828a43958e64ef36ded"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads export KEY=value lines', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport PORT=3000\\n');",
+        "  assert.equal(env.get('HOST'), 'localhost');",
+        "  assert.equal(env.get('PORT'), '3000');",
+        "});",
+        "",
+        "test('reads mixed KEY=value and export KEY=value lines', () => {",
+        "  const env = new EnvAccessor('HOST=localhost\\nexport PORT=3000\\n');",
+        "  assert.equal(env.get('HOST'), 'localhost');",
+        "  assert.equal(env.get('PORT'), '3000');",
+        "});",
+        "",
+        "test('strips quotes with export prefix', () => {",
+        "  const env = new EnvAccessor('export A=\"one two\"\\nexport B=\\'three\\'\\n');",
+        "  assert.equal(env.get('A'), 'one two');",
+        "  assert.equal(env.get('B'), 'three');",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "b91bd24d7ae284e18ac49eb2af640b019d6a89f570cf8f0ae663c591b7e9a617"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines (optionally prefixed with `export `). Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            if (str_starts_with($line, 'export ')) {",
+        "                $line = substr($line, 7);",
+        "            }"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */"
+      ],
+      "sha256_end": "051df79b7a9adb052b3af7caee9aa3d1672fb78f6faf46d4feef098ba5cb207e"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport PORT=3000\\n\");",
+        "check('reads export KEY=value lines', $env->get('HOST') === 'localhost' && $env->get('PORT') === '3000');",
+        "",
+        "$env = new EnvAccessor(\"HOST=localhost\\nexport PORT=3000\\n\");",
+        "check('reads mixed KEY=value and export KEY=value lines', $env->get('HOST') === 'localhost' && $env->get('PORT') === '3000');",
+        "",
+        "$env = new EnvAccessor(\"export A=\\\"one two\\\"\\nexport B='three'\\n\");",
+        "check('strips quotes with export prefix', $env->get('A') === 'one two' && $env->get('B') === 'three');",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "01b63c5c05ca876b48d9bb4411092d43d26982a3a31a8a4e43a496c2598b81f9"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

@@ -1,0 +1,50 @@
+{
+  "pass": true,
+  "verdict": {
+    "pass": true,
+    "reasons": [],
+    "requests": 4,
+    "toolCalls": 3,
+    "calls": [
+      {
+        "name": "governing_rules",
+        "argsOk": true,
+        "args": {
+          "path": "src/index.js"
+        },
+        "resultStart": "{\"path\":\"/work/project/src/index.js\",\"relative\":\"src/index.js\",\"rules\":[],\"stale\":[],\"unresolved\":[],\"counts\":{\"matching\":0,\"governing\":0,\"stale\":0,\"unresolved\""
+      },
+      {
+        "name": "search",
+        "argsOk": true,
+        "args": {
+          "term": "capcheck"
+        },
+        "resultStart": "{\"hits\":[{\"id\":\"01a00000-0000-7000-8000-00000000cafe\",\"kind\":\"decision\",\"scope\":\"public\",\"at\":\"2026-10-29T12:00:00.000Z\",\"title\":\"capcheck-7f3a\",\"derived\":false"
+      },
+      {
+        "name": "read_record",
+        "argsOk": true,
+        "args": {
+          "id": "01a00000-0000-7000-8000-00000000cafe"
+        },
+        "resultStart": "{\"kind\":\"decision\",\"id\":\"01a00000-0000-7000-8000-00000000cafe\",\"scope\":\"public\",\"record\":{\"id\":\"01a00000-0000-7000-8000-00000000cafe\",\"adr\":\"ADR-1\",\"title\":\"cap"
+      }
+    ],
+    "finalText": "capcheck-7f3a",
+    "offered": [
+      "search",
+      "read_record",
+      "governing_rules"
+    ]
+  },
+  "served": {
+    "nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia": 62
+  },
+  "baseline": {
+    "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "provider": "Nvidia"
+  },
+  "forwarded": 4,
+  "note": "written by rejudge from the recorded wire"
+}

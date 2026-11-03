@@ -1,0 +1,11 @@
+{
+  "ended": "exited",
+  "exit": 0,
+  "wall_ms": 388682,
+  "version": "0.26.1",
+  "ended_reason": null,
+  "key_scan": {
+    "scanned_files": 118,
+    "files_with_a_key": 0
+  }
+}

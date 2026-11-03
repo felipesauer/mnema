@@ -1,0 +1,14 @@
+{
+  "read_by": "CODE",
+  "requests_read": 1,
+  "ended": "cut",
+  "read": false,
+  "status": "discarded",
+  "why": "a request was cut (429, 402, 5xx or an error event in the stream)",
+  "detail": [
+    {
+      "seq": 1,
+      "why": "error event"
+    }
+  ]
+}

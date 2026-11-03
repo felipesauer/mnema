@@ -1,0 +1,11 @@
+{
+  "ended": "exited",
+  "exit": 0,
+  "wall_ms": 68855,
+  "version": "GitHub Copilot CLI 1.0.104.",
+  "ended_reason": null,
+  "key_scan": {
+    "scanned_files": 205,
+    "files_with_a_key": 0
+  }
+}

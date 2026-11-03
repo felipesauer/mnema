@@ -1,0 +1,26 @@
+{
+  "comment": "The pins of the free block of the comparison after 0.1.4 (ADR-119). Nothing here is a secret.",
+  "model": {
+    "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "provider_tag": "nvidia",
+    "endpoint_name": "Nvidia | nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
+    "context_length": 1000000
+  },
+  "reserve": {
+    "id": "google/gemma-4-31b-it:free",
+    "provider_tag": "google-ai-studio",
+    "endpoint_name": "Google AI Studio | google/gemma-4-31b-it-20260402:free",
+    "context_length": 262144
+  },
+  "api_base": "https://openrouter.ai/api/v1",
+  "key_file": "~/.config/mnema-ab/openrouter.key",
+  "daily": { "limit": 50, "stop_at_used": 40 },
+  "mnema": { "package": "@mnema/code", "version": "0.1.4", "tag": "v0.1.4" },
+  "hosts": {
+    "codex": { "package": "@openai/codex", "version": "0.161.0", "bin": "installed/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex" },
+    "copilot": { "package": "@github/copilot", "version": "1.0.104", "bin": "installed/copilot/node_modules/@github/copilot-linux-x64/copilot" },
+    "opencode": { "package": "opencode-ai", "version": "1.18.35", "bin": "installed/opencode/node_modules/opencode-linux-x64/bin/opencode" },
+    "qwen": { "package": "@qwen-code/qwen-code", "version": "0.26.1", "bin": "installed/qwen/node_modules/.bin/qwen" }
+  },
+  "capability_order": ["qwen", "copilot", "opencode", "codex"]
+}

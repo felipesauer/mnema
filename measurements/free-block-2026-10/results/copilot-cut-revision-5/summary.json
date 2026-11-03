@@ -1,0 +1,37 @@
+{
+  "started": true,
+  "served_verification": {
+    "checked": 0,
+    "ok": 0,
+    "mismatched": [],
+    "unverified": []
+  },
+  "mode": "live",
+  "kind": "measured",
+  "host": "copilot",
+  "label": "copilot-measured",
+  "version": "GitHub Copilot CLI 1.0.104.",
+  "ended": "cut",
+  "wall_ms": 3831,
+  "requests": 1,
+  "refused_by_relay": 0,
+  "cost_per_request": 1,
+  "cost_source": "seen on 29 October: 1 per request",
+  "account_units_spent": 0,
+  "key_scan_hits": 0,
+  "result": {
+    "read_by": "CODE",
+    "requests_read": 1,
+    "ended": "cut",
+    "read": false,
+    "status": "discarded",
+    "why": "a request was cut (429, 402, 5xx or an error event in the stream)",
+    "detail": [
+      {
+        "seq": 1,
+        "why": "error event"
+      }
+    ]
+  },
+  "scenario": null
+}
