@@ -78,6 +78,7 @@ import {
 } from '@mnema/core';
 import { keysOnThisMachine, openTreeForWriting, relinkTails } from '@mnema/core/write';
 import { agentKeyFromEnvironment } from '../env.js';
+import { readEventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js';
 import { HOOK_HOSTS, HOSTS } from '../host-names.js';
 import { declaredRange, floorRefusal } from '../node-floor.js';
 import { oneLine } from '../one-line.js';
@@ -125,7 +126,8 @@ export interface Finding {
     | 'key-metadata'
     | 'instructions'
     | 'agent-key'
-    | 'merge-driver';
+    | 'merge-driver'
+    | 'record-in-git';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
   readonly line: string;
@@ -1279,6 +1281,18 @@ function twoRecords(from: string, to: string): string | undefined {
   );
 }
 
+/** The events of the record that no git commit holds yet: one finding, and none where nothing waits. */
+function recordInGitFindings(ctx: DoctorContext): Finding[] {
+  const found = readEventsNotInGit({
+    cwd: ctx.cwd,
+    env: ctx.env,
+    processEnv: ctx.processEnv,
+  });
+  return found === undefined
+    ? []
+    : [{ topic: 'record-in-git', state: 'attention', line: saysEventsNotInGit(found) }];
+}
+
 /** Reads the machine and answers, in the order the questions are asked above. */
 export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Finding[] } {
   const plugins = installedPlugins(ctx);
@@ -1297,6 +1311,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
         state: 'attention' as const,
         line,
       })),
+      ...recordInGitFindings(ctx),
       ...keyMetadataFindings(ctx),
       ...instructionsFindings(ctx),
       ...stackFindings(ctx),

@@ -61,6 +61,7 @@ import {
 } from '@mnema/core';
 import { authorizingAnchor, recordedAnchorOf, signerFor } from '@mnema/core/write';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
+import { type EventsNotInGit, readEventsNotInGit } from '../events-not-in-git.js';
 import {
   basesNeverImported,
   type DecisionsOutside,
@@ -141,6 +142,13 @@ export interface StatusDone {
    * letting the newest one stand for both.
    */
   readonly runsByTree: readonly { readonly tree: string; readonly run: ReportedRun }[];
+  /**
+   * The events of the public tree that no git commit holds yet, or undefined where nothing waits,
+   * outside git, or with the record ignored by git (`events-not-in-git.ts`). Read from git and the
+   * disk, so it is beside {@link StatusDone.status} for the reason the fields above are; `--json`
+   * carries it as `eventsNotInGit`, and only when something waits.
+   */
+  readonly notInGit: EventsNotInGit | undefined;
 }
 
 /** There was no project here, or the actor named no identity in it. */
@@ -230,6 +238,11 @@ export function runStatus(
         actor: anchor,
         asOf: (ctx.clock ?? systemClock)(),
         sessionRuns: [],
+      }),
+      notInGit: readEventsNotInGit({
+        cwd: ctx.cwd,
+        env: ctx.env,
+        now: Date.parse((ctx.clock ?? systemClock)()),
       }),
       runsByTree: sources.flatMap((source) => {
         const { lastRun } = resume(caches([source]), {

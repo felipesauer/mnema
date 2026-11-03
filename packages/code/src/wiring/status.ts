@@ -50,7 +50,16 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
       if (opts.json === true) {
         // The faithful object, the same one the agent surface serves (indented here, not
         // there), which is the property that keeps one derivation from becoming two.
-        io.out(JSON.stringify(result.status, null, 2));
+        // The one field beside it, present only when events wait in no commit.
+        io.out(
+          JSON.stringify(
+            result.notInGit === undefined
+              ? result.status
+              : { ...result.status, eventsNotInGit: result.notInGit },
+            null,
+            2,
+          ),
+        );
         return;
       }
       writeLines(
@@ -66,6 +75,7 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
           result.neverImported,
           result.runsByTree,
           result.asThisMachine,
+          result.notInGit,
         ),
       );
     });

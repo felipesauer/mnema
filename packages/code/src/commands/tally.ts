@@ -40,6 +40,7 @@
 import { dirname } from 'node:path';
 import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { readEventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js';
 import { SESSION_JOURNAL_CHANNEL, SESSION_TALLY_CHANNEL } from '../record-framing.js';
 import {
   exclusivelyOn,
@@ -191,14 +192,16 @@ export function runSessionTally(
         'The transcript carries no instant, so no decision could be counted against it.',
       ]);
     }
+    const waiting = readEventsNotInGit({ cwd: ctx.cwd, env: ctx.env });
+    const line = tallyLine({
+      files: journal.filesEdited,
+      decisions: journal.decisions.length,
+      copied: journal.notes.length,
+    });
     return {
       ok: true,
       reply: {
-        systemMessage: tallyLine({
-          files: journal.filesEdited,
-          decisions: journal.decisions.length,
-          copied: journal.notes.length,
-        }),
+        systemMessage: waiting === undefined ? line : `${line} ${saysEventsNotInGit(waiting)}`,
       },
       notes: [],
     };
