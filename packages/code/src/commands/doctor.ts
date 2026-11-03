@@ -60,6 +60,7 @@ import {
   namesOfTails,
   recordNamedIn,
 } from '@mnema/chain';
+import { newerLinesOf } from '@mnema/context';
 import {
   AGENT_NAME,
   type AgentStanding,
@@ -81,10 +82,12 @@ import { agentKeyFromEnvironment } from '../env.js';
 import { HOOK_HOSTS, HOSTS } from '../host-names.js';
 import { declaredRange, floorRefusal } from '../node-floor.js';
 import { oneLine } from '../one-line.js';
+import { newerLinesSentence } from '../record-integrity.js';
 import {
   personsKeyInTheClear,
   THE_AGENT_KEY_SEPARATES_NOTHING,
 } from '../the-persons-key-in-the-clear.js';
+import { caches, withScopedCaches } from '../tree-sources.js';
 import { isOlderThan } from '../version.js';
 import { mergeDriverLines } from './doctor-merge-driver.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
@@ -125,7 +128,8 @@ export interface Finding {
     | 'key-metadata'
     | 'instructions'
     | 'agent-key'
-    | 'merge-driver';
+    | 'merge-driver'
+    | 'newer-mnema';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
   readonly line: string;
@@ -1279,6 +1283,26 @@ function twoRecords(from: string, to: string): string | undefined {
   );
 }
 
+/**
+ * A finding only when a newer mnema wrote lines into the record that this one reads past (ADR-140):
+ * which kinds, and what to do, in the words every surface says it in (`newerLinesSentence`). Silent
+ * when there are none, which is every record this version wrote, and silent when the record cannot
+ * be read at all: that is `mnema verify`'s to say, and a check that fails the checklist over what
+ * it is not for is no check.
+ */
+function newerMnemaFindings(ctx: DoctorContext): Finding[] {
+  try {
+    const newer = withScopedCaches(resolveTrees(ctx.cwd, ctx.env), (sources) =>
+      newerLinesOf(caches(sources)),
+    );
+    return newer === undefined
+      ? []
+      : [{ topic: 'newer-mnema', state: 'attention', line: newerLinesSentence(newer) }];
+  } catch {
+    return [];
+  }
+}
+
 /** Reads the machine and answers, in the order the questions are asked above. */
 export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Finding[] } {
   const plugins = installedPlugins(ctx);
@@ -1301,6 +1325,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
       ...instructionsFindings(ctx),
       ...stackFindings(ctx),
       ...agentKeyFindings(ctx),
+      ...newerMnemaFindings(ctx),
     ],
   };
 }

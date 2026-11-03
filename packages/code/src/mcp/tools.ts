@@ -74,6 +74,8 @@ import {
   guardWithFocus,
   lookupServedSkill,
   type NextAction,
+  newerLinesAbout,
+  newerLinesOf,
   nextActionsForTask,
   pathInProject,
   type RecordBody,
@@ -188,6 +190,8 @@ import {
 } from '../record-framing.js';
 import {
   movedApartSentence,
+  newerLinesAboutSentence,
+  newerLinesSentence,
   type ScopedLinkBreak,
   severalRecordsSentence,
 } from '../record-integrity.js';
@@ -2802,6 +2806,25 @@ export function severalRecordsNotes(caches: readonly ProjectionCache[]): readonl
     .filter((groups) => groups.length > 0)
     .map(severalRecordsSentence);
   return said.length === 0 ? [] : [said.join('\n')];
+}
+
+/**
+ * The line an answer owes beside its payload when a newer mnema wrote lines this one reads past
+ * (ADR-140): of the trees the opening context is read from for `bootstrap` (no `id`), or about the
+ * one record `read_record` serves, over every tree of the workspace as that read looks (`id`). None
+ * when there are none, which is every record this version wrote. The sentences are the command
+ * line's own (`record-integrity.ts`), and the payload says no more than they do.
+ */
+export function newerLinesNotes(session: Session, id?: string): readonly string[] {
+  if (id === undefined) {
+    const newer = newerLinesOf(sessionCaches(session));
+    return newer === undefined ? [] : [newerLinesSentence(newer)];
+  }
+  const newer = newerLinesAbout(
+    workspaceCaches(session).map((source) => source.cache),
+    id,
+  );
+  return newer === undefined ? [] : [newerLinesAboutSentence(newer)];
 }
 
 /** {@link severalRecordsNotes} over the trees `governing_rules` reads. */

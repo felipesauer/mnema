@@ -58,7 +58,14 @@
  */
 
 import { isUnannounced } from '@mnema/chain';
-import { consultationsByRun, type RecordBody, readRecord, type ScopedCache } from '@mnema/context';
+import {
+  consultationsByRun,
+  type NewerLines,
+  newerLinesAbout,
+  type RecordBody,
+  readRecord,
+  type ScopedCache,
+} from '@mnema/context';
 import { type DiscoveryEnv, type DivergentMove, resolveTrees, type Scope } from '@mnema/core';
 import { type AnchorForms, anchorForms, NO_ANCHORS } from '../anchors.js';
 import {
@@ -115,6 +122,12 @@ export interface ShowDone {
    * whose order the read already built, so it costs no second replay.
    */
   readonly divergent: readonly DivergentMove[];
+  /**
+   * The lines a newer mnema wrote whose subject is this record, in the trees this read opened,
+   * which this binary does not apply (ADR-113, ADR-140): what is served may be out of date by
+   * them. Absent when no such line names it, which is every record this version wrote.
+   */
+  readonly newerLines?: NewerLines;
 }
 
 /** No visible tree holds a record with this id. */
@@ -163,6 +176,14 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         readRecord([holder, ...opened.filter((source) => source !== holder)], input.id) ?? found;
     }
     const id = found.id;
+    // Asked at each return, since the second opens the trees the first leaves shut.
+    const newer = () => {
+      const said = newerLinesAbout(
+        opened.map((source) => source.cache),
+        id,
+      );
+      return said === undefined ? {} : { newerLines: said };
+    };
     const divergent = (holder?.cache.divergentMoves() ?? []).filter((move) => move.entityId === id);
     // A DECISION NAMES WHO RECORDED AND WHO RULED IT, so it prints identities and reads the
     // shortening from the tree it came off: the tree that holds the events naming them.
@@ -180,6 +201,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         anchors,
         linkBreaks: linkBreaksOf(opened, THE_READING_THAT_OPENED_THESE),
         divergent,
+        ...newer(),
         ...(attested.recordedBy === true || attested.acceptedBy === true ? { attested } : {}),
         ...(unannounced.recordedBy === true || unannounced.acceptedBy === true
           ? { unannounced }
@@ -194,6 +216,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
       anchors: anchorForms(opened),
       linkBreaks: linkBreaksOf(opened, THE_READING_THAT_OPENED_THESE),
       divergent,
+      ...newer(),
       ...(found.kind === 'skill'
         ? { consultations: consultationsByRun(opened).get(found.id) ?? 0 }
         : {}),

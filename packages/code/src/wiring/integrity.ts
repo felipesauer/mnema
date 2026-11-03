@@ -18,12 +18,15 @@
  * there. That is the convention `verify.ts` already keeps.
  */
 
+import type { NewerLines } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import { fact } from '../presentation/detail.js';
 import type { Line } from '../presentation/line.js';
 import {
   linkBreakSentences,
   movedApartSentence,
+  newerLinesAboutSentence,
+  newerLinesSentence,
   type ScopedLinkBreak,
 } from '../record-integrity.js';
 
@@ -58,4 +61,21 @@ export function linkBreakNotice(breaks: readonly ScopedLinkBreak[]): readonly Li
  */
 export function divergenceNotice(divergent: readonly DivergentMove[]): readonly Line[] {
   return divergent.map((move) => fact(movedApartSentence(move), 0));
+}
+
+/**
+ * The line a read owes when a newer mnema wrote lines this one reads past (ADR-140): of the record
+ * as a whole (`brief`, on `err` beside the link-break notice and for the same reason: it is about
+ * this binary, not the record, and must not be committed into a file that outlives the update) or
+ * about the ONE record a read serves (`show`). None at all when there are none, which is every
+ * record this version wrote. The sentences are `record-integrity.ts`', the MCP's too.
+ */
+export function newerLinesNotice(
+  newer: NewerLines | undefined,
+  of: 'the record' | 'one record',
+): readonly Line[] {
+  if (newer === undefined) return [];
+  return [
+    fact(of === 'one record' ? newerLinesAboutSentence(newer) : newerLinesSentence(newer), 0),
+  ];
 }

@@ -77,6 +77,7 @@
  */
 
 import type { RecordGroup } from '@mnema/chain';
+import type { NewerLines } from '@mnema/context';
 import {
   acceptedAgainstRetired,
   type DivergentMove,
@@ -421,4 +422,50 @@ export function severalRecordsSentence(groups: readonly RecordGroup[]): string {
       `${oneLine(group.name.slice(0, 12))} (${group.tails.length === 1 ? 'tail' : 'tails'} ${group.tails.map(oneLine).join(', ')})`,
   );
   return `This directory holds tails of ${groups.length} records: ${each.join('; ')}. \`mnema verify\` refuses it (another-record), and nothing in it governs here until it holds one record.`;
+}
+
+/** How many kinds a sentence about lines a newer mnema wrote names before it counts the rest. */
+const KINDS_NAMED = 3;
+/** How much of a kind's name a sentence quotes: a kind is what a newer writer chose, of any length. */
+const KIND_QUOTED = 40;
+
+function linesWord(count: number): string {
+  return `${count} ${count === 1 ? 'line' : 'lines'}`;
+}
+
+/** The kinds, each with its count, as one clause: the first few, then how many more. */
+function kindsClause(newer: NewerLines): string {
+  const named = newer.kinds.slice(0, KINDS_NAMED).map((one) => {
+    const kind = oneLine(one.kind);
+    const quoted = kind.length > KIND_QUOTED ? `${kind.slice(0, KIND_QUOTED)}...` : kind;
+    return `${one.lines} of ${JSON.stringify(quoted)}`;
+  });
+  const more = newer.kinds.length - named.length;
+  return more > 0 ? `${named.join(', ')}, and ${more} more kinds` : named.join(', ');
+}
+
+/**
+ * What every surface says when a newer mnema wrote lines this one reads past: how many, of which
+ * kinds, that this binary applies none of them, and the one thing to do (ADR-140). The lines were
+ * checked by `verify` and what they say was not read, so the sentence says no more of them than
+ * their kinds, and it tells nobody to act on them: updating mnema is what reads them, and a reader
+ * who cannot read a line does not guess what it says.
+ *
+ * ONE SENTENCE FOR THE OPENING READS (status, its `--json` and the brief carry the structure,
+ * `bootstrap` and the brief this text) and one for a single record ({@link newerLinesAboutSentence}),
+ * and both are held by `code/tests/a-record-says-where-a-newer-mnema-wrote.test.ts`.
+ */
+export function newerLinesSentence(newer: NewerLines): string {
+  return (
+    `A newer mnema wrote ${linesWord(newer.lines)} into this record (${kindsClause(newer)}) that this one ` +
+    'does not read or apply, so what it serves from this record may be out of date. Update mnema to read them, and do not guess what they say.'
+  );
+}
+
+/** {@link newerLinesSentence} for the lines whose subject is the one record a reading serves. */
+export function newerLinesAboutSentence(newer: NewerLines): string {
+  return (
+    `A newer mnema wrote ${linesWord(newer.lines)} about this record (${kindsClause(newer)}) that this one ` +
+    'does not read or apply, so what it shows of this record may be out of date. Update mnema to read them, and do not guess what they say.'
+  );
 }
