@@ -19,6 +19,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -116,10 +117,12 @@ function toSeqs(bytes: string): number[] {
 
 /** What `git status`, the index, HEAD and the record's files are: the state a cut must not move. */
 function stateOf(checkout: string): string {
-  const files = git(checkout, 'ls-files', '--cached', '--others', '--exclude-standard', '.mnema')
-    .out.split('\n')
-    .filter(Boolean)
-    .map((path) => `${path}\n${readFileSync(join(checkout, path), 'utf-8')}`);
+  // Every file of the record's folder, the ones git ignores too.
+  const record = join(checkout, '.mnema');
+  const files = readdirSync(record, { recursive: true, encoding: 'utf-8' })
+    .filter((path) => statSync(join(record, path)).isFile())
+    .sort()
+    .map((path) => `${path}\n${readFileSync(join(record, path)).toString('base64')}`);
   return [
     git(checkout, 'status', '--porcelain=v1', '--untracked-files=all').out,
     git(checkout, 'rev-parse', 'HEAD').out,
