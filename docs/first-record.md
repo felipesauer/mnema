@@ -1,5 +1,7 @@
 # Your first record
 
+<!-- description: Found the record, record and accept a call, put the rule where it applies, hand it to an agent and check it, in five steps. -->
+
 Five steps. Steps 1 to 3 need no agent and no plugin; step 4 hands the record to one. Under each
 `mnema` command is every line it prints; a … marks the one thing this page shortens: a path on your disk,
 or an id that runs to 64 hex characters.

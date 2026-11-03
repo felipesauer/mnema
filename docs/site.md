@@ -77,6 +77,12 @@ on the same site (one `/` first, or relative); a protocol-relative `//host`, a b
 scheme are refused, by name, before anything is written.
 Without the option the page is exactly the one above.
 
+For a page that is published and meant to be found, `--head <file>` names a JSON file with a `title`, a `description` and a
+`canonical` address (an absolute `http://` or `https://` one) and, optionally, `structuredData` (written as
+`application/ld+json`). The page's title becomes that title, and the description, the canonical address and the data are
+written into its head; nothing else of the page changes. A file that is not JSON, that lacks one of the three, or whose
+canonical is not absolute is refused, by name, before anything is written.
+
 To publish it on GitHub Pages, build it in a workflow, with `--out _site` so that the artifact is outside the record (the
 default is for reading the page on your own machine). The CLI is what writes the page; the
 [Action](../packages/action/) reads and verifies the record, writes to it only if handed a `checker-key`, and is not involved:

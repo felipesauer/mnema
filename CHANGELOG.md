@@ -99,6 +99,25 @@ with its own changelog.
 
 ### Changed
 
+- **Every page of the site says what it is, and the places a stranger first reads point at the site.** The site's
+  configuration set one meta description for the whole site and it beat the one in each page, so every page said the
+  same thing; now each page of `docs/` is described by the first sentence of its prose (`descriptionOf`) or by its own description line, the landing
+  by the description of `@mnema/code` and the 404 by its own line, and `/record/` has a title, a description, a canonical
+  address and structured data of its own (`withTheHeadOfTheSite`) and is in the sitemap, which Astro wrote before the
+  page existed. The landing and `/record/` carry JSON-LD of a `WebSite` and a `SoftwareApplication`, built from the
+  package's name, description, version and licence, and naming where the software is found (the repository, npm and the
+  two extension stores), with no rating and no review. The `homepage` of the published packages, the extension and the
+  four plugin manifests is the site, and the private tools keep the repository. A case over every built page fails on a
+  missing, repeated or foreign title, description or canonical, on a sitemap that is not the pages, and on structured
+  data that is not the facts (`every-page-of-the-site-says-what-it-is.test.ts`). The site reaches the public with the
+  next release, since it is deployed only at one. `mnema site` takes `--head <file>` (a JSON file with a title, a
+  description, a canonical address and optionally structured data) and writes them into the page, so `/record/` is the
+  page the command writes with no step after it (the site build is the option's caller, and the case of the built site
+  compares the served bytes to the command's output); `descriptionOf` takes the first sentence of a page, or the
+  page's own `<!-- description: ... -->` line, which three pages whose first sentence says too little now carry. A page
+  for teams that keep ADR files, `docs/mnema-next-to-a-folder-of-adrs.md`, shows `mnema decision import` bringing
+  them in as proposed decisions, and `docs/where-it-fits.md` opens with the sentence that mnema is a decision record
+  and not a memory service.
 - **Every hook command of the Claude Code plugin is `node`, the handler and plain arguments, with no shell in front.**
   `plugin/hooks/hooks.json` carried five shell lines (`[ -n "$CURSOR_VERSION" ] && ...; exit 0`, `IN=$(cat); case ...`, the
   path read out of the payload by parameter expansion) that turned a call away before any `mnema` started, and the

@@ -20,8 +20,9 @@
  *     (less what the packages it stands on carry), since a sentence drawn there is read by no other guard.
  *   - THE SITE DOES NOT SAY THE DOCS DESCRIBE THE NEXT VERSION: the sentence is true on GitHub and npm and
  *     false here, so no built page holds it.
- *   - /RECORD/ IS THE PAGE `mnema site --back-link` WRITES for this commit's record, byte for byte, with no
- *     step between, and it opens with the one link back to the site's root. Run in a vm, it says its
+ *   - /RECORD/ IS THE PAGE `mnema site --back-link --head` WRITES for this commit's record, byte for byte, with no
+ *     step between (the head, what a search engine reads of it, is handed to the command by the build:
+ *     `theHeadOfTheRecord`), and it opens with the one link back to the site's root. Run in a vm, it says its
  *     lists match the events it verified.
  *
  * It needs the site built (`cd site && npm ci --ignore-scripts && npm run build`, after `pnpm build`). In
@@ -33,12 +34,21 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { theHeadOfTheRecord } from '../../../site/build/the-build.mjs';
 import { copyOf, RECORDING, recordBackLink, themeOf } from '../../../site/build/the-pages.mjs';
 import { runInAVm } from './support/a-page-in-a-vm.js';
 import {
@@ -831,10 +841,13 @@ when('the built site', () => {
     }
   });
 
-  it('serves as /record/ the page `mnema site` writes for this commit, with no step between, and the page it serves says its lists match', () => {
+  it('serves as /record/ the page `mnema site` writes for this commit, with the head the build hands it, and the page it serves says its lists match', () => {
     const out = mkdtempSync(join(tmpdir(), 'the-record-built-'));
     try {
       const home = mkdtempSync(join(tmpdir(), 'the-record-home-'));
+      // What the build hands the command: the head of /record/ from the same readings, as a file.
+      const headFile = join(out, 'head.json');
+      writeFileSync(headFile, JSON.stringify(theHeadOfTheRecord()));
       execFileSync(
         process.execPath,
         [
@@ -844,6 +857,8 @@ when('the built site', () => {
           out,
           '--back-link',
           recordBackLink({ base: BASE }),
+          '--head',
+          headFile,
         ],
         { cwd: ROOT, env: { HOME: home, PATH: process.env.PATH ?? '' }, stdio: 'pipe' },
       );

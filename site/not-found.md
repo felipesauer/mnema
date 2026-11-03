@@ -1,5 +1,6 @@
 ---
 title: {{copy not-found-title}}
+description: {{copy not-found}}
 template: splash
 pagefind: false
 hero:

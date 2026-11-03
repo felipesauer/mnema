@@ -154,7 +154,7 @@ jobs:
         if: needs.plan.outputs.build == 'true'
         env:
           THE_SITE_MUST_BE_BUILT: '1'
-        run: pnpm exec vitest run packages/code/tests/the-site-is-made-of-its-sources.test.ts packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts
+        run: pnpm exec vitest run packages/code/tests/the-site-is-made-of-its-sources.test.ts packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts packages/code/tests/every-page-of-the-site-says-what-it-is.test.ts
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         if: needs.plan.outputs.deploy == 'true'

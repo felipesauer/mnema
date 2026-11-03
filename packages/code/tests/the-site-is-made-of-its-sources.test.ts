@@ -80,6 +80,10 @@ const FACTS = {
   name: 'r',
   description: 'd',
   version: '1.0.0',
+  license: 'Apache-2.0',
+  homeUrl: 'https://o.github.io/r/',
+  npmUrl: 'https://www.npmjs.com/package/@r/code',
+  extensionId: 'p.e',
 };
 const DOCS = new Set(['install', 'first-record']);
 
