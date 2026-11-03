@@ -225,6 +225,7 @@ describe('verify --since holds a tail that arrived to the record the base is', (
       unnamed: [],
       noted: [arrived],
       foreign: [],
+      relinked: [],
     });
   });
 

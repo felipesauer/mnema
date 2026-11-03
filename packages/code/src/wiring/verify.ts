@@ -663,6 +663,18 @@ function reportSince(io: CliIo, render: Render, since: SinceReading): void {
       ),
     );
   }
+  // A tail a relink moved into the record since the base (FORMAT.md section 6.11): a fact on
+  // stdout, never a failure, since the readers refuse a relink that does not count, and the tail
+  // is then said above as one of another record.
+  for (const { tail, from, events, firstAt, held: there } of since.arrived.relinked) {
+    io.out(
+      render(
+        fact(
+          onOneLine`${at}: tail ${tail} ${there ? 'was in the record there' : 'arrived since'}, record ${from.slice(0, 12)}..., relinked into this record by its own key, ${String(events)} event(s) from ${firstAt} (relinked)`,
+        ),
+      ),
+    );
+  }
   if (
     since.findings.length === 0 &&
     since.arrived.unnamed.length === 0 &&

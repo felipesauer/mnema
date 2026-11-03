@@ -34,7 +34,13 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
   tail of the base names the record, and the comment quotes the line that names the tail and says
   which of the two it is. Over a base whose record has no name yet (written wholly before 0.1.5) or
   no record, a tail naming no record passes
-  ([`docs/cli-reference.md`](../../docs/cli-reference.md)).
+  ([`docs/cli-reference.md`](../../docs/cli-reference.md)). A tail of another record its owner
+  relinked into this one (`tail.relinked`, `FORMAT.md` section 6.11) is held to the record the
+  relink names wherever both readers count the relink, on the base as on the pull request: the
+  pull request that brings the tail and its relink, or the relink alone of a tail the base already
+  held, passes, and the comment has a section with `verify`'s line for each such tail, on a pass
+  too. A relink that does not count leaves the tail one of another record, and the pull request
+  fails as before.
 - **Optional, off by default: approval for rules that ask for a person or refuse a write.** With
   `require-approval-for-asks: "true"` the Action also fails when a changed file is addressed by an
   accepted `asks-for-a-person` or `refuses-a-write` rule and no reviewer other than the author
@@ -51,7 +57,8 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
   (when no check ran, one line says why), and the Action fails when a check did not pass. Without
   `checker-key` the comment has no such section.
 - **Quiet on pull requests that do not concern the record.** It adds a comment only when the pull
-  request adds events, touches a governed file, or the record fails to verify. A comment it wrote
+  request adds events, touches a governed file, relinks a tail into the record, or the record
+  fails to verify. A comment it wrote
   earlier is still refreshed, so it never goes stale. A comment over the 65536 characters GitHub
   accepts is cut, with a line saying so.
 

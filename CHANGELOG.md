@@ -44,11 +44,23 @@ with its own changelog.
   line a reader refuses holds no relink in either reader. A relink that counts is the census note `relinked-tail` and a
   clause of the verdict, and the namer the surfaces ask reads such a directory as `verify` does. The rule is
   `relinkedNaming` (`packages/chain/src/chain/record-name.ts`) and its mirror in the second reader; `mutate.py` builds
-  a record for every refusal and for the two that pass. No command writes a relink yet, and the writer, `doctor` and
-  `verify --since` read tails by their own artifacts as before. A version from before reads such a line as a kind it
+  a record for every refusal and for the two that pass. No command writes a relink yet, and the writer and `doctor`
+  read tails by their own artifacts as before (`verify --since` reads a relink, the entry below). A version from before reads such a line as a kind it
   does not read and refuses it, naming its version. The published vectors are 40: one for the kind, and the content
   root over all of them moves from `c87196ea4f715594eadcf089393a0d7d97c16a6253280c33e966505af0dc5cd8` to
   `a827adaa28e739a941a592efc04ac2c02fe228867069a940179719188d814d61`; the other three aggregate digests do not move.
+- **`verify --since`, and so the Action, read a tail its owner relinked (ADR-155).** A pull request that brought a tail
+  of another record and its owner's relink of it into this one was refused as `another-record`, because `--since` named
+  each tail by its own artifacts. It now names the base's tails and the disk's as both readers do, the relinks that count
+  on each side applied (the base read out of git whole, every segment of the commit's own bytes): the tail and its
+  relink pass, and so does the relink alone of a tail the base already held, the way back after two `mnema init` were
+  merged. Each tail a relink moves into the record since the base is a line on stdout, a fact and never a failure:
+  `since <rev> (<commit>): tail <id> arrived since, record <name>..., relinked into this record by its own key, <n>
+  event(s) from <at> (relinked)` (`was in the record there` where the base held the tail), and `since.arrived.relinked`
+  in `--json`. A relink that counted at the base is not said again. A relink that does not count moves nothing: a tail
+  that arrived is still `another-record`, and `verify` refuses the directory. The Action's comment gets a section with
+  those lines, on a pass too, beside the one for a directory of two records (`docs/cli-reference.md`,
+  `packages/action/README.md`; `packages/code/tests/a-relinked-tail-passes-since.test.ts`).
 
 ### Changed
 

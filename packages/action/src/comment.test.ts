@@ -162,6 +162,32 @@ describe('renderComment', () => {
     expect(worthSaying(quiet)).toBe(false);
   });
 
+  it('says, on a pass too, each tail a relink moved into the record, and is worth a comment for it', () => {
+    const line =
+      'since main (0123456789ab): tail aa-bb arrived since, record 0123456789ab..., relinked into this record by its own key, 2 event(s) from 2026-10-31T00:00:00.000Z (relinked)';
+    const census = 'census [relinked-tail] public tail aa-bb: tail aa-bb, record 0123456789ab..., relinked';
+    const relinked = {
+      ...quiet,
+      verification: { passed: true, said: `public: verified\n${census}\n  ${line}\n` },
+    };
+    expect(worthSaying(relinked)).toBe(true);
+    const text = renderComment(relinked);
+    expect(text).toContain(
+      'Tails of another record their owner relinked into this one since the base, a relink both readers count:',
+    );
+    expect(text).toContain(`\`\`\`\n${line}\n\`\`\``);
+    expect(text).not.toContain(census);
+    expect(text.indexOf('relinked into this record by its own key')).toBeGreaterThan(
+      text.indexOf('**Changed files a rule in force addresses**'),
+    );
+    const failed = renderComment({
+      ...quiet,
+      verification: { passed: false, said: `${line}\nsomething else broke` },
+    });
+    expect(failed).toContain('their owner relinked into this one since the base');
+    expect(renderComment(quiet)).not.toContain('relink');
+  });
+
   it('says how many changed files were not asked about', () => {
     expect(renderComment({ ...quiet, notAsked: 3 })).toContain(
       '3 changed files were not asked about',
