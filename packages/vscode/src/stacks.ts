@@ -139,8 +139,13 @@ export interface IndexedStack {
   readonly source?: string;
 }
 
-/** `mnema stack index <folder> --json`. */
-export const indexArgs = (folder: string): string[] => ['stack', 'index', folder, '--json'];
+/**
+ * `mnema stack index [<folder>] --json`. A setting left empty (or blank) names no folder, so none
+ * is passed and the command line reads the index built into the installed package; a folder the
+ * person set is passed as it is.
+ */
+export const indexArgs = (folder: string): string[] =>
+  folder.trim() === '' ? ['stack', 'index', '--json'] : ['stack', 'index', folder, '--json'];
 
 /** The index entries the command line listed; an answer that cannot be read lists none. */
 export function readIndex(stdout: string): IndexedStack[] {

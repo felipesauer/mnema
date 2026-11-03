@@ -7,6 +7,10 @@ digest it must have.
 `index.json` is the list. The first two entries are the example stacks of this repository, in
 [`packages/stacks/examples/`](../packages/stacks/examples/).
 
+This file stays the one that is edited. The build of `@mnema/code` copies it, and the folder of each entry that has a
+`path`, into the package (`dist/stack-index/`), so `mnema stack index` with no folder lists it in any folder, not only
+in a checkout of this repository; a test fails when that copy differs from this file or from the folders.
+
 ## What an entry says
 
 | Field | Meaning |

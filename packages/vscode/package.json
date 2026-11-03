@@ -60,9 +60,9 @@
         },
         "mnema.stackIndex": {
           "type": "string",
-          "default": "stack-index",
+          "default": "",
           "scope": "machine",
-          "markdownDescription": "The folder holding the index of stacks (`index.json`), relative to the workspace folder. It is read by `mnema stack index`."
+          "markdownDescription": "The folder holding an index of stacks (`index.json`), relative to the workspace folder. Left empty, the index that comes with the installed `mnema` is read, in any workspace. It is read by `mnema stack index`."
         },
         "mnema.statusBar.enabled": {
           "type": "boolean",

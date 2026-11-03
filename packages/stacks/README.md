@@ -105,8 +105,10 @@ folders.
 [`stack-index/`](https://github.com/felipesauer/mnema/tree/main/stack-index) is a list of stacks: for each, a name, a version, a link and the digest.
 It holds no stack. The two examples are its first entries, and the suite recomputes their digests from the
 folders. A stack listed from somewhere else is held to nothing here: the link may move and the digest is what the
-proposer wrote, so compare it with the digest the install plan shows. `mnema stack index <folder>` prints the
-entries of an index folder, and `--json` gives them to a program; it reads the file and installs nothing.
+proposer wrote, so compare it with the digest the install plan shows. `mnema stack index` prints the
+entries of the index that comes with the installed `@mnema/code` (a copy of `stack-index/` and of the two examples,
+made by its build, so it works in any folder), `mnema stack index <folder>` those of an index folder you name, and
+`--json` gives them to a program; it reads the file and installs nothing.
 
 ## What it proves, and what it does not
 
