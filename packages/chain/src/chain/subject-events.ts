@@ -75,7 +75,7 @@ import type { CatalogEvent } from '../events/catalog.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { type CitationHeld, causalOrder } from './causal-order.js';
 import { decisionTexts, precedesItsText } from './decision-text.js';
-import { type Entry, parseEntry } from './entry.js';
+import { type ChainEntry, isRead, parseEntry } from './entry.js';
 import type { ChainLayout } from './layout.js';
 import { parseStoredLine } from './lines.js';
 import { illegalMoves, type PlacedEvent } from './moves.js';
@@ -191,8 +191,8 @@ function readSubjects(
       const raw = readFileSync(file);
       const isLast = segment === files.length - 1;
       // A line two needles both find is parsed once.
-      const parsed = new Map<number, Entry | null>();
-      const entryAt = (start: number, end: number, newline: number): Entry | null => {
+      const parsed = new Map<number, ChainEntry | null>();
+      const entryAt = (start: number, end: number, newline: number): ChainEntry | null => {
         let entry = parsed.get(start);
         if (entry === undefined) {
           entry = parseStoredLine(
@@ -216,7 +216,8 @@ function readSubjects(
           const end = newline < 0 ? raw.length : newline;
           from = end + 1;
           const entry = entryAt(start, end, newline);
-          if (entry !== null && entry.event.subject === id) {
+          // A line of a kind this binary does not know is no event of any subject it serves.
+          if (entry !== null && isRead(entry) && entry.event.subject === id) {
             mine.push({ tail, segment, start, event: entry.event });
           }
         }
@@ -229,7 +230,7 @@ function readSubjects(
         const end = newline < 0 ? raw.length : newline;
         if (end > start) {
           const entry = entryAt(start, end, newline);
-          if (entry !== null && walkedFor.has(entry.event.subject)) {
+          if (entry !== null && isRead(entry) && walkedFor.has(entry.event.subject)) {
             (found.get(entry.event.subject) as Found[]).push({
               tail,
               segment,

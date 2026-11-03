@@ -1843,6 +1843,21 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the state both moves left: a transition’s `from`, read out of the record',
   },
+  // --- @mnema/chain: a kind this reader does not know (FORMAT.md §7.1) -------------------
+  '@mnema/chain chain/verify.ts «{} line(s) of kind {} in tail(s) {}: » lines #1': {
+    verdict: 'minted',
+    why: 'a count the census kept, of the lines of one kind it read past',
+  },
+  '@mnema/chain chain/verify.ts «{} line(s) of kind {} in tail(s) {}: » oneLine(JSON.stringify(eventKind)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the `kind` a stored line carries, which this reader does not know, quoted as JSON and collapsed',
+    },
+  "@mnema/chain chain/verify.ts «{} line(s) of kind {} in tail(s) {}: » tails.map(oneLine).join(', ') #1":
+    {
+      verdict: 'collapsed',
+      why: 'the ids of the tails that hold such lines, read off the directory, each collapsed',
+    },
   "@mnema/chain chain/verify.ts «{}» moves.map((move) => `${oneLine((move.payload as { to: string }).to)} (${oneLine(move.who)} at ${oneLine(move.at)})`).join(' and ') #1":
     {
       verdict: 'collapsed',
@@ -2733,6 +2748,8 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'that this walk does not enter. It interpolates a COUNT and nothing else.',
   '@mnema/chain chain/verify.ts «{} backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} kind(s) this reader does not know, checked and not read (see census: informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} tail(s) ending in a dropped partial line (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} link retraction(s) by an identity that did not record the link, not applied (see census: informational, not a break)» count':
@@ -2809,8 +2826,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(435);
-    expect(FOUND[0]?.sites.length).toBe(221);
+    expect(SITES.length).toBe(438);
+    expect(FOUND[0]?.sites.length).toBe(224);
     expect(FOUND[1]?.sites.length).toBe(214);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2861,11 +2878,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(298);
-    expect(count('minted')).toBe(105);
+    expect(count('collapsed')).toBe(300);
+    expect(count('minted')).toBe(106);
     expect(count('composed')).toBe(32);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      298,
+      300,
     );
   });
 

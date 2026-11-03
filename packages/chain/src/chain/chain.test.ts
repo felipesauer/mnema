@@ -24,6 +24,7 @@ import { type CanonicalValue, canonicalStringify } from '../events/canonical.js'
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, signerAt, verify } from './chain.js';
 import { checkpointHash, serializeCheckpoint, signCheckpoint } from './checkpoint.js';
+import { readEntries } from './entry.js';
 import { entryHash, writtenAsBuilt, writtenAsStored } from './hash.js';
 import { keepHead } from './kept-head.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
@@ -232,7 +233,7 @@ describe('chain: write then verify (happy path, T1/T2/T4)', () => {
     expect(result.ok).toBe(true);
     expect(result.fullySigned).toBe(true);
 
-    const entries = readTailEntries({ root }, tailIdOf(root), catalogUpcasters());
+    const entries = readEntries(readTailEntries({ root }, tailIdOf(root), catalogUpcasters()));
     // seq 0 is the founding; the birth pair follows at seq 1 (created) and 2.
     const birth = entries[2]?.event;
     expect(birth?.kind).toBe('task.transitioned');

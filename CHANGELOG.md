@@ -12,6 +12,37 @@ with its own changelog.
 
 ### Added
 
+- **A line of a kind this mnema does not know is read past, not refused, in both readers (ADR-113, `FORMAT.md` section
+  7.1).** A newer mnema adds a kind; until now every older binary refused the whole record over the first line of it.
+  From this version such a line is checked for everything that does not need what it says: its envelope against the
+  published declarations, its entry hash, its place in the chain, that its signer is a member at its point, and the
+  checkpoint over it. Its payload is not read and nothing it says is applied. `verify` names each such kind once, in the
+  census (`unread-kind`) and in a clause of the verdict (`N kind(s) this reader does not know, checked and not read`),
+  and the exit is unchanged; the Python reader says the same sentence under section 7.1. The same line with one payload
+  byte changed is a broken hash, signed by a key no identity enrolled it is refused, above the last checkpoint it is
+  unsigned like any line, and a known kind with an unknown field or version is refused as before. Every surface serves
+  the record without the line: the merge orders it by its `at` and citations and hands no projection it, and the writer
+  appends after it and signs over it. Binaries released before this one keep refusing such a line. The published
+  vectors gain one of a kind no version declares, `x.from-the-future` (41 vectors), which moves the content root over
+  all vectors from `a827adaa28e739a941a592efc04ac2c02fe228867069a940179719188d814d61` to
+  `f01492a6daaceef614955ccdc6b5ae0236d09619c6ae806c957cc370654d8996`. A kind named `toString` (or any name every
+  JavaScript object answers to) was read as a catalog kind with an empty payload; it is now a kind the reader does not
+  know.
+
+- **`mnema record commit` cuts the committed record at a signed checkpoint onto a branch for a pull request
+  (ADR-104, ADR-145).** It builds a commit on the remote's default branch as this clone last read it
+  (`refs/remotes/<remote>/HEAD`; it reads nothing from the network, refuses where that ref is missing and says how old
+  the base is), without touching the working tree, the index or HEAD: each tail of `.mnema/` through its last signed
+  checkpoint, or with `--through <decision>` the tail that records it through the first checkpoint that covers the
+  recording, never below the base, with a new tail's proof and the key files the cut names, and the files `init`
+  writes beside the record where the base holds none of them (so a first commit carries `* -text`); nothing of the
+  private tree, the events above the cut counted, the other files of `.mnema/` that differ named as left out. It refuses when a
+  tail file of the base is not the start of the one here (pointing at `record pull`), signs the commit when
+  `commit.gpgSign` is set, as `git commit` would, and verifies the tree apart at the signed level and with `--since`
+  the base before it makes the branch, `mnema-record/<labels>-<digest of the cut>`. It prints `git push -u` and the
+  command that opens the pull request (`gh pr create` for GitHub, `glab mr create` for GitLab, a sentence otherwise),
+  and runs neither; `--json` says the same. Run again with nothing new, it says the branch is there.
+
 - **`mnema tail relink <tail>... [--into <record>] --reason <text>` writes the owner's relink, and `mnema doctor --fix
   private-tree` relinks a private tree that names another record before it moves it (ADR-155, ADR-157).** Each relink is
   signed by the key the relinked tail's id names, which the machine must hold (the person's, or an agent's kept there),

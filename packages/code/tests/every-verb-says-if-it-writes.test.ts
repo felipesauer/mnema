@@ -381,9 +381,11 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
     'neither an event nor a key; `a-commit-hook-only-suggests.test.ts` drives it over a real ' +
     'repository',
   record:
-    'not exercised here: `pull` needs a git repository with a remote and `merge-tail` the files of a ' +
-    'merge, which the fixture is not; it appends no event, and `a-tail-merges-and-pulls.test.ts` ' +
-    'drives both over real git, with the record verified after the pull',
+    'not exercised here: `pull` and `commit` need a git repository with a remote and `merge-tail` ' +
+    'the files of a merge, which the fixture is not; none appends an event, ' +
+    '`a-tail-merges-and-pulls.test.ts` drives `pull` and `merge-tail` over real git, with the record ' +
+    'verified after the pull, and `the-record-reaches-git-through-a-pull-request.test.ts` drives ' +
+    '`commit`, with the working tree, the index and HEAD held unchanged',
   promote:
     'the exercise is its listing act, which reads: the copy is what makes it a write and needs a ' +
     'second project holding the same pattern in force, which the fixture is not: through the ' +

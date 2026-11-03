@@ -33,16 +33,16 @@
  * `verify-costs-what-the-record-holds.test.ts` counts what a whole verification touches.
  */
 
-import type { Entry } from './entry.js';
+import type { ChainEntry } from './entry.js';
 
 /** The entries whose `seq` lies in `[fromSeq, toSeq]`, in the order the tail holds them. */
-export type EntriesBetween = (fromSeq: number, toSeq: number) => readonly Entry[];
+export type EntriesBetween = (fromSeq: number, toSeq: number) => readonly ChainEntry[];
 
 /**
  * How to ask a tail for the entries a checkpoint covers: the filter's answer, by the
  * cheapest route that stays exact for THESE entries. Decided once per tail, in one pass.
  */
-export function entriesBetween(entries: readonly Entry[]): EntriesBetween {
+export function entriesBetween(entries: readonly ChainEntry[]): EntriesBetween {
   if (!seqsNeverFall(entries)) {
     return (fromSeq, toSeq) => entries.filter((e) => e.link.seq >= fromSeq && e.link.seq <= toSeq);
   }
@@ -54,9 +54,9 @@ export function entriesBetween(entries: readonly Entry[]): EntriesBetween {
 }
 
 /** Whether no entry's seq is lower than the seq of the entry before it. */
-function seqsNeverFall(entries: readonly Entry[]): boolean {
+function seqsNeverFall(entries: readonly ChainEntry[]): boolean {
   for (let i = 1; i < entries.length; i += 1) {
-    if ((entries[i] as Entry).link.seq < (entries[i - 1] as Entry).link.seq) return false;
+    if ((entries[i] as ChainEntry).link.seq < (entries[i - 1] as ChainEntry).link.seq) return false;
   }
   return true;
 }
@@ -65,12 +65,12 @@ function seqsNeverFall(entries: readonly Entry[]): boolean {
  * The first position whose seq satisfies `holds`, or the length when none does: over seqs
  * that never fall, for a condition that, once true, stays true along them.
  */
-function firstWhere(entries: readonly Entry[], holds: (seq: number) => boolean): number {
+function firstWhere(entries: readonly ChainEntry[], holds: (seq: number) => boolean): number {
   let low = 0;
   let high = entries.length;
   while (low < high) {
     const middle = (low + high) >>> 1;
-    if (holds((entries[middle] as Entry).link.seq)) high = middle;
+    if (holds((entries[middle] as ChainEntry).link.seq)) high = middle;
     else low = middle + 1;
   }
   return low;

@@ -41,10 +41,10 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import {
-  type CatalogEvent,
+  type ChainEntry,
   catalogUpcasters,
   causalOrder,
-  type Entry,
+  isRead,
   publicKeyFromPem,
   publicKeyPath,
   readTailEntries,
@@ -171,7 +171,7 @@ const platformFetch: FetchKeys = (url, init) => globalThis.fetch(url, init);
 interface CoveredTail {
   readonly tree: number;
   readonly tail: string;
-  readonly entries: readonly Entry[];
+  readonly entries: readonly ChainEntry[];
 }
 
 /**
@@ -200,7 +200,7 @@ export async function compareWithGithub(
     const layout = { root: tree.root };
     roots.push(tree.root);
     for (const tail of tree.result.tails) {
-      const entries: Entry[] = [];
+      const entries: ChainEntry[] = [];
       for (const entry of readTailEntries(layout, tail.tail, upcasters)) {
         if (entry.link.seq > tail.checkpointedThrough) break;
         entries.push(entry);
@@ -214,14 +214,14 @@ export async function compareWithGithub(
   // last link of an identity in it is the one that stands, as the projection reads it. A sort
   // by `(at, tail, seq)` would let a machine whose clock is behind put a link it wrote on top
   // of another BEFORE that other, and name the account the identity had moved away from.
-  const entryAt = (tail: number, position: number): Entry =>
-    (covered[tail] as CoveredTail).entries[position] as Entry;
+  const entryAt = (tail: number, position: number): ChainEntry =>
+    (covered[tail] as CoveredTail).entries[position] as ChainEntry;
   const merged = causalOrder(
     covered.map(({ tree, tail, entries }) => ({ tree, tail, length: entries.length })),
     {
-      at: (tail, position) => (entryAt(tail, position).event as CatalogEvent).at,
+      at: (tail, position) => entryAt(tail, position).event.at,
       hash: (tail, position) => entryAt(tail, position).link.hash,
-      after: (tail, position) => (entryAt(tail, position).event as CatalogEvent).after,
+      after: (tail, position) => entryAt(tail, position).event.after,
     },
   );
   const cursors = covered.map(() => 0);
@@ -229,7 +229,8 @@ export async function compareWithGithub(
   for (const step of merged.steps) {
     const position = cursors[step] as number;
     cursors[step] = position + 1;
-    const event = entryAt(step, position).event as CatalogEvent;
+    const entry = entryAt(step, position);
+    const event = entry.event;
     const layout = { root: roots[(covered[step] as CoveredTail).tree] as string };
     let keys = authors.get(event.who);
     if (keys === undefined) {
@@ -239,12 +240,14 @@ export async function compareWithGithub(
     if (!keys.has(event.signerFp)) {
       keys.set(event.signerFp, committedRaw(layout, event.signerFp));
     }
+    // A line of a kind this binary does not know links no account: what it says is not read.
+    const read = isRead(entry) ? entry.event : undefined;
     if (
-      event.kind === 'account.linked' &&
-      event.who === event.subject &&
-      event.payload.service === GITHUB_SERVICE
+      read?.kind === 'account.linked' &&
+      read.who === read.subject &&
+      read.payload.service === GITHUB_SERVICE
     ) {
-      accountOf.set(event.who, event.payload.account);
+      accountOf.set(read.who, read.payload.account);
     }
   }
 

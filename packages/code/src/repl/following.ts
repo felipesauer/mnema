@@ -66,7 +66,7 @@ import {
   type ChainLayout,
   catalogUpcasters,
   chainExtent,
-  type Entry,
+  readEntries,
   readTailTip,
   tailsReadAt,
   type UpcasterRegistry,
@@ -157,11 +157,12 @@ export function followingTheRecord(roots: readonly string[]): Following {
           // and it is the one entry the tip may hold that is not new: the walk's own
           // doc says a caller that wants strictly-above filters, so this one does.
           const grown = readTailTip(tree.layout, tail, upcasters, accounted).filter(
-            (entry: Entry) => entry.link.seq > accounted,
+            (entry) => entry.link.seq > accounted,
           );
           if (grown.length === 0) continue;
           tree.accounted.set(tail, grown[grown.length - 1]?.link.seq ?? accounted);
-          for (const entry of grown) happened.push(entry.event);
+          // A line of a kind this binary does not know is accounted for and happens to no one.
+          for (const entry of readEntries(grown)) happened.push(entry.event);
         }
         tree.extent = extent;
       }
