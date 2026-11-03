@@ -235,7 +235,8 @@ describe('a record a newer mnema wrote a line into', { timeout: 120_000 }, () =>
 
   it('keeps kinds that share a long prefix distinguishable in what it says', () => {
     aDecision();
-    const prefix = 'vendor.area.subsystem.module.thing.version-two.of-a-kind-with-a-very-long.name.';
+    const prefix =
+      'vendor.area.subsystem.module.thing.version-two.of-a-kind-with-a-very-long.name.';
     const kinds = ['created', 'updated', 'retired', 'restored', 'merged'].map((s) => prefix + s);
     for (const kind of kinds) newerWrites({ kind });
     const said = JSON.parse(mnema('status', '--json').out).newerLines.kinds.map(
