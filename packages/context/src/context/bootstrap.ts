@@ -247,6 +247,7 @@ import {
   decisionsInForce,
 } from './decisions.js';
 import { type ActorScope, type Resume, resume } from './focus.js';
+import { type NewerLines, newerLinesOf } from './newer-lines.js';
 import {
   adoptedSkills,
   type SkillAwaitingJudgement,
@@ -403,6 +404,13 @@ export interface Bootstrap {
    * `unread.test.ts`.
    */
   readonly unread?: readonly UnreadKind[];
+  /**
+   * The lines a NEWER mnema wrote into the record that this one read past, by kind (ADR-113,
+   * ADR-140): none of them is applied in anything above, so a decision or a task one of them
+   * moved stands here as it stood before it. Absent when there are none, which is every record this
+   * version wrote (see `newer-lines.ts`).
+   */
+  readonly newerLines?: NewerLines;
 }
 
 /**
@@ -450,6 +458,7 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
     ...taskStanding(caches, item.id),
   });
   const unread = unreadKinds(caches);
+  const newer = newerLinesOf(caches);
   return {
     resume: resume(caches, scope),
     work: work.served.map(standing),
@@ -467,6 +476,7 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
     // slice: see `unread.ts` for why this one is a field and the read's constant
     // limits are prose.
     ...(unread.length > 0 ? { unread } : {}),
+    ...(newer !== undefined ? { newerLines: newer } : {}),
   };
 }
 

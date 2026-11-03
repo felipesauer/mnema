@@ -19,6 +19,7 @@ import {
   projectionCachePath,
   type RecordGroup,
   tailsReadAt,
+  type UnreadLine,
   type UpcasterRegistry,
   unannouncedRunsOf,
 } from '@mnema/chain';
@@ -252,6 +253,8 @@ export class ProjectionCache {
    * `code/tests/the-write-says-what-it-landed-on.test.ts` holds the new end-to-end.
    */
   private breaks: readonly LinkBreak[] = [];
+  /** What the last replay or catch-up read past: the lines of a kind this binary does not know. */
+  private unreadLines: readonly UnreadLine[] = [];
   /** What the last replay or catch-up found of the records the tree holds: {@link severalRecords}. */
   private several: readonly RecordGroup[] | undefined;
   /**
@@ -341,6 +344,17 @@ export class ProjectionCache {
    */
   get linkBreaks(): readonly LinkBreak[] {
     return this.breaks;
+  }
+
+  /**
+   * The lines of the chain of a kind this binary does not know (ADR-113): what a newer mnema
+   * wrote, which every projection here was built without. They ride with the replay and with each
+   * catch-up that reads arrivals, as {@link linkBreaks} does, and are kept in the file beside the
+   * frontier, so a surface says it at the cost of the read it already made. Empty for every record
+   * this version wrote.
+   */
+  get unread(): readonly UnreadLine[] {
+    return this.unreadLines;
   }
 
   /**
@@ -469,7 +483,12 @@ export class ProjectionCache {
           return;
         }
         this.several = arrived.several;
-        if (arrived.events.length === 0) return;
+        if (arrived.events.length === 0) {
+          // Lines of a kind this binary does not know and nothing else: the tables stay as they
+          // are, and the replay is what records them, once, beside the frontier it takes.
+          if (arrived.unread.length > 0) this.replay();
+          return;
+        }
         const from = this.frontier.events;
         const expected = this.generation;
         const moved = inTransaction(
@@ -479,7 +498,12 @@ export class ProjectionCache {
             // A move the state this file holds cannot judge alone (FORMAT.md §6.7): the
             // replay judges it, against the moves its writer saw.
             if (!advance(this.db, arrived.events, from)) return 'judge-it-whole';
-            this.store(arrived.frontier, this.breaks, expected + 1);
+            this.store(
+              arrived.frontier,
+              this.breaks,
+              [...this.unreadLines, ...arrived.unread],
+              expected + 1,
+            );
             return true;
           },
           { immediate: true },
@@ -490,6 +514,7 @@ export class ProjectionCache {
         }
         if (moved) {
           this.frontier = arrived.frontier;
+          this.unreadLines = [...this.unreadLines, ...arrived.unread];
           this.generation = expected + 1;
           return;
         }
@@ -523,7 +548,7 @@ export class ProjectionCache {
       () => {
         const generation = readGeneration(this.db) + 1;
         rebuild(this.db, replay.events, { schemaPresent: this.untouched });
-        this.store(replay.frontier, replay.linkBreaks, generation);
+        this.store(replay.frontier, replay.linkBreaks, replay.unread, generation);
         return generation;
       },
       { immediate: true },
@@ -531,16 +556,23 @@ export class ProjectionCache {
     this.untouched = false;
     this.frontier = replay.frontier;
     this.breaks = replay.linkBreaks;
+    this.unreadLines = replay.unread;
     this.several = replay.several;
   }
 
   /** Writes what the cache says about itself, in the transaction that changed the tables. */
-  private store(frontier: ChainFrontier, breaks: readonly LinkBreak[], generation: number): void {
+  private store(
+    frontier: ChainFrontier,
+    breaks: readonly LinkBreak[],
+    unread: readonly UnreadLine[],
+    generation: number,
+  ): void {
     const meta: CacheMeta = {
       stamp: productStamp(),
       generation,
       frontier,
       breaks,
+      unread,
       sealed: this.persisted ? sealedFingerprints(frontier) : {},
     };
     writeMeta(this.db, meta);
@@ -563,6 +595,7 @@ export class ProjectionCache {
     if (meta === undefined) {
       this.frontier = undefined;
       this.breaks = [];
+      this.unreadLines = [];
       this.generation = -1;
       return;
     }
@@ -571,10 +604,12 @@ export class ProjectionCache {
     if (meta.stamp !== productStamp() || (this.persisted && !sealedSegmentsHold(meta.sealed))) {
       this.frontier = undefined;
       this.breaks = [];
+      this.unreadLines = [];
       return;
     }
     this.frontier = meta.frontier;
     this.breaks = meta.breaks;
+    this.unreadLines = meta.unread;
   }
 
   /**
@@ -615,6 +650,7 @@ export class ProjectionCache {
     this.persisted = false;
     this.frontier = undefined;
     this.breaks = [];
+    this.unreadLines = [];
     this.generation = -1;
   }
 

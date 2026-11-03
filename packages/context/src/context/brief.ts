@@ -127,6 +127,7 @@ import {
   decisionsDisputed,
   decisionsInForce,
 } from './decisions.js';
+import { type NewerLines, newerLinesOf } from './newer-lines.js';
 import { originOf } from './search.js';
 import { adoptedSkills, type SkillRef, skillsAwaitingJudgement } from './skills.js';
 import { type ChannelState, channelStates } from './switches.js';
@@ -217,6 +218,12 @@ export interface Brief {
    * document's bytes what they were.
    */
   readonly severalRecords: readonly RecordGroup[];
+  /**
+   * The lines a newer mnema wrote into a tree that travels, which this binary read past and so
+   * applies nowhere above (ADR-113, `newer-lines.ts`). Absent in the ordinary case, which keeps the
+   * document's bytes what they were.
+   */
+  readonly newerLines?: NewerLines;
   /**
    * How many of the rules above have an ADDRESS: a path they were linked to with
    * `rel: "governs"` in a tree that travels.
@@ -402,6 +409,7 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
   const travels: ProjectionCache[] = committed.map((source) => source.cache);
   const decisions = decisionsInForce(travels);
   const skills = adoptedSkills(travels);
+  const newer = newerLinesOf(travels);
   return {
     // Each rule carries WHO RULED IT (see {@link Acceptance}), from `decisionsInForce`: the
     // document hands these over as rules, and one with no author is one whose standing nobody
@@ -419,6 +427,7 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
     divergent: printedDivergences(travels, [...decisions, ...skills]),
     disputed: decisionsDisputed(travels),
     severalRecords: travels.flatMap((cache) => cache.severalRecords()),
+    ...(newer !== undefined ? { newerLines: newer } : {}),
     addressed: countAddressed(travels, [...decisions, ...skills]),
     // Asked of the COMMITTED sources alone, for the reason the whole answer is: a switch
     // this file could not carry would make the document claim a mechanism is on when the

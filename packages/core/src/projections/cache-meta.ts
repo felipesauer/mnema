@@ -36,7 +36,7 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LATEST_VERSION, type LinkBreak, WORKFLOWS } from '@mnema/chain';
+import { LATEST_VERSION, type LinkBreak, type UnreadLine, WORKFLOWS } from '@mnema/chain';
 import type { SqliteDatabase } from '../db/sqlite.js';
 import type { ChainFrontier, TailReach } from './order.js';
 
@@ -50,6 +50,8 @@ export interface CacheMeta {
   readonly frontier: ChainFrontier;
   /** The tails that did not chain, as of the reading that built or last advanced the rows. */
   readonly breaks: readonly LinkBreak[];
+  /** The lines of a kind this binary does not know that the rows reach: read past, never applied. */
+  readonly unread: readonly UnreadLine[];
   /** Size and modification time of every sealed segment the frontier covers, by path. */
   readonly sealed: Readonly<Record<string, string>>;
 }
@@ -100,12 +102,14 @@ export function readMeta(db: SqliteDatabase): CacheMeta | undefined {
   const generation = byKey.get('generation');
   const frontier = byKey.get('frontier');
   const breaks = byKey.get('breaks');
+  const unread = byKey.get('unread');
   const sealed = byKey.get('sealed');
   if (
     stampHere === undefined ||
     generation === undefined ||
     frontier === undefined ||
     breaks === undefined ||
+    unread === undefined ||
     sealed === undefined
   ) {
     return undefined;
@@ -115,6 +119,7 @@ export function readMeta(db: SqliteDatabase): CacheMeta | undefined {
     generation: Number(generation),
     frontier: decodeFrontier(frontier),
     breaks: JSON.parse(breaks) as LinkBreak[],
+    unread: JSON.parse(unread) as UnreadLine[],
     sealed: JSON.parse(sealed) as Record<string, string>,
   };
 }
@@ -134,6 +139,7 @@ export function writeMeta(db: SqliteDatabase, meta: CacheMeta): void {
   put.run('generation', String(meta.generation));
   put.run('frontier', encodeFrontier(meta.frontier));
   put.run('breaks', JSON.stringify(meta.breaks));
+  put.run('unread', JSON.stringify(meta.unread));
   put.run('sealed', JSON.stringify(meta.sealed));
 }
 

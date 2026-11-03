@@ -73,6 +73,64 @@ export function isRead(entry: ChainEntry): entry is Entry {
   return !('unread' in entry);
 }
 
+/**
+ * One line a newer mnema wrote that this binary reads past: which kind, which tail, and the subject
+ * its envelope names (the id of the record the line is about). Nothing of its payload.
+ */
+export interface UnreadLine {
+  readonly kind: string;
+  readonly tail: string;
+  readonly subject: string;
+}
+
+/** The lines of `entries`, one tail's, that this binary reads past, in the tail's order. */
+export function unreadLinesOf(tail: string, entries: readonly ChainEntry[]): UnreadLine[] {
+  const lines: UnreadLine[] = [];
+  for (const entry of entries) {
+    if (!isRead(entry)) lines.push({ kind: entry.event.kind, tail, subject: entry.event.subject });
+  }
+  return lines;
+}
+
+/** The lines of one kind, grouped: how many, in which tails, about which subjects. */
+export interface UnreadGroup {
+  readonly kind: string;
+  readonly lines: number;
+  /** The tails they are in, in the order the lines were met. */
+  readonly tails: readonly string[];
+  /** Each subject the lines name, with how many of them name it, in the order first met. */
+  readonly subjects: readonly (readonly [string, number])[];
+}
+
+/**
+ * The lines grouped by kind, in the order the kinds are first met: the ONE grouping the census of
+ * `verify` and every surface that names what a newer mnema wrote take (ADR-140), so the count a
+ * surface says is the count `verify` says.
+ */
+export function groupUnreadLines(lines: readonly UnreadLine[]): UnreadGroup[] {
+  const byKind = new Map<
+    string,
+    { lines: number; tails: string[]; subjects: Map<string, number> }
+  >();
+  for (const line of lines) {
+    const seen = byKind.get(line.kind) ?? {
+      lines: 0,
+      tails: [] as string[],
+      subjects: new Map<string, number>(),
+    };
+    seen.lines += 1;
+    if (!seen.tails.includes(line.tail)) seen.tails.push(line.tail);
+    seen.subjects.set(line.subject, (seen.subjects.get(line.subject) ?? 0) + 1);
+    byKind.set(line.kind, seen);
+  }
+  return [...byKind].map(([kind, { lines: count, tails, subjects }]) => ({
+    kind,
+    lines: count,
+    tails,
+    subjects: [...subjects],
+  }));
+}
+
 /** The lines of `entries` this binary reads: what every projection folds, in the same order. */
 export function readEntries(entries: readonly ChainEntry[]): Entry[] {
   return entries.filter(isRead);
