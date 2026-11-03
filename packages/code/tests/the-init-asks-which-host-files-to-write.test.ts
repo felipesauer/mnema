@@ -453,6 +453,16 @@ describe('mnema init, with the answers given as flags', { timeout: 60_000 }, () 
     expect(named).toContain(AGENTS);
   });
 
+  it('with --all-hosts at a terminal asks nothing at all, as it always did, and writes the four files', async () => {
+    const person = atATerminal(['init', '--all-hosts']);
+    const heard = await person.finished();
+    expect(heard.failed).toBe(false);
+    expect(written()).toEqual(PATHS);
+    expect(person.drawn()).not.toContain(HOSTS);
+    expect(person.drawn()).not.toContain(ACCEPTS);
+    expect(person.drawn()).not.toContain(CONFIRM);
+  });
+
   it('with --yes at a terminal asks nothing, writes what the folder shows, and says it did not ask about agents', async () => {
     mkdirSync(join(repo, '.cursor'));
     const person = atATerminal(['init', '--yes']);
@@ -649,6 +659,26 @@ describe('on the built binary, under a pseudo-terminal', () => {
     expect(styles(quiet.bytes)).toBe(0);
     const never = await atTheDevice(walk, { FORCE_COLOR: '1' });
     expect(styles(never.bytes)).toBeGreaterThan(0);
+  });
+
+  it('keeps every line of the trail on a line of its own where the layout runs for a screen reader', {
+    timeout: 60_000,
+  }, async () => {
+    // INK_SCREEN_READER ends the frame it leaves without a line break, and the line printed after it was glued
+    // to its last row: the guide of one step and the mark of the next on the same row.
+    const ran = await atTheDevice(
+      [
+        asked(HOSTS),
+        { types: ENTER, ...asked(ACCEPTS) },
+        { types: ENTER, ...asked(CONFIRM) },
+        { types: ENTER, until: () => true, what: 'agreed' },
+      ],
+      { INK_SCREEN_READER: 'true' },
+    );
+    expect(ran.code).toBe(0);
+    expect(ran.bytes).toContain('Founded');
+    expect(ran.bytes).not.toContain('\u2502\u25c7');
+    expect(ran.bytes).not.toContain('\u2502\u25c6');
   });
 
   it('reaches the questions from the bare name’s menu, and reads the answers there', {

@@ -296,10 +296,11 @@ mnema init
 # `.mnema/.editorconfig`, which sets every property an outer `.editorconfig` could impose on the record (a final
 # newline, an end of line, a trim, a charset, an indent) to `unset`; it has no `root = true`, so it takes nothing
 # else away from the folders above. And it writes the mnema instructions into the files agent hosts read at
-# the start of a session, naming each (see "The mnema instructions in the files a host reads", below), and
-# at a terminal it first asks which of four of them (Enter for all four, Ctrl-C to found nothing); with no
-# terminal, or with `--all-hosts`, it asks nothing and writes all four. It
-# touches no other file outside `.mnema/`. Run again in a project that is already founded, it adds only what that project lacks of
+# the start of a session, naming each (see "The mnema instructions in the files a host reads", below). At a
+# terminal it first shows what it found around the folder, asks which agent hosts to write them for and
+# whether an agent may accept what you choose, and shows everything it will write, once, before it writes
+# any of it; with no terminal nothing is asked and all four files are written, unless `--hosts` says which.
+# It touches no other file outside `.mnema/`. Run again in a project that is already founded, it adds only what that project lacks of
 # these (the README, the `.editorconfig`, the `.prettierignore` line), says what it added, and
 # touches nothing else of the record (and gives the record's own `.gitignore` a line it lacks, such as `/site/`, and says so);
 # where nothing is missing it answers "Already a mnema project" as before.
@@ -1924,17 +1925,50 @@ one title are two tasks.
 ### The mnema instructions in the files a host reads
 
 When it founds a project, `mnema init` writes a short block into the files agent hosts read as
-standing instructions, and names each file it wrote. At a terminal it first asks which of the four files
-below that it offers (`AGENTS.md` and the three of mnema's own), listing the hosts that read each:
-Enter writes all four, numbers write those, and Ctrl-C or Ctrl-D founds nothing and writes nothing. With no terminal
-(a script, a pipe, an agent's shell) or with `--all-hosts` it asks nothing and writes all four. What decides is whether
-standard input and standard error are a terminal, and `init` looks at nothing else: no host leaves a variable in the
-shell of its agent that the project has measured (see [Evidence](evidence.md): what is measured is the environment of the MCP
-server, and Codex and OpenCode leave none of the marks looked for). An agent whose shell is a real pseudo-terminal
-(an editor's integrated terminal, a node-pty) would be asked the question and wait for an answer nobody gives, so an
-agent that runs `mnema init` there passes `--all-hosts`. The question comes
-before the founding, so leaving it leaves the project and the home as they were, and a second `init` does not ask.
-A `CLAUDE.md`, `.claude/CLAUDE.md` or `GEMINI.md` that already exists gets the block whichever you choose. The block says when to call the mnema tools
+standing instructions, and names each file it wrote. At a terminal it first shows what it found around the
+folder (the repository and its branch; an `AGENTS.md`, `CLAUDE.md` or `GEMINI.md`, and the `.claude/`, `.cursor/`
+and `.github/instructions/` folders; decision files the record has never read; a declared formatter), and asks which
+agent hosts should read the instructions, on the screen the bare name draws: the arrows move, Space marks a row, `a`
+marks them all, Enter confirms and Esc leaves. The hosts found in the folder are checked (every host where none was),
+each host shows the files it gets and whether each is new or yours, and a `CLAUDE.md`, `.claude/CLAUDE.md` or
+`GEMINI.md` that already exists is a mark of its own: left unchecked, it is not touched. Then it asks whether an agent
+may accept what you choose (see below), and shows everything it will do, once, in two parts (in the repository, and on
+this machine only, outside it): what it creates, what it adds to, and what it records. **Nothing is written before that
+confirmation**, and Esc, Ctrl-C, Ctrl-D and `Leave` found nothing, leave the project and the home as they were, and exit
+0. The summary it prints at the end keeps the identity whole on a line of its own, puts the backup key first among the
+next steps (it is the only one that can lose something), and gives the install commands of the hosts you chose.
+
+What decides whether anything is asked is whether standard input, standard output and standard error are a terminal, and
+`init` looks at nothing else: no host leaves a variable in the shell of its agent that the project has measured (see
+[Evidence](evidence.md): what is measured is the environment of the MCP server, and Codex and OpenCode leave none of the
+marks looked for). With no terminal (a script, a pipe, an agent's shell) nothing is asked, and all four files are
+written, the lines being the ones `init` has always printed. Every answer is also a flag:
+
+| Flag | What it answers |
+|---|---|
+| `--hosts <list>` | the hosts, without asking: `claude`, `cursor`, `vscode`, `codex` (several, separated by commas), or `all`, `detected` or `none`. The person's own file under a host (`CLAUDE.md` under `claude`) is written where the host is named |
+| `--all-hosts` | all four files and no question at all: `--yes --hosts all`. An agent whose shell is a pseudo-terminal passes it, or `--yes`, so it does not wait at a question |
+| `--yes`, `-y` | no question: the hosts found here (every host where none was), nothing asked about agents accepting, and the plan printed without a confirmation |
+| `--dry-run` | prints the plan and writes nothing, in a folder that has no project and in one that has |
+| `--accepts yes\|no` | answers whether an agent may accept what you choose, and records the answer (below); with `--which <agent>` the answer is that agent's proposal |
+
+An invalid `--hosts` is refused with the names it takes (`HOSTS_NOT_UNDERSTOOD`), and nothing is written. The questions
+come before the founding, so leaving one leaves the project and the home as they were, and a second `init` asks nothing.
+Where a person's file exists (`CLAUDE.md`, `.claude/CLAUDE.md`, `GEMINI.md`) and nobody was asked, it gets the block, as it
+always did. 
+
+The question of who may accept is whether an agent may accept at once what you pick among the options it offered, or
+dictate, quoting your words, while what it proposes on its own waits for you (`mnema decision review`). The answer is
+recorded in the public tree, so the team reads it, as a decision of your own, accepted by you with a note that quotes
+what you answered. **Yes** is the product's default and records the decision and nothing else; **No** also records the
+switch that refuses an agent's `accept` (`mnema switch on agent-accepts` turns it back on), which is what keeps the
+decision true. An agent that runs `mnema init --which <agent> --accepts yes` (or `no`) is deciding the extent of its own
+authority, so its answer is recorded as that agent's **proposal**, signed as the agent's, and waits for you (an agent's
+`no` records no switch). `--yes` never answers the question, and with no terminal and no `--accepts` nothing is asked or
+recorded. A second `init` in a founded project never asks it again: `mnema switch` changes the switch, and a new decision
+replaces the answer.
+
+The block says when to call the mnema tools
 (`bootstrap` at the opening, `governing_rules` before changing a file, `record_decision` when a choice
 is settled, `capture_memory` for what the code does not show), that a decision is born `proposed` and,
 once accepted, is in force (an agent's acceptance is recorded as an agent's, and `mnema switch off agent-accepts`
@@ -1949,8 +1983,8 @@ through the plugin.
 | File | Written | Read by, as each host documents it |
 |---|---|---|
 | `AGENTS.md` | offered by `init`, created where there is none | Codex, Cursor, VS Code, Copilot CLI, OpenCode, Qwen Code; Claude Code only where no `CLAUDE.md` exists |
-| `CLAUDE.md`, `.claude/CLAUDE.md` | where they exist | Claude Code, Copilot CLI |
-| `GEMINI.md` | where it exists | Gemini CLI, Copilot CLI |
+| `CLAUDE.md`, `.claude/CLAUDE.md` | where they exist and are not left off at the question | Claude Code, Copilot CLI |
+| `GEMINI.md` | where it exists and is not left off at the question | Gemini CLI, Copilot CLI |
 | `.claude/rules/mnema-instructions.md` | offered by `init` | Claude Code, at launch |
 | `.github/instructions/mnema-instructions.instructions.md` (`applyTo: "**"`) | offered by `init` | VS Code and Copilot CLI, when the agent works on a file |
 | `.cursor/rules/mnema-instructions.mdc` (`alwaysApply: true`) | offered by `init` | Cursor |
@@ -1969,8 +2003,8 @@ mnema instructions --all-hosts   # write all four offered files, asking nothing,
 
 The files on disk are the choice. Of the four offered files, `mnema instructions`, `--check`, `--remove` and
 `mnema doctor` look at the ones that hold the instructions; one you did not choose is not expected, and is
-reported missing only when none of the four holds them. Where none does, a terminal is asked the question
-`init` asks, and without one all four are written. A file of yours with no block (an `AGENTS.md` you wrote) does not
+reported missing only when none of the four holds them. Where none does, a terminal is asked the question of the hosts
+`init` asks (with the same marks for a `CLAUDE.md` or `GEMINI.md` that exists), and without one all four are written. A file of yours with no block (an `AGENTS.md` you wrote) does not
 count as chosen. If you take the block out of the one file you chose, `doctor` says all four are missing (none holds it);
 if you chose two or more and delete the block from one, nothing says it is missing, because the others still hold it.
 `--all-hosts` puts it back, with the others.

@@ -20,7 +20,7 @@
  * and stops, in a project already founded as in one that is not (`the-init-says-what-it-found-and-writes-nothing.test.ts`).
  */
 
-import { join, sep } from 'node:path';
+import { basename, sep } from 'node:path';
 import { listPrivateKeyFingerprints } from '@mnema/chain';
 import { PROJECT_DIR, resolveTrees } from '@mnema/core';
 import { type InitContext, readInit, runInit } from '../commands/init.js';
@@ -96,6 +96,10 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
     return;
   }
 
+  // `--all-hosts` WAS THE FLAG THAT ASKED NOTHING, and an agent whose shell is a pseudo-terminal passes it so it
+  // does not wait at a question: it keeps that promise, and is `--yes` with every host.
+  const asksNothing = opts.yes === true || opts.allHosts === true;
+
   const read = readInit(ctx);
   if ('refused' in read) {
     await refuseTheRoot(wiring, read);
@@ -138,7 +142,7 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
       ...(opts.accepts !== undefined ? { accepts: opts.accepts } : {}),
       ...(opts.accepts !== undefined && agent !== undefined ? { agent } : {}),
     };
-    io.out(onOneLine`Would found ${shown(join(ctx.cwd, PROJECT_DIR))}. Nothing was written.`);
+    io.out(onOneLine`Would found ${basename(ctx.cwd)}/${PROJECT_DIR}. Nothing was written.`);
     printed(
       { io, render },
       planPage(
@@ -169,10 +173,10 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
         version: VERSION,
         machine,
         ...(hostsGiven !== undefined ? { hostsGiven } : {}),
-        asksWhoMayAccept: opts.yes !== true,
+        asksWhoMayAccept: !asksNothing,
         ...(opts.accepts !== undefined ? { acceptsGiven: opts.accepts } : {}),
         ...(opts.accepts !== undefined && agent !== undefined ? { agent } : {}),
-        yes: opts.yes === true,
+        yes: asksNothing,
       },
     );
     if (outcome.kind === 'left') return;

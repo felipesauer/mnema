@@ -174,7 +174,7 @@ _mnema_described() {
 _mnema_flags() {
   case "$1" in
     '') echo '-V --version --color -h --help' ;;
-    'init') echo '--all-hosts -h --help -V --version --color' ;;
+    'init') echo '--hosts --all-hosts -y --yes --dry-run --accepts --which -h --help -V --version --color' ;;
     'decision') echo '--alternatives --scope --which --stdin --body-file -h --help -V --version --color' ;;
     'decision record') echo '--alternatives --scope --which --stdin --body-file -h --help -V --version --color' ;;
     'decision move') echo '--note -h --help --which -V --version --color' ;;
@@ -288,6 +288,7 @@ _mnema_flags() {
 _mnema_values() {
   case "$1" in
     ':--color') echo 'auto always never' ;;
+    'init:--accepts') echo 'yes no' ;;
     'init:--color') echo 'auto always never' ;;
     'decision:--scope') echo 'public private global' ;;
     'decision:--color') echo 'auto always never' ;;

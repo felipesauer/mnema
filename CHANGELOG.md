@@ -12,6 +12,24 @@ with its own changelog.
 
 ### Added
 
+- **`mnema init` asks on a screen, and shows everything it will write before it writes any of it (ADR-174, ADR-173).**
+  At a terminal it prints what it found around the folder (the repository and its branch, the files and folders of the
+  agent hosts in use, the decision files the record has never read, a declared formatter), then asks which agent hosts
+  should read the mnema instructions on the screen the bare name draws (arrows, Space, `a`, Enter, Esc; the hosts found
+  are checked, every host where none was; each host shows the files it gets and whether each is new or yours), whether an
+  agent may accept what you choose, and shows the plan once: what it creates, adds to and records, in the repository and
+  on this machine only, with one confirmation. Nothing is written before it, and Esc, Ctrl-C, Ctrl-D and `Leave` found
+  nothing and exit 0. The summary keeps the whole identity on a line of its own, puts the backup key first among the next
+  steps, and gives the install commands of the hosts chosen. A `CLAUDE.md`, `.claude/CLAUDE.md` or `GEMINI.md` that
+  exists is a mark of its own, as it is in `mnema instructions` at a terminal: left unchecked, it is not touched (with
+  nobody to ask, it is written, as it was). The new flags: `--hosts <list>` (`claude`, `cursor`, `vscode`, `codex`, or
+  `all`, `detected`, `none`), `--yes` (no question, no confirmation), `--dry-run` (prints the plan and writes nothing),
+  `--accepts yes|no` and `--which`; `--all-hosts` stays and asks nothing at all. The answer to the question about agents
+  accepting is recorded in the public tree as a decision of the person's, accepted by them (a `no` also records the switch
+  that refuses an agent's `accept`); an agent that gives it with `--which` records its own proposal, which waits for the
+  person; `--yes` never answers it. With no terminal, and with none of these flags, the lines are the ones `init` has
+  always printed. The question by number (`HOST_FILES_NOT_UNDERSTOOD`) is gone: an answer cannot be off the list now.
+
 - **`mnema tail relink <tail>... [--into <record>] --reason <text>` writes the owner's relink, and `mnema doctor --fix
   private-tree` relinks a private tree that names another record before it moves it (ADR-155, ADR-157).** Each relink is
   signed by the key the relinked tail's id names, which the machine must hold (the person's, or an agent's kept there),

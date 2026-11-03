@@ -82,6 +82,33 @@ export type Asked<Answer> =
   | { readonly kind: 'left' };
 
 /**
+ * The output with a note kept of the last character written to it, for the one thing the screen leaves to
+ * whoever opened it: where the layout library runs in its screen-reader mode, the frame it leaves ends
+ * without a line break, and the line printed after it was glued to its last row (`INK_SCREEN_READER=true`,
+ * measured on the built binary). Every other mode ends the frame with one, and nothing is added there.
+ */
+function watched(output: NodeJS.WriteStream): {
+  readonly stream: NodeJS.WriteStream;
+  readonly endsALine: () => boolean;
+} {
+  let last = '\n';
+  const stream = new Proxy(output, {
+    get(target, property) {
+      if (property === 'write') {
+        return (chunk: string | Uint8Array, ...rest: unknown[]): boolean => {
+          const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf-8');
+          if (text.length > 0) last = text.slice(-1);
+          return (target.write as (...all: unknown[]) => boolean)(chunk, ...rest);
+        };
+      }
+      const value: unknown = Reflect.get(target, property, target);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+  return { stream, endsALine: () => last === '\n' };
+}
+
+/**
  * Puts one question on the screen and answers when the person has: with the answer, or with the fact that
  * they left. The terminal goes back in both, and in every other way this process can stop
  * (`armLeaving`, in `choice/screen.ts`).
@@ -94,6 +121,7 @@ export async function putTheQuestion<State, Answer>(
   const openScreen = await theScreens(render);
   const leaving = terminal.leaving ?? (await import('../repl/leaving.js')).leavingProcess;
   const width = theWidthOf(render);
+  const page = watched(terminal.output);
   const rows = (state: State): readonly string[] =>
     question.page(state, width).map((line) => render(line));
   return await new Promise<Asked<Answer>>((resolve) => {
@@ -111,6 +139,7 @@ export async function putTheQuestion<State, Answer>(
         ),
       );
       screen.close();
+      if (!page.endsALine()) terminal.output.write('\n');
       resolve(result);
     };
     const onAKey = (stroke: Keystroke): void => {
@@ -131,7 +160,7 @@ export async function putTheQuestion<State, Answer>(
     };
     const screen = openScreen({
       stdin: terminal.input,
-      stdout: terminal.output,
+      stdout: page.stream,
       rows: rows(state),
       pressed: (stroke) => {
         for (const one of keystrokesOf(stroke)) onAKey(one);

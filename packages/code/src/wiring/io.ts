@@ -12,8 +12,8 @@
  */
 
 import { neutralized } from '../one-line.js';
-import type { Leaving } from '../repl/leaving.js';
 import { PAINTING } from '../presentation/styled.js';
+import type { Leaving } from '../repl/leaving.js';
 
 /** Every sequence the painted renderer writes, as one pattern: built from its constants. */
 const OUR_PAINT = new RegExp(

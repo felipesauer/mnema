@@ -26,7 +26,7 @@ import { here } from './context.js';
 import { enumeratedOption } from './enumerated.js';
 import type { CliIo } from './io.js';
 import { onOneLine } from './on-one-line.js';
-import { declaredAgent, WHICH_HELP } from './options.js';
+import { declaredAgent } from './options.js';
 import { reportRefusal } from './report.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
@@ -143,6 +143,18 @@ export const HOSTS_NOT_UNDERSTOOD = 'HOSTS_NOT_UNDERSTOOD';
 /** What `--hosts` is, said once. */
 const HOSTS_HELP = `which hosts get the mnema instructions, without asking: ${[...HOSTS_OFFERED].join(', ')} (several, separated by commas), or one of ${[...HOSTS_WORDS].join(', ')}`;
 
+/**
+ * What `--which` says on this verb, which writes no fact of an agent's of its own: the founding is the
+ * person's. The one thing an agent can declare here is whose `--accepts` it is, and an answer about the
+ * extent of an agent's own authority is that agent's proposal, never the person's decision. It is worded for
+ * that and not copied from the other verbs', whose last two sentences (where the fact lands, and `--scope`)
+ * would say of this one what is not so.
+ */
+const WHICH_ON_INIT =
+  'the agent that executed this, when an agent (a script, a CI step) is driving mnema: with --accepts, ' +
+  'its answer is recorded as that agent’s proposal, and waits for you. Omit it when you are acting ' +
+  'directly. A value that names no agent (an unset variable) is refused, never credited to you.';
+
 /** What the verb is given, as commander hands it over. */
 export interface InitOptions {
   readonly hosts?: string | undefined;
@@ -161,7 +173,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
     .option('--hosts <list>', HOSTS_HELP)
     .option(
       '--all-hosts',
-      'write the mnema instructions into AGENTS.md and the three files of mnema’s own, without asking which (the same as --hosts all)',
+      'write the mnema instructions into AGENTS.md and the three files of mnema’s own, and ask nothing at all (the same as --yes --hosts all)',
     )
     .option(
       '-y, --yes',
@@ -175,7 +187,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         ACCEPTS_ANSWERS,
       ),
     )
-    .option('--which <agent>', WHICH_HELP, declaredAgent)
+    .option('--which <agent>', WHICH_ON_INIT, declaredAgent)
     .addHelpText(
       'after',
       [
