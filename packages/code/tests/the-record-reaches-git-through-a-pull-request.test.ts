@@ -58,7 +58,7 @@ function git(cwd: string, ...args: string[]): { status: number; out: string } {
   const ran = spawnSync('git', ['-c', 'init.defaultBranch=main', ...args], {
     cwd,
     encoding: 'utf-8',
-    env: env(),
+    env: { ...env(), GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
   });
   return { status: ran.status ?? -1, out: `${ran.stdout}${ran.stderr}` };
 }
@@ -230,9 +230,15 @@ describe('mnema record commit', SLOW, () => {
     const segmentPath = join(local, tail, '000001.jsonl');
     const lines = readFileSync(segmentPath, 'utf-8').trimEnd().split('\n');
     appendFileSync(segmentPath, `${lines[lines.length - 1] as string}\n`);
+    // And a file of the record that is not part of the proof, changed here.
+    appendFileSync(join(local, '.mnema', 'README.md'), 'a line of mine\n');
     const made = commitIn(local);
     if (!made.ok || made.kind !== 'made') throw new Error(JSON.stringify(made));
     expect(made.left.events).toBe(1);
+    expect(made.left.files).toEqual(['.mnema/README.md']);
+    expect(git(local, 'show', `${made.commit}:.mnema/README.md`).out).not.toContain(
+      'a line of mine',
+    );
     expect(git(local, 'show', `${made.commit}:${tail}/000001.jsonl`).out).toBe(
       `${lines.join('\n')}\n`,
     );

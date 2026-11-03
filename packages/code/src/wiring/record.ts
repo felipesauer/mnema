@@ -145,7 +145,7 @@ export function registerRecord(program: Command, wiring: Wiring): Declared {
 
   group
     .command('commit')
-    .description('cut the committed record at a signed checkpoint onto a branch for a pull request')
+    .description('commit the signed record to a branch for a pull request')
     .option('--through <decision>', 'cut the tail that records this decision where it is covered')
     .option('--json', 'emit what was cut and the commands to run as JSON')
     .addHelpText(
@@ -265,7 +265,7 @@ export function registerRecord(program: Command, wiring: Wiring): Declared {
         ),
       );
       io.out(render(fact(onOneLine`next: ${result.next.push}`)));
-      io.out(render(fact(`then: ${result.next.open}`)));
+      io.out(render(fact(onOneLine`then: ${result.next.open}`)));
     });
 
   group

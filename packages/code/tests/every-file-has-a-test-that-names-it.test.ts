@@ -455,7 +455,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/wiring/record.ts': {
     reached: 'nobody imports it',
-    why: "The record group's declaration and the lines `pull` prints; a-tail-merges-and-pulls.test.ts drives `pull` and `merge-tail` through the built binary over real git and reads the line a pull ends on, a refusal and a fork, while the help is read only in the golden.",
+    why: "The record group's declaration and the lines `pull` and `commit` print; a-tail-merges-and-pulls.test.ts drives `pull` and `merge-tail` through the built binary over real git and reads the line a pull ends on, a refusal and a fork, the-record-reaches-git-through-a-pull-request.test.ts drives `commit` and reads its refusals, its lines and its --json, while the help is read only in the golden.",
   },
   'packages/code/src/wiring/commits.ts': {
     reached: 'nobody imports it',
@@ -1355,6 +1355,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-record-meets-the-git-log.test.ts': 13,
   'packages/code/tests/the-record-name-survives-a-cut-of-its-genesis.test.ts': 7,
   'packages/code/tests/the-record-page-stays-out-of-git.test.ts': 12,
+  'packages/code/tests/the-record-reaches-git-through-a-pull-request.test.ts': 8,
   'packages/code/tests/the-record-travels.test.ts': 14,
   'packages/code/tests/the-record-you-can-see.test.ts': 17,
   'packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts': 13,
@@ -1718,6 +1719,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/observe.ts',
   'packages/code/src/commands/promote.ts',
   'packages/code/src/commands/recall.ts',
+  'packages/code/src/commands/record-commit.ts',
   'packages/code/src/commands/record-merge-tail.ts',
   'packages/code/src/commands/record-pull.ts',
   'packages/code/src/commands/references.ts',

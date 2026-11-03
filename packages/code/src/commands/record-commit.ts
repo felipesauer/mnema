@@ -20,11 +20,13 @@
  *      holds the recording of the decision `--through` names, through the first checkpoint that
  *      covers that recording; never below what the base holds. Events above the cut stay out and
  *      are counted. What enters is what the cut needs to verify and nothing else: the segments and
- *      `checkpoints.jsonl` cut there, the tail proof, the witness files of the checkpoints it
- *      carries, and each key file a line it carries names (the key that signs a tail, a key it
- *      enrols or declares). Nothing of the private tree, the global tree or any file outside the
- *      record's folder; the files that are not part of the proof (`README.md`, `.gitattributes`,
- *      `inherit.json`) stay as the base has them, and are named when they differ.
+ *      `checkpoints.jsonl` cut there, the tail proof, and each key file a line it carries names
+ *      (the key that signs a tail, a key it enrols or declares), all asked of the binary in
+ *      `the-record-reaches-git-through-a-pull-request.test.ts`. It is also meant to carry the
+ *      witness files of the checkpoints it carries, which no case there asks: it holds no witness.
+ *      Nothing of the private tree, the global tree or any file outside the record's folder; the
+ *      files that are not part of the proof (`README.md`, `.gitattributes`, `inherit.json`) stay
+ *      as the base has them, and are named when they differ.
  *   3. THE COMMIT is built with git's plumbing over the base's tree: blobs, a temporary index,
  *      `write-tree`, `commit-tree` and `update-ref` of a new branch. The working tree, the index and
  *      HEAD are not touched. `commit-tree` does not read `commit.gpgSign` (measured on git 2.55: it
@@ -675,12 +677,8 @@ export function runRecordCommit(
     const labels = decisions.map((one) => one.adr);
     const events = cuts.reduce((sum, cut) => sum + cut.events, 0);
     const title = cutTitle(labels, events);
-    const body = [
-      `The record's events through a signed checkpoint of each tail: ${events} event${events === 1 ? '' : 's'} in ${cuts.length} tail${cuts.length === 1 ? '' : 's'}, made by mnema record commit and verified with verify --since ${base.ref}.`,
-      ...(decisions.length > 0
-        ? ['', ...decisions.map((one) => `- ${one.adr}: ${one.state}`)]
-        : []),
-    ].join('\n');
+    // One line, so the command printed to open the pull request is one line too.
+    const body = `The record's events through a signed checkpoint of each tail: ${events} event${events === 1 ? '' : 's'} in ${cuts.length} tail${cuts.length === 1 ? '' : 's'}, made by mnema record commit and verified with verify --since ${base.ref}${decisions.length > 0 ? `; the decisions: ${decisions.map((one) => `${one.adr} ${one.state}`).join(', ')}` : ''}.`;
     const name = existing ?? cutBranch(labels, digest);
     const next = nextCommands({
       url: said(git(ctx, top, ['remote', 'get-url', remote])),

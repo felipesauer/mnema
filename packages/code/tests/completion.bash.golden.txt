@@ -21,7 +21,7 @@ _mnema_commands() {
     'check') echo 'declare run help' ;;
     'audit') echo 'accountability antipatterns exposure help' ;;
     'commit-hook') echo 'install uninstall suggest help' ;;
-    'record') echo 'pull merge-tail help' ;;
+    'record') echo 'pull commit merge-tail help' ;;
     'key') echo 'restore request enroll github sigstore revoke protect unprotect help' ;;
     'tail') echo 'list prune relink help' ;;
     'run') echo 'start end help' ;;
@@ -111,6 +111,7 @@ _mnema_flags() {
     'commit-hook suggest') echo '-h --help -V --version --color' ;;
     'record') echo '-h --help -V --version --color' ;;
     'record pull') echo '-h --help -V --version --color' ;;
+    'record commit') echo '--through --json -h --help -V --version --color' ;;
     'record merge-tail') echo '-h --help -V --version --color' ;;
     'key') echo '-h --help -V --version --color' ;;
     'key restore') echo '--agent -h --help -V --version --color' ;;
@@ -263,6 +264,7 @@ _mnema_values() {
     'commit-hook suggest:--color') echo 'auto always never' ;;
     'record:--color') echo 'auto always never' ;;
     'record pull:--color') echo 'auto always never' ;;
+    'record commit:--color') echo 'auto always never' ;;
     'record merge-tail:--color') echo 'auto always never' ;;
     'key:--color') echo 'auto always never' ;;
     'key restore:--color') echo 'auto always never' ;;

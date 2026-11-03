@@ -35,7 +35,8 @@ mnema init
 ```
 
 That founded the record and this machine's identity; nothing is asked of a network. Commit `.mnema/`
-with the repository: every clone reads it.
+with the repository: every clone reads it. The events recorded later reach git the same way, with
+the work, or in a pull request of their own that `mnema record commit` prepares.
 
 ## 2. Record a call, and accept it
 
