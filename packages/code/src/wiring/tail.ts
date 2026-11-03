@@ -183,6 +183,13 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
       'the record they join, as `mnema verify` names it; omitted, the one other record the tails here name',
     )
     .requiredOption('--reason <text>', 'why they are relinked (recorded in the fact)')
+    .option(
+      '--which <agent>',
+      'the agent that executed this, when an agent (a script, a CI step) is driving ' +
+        'mnema: omit it when you are acting directly. It names the executor only: a relink ' +
+        'an agent key signs names the agent the record enrolled that key as',
+      declaredAgent,
+    )
     .addHelpText(
       'after',
       [
@@ -195,7 +202,7 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
       ].join('\n'),
     )
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action(async (named: string[], opts: { into?: string; reason: string }) => {
+    .action(async (named: string[], opts: { into?: string; reason: string; which?: string }) => {
       const { runTailRelink } = await import('../commands/tail-relink.js');
       const { describeNewTail } = await import('@mnema/chain');
       const run = pinnedRun();
@@ -207,6 +214,7 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
         tails: named,
         reason: opts.reason,
         ...(opts.into !== undefined ? { into: opts.into } : {}),
+        ...(opts.which !== undefined ? { which: opts.which } : {}),
         ...(run !== undefined ? { run } : {}),
       });
       if (!result.ok) {

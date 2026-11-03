@@ -31,7 +31,8 @@ with its own changelog.
   write in a directory of two records is refused `STALE_ANCHOR` in words that name both records and `mnema tail relink`,
   where it said to delete the anchor file, after which the write was refused `ANOTHER_RECORD`. `mnema tail prune`
   refuses (`RELINK_WOULD_BE_UNDONE`) to cut the tail that holds a relink while the tail it relinked is on disk, unless
-  that tail's cut is authorized first.
+  that tail's cut is authorized first by a covered waiver. Like `tail prune`, `tail relink` takes `--which` for the
+  agent that executed it; a relink an agent's key signs names the agent the record enrolled that key as.
 
 - **Both readers read a tail its owner relinked into another record (`tail.relinked`, `FORMAT.md` section 6.11).** A
   tail is named by its tail proof, signed once at birth, so nothing signed in it could move it to another record, and

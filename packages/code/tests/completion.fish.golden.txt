@@ -834,6 +834,7 @@ complete -c mnema -f -n '__mnema_at "tail prune"' -l color -x -a 'auto always ne
 # mnema tail relink
 complete -c mnema -f -n '__mnema_at "tail relink"' -l into -r
 complete -c mnema -f -n '__mnema_at "tail relink"' -l reason -r
+complete -c mnema -f -n '__mnema_at "tail relink"' -l which -r
 complete -c mnema -f -n '__mnema_at "tail relink"' -s h -l help
 complete -c mnema -f -n '__mnema_at "tail relink"' -s V -l version
 complete -c mnema -f -n '__mnema_at "tail relink"' -l color -x -a 'auto always never'

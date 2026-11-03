@@ -19,7 +19,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { catalogUpcasters, openChainForWriting, verifyChain } from '@mnema/chain';
+import { catalogUpcasters, openChainForWriting, readTailEntries, verifyChain } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { createTask, openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -75,6 +75,32 @@ describe('mnema tail relink', () => {
     expect(done.scope).toBe('public');
     expect(done.relinks.map((one) => [one.tail, one.host])).toEqual([[tail, host]]);
     expect(done.opened).toEqual([]);
+  });
+
+  it('hands --which to the fact, as the executor of a relink the person’s key signs', () => {
+    const { repo, env, host, tail } = twoRecords();
+    const done = runTailRelink(
+      { cwd: repo, env },
+      { tails: [tail], reason: 'one project', which: 'ci-bot' },
+    );
+    expect(done.ok, JSON.stringify(done)).toBe(true);
+    const pub = resolveTrees(repo, env).projectPublic as string;
+    const relinks = readTailEntries({ root: pub }, host, catalogUpcasters()).filter(
+      (entry) => entry.event.kind === 'tail.relinked',
+    );
+    expect(relinks.map((entry) => entry.event.which)).toEqual(['ci-bot']);
+  });
+
+  it('refuses a --which that names the identity it stands beside', () => {
+    const { repo, env, tail } = twoRecords();
+    const pub = resolveTrees(repo, env).projectPublic as string;
+    const who = readTailEntries({ root: pub }, tail, catalogUpcasters()).at(-1)?.event
+      .who as string;
+    const done = runTailRelink(
+      { cwd: repo, env },
+      { tails: [tail], reason: 'one project', which: who },
+    );
+    expect(done).toMatchObject({ ok: false, reason: 'REFUSED', code: 'WHO_IS_WHICH' });
   });
 
   it('hands --into to the operation', () => {
@@ -196,6 +222,9 @@ describe('mnema doctor --fix private-tree, over a tree that names another record
 
   it('relinks nothing and moves nothing where a tail’s key is not on this machine', () => {
     const { ctx, old, tail } = aRepositoryAndAnOldTree(join(sandbox, 'another-machine'));
+    const dry = fixPrivateTree(ctx, { dryRun: true });
+    expect(dry.refused).toBe(true);
+    expect(dry.lines.join('\n')).toContain(`this machine holds no key for ${tail}`);
     const fixed = fixPrivateTree(ctx, { dryRun: false });
     expect(fixed.refused).toBe(true);
     expect(fixed.lines.join('\n')).toContain(`this machine holds no key for ${tail}`);

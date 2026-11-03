@@ -208,9 +208,18 @@ describe('one person’s two inits, merged', () => {
       a.tail,
       '--reason',
       'Two inits, one project.',
+      '--which',
+      'ci-bot',
     );
     expect(relinked.status, relinked.err).toBe(0);
     expect(relinked.out).toContain(`and left tail ${a.tail} as it is: it names record `);
+    // `--which` reaches the fact: the relink line names the agent that executed it.
+    const lines = [...tailBytes(repo)]
+      .filter(([file]) => file.endsWith('.jsonl') && !file.endsWith('checkpoints.jsonl'))
+      .flatMap(([, bytes]) => bytes.split('\n'))
+      .filter((line) => line.includes('"kind":"tail.relinked"'));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain('"which":"ci-bot"');
     const after = mnema(
       'person',
       repo,

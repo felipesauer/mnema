@@ -2722,6 +2722,10 @@ $ mnema tail relink --help
 |   --into <record>  the record they join, as `mnema verify` names it; omitted,
 |                    the one other record the tails here name
 |   --reason <text>  why they are relinked (recorded in the fact)
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema: omit it when you are acting directly.
+|                    It names the executor only: a relink an agent key signs names
+|                    the agent the record enrolled that key as
 |   -h, --help       display help for command
 |
 | Each relink is signed by the key the tail id names, which this machine must hold, and

@@ -44,6 +44,7 @@ import {
   screened,
 } from '../content/screen.js';
 import { AGENT_NAME } from '../identity/agent-name.js';
+import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { oneLine } from '../one-line.js';
 import { agentKeyRoot, type DiscoveryEnv } from '../topology/resolve.js';
 import { type AppendRefusal, appendEvent, refusalOf } from './append.js';
@@ -79,6 +80,12 @@ export interface RelinkInput {
   readonly into?: string;
   readonly reason: string;
   readonly run?: string;
+  /**
+   * The agent that executed it, declared, as `tail prune` takes it: written as the `which` of a
+   * relink the person's key signs. A relink an agent's key signs carries the name the record
+   * enrolled that key under, whatever is declared, because the readers refuse any other.
+   */
+  readonly which?: string;
 }
 
 /** One relink written: what it says, what the tail brings, and where it is. */
@@ -103,6 +110,7 @@ export type RelinkError =
   | RelinkRefusal
   | { readonly ok: false; readonly code: 'NOT_THE_OWNER'; readonly message: string }
   | ScreenRefusal
+  | SelfAuthorizedErr
   | AppendRefusal;
 
 /** A tail id no writer holds, standing for the tail a writer opens where its own cannot host. */
@@ -156,6 +164,18 @@ export function relinkTails(ctx: RelinkContext, input: RelinkInput): RelinkOk | 
       });
     } else group.relinks.push(relink);
   }
+  // The declared agent, held to what `tail prune` holds it to, against each identity it would
+  // stand beside: only on the relinks the person's key signs.
+  const declared = new Map<string, string>();
+  const replaced = [...text.replaced];
+  for (const relink of planned.relinks) {
+    const key = ctx.keys.get(relink.tail.slice(0, relink.tail.indexOf('-'))) as KeyOnThisMachine;
+    if (key.which !== undefined || input.which === undefined) continue;
+    const agent = resolveExecutingAgent(relink.subject, input.which);
+    if (!agent.ok) return agent;
+    if (agent.which !== undefined) declared.set(relink.tail, agent.which);
+    replaced.push(...agent.replaced);
+  }
   const relinked = new Set(planned.relinks.map((relink) => relink.tail));
   const at = (ctx.clock ?? systemClock)();
   const build = (key: KeyOnThisMachine, relink: PlannedRelink, when: string) =>
@@ -165,7 +185,11 @@ export function relinkTails(ctx: RelinkContext, input: RelinkInput): RelinkOk | 
         who: relink.subject,
         signerFp: key.fingerprint,
         subject: relink.subject,
-        ...(key.which !== undefined ? { which: key.which } : {}),
+        ...(key.which !== undefined
+          ? { which: key.which }
+          : declared.has(relink.tail)
+            ? { which: declared.get(relink.tail) as string }
+            : {}),
         ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
       },
       {
@@ -216,7 +240,7 @@ export function relinkTails(ctx: RelinkContext, input: RelinkInput): RelinkOk | 
       written.push({ ...relink, host, seq, signedBy: key.fingerprint });
     }
   }
-  return { ok: true, relinks: written, leftBehind: would.leftBehind, ...screened(text.replaced) };
+  return { ok: true, relinks: written, leftBehind: would.leftBehind, ...screened(replaced) };
 }
 
 /**

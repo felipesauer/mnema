@@ -106,7 +106,7 @@ describe('the tails a cut of a host would turn back', () => {
     expect(tailsACutWouldUnrelink({ root: y }, upcasters, w.tail)).toEqual([]);
   });
 
-  it('are none once the cut of the relinked tail is authorized, or once it is gone', () => {
+  it('are none once the cut of the relinked tail is authorized and covered, or once it is gone', () => {
     const { y, w, tail } = relinkedFrom(true);
     const pruner = noted(y, 'pruner', 'the pruner');
     const standing = tailStanding({ root: y }, tail, upcasters);
@@ -122,6 +122,9 @@ describe('the tails a cut of a host would turn back', () => {
         },
       ),
     );
+    // Above the pruner's last checkpoint the waiver rests on the hash chain alone: not yet.
+    expect(tailsACutWouldUnrelink({ root: y }, upcasters, w.tail)).toEqual([tail]);
+    pruner.checkpoint();
     expect(tailsACutWouldUnrelink({ root: y }, upcasters, w.tail)).toEqual([]);
     rmSync(join(y, 'tails', tail), { recursive: true });
     expect(readdirSync(join(y, 'tails'))).not.toContain(tail);

@@ -292,6 +292,14 @@ describe('private trees from before the move', () => {
     const [old] = readdirSync(join(oldTree(repo), 'tails'));
     const tails = readdirSync(join(shared(), 'tails'));
 
+    // The dry run says the same refusal, and writes nothing either.
+    const dry = mnema(repo, 'doctor', '--fix', 'private-tree', '--dry-run');
+    expect(dry.status, dry.out).toBe(1);
+    expect(dry.out).toContain(`${oldTree(repo)}: not moved, since its tails name record `);
+    expect(dry.out).toContain(`this machine holds no key for ${old}`);
+    expect(readdirSync(join(oldTree(repo), 'tails'))).toEqual([old]);
+    expect(readdirSync(join(shared(), 'tails'))).toEqual(tails);
+
     const fixed = mnema(repo, 'doctor', '--fix', 'private-tree');
     expect(fixed.status, fixed.out).toBe(1);
     expect(fixed.out).toContain(`${oldTree(repo)}: not moved, since its tails name record `);

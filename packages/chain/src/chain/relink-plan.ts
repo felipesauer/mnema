@@ -354,7 +354,7 @@ export function relinksWouldCount(
  * The tails a cut of `host` would turn back into the record they came from: each tail a relink in
  * `host` names, where `host`'s last checkpoint covers that relink (one above it counts for
  * nothing, so cutting it undoes nothing), the tail is still on disk with events in it, and no
- * waiver in the tree authorizes its cut too. `tail prune` refuses the cut of such a host
+ * waiver in the tree, covered by its own tail's last checkpoint, authorizes its cut too. `tail prune` refuses the cut of such a host
  * (`code/tests/the-owner-relinks-a-tail.test.ts`).
  */
 export function tailsACutWouldUnrelink(
@@ -366,10 +366,15 @@ export function tailsACutWouldUnrelink(
   const tails = new Map(
     listTails(layout).map((tail) => [tail, readTail(layout, tail, upcasters).entries] as const),
   );
+  // A waiver counts as the same cut only where its own tail's last checkpoint covers it, as a
+  // relink counts only covered: one above it rests on the hash chain alone.
   const waived = new Set<string>();
-  for (const entries of tails.values()) {
+  for (const [id, entries] of tails) {
+    const signed = lastTailCheckpoint(layout, id)?.toSeq ?? -1;
     for (const entry of entries) {
-      if (entry.event.kind === 'tail.pruned') waived.add(entry.event.payload.tail);
+      if (entry.event.kind === 'tail.pruned' && entry.link.seq <= signed) {
+        waived.add(entry.event.payload.tail);
+      }
     }
   }
   const undone: string[] = [];

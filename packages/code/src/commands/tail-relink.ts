@@ -52,7 +52,13 @@ export type RelinkRefused =
 /** Relinks `tails`, each by its own key, in the tree that holds them. */
 export function runTailRelink(
   ctx: TailRelinkContext,
-  input: { tails: readonly string[]; into?: string; reason: string; run?: string },
+  input: {
+    tails: readonly string[];
+    into?: string;
+    reason: string;
+    run?: string;
+    which?: string;
+  },
 ): Relinked | RelinkRefused {
   const upcasters = catalogUpcasters();
   const trees = resolveTrees(ctx.cwd, ctx.env);
@@ -93,6 +99,7 @@ export function runTailRelink(
       reason: input.reason,
       ...(input.into !== undefined ? { into: input.into } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
+      ...(input.which !== undefined ? { which: input.which } : {}),
     },
   );
   if (!relinked.ok) {

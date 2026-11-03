@@ -1097,7 +1097,8 @@ is destructive, and it is authorized by a person at a shell or not at all.
 **The tail that holds a relink is not cut while the tail it relinked is on disk.** Cut without
 it, the relinked tail names the record it came from again, and `verify` refuses the directory as
 two records; `tail prune` refuses (`RELINK_WOULD_BE_UNDONE`), naming the tail, unless the cut of
-that tail is authorized first.
+that tail is authorized first, by a waiver a checkpoint of its tail covers (`tail prune` signs its
+waiver at once).
 
 ### Joining a tail of another record: `tail relink`
 
@@ -1118,7 +1119,9 @@ Each relink is signed by the key the tail id names, which this machine must hold
 agent's kept here), and written in this installation's tail of that key that names the record
 joined, or, where this installation's tail names the other record, in a new tail born naming it;
 it is checkpointed at once, since a relink above its tail's last checkpoint counts for nothing.
-`--into` is the other record the directory names when it holds two (as `verify` prints it, the
+`--which <agent>` names the agent that executed the command, as `tail prune` takes it; a relink an
+agent's key signs names the agent the record enrolled that key as, whatever is declared. `--into`
+is the other record the directory names when it holds two (as `verify` prints it, the
 first 12 characters are enough), and is asked for when it holds three or more. The relinked tail
 is frozen at its head: a checkout whose own tail it was writes in a new tail from then on, here or
 after it pulls the relink.
