@@ -32,7 +32,7 @@ import type { CliIo } from '../wiring/io.js';
 import type { Around } from './detect.js';
 import { HOST_ROWS, hostMark, type RowId, yoursMark } from './hosts.js';
 import { onTheHosts, onTheOptions, type Step } from './keys.js';
-import { columnsOf } from './layout.js';
+import { theWidthOf } from './layout.js';
 import { type Accepts, type Answers, instructionRows, type Machine, planOf } from './plan.js';
 import {
   ACCEPTS_OPTIONS,
@@ -86,20 +86,20 @@ export type Asked<Answer> =
  * they left. The terminal goes back in both, and in every other way this process can stop
  * (`armLeaving`, in `choice/screen.ts`).
  */
-export async function ask<State, Answer>(
+export async function putTheQuestion<State, Answer>(
   asking: Asking,
   question: Question<State, Answer>,
 ): Promise<Asked<Answer>> {
   const { render, terminal } = asking;
   const openScreen = await theScreens(render);
   const leaving = terminal.leaving ?? (await import('../repl/leaving.js')).leavingProcess;
-  const width = columnsOf(render);
+  const width = theWidthOf(render);
   const rows = (state: State): readonly string[] =>
     question.page(state, width).map((line) => render(line));
   return await new Promise<Asked<Answer>>((resolve) => {
     let state = question.initial;
     let settled = false;
-    const finish = (result: Asked<Answer>): void => {
+    const settle = (result: Asked<Answer>): void => {
       if (settled) return;
       settled = true;
       // THE FRAME THE QUESTION LEAVES ON THE PAGE IS THE ANSWER. The layout library does not take its
@@ -113,15 +113,15 @@ export async function ask<State, Answer>(
       screen.close();
       resolve(result);
     };
-    const key = (stroke: Keystroke): void => {
+    const onAKey = (stroke: Keystroke): void => {
       if (settled) return;
       const next = question.on(state, stroke);
       if (next.kind === 'left') {
-        finish({ kind: 'left' });
+        settle({ kind: 'left' });
         return;
       }
       if (next.kind === 'done') {
-        finish({ kind: 'answered', answer: next.answer });
+        settle({ kind: 'answered', answer: next.answer });
         return;
       }
       if (next.state !== state) {
@@ -134,7 +134,7 @@ export async function ask<State, Answer>(
       stdout: terminal.output,
       rows: rows(state),
       pressed: (stroke) => {
-        for (const one of keystrokesOf(stroke)) key(one);
+        for (const one of keystrokesOf(stroke)) onAKey(one);
       },
       leaving,
     });
@@ -189,7 +189,7 @@ export async function askTheHosts(
   left: readonly Line[] = [leftLine()],
 ): Promise<Asked<ReadonlySet<string>>> {
   const items = hostItems(around.files);
-  return await ask(asking, {
+  return await putTheQuestion(asking, {
     initial: { marks: initial, picked: items[0]?.word ?? '' },
     page: (state, width) => hostsPage(around, state, width, question),
     on: (state, stroke) => onTheHosts(items, state, stroke),
@@ -200,7 +200,7 @@ export async function askTheHosts(
 
 /** The question of who may accept: `yes` or `no`, or that the person left. */
 async function askWhoMayAccept(asking: Asking, opening: Accepts): Promise<Asked<Accepts>> {
-  const asked = await ask<string, string>(asking, {
+  const asked = await putTheQuestion<string, string>(asking, {
     initial: opening,
     page: acceptsPage,
     on: (picked, stroke) => onTheOptions(ACCEPTS_OPTIONS, picked, stroke),
@@ -212,7 +212,7 @@ async function askWhoMayAccept(asking: Asking, opening: Accepts): Promise<Asked<
 
 /** The one confirmation: `found`, `change` or `leave`. */
 async function askToGoAhead(asking: Asking): Promise<Asked<string>> {
-  return await ask(asking, {
+  return await putTheQuestion(asking, {
     initial: PLAN_OPTIONS[0]?.word ?? 'found',
     page: confirmPage,
     on: (picked, stroke) => onTheOptions(PLAN_OPTIONS as readonly CompletionWord[], picked, stroke),
@@ -255,7 +255,7 @@ function say(asking: Asking, lines: readonly Line[]): void {
  * printed so that what was agreed to is on the page, and the founding goes ahead.
  */
 export async function askInit(asking: Asking, request: InitAsk): Promise<Outcome> {
-  const width = columnsOf(asking.render);
+  const width = theWidthOf(asking.render);
   say(asking, theFirstScreen(request.around, request.name, request.version, width));
   const hostsAreAsked = request.hostsGiven === undefined && !request.yes;
   const acceptsIsAsked =

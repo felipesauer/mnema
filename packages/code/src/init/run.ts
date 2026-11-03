@@ -43,7 +43,7 @@ import { recordWhoMayAccept, type WhoMayAcceptRecorded } from './accepts.js';
 import { type Around, detectAround } from './detect.js';
 import { askInit, defaultMarks, marksForHosts, printed } from './flow.js';
 import { HOST_ROWS, ownFilesOf, readHostsFlag, yoursOf } from './hosts.js';
-import { columnsOf } from './layout.js';
+import { theWidthOf } from './layout.js';
 import { type Answers, type Machine, planOf } from './plan.js';
 import { planPage } from './screens.js';
 import { foundingPage, summaryPage } from './summary.js';
@@ -143,7 +143,7 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
       { io, render },
       planPage(
         planOf(ctx.cwd, around, answers, machine),
-        columnsOf(render),
+        theWidthOf(render),
         'This is everything init would do',
       ),
     );
@@ -220,7 +220,7 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
       ...(recorded !== undefined ? { recorded } : {}),
       shown,
     };
-    const width = columnsOf(render);
+    const width = theWidthOf(render);
     printed({ io, render }, foundingPage(founded, width));
     printed({ io, render }, summaryPage(founded, width));
   }

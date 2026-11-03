@@ -1310,7 +1310,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-init-records-who-may-accept.test.ts': 7,
   'packages/code/tests/the-init-says-a-write-is-refused.test.ts': 12,
   'packages/code/tests/the-init-says-no-file-of-yours-only-when-true.test.ts': 6,
-  'packages/code/tests/the-init-says-what-it-found-and-writes-nothing.test.ts': 11,
+  'packages/code/tests/the-init-says-what-it-found-and-writes-nothing.test.ts': 12,
   'packages/code/tests/the-init-takes-every-key.test.ts': 3,
   'packages/code/tests/the-input-has-its-own-place.test.ts': 22,
   'packages/code/tests/the-install-line-is-one.test.ts': 5,

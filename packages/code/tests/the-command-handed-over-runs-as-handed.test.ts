@@ -767,6 +767,11 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * `mnema doctor --fix vscode`; the same words, in the host table that generates it, are the 1 line of
  * `host-names.ts`.
  *
+ * THE TRAIL `init` DRAWS names the verbs it hands over in its own files (`init/`): the commands of the host
+ * plugins and of the decision import, the review and the switch, each looked at; and the question of host
+ * files by number, whose help named `mnema instructions --help` in `wiring/instructions.ts`, is asked with
+ * arrows now.
+ *
  * THE INSTALL PAGE'S LINE ROW WAS 3: its install blocks are the npm install and its
  * home-prefix variant, and the tarball URLs it gave before are gone.
  */
@@ -830,6 +835,10 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/host-names.ts': { line: 1 },
   'packages/code/src/host-rules-file.ts': { line: 1 },
   'packages/code/src/inherited-record.ts': { name: 1 },
+  'packages/code/src/init/accepts.ts': { line: 4, name: 5 },
+  'packages/code/src/init/run.ts': { name: 1 },
+  'packages/code/src/init/screens.ts': { name: 2 },
+  'packages/code/src/init/summary.ts': { line: 3, name: 3 },
   'packages/code/src/instructions-block.ts': { line: 6 },
   'packages/code/src/mcp/context.ts': { name: 1, flag: 2 },
   'packages/code/src/mcp/instructions.ts': { name: 1 },
@@ -863,8 +872,8 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/wiring/doctor.ts': { name: 1 },
   'packages/code/src/wiring/handback.ts': { line: 1 },
   'packages/code/src/wiring/inherit.ts': { line: 1, name: 3 },
-  'packages/code/src/wiring/init.ts': { line: 5, name: 5 },
-  'packages/code/src/wiring/instructions.ts': { line: 1, name: 1 },
+  'packages/code/src/wiring/init.ts': { line: 4, name: 6 },
+  'packages/code/src/wiring/instructions.ts': { name: 1 },
   'packages/code/src/wiring/key.ts': { line: 17, name: 15 },
   'packages/code/src/wiring/mcp.ts': { line: 2 },
   'packages/code/src/wiring/options.ts': { name: 1 },

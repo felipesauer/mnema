@@ -754,6 +754,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'three positionals, none validated: a task and two agent NAMES',
   },
+  'init.ts «Recorded {}: agents {} accept what you choose, accepted as yours.» #1': {
+    verdict: 'minted',
+    why: 'an `ADR-<n>` label minted by the write that just landed, and one of two words of this verb',
+  },
+  'init.ts «Recorded {} as the agent’s proposal: it waits for you (\\`mnema decision review\\`).» #1':
+    {
+      verdict: 'minted',
+      why: 'an `ADR-<n>` label minted by the write that just landed',
+    },
   'init.ts «Initialized mnema project at {}» #1': {
     verdict: 'collapsed',
     why: 'the project root: a directory name is what this class was first measured on',
@@ -1088,7 +1097,8 @@ describe('every line this wiring words is classified', () => {
     // 175 with the line `verify --since` prints of a tail a relink moved into the record (relinked).
     // 174 without the line `init` printed of an answer to which host files that was not on the list: the
     // question is asked with arrows now, and an answer cannot be off the list.
-    expect(FOUND.sites.length).toBe(174);
+    // 176 with the two lines `init` prints of the answer it recorded about agents accepting, without a screen.
+    expect(FOUND.sites.length).toBe(176);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1108,9 +1118,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(94);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(81);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(94);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(93);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(83);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(93);
   });
 
   it('every reason says where the value comes from', () => {

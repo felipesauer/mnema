@@ -11,7 +11,7 @@
  * WHAT IS HELD BESIDE THE GOLDEN:
  *   - NO ROW IS WIDER THAN THE WIDTH IT IS DRAWN AT, except a row whose one unbreakable word is wider than the
  *     room: the whole identity, a command to be typed back, a path. The width is learned from the renderer
- *     (`columnsOf`), so a frame drawn for sixty is not drawn for eighty.
+ *     (`theWidthOf`), so a frame drawn for sixty is not drawn for eighty.
  *   - NO SENTENCE DEPENDS ON THE COLOUR: the styled rows, with the sequences taken out, are the plain rows; the
  *     plain ones hold no sequence; and no frame is red, because nothing in them is a refusal.
  *   - THE ANCHOR IS WHOLE, on a row of its own, at both widths.
@@ -26,7 +26,7 @@ import { runInit } from '../src/commands/init.js';
 import { detectAround } from '../src/init/detect.js';
 import { defaultMarks } from '../src/init/flow.js';
 import { ownFilesOf, yoursOf } from '../src/init/hosts.js';
-import { columnsOf, noted, paragraph, wrap } from '../src/init/layout.js';
+import { noted, paragraph, theWidthOf, wrap } from '../src/init/layout.js';
 import { instructionRows, planOf } from '../src/init/plan.js';
 import {
   acceptsAnswered,
@@ -251,9 +251,9 @@ describe('the frames', () => {
 
 describe('the width', () => {
   it('is learned from the renderer: the width it folds to, and the page’s where it folds to none', () => {
-    expect(columnsOf(foldedAt(60, renderPlain))).toBe(60);
-    expect(columnsOf(foldedAt(120, renderPlain))).toBe(120);
-    expect(columnsOf(renderPlain)).toBe(80);
+    expect(theWidthOf(foldedAt(60, renderPlain))).toBe(60);
+    expect(theWidthOf(foldedAt(120, renderPlain))).toBe(120);
+    expect(theWidthOf(renderPlain)).toBe(80);
   });
 
   it('wraps a paragraph at the spaces, never cutting a word, and keeps a word wider than the room whole', () => {

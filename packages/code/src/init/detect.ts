@@ -93,7 +93,7 @@ export function saysAboutAFile(peek: InstructionsPeek): string {
   }
 }
 
-function isDirectory(path: string): boolean {
+function isAFolder(path: string): boolean {
   try {
     return statSync(path).isDirectory();
   } catch {
@@ -115,11 +115,11 @@ export function detectAround(cwd: string): Around {
     const peek = files.get(path);
     if (peek?.exists === true) say(path, saysAboutAFile(peek));
   }
-  if (isDirectory(join(cwd, '.claude'))) say('.claude/', 'a Claude Code folder');
+  if (isAFolder(join(cwd, '.claude'))) say('.claude/', 'a Claude Code folder');
   const nested = files.get('.claude/CLAUDE.md');
   if (nested?.exists === true) say('.claude/CLAUDE.md', saysAboutAFile(nested));
-  if (isDirectory(join(cwd, '.cursor'))) say('.cursor/', 'a Cursor folder');
-  if (isDirectory(join(cwd, '.github', 'instructions'))) {
+  if (isAFolder(join(cwd, '.cursor'))) say('.cursor/', 'a Cursor folder');
+  if (isAFolder(join(cwd, '.github', 'instructions'))) {
     say('.github/instructions/', 'a VS Code and Copilot CLI folder');
   }
   const gemini = files.get('GEMINI.md');
@@ -147,7 +147,7 @@ export function detectAround(cwd: string): Around {
   const detected = new Map<RowId, string>();
   for (const row of HOST_ROWS) {
     const path = row.detectedBy.find((each) => existsSync(join(cwd, each)));
-    if (path !== undefined) detected.set(row.id, isDirectory(join(cwd, path)) ? `${path}/` : path);
+    if (path !== undefined) detected.set(row.id, isAFolder(join(cwd, path)) ? `${path}/` : path);
   }
   return {
     folder: basename(cwd),

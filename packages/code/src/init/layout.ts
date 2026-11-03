@@ -37,7 +37,7 @@ const PROBE = 'x'.repeat(1000);
  * It asks the renderer to fold a line that has no break in it and reads how wide the first row came out:
  * that is the width the product folds this invocation's lines to, by the only function that folds them.
  */
-export function columnsOf(render: Render): number {
+export function theWidthOf(render: Render): number {
   const first = render({ indent: 0, parts: [{ role: 'field', text: PROBE }] }).split('\n')[0] ?? '';
   const width = widthOfText(first);
   return width >= PROBE.length ? THE_PAGE : width;
