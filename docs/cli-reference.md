@@ -462,8 +462,8 @@ tail that names two (`record-mismatch`), and a checkpoint that names none after 
 (`scheme-downgrade`), and the write refuses to grow such a record (`ANOTHER_RECORD`). A tail of
 another record its owner relinked into this one (`tail.relinked`, section 6.11) is read under this
 record's name where the relink counts, and said in the census (`relinked-tail`). Only the keys of
-the record's founder relink: another person writes again in the record, or their tail is cut. No
-command writes a relink yet. A tail
+the record's founder relink: another person writes again in the record, or their tail is cut.
+`mnema tail relink` writes one (see "Joining a tail of another record"). A tail
 written before 0.1.5 names nothing, and stays that way: beside named tails it is a census line
 (`N tail(s) that name no record, written before 0.1.5`), and a record none of whose tails names
 one ends its verdict with `record: unnamed (written before 0.1.5): a tail of another record could
@@ -1099,6 +1099,56 @@ assume it had been handled.
 There is no MCP tool for this, deliberately: a cut is the one write whose consequence
 is destructive, and it is authorized by a person at a shell or not at all.
 
+**The tail that holds a relink is not cut while the tail it relinked is on disk.** Cut without
+it, the relinked tail names the record it came from again, and `verify` refuses the directory as
+two records; `tail prune` refuses (`RELINK_WOULD_BE_UNDONE`), naming the tail, unless the cut of
+that tail is authorized first, by a waiver a checkpoint of its tail covers (`tail prune` signs its
+waiver at once).
+
+### Joining a tail of another record: `tail relink`
+
+Two `mnema init` on two branches, merged, leave a directory whose tails name two records, which
+both readers refuse (`another-record`), and so does a private tree from before a repository that
+named a record of its own. A tail is named by its own proof, signed at its birth, so nothing
+written in the tail moves it; its owner moves it from another tail of the same key:
+
+```sh
+mnema tail relink <tail>... [--into <record>] --reason "<why>"
+#> Relinked tail 8f21ab…-3c9d0e… into record 17bafa6742a2...
+#>   5 event(s) through 828c7da8…, from record d461426489c0...
+#>   written in tail 8f21ab…-ab6f53… at seq 5, signed by 8f21ab…, and checkpointed
+#>   it brings 1 identity.founded, 1 key.enrolled and 1 decision(s)
+```
+
+Each relink is signed by the key the tail id names, which this machine must hold (yours, or an
+agent's kept here), and written in this installation's tail of that key that names the record
+joined, or, where this installation's tail names the other record, in a new tail born naming it;
+it is checkpointed at once, since a relink above its tail's last checkpoint counts for nothing.
+`--which <agent>` names the agent that executed the command, as `tail prune` takes it; a relink an
+agent's key signs names the agent the record enrolled that key as, whatever is declared. `--into`
+is the other record the directory names when it holds two (as `verify` prints it, the
+first 12 characters are enough), and is asked for when it holds three or more. The relinked tail
+is frozen at its head: a checkout whose own tail it was writes in a new tail from then on, here or
+after it pulls the relink.
+
+**Only the founder's keys relink.** The relink counts when its key holds a membership the record
+joined gave it: the key that founded the identity of the record's genesis tail, or a key that
+identity, or a member it took in, enrolled (ADR-157). A second person's tail of another record is
+not relinked: that person writes again in the record, under a tail born in it, or the tail is cut.
+An admission of another person's tail by a member of the record does not exist in this version.
+
+Nothing is written where the readers would not count a relink: the command asks their rule first,
+over the directory as it would read, and refuses by its words (`RELINK_WOULD_NOT_COUNT`, naming
+`relink-not-a-member` and the rest). It refuses too, each naming what it found, a tail that is not
+here, whose key this machine does not hold (`NOT_THE_OWNER`), that names no record, that already
+names the record it would join (`ALREADY_IN_THAT_RECORD`), that does not verify, that holds a
+relink, or that a relink names already. It says, and does not refuse, what each tail brings into
+the record: the identity facts it holds, how many decisions, and its first entry when it is older
+than the record's genesis; and the records the directory still names after it, with the keys
+whose owners must relink them, or whose tails are cut. A write into a directory of two records is
+refused `STALE_ANCHOR` with words that name both records and this command: the anchor this
+checkout records is not what is wrong there.
+
 ### A rule that carries its check
 
 A decision in force can name the program that checks it, and a machine of its own can record, at a
@@ -1505,10 +1555,14 @@ tail's head note (the writer's note of the last entry it wrote) along with it, d
 that had written again since keeps the tail it writes now, and its old tail is moved as a closed
 one. A project written outside a repository and given one later joins as one record: the first
 private write in the repository names its tree after the record the old `.mnema/private/` names.
-An old tree whose tails already name another record than the repository's is not moved: the fix
-says which two records, writes nothing, and exits 1, since joined they would be refused as
-`another-record` by `mnema verify`. Otherwise the exit status is 0 whatever it found: a script that
-wants to act on a finding reads the line.
+An old tree whose tails already name another record than the repository's is relinked first: each
+of its tails that names its own record is relinked into the repository's private tree's record by
+the key its id names (yours, or an agent's kept on this machine), written in the repository's tree
+and checkpointed before the move, as `mnema tail relink` does (below), so that tree never holds
+two names no relink joins; then the tails move, and the fix says both. Where a tail's key is not on
+this machine, or the readers would not count its relink, nothing of that tree is relinked or
+moved: the fix names the tails and the keys, writes nothing, and exits 1. Otherwise the exit status
+is 0 whatever it found: a script that wants to act on a finding reads the line.
 
 ### Skills and agents a project adopts: stacks
 

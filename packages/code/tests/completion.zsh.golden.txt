@@ -25,7 +25,7 @@ _mnema_commands() {
     'commit-hook') echo 'install uninstall suggest help' ;;
     'record') echo 'pull merge-tail help' ;;
     'key') echo 'restore request enroll github sigstore revoke protect unprotect help' ;;
-    'tail') echo 'list prune help' ;;
+    'tail') echo 'list prune relink help' ;;
     'run') echo 'start end help' ;;
   esac
 }
@@ -73,7 +73,7 @@ _mnema_described() {
       'commit-hook:install or remove an optional git hook that suggests the Mnema-Decision trailer' \
       'record:pull the record over events not yet committed, and merge its tails for git' \
       'key:manage this machine'\''s signing keys' \
-      'tail:authorize a cut in the record'\''s own tails' \
+      'tail:act on the record'\''s own tails: list them, authorize a cut, relink one' \
       'doctor:say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix)' \
       'report:show, whole, what mnema would say about its own last internal error, and keep your answer to it (sends nothing)' \
       'completion:print the tab-completion script for a shell' \
@@ -162,6 +162,7 @@ _mnema_described() {
     'tail') printf '%s\n' \
       'list:list the tails that hold events here, the ones a cut can name, with the id `prune` takes' \
       'prune:record that one whole tail was authorized to be cut (it removes nothing)' \
+      'relink:relink whole tails of another record into the one this directory names, each signed by its own key' \
       'help:display help for command' ;;
     'run') printf '%s\n' \
       'start:open a session for an agent (facts written in it are pinned to it)' \
@@ -265,6 +266,7 @@ _mnema_flags() {
     'tail') echo '-h --help -V --version --color' ;;
     'tail list') echo '-h --help -V --version --color' ;;
     'tail prune') echo '--reason --which --lose-keys -h --help -V --version --color' ;;
+    'tail relink') echo '--into --reason --which -h --help -V --version --color' ;;
     'doctor') echo '--fix --dry-run -h --help -V --version --color' ;;
     'report') echo '--decline --off --on -h --help -V --version --color' ;;
     'completion') echo '-h --help -V --version --color' ;;
@@ -415,6 +417,7 @@ _mnema_values() {
     'tail:--color') echo 'auto always never' ;;
     'tail list:--color') echo 'auto always never' ;;
     'tail prune:--color') echo 'auto always never' ;;
+    'tail relink:--color') echo 'auto always never' ;;
     'doctor:--color') echo 'auto always never' ;;
     'report:--color') echo 'auto always never' ;;
     'completion:--color') echo 'auto always never' ;;

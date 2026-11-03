@@ -253,6 +253,7 @@ jobs:
           packages/code/tests/ten-writers-one-record.test.ts
           packages/code/tests/the-agent-ci-step-installs-the-key-the-agent-signs-with.test.ts
           packages/code/tests/the-front-page-says-what-its-sources-say.test.ts
+          packages/code/tests/the-owner-relinks-a-tail.test.ts
           packages/code/tests/the-private-tree-moves-out-of-the-worktree.test.ts
           packages/code/tests/the-python-floor-is-declared-once.test.ts
           packages/code/tests/the-record-name-survives-a-cut-of-its-genesis.test.ts

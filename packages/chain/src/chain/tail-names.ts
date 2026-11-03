@@ -42,7 +42,7 @@ import {
 } from './record-name.js';
 import { committedKeys, lastTailCheckpoint, listTails, orderedSegments } from './store.js';
 import { NAMED_TAILPROOF_SCHEME, parseTailProof, verifyTailProof } from './tailproof.js';
-import { relinkedNamingAt } from './verify.js';
+import { relinksReadAt } from './verify.js';
 
 /** What every tail of the directory names, by its id: `undefined` for a tail that names none. */
 export function namesOfTails(layout: ChainLayout): Map<string, string | undefined> {
@@ -135,15 +135,60 @@ export function tailsReadAt(layout: ChainLayout): TheRecordRead {
     }
   }
   const reading = tailsReadAsOneRecord(named);
-  if (reading.several.length === 0 || !holdsARelink(layout, tails)) return reading;
-  const extent = extentOf(layout, tails);
-  const kept = relinkedReadings.get(layout.root);
-  const record =
-    kept?.extent === extent ? kept.record : relinkedNamingAt(layout, catalogUpcasters(), named);
-  relinkedReadings.set(layout.root, { extent, record });
+  if (reading.several.length === 0) return reading;
+  const record = recordOf(relinkedIfHeld(layout, tails, named).named);
   return record.state === 'several'
     ? { read: [], several: record.groups }
     : { read: [...named.keys()], several: [] };
+}
+
+/** What each tail names once the relinks that count are applied, and the tails they moved. */
+export interface NamesRelinked {
+  readonly named: ReadonlyMap<string, string | undefined>;
+  /** The tails a relink that counts moved into the record it joins: frozen at their head. */
+  readonly relinked: ReadonlySet<string>;
+}
+
+/**
+ * WHAT EACH TAIL AT `layout` NAMES FOR A WRITER, the relinks that count applied (FORMAT.md section
+ * 6.11): {@link namesOfTails}, and, only where those names are two records and a segment holds a
+ * relink line, the readers' rule over them, as {@link tailsReadAt} asks it and at its cost, kept
+ * per directory until a file of it changes. The writer signs under these names
+ * (`recordToWriteUnder`), so a directory `verify` reads as one record after a relink is one a
+ * writer writes in, and a tail a relink moved is one the writer does not append to
+ * (`code/tests/the-owner-relinks-a-tail.test.ts`).
+ */
+export function namesRelinkedAt(layout: ChainLayout): NamesRelinked {
+  const named = namesOfTails(layout);
+  if (recordOf(named).state !== 'several') return { named, relinked: new Set() };
+  return relinkedIfHeld(layout, listTails(layout), named);
+}
+
+/** The relinked reading of a directory whose tails would name two records, or `named` as it is. */
+function relinkedIfHeld(
+  layout: ChainLayout,
+  tails: readonly string[],
+  named: ReadonlyMap<string, string | undefined>,
+): NamesRelinked {
+  if (!holdsARelink(layout, tails)) return { named, relinked: new Set() };
+  const extent = extentOf(layout, tails);
+  const kept = relinkedReadings.get(layout.root);
+  if (kept?.extent === extent && sameNames(kept.from, named)) return kept.read;
+  const relinks = relinksReadAt([layout], catalogUpcasters(), named);
+  const read: NamesRelinked = {
+    named: relinks.named,
+    relinked: new Set(relinks.counted.map((one) => one.relink.tail)),
+  };
+  relinkedReadings.set(layout.root, { extent, from: named, read });
+  return read;
+}
+
+/** Whether two namings name every tail alike. */
+function sameNames(
+  a: ReadonlyMap<string, string | undefined>,
+  b: ReadonlyMap<string, string | undefined>,
+): boolean {
+  return a.size === b.size && [...a].every(([tail, name]) => b.has(tail) && b.get(tail) === name);
 }
 
 /**
@@ -159,7 +204,11 @@ const RELINK_BYTES = Buffer.from('"kind":"tail.relinked"', 'utf-8');
  */
 const relinkedReadings = new Map<
   string,
-  { readonly extent: string; readonly record: RecordNaming }
+  {
+    readonly extent: string;
+    readonly from: ReadonlyMap<string, string | undefined>;
+    readonly read: NamesRelinked;
+  }
 >();
 
 /** Every file of the tails and the keys, by name, size and modification time, as one string. */

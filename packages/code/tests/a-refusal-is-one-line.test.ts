@@ -183,6 +183,11 @@ const PROBES: readonly Probe[] = [
     says: `No tail ${NAME} holds events in any tree here.`,
   },
   {
+    key: 'wiring/tail.ts tail #2',
+    argv: ['tail', 'relink', NAME, '--reason', 'a reason for the relink'],
+    says: `No tail ${NAME} holds events in any tree here.`,
+  },
+  {
     key: 'wiring/decision.ts decision #1',
     argv: ['decision', 'move', 'accept', NAME],
     says: `No decision ${NAME} here.`,
@@ -290,7 +295,7 @@ describe('the sites are the source’s, not this file’s', () => {
     // would be counted and not keyed, and the reconciliation would pass while the site
     // it belongs to went unprobed.
     expect(FOUND.files).toBeGreaterThan(40);
-    expect(FOUND.sites.length).toBe(11);
+    expect(FOUND.sites.length).toBe(12);
     expect(FOUND.calls).toBe(FOUND.sites.length);
   });
 });

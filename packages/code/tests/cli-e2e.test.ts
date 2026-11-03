@@ -2958,6 +2958,7 @@ describe('mnema CLI: a --which that names nobody', () => {
         'switch off',
         'switch on',
         'tail prune',
+        'tail relink',
         'task',
       ].sort(),
     );

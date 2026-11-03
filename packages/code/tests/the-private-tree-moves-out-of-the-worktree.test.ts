@@ -19,8 +19,12 @@
  *   - a project written outside a repository, then given one: the tree founded in the git
  *     directory takes the record the old tree names, so the move joins one record, both readers
  *     verify it, and private writes go on (FORMAT.md section 6.10);
- *   - an old tree that already names another record than the shared one is not moved: the fix
- *     says why and fails, and nothing is written.
+ *   - an old tree that already names another record than the shared one is relinked into the
+ *     shared tree's record, each tail by its own key, then moved: both readers verify the shared
+ *     tree, and private writes go on (ADR-155). It used to be refused, there being no way to join
+ *     two records; the relink is that way;
+ *   - where a tail of that old tree was signed by a key this machine does not hold, it is not
+ *     relinked: the fix names the tail and the key, fails, and nothing is written or moved.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -243,22 +247,67 @@ describe('private trees from before the move', () => {
     }
   }, 180_000);
 
-  it('are not moved where they already name another record, and the fix says why', () => {
+  it('are relinked into the record of the shared tree where they name another, then moved, and verify', () => {
     // The shared tree founded first, by its own genesis; then a tree outside it, founded apart.
     expect(mnema(repo, 'memory', '--scope', 'private', 'in the repository').status).toBe(0);
     writtenOutsideTheRepository(repo, 'founded apart');
+    const [old] = readdirSync(join(oldTree(repo), 'tails'));
+    expect(mnema(repo, 'verify').status).toBe(0);
+
+    const dry = mnema(repo, 'doctor', '--fix', 'private-tree', '--dry-run');
+    expect(dry.out).toContain(`${oldTree(repo)}: would relink 1 tail(s) into record `);
+    expect(readdirSync(join(oldTree(repo), 'tails'))).toEqual([old]);
+
+    const fixed = mnema(repo, 'doctor', '--fix', 'private-tree');
+    expect(fixed.status, fixed.out).toBe(0);
+    expect(fixed.out).toContain(`${oldTree(repo)}: relinked 1 tail(s) into record `);
+    expect(fixed.out).toContain('each by its own key');
+    expect(fixed.out).toContain(`${oldTree(repo)}: moved 1 tail(s) to ${shared()}`);
+    expect(readdirSync(join(shared(), 'tails'))).toContain(old);
+    const verified = mnema(repo, 'verify');
+    expect(verified.status, verified.out).toBe(0);
+    expect(verified.out).toContain('1 tail(s) relinked into this record by their own key');
+    expect(secondReading(shared())).toBe('VERIFIED');
+
+    const later = mnema(repo, 'memory', '--scope', 'private', 'after the relink');
+    expect(later.status, later.out).toBe(0);
+    expect(mnema(repo, 'verify').status).toBe(0);
+    expect(secondReading(shared())).toBe('VERIFIED');
+    for (const note of ['in the repository', 'founded apart', 'after the relink']) {
+      expect(mnema(repo, 'recall').out).toContain(note);
+    }
+  }, 180_000);
+
+  it('are not relinked nor moved where a tail’s key is not on this machine, and the fix says which', () => {
+    expect(mnema(repo, 'memory', '--scope', 'private', 'in the repository').status).toBe(0);
+    // The old tree written by another machine: another HOME, so another key.
+    const mine = home;
+    home = join(sandbox, 'another-machine');
+    mkdirSync(home);
+    try {
+      writtenOutsideTheRepository(repo, 'founded on another machine');
+    } finally {
+      home = mine;
+    }
+    const [old] = readdirSync(join(oldTree(repo), 'tails'));
     const tails = readdirSync(join(shared(), 'tails'));
+
+    // The dry run says the same refusal, and writes nothing either.
+    const dry = mnema(repo, 'doctor', '--fix', 'private-tree', '--dry-run');
+    expect(dry.status, dry.out).toBe(1);
+    expect(dry.out).toContain(`${oldTree(repo)}: not moved, since its tails name record `);
+    expect(dry.out).toContain(`this machine holds no key for ${old}`);
+    expect(readdirSync(join(oldTree(repo), 'tails'))).toEqual([old]);
+    expect(readdirSync(join(shared(), 'tails'))).toEqual(tails);
 
     const fixed = mnema(repo, 'doctor', '--fix', 'private-tree');
     expect(fixed.status, fixed.out).toBe(1);
     expect(fixed.out).toContain(`${oldTree(repo)}: not moved, since its tails name record `);
-    expect(fixed.out).toContain('(another-record)');
+    expect(fixed.out).toContain(`this machine holds no key for ${old}`);
     expect(fixed.out).toContain('nothing was written');
-    expect(readdirSync(join(oldTree(repo), 'tails'))).toHaveLength(1);
+    expect(readdirSync(join(oldTree(repo), 'tails'))).toEqual([old]);
     expect(readdirSync(join(shared(), 'tails'))).toEqual(tails);
-    const verified = mnema(repo, 'verify');
-    expect(verified.status, verified.out).toBe(0);
-    expect(mnema(repo, 'doctor', '--fix', 'private-tree', '--dry-run').out).toContain('not moved');
+    expect(mnema(repo, 'verify').status).toBe(0);
   }, 180_000);
 
   it('give the doctor nothing to say where there are none, and the fix nothing to move', () => {

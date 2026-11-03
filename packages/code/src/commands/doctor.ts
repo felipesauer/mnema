@@ -52,7 +52,14 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, delimiter, dirname, join, relative } from 'node:path';
-import { listAppleDoubleKeyFiles, listPrivateKeyFingerprints, recordNamedIn } from '@mnema/chain';
+import {
+  type ChainWriter,
+  catalogUpcasters,
+  listAppleDoubleKeyFiles,
+  listPrivateKeyFingerprints,
+  namesOfTails,
+  recordNamedIn,
+} from '@mnema/chain';
 import {
   AGENT_NAME,
   type AgentStanding,
@@ -69,6 +76,7 @@ import {
   type Scope,
   withAgentKey,
 } from '@mnema/core';
+import { keysOnThisMachine, openTreeForWriting, relinkTails } from '@mnema/core/write';
 import { agentKeyFromEnvironment } from '../env.js';
 import { HOOK_HOSTS, HOSTS } from '../host-names.js';
 import { declaredRange, floorRefusal } from '../node-floor.js';
@@ -1106,9 +1114,18 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
 /**
  * `mnema doctor --fix private-tree`: moves every old private tree of this project into the one
  * the repository keeps (`privateTreesLeftBehind`, `movePrivateTree`, `@mnema/core`), and says
- * what it moved. With `dryRun`, it says what it would move and writes nothing. An old tree that
- * names another record than the one there is not moved, and the fix says why and fails
- * ({@link twoRecords}).
+ * what it moved. With `dryRun`, it says what it would move and writes nothing.
+ *
+ * AN OLD TREE THAT NAMES ANOTHER RECORD THAN THE ONE THERE IS RELINKED, THEN MOVED (ADR-155). This
+ * fix used to refuse it ({@link twoRecords}): joined, the two would be a directory both readers
+ * refuse as `another-record`, and there was no way to join two records. The owner's relink is
+ * that way: each tail of the old tree that names its record is relinked into the record of the
+ * tree that stays, signed by the key its id names (the person's, or an agent's kept here), in the
+ * tree that stays and BEFORE the move, so that directory never holds two names no relink joins;
+ * then the tails move, and the fix says both. A tail whose key this machine does not hold, or
+ * whose relink the readers would not count (`relinkTails`, which asks their rule first), keeps the
+ * refusal, named, and nothing of that tree is written or moved
+ * (`code/tests/the-private-tree-moves-out-of-the-worktree.test.ts`).
  */
 export function fixPrivateTree(
   ctx: DoctorContext,
@@ -1135,9 +1152,13 @@ export function fixPrivateTree(
     const where = oneLine(left.tree);
     const apart = twoRecords(left.tree, found.to);
     if (apart !== undefined) {
-      refused = true;
-      lines.push(`${where}: not moved, ${apart}; nothing was written.`);
-      continue;
+      const relinked = relinkLeftBehind(ctx, left.tree, found.to, options.dryRun);
+      if (!relinked.ok) {
+        refused = true;
+        lines.push(`${where}: not moved, ${apart}; ${relinked.why}; nothing was written.`);
+        continue;
+      }
+      lines.push(`${where}: ${relinked.said}.`);
     }
     if (options.dryRun) {
       lines.push(
@@ -1161,11 +1182,85 @@ export function fixPrivateTree(
   return { refused, lines };
 }
 
+/** The reason the doctor's relinks carry, in the record of the tree that stays. */
+const RELINKED_BY_THE_DOCTOR =
+  "The project's private tree from before its repository joins the private tree the repository keeps (mnema doctor --fix private-tree).";
+
 /**
- * Why the old tree at `from` cannot join the one at `to`, or `undefined` when they name one
- * record or none (FORMAT.md section 6.10): two trees that already name two records would be one
- * directory both readers refuse as `another-record`, and every private write after it refused
- * too. Each tree's name is said apart, since only the two together are two records.
+ * Relinks every tail of the old tree at `from` that names another record than the tree at `to`
+ * into that one, each by its own key, written in `to` (`relinkTails`); with `dryRun`, says what
+ * it would relink and writes nothing. What it said, or why it relinks none of them.
+ */
+function relinkLeftBehind(
+  ctx: DoctorContext,
+  from: string,
+  to: string,
+  dryRun: boolean,
+): { readonly ok: true; readonly said: string } | { readonly ok: false; readonly why: string } {
+  const into = recordNamedIn([to]);
+  if (into.state !== 'named') {
+    return { ok: false, why: 'the tree that stays names no one record to relink them into' };
+  }
+  const names = namesOfTails({ root: from });
+  const tails = [...names].filter(([, name]) => name !== undefined && name !== into.name);
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const keys = keysOnThisMachine(trees.keyRoot, ctx.env);
+  const missing = tails.map(([tail]) => tail).filter((tail) => !keys.has(tailFingerprintOf(tail)));
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      why: `only the key that signed a tail may relink it, and this machine holds no key for ${missing.map(oneLine).join(', ')} (${[...new Set(missing.map(tailFingerprintOf))].join(', ')}): those tails are relinked on the machine that holds their key, or cut (\`mnema tail prune\`)`,
+    };
+  }
+  const record = `record ${into.name.slice(0, 12)}...`;
+  if (dryRun) {
+    return {
+      ok: true,
+      said: `would relink ${tails.length} tail(s) into ${record}, each by its own key, before the move`,
+    };
+  }
+  const opened: string[] = [];
+  const writers: ChainWriter[] = [];
+  const relinked = relinkTails(
+    {
+      layouts: [{ root: to }, { root: from }],
+      upcasters: catalogUpcasters(),
+      keys,
+      openWriter: (key, joins) => {
+        const writer = openTreeForWriting(trees, 'private', {
+          keyRoot: key.keyRoot,
+          joins,
+          onNewTail: (one) => opened.push(one.to),
+        });
+        writers.push(writer);
+        return writer;
+      },
+    },
+    { tails: tails.map(([tail]) => tail), into: into.name, reason: RELINKED_BY_THE_DOCTOR },
+  );
+  if (!relinked.ok) return { ok: false, why: `${relinked.code}: ${oneLine(relinked.message)}` };
+  // Signed before this returns, as every write path is: each relink is checkpointed by the
+  // operation, and a writer with nothing left to sign signs nothing here. Never after a refusal,
+  // which must leave the installation's id where it was.
+  for (const writer of writers) writer.checkpoint();
+  const hosts = [...new Set(relinked.relinks.map((one) => one.host))];
+  return {
+    ok: true,
+    said: `relinked ${relinked.relinks.length} tail(s) into ${record}, each by its own key (${[...new Set(relinked.relinks.map((one) => one.signedBy.slice(0, 12)))].join(', ')}), in ${hosts.map(oneLine).join(', ')}, checkpointed, before the move${opened.length === 0 ? '' : `, from ${opened.length} new tail(s) of their keys`}`,
+  };
+}
+
+/** The fingerprint a tail id names: the part before its installation id. */
+function tailFingerprintOf(tail: string): string {
+  return tail.slice(0, tail.indexOf('-'));
+}
+
+/**
+ * Why the old tree at `from` cannot join the one at `to` as it is, or `undefined` when they name
+ * one record or none (FORMAT.md section 6.10): two trees that already name two records would be
+ * one directory both readers refuse as `another-record`, and every private write after it refused
+ * too, unless the old tree's tails are relinked first ({@link relinkLeftBehind}). Each tree's name
+ * is said apart, since only the two together are two records.
  */
 function twoRecords(from: string, to: string): string | undefined {
   if (recordNamedIn([from, to]).state !== 'several') return undefined;
@@ -1179,8 +1274,8 @@ function twoRecords(from: string, to: string): string | undefined {
   };
   return (
     `since its tails name ${named(from)} and those of ${oneLine(to)} name ${named(to)}: ` +
-    'joined, they would be two records in one directory, which `mnema verify` refuses ' +
-    '(another-record), and this version of mnema has no way to join two records'
+    'joined as they are, they would be two records in one directory, which `mnema verify` ' +
+    'refuses (another-record)'
   );
 }
 
