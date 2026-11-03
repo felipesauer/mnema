@@ -410,7 +410,10 @@ describe('a pull request that brings a tail the base is not the record of', () =
 });
 
 describe('a pull request that brings a tail and its owner’s relink of it', () => {
-  const WITNESSED = join(import.meta.dirname, '../../chain/src/chain/__fixtures__/witnessed-record');
+  const WITNESSED = join(
+    import.meta.dirname,
+    '../../chain/src/chain/__fixtures__/witnessed-record',
+  );
   const MUTATE = join(import.meta.dirname, '../../chain/verifier/mutate.py');
 
   /**

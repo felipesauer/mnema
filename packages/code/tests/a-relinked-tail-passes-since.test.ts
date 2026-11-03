@@ -203,14 +203,17 @@ describe('verify --since over a change that brings a relink', () => {
   it.each([
     ['relink-uncovered', 'above its host’s last checkpoint'],
     ['relinked-by-a-key-that-founded-itself-here', 'by a key that founded itself in the record'],
-  ])('still refuses the tail as another record where the relink does not count: %s (%s)', (name) => {
-    const record = built(name);
-    const relinked = tailOf(record, RELINKED);
-    const ran = since(pullRequest(name, record, [GENESIS_OF_Y]));
-    expect(ran.status, ran.out).toBe(1);
-    const said = ran.err.split('\n').find((line) => line.includes('arrived since'));
-    expect(said).toContain(`tail ${relinked} arrived since and names record`);
-    expect(said).toContain('(another-record)');
-    expect(relinkedLines(ran.out)).toEqual([]);
-  });
+  ])(
+    'still refuses the tail as another record where the relink does not count: %s (%s)',
+    (name) => {
+      const record = built(name);
+      const relinked = tailOf(record, RELINKED);
+      const ran = since(pullRequest(name, record, [GENESIS_OF_Y]));
+      expect(ran.status, ran.out).toBe(1);
+      const said = ran.err.split('\n').find((line) => line.includes('arrived since'));
+      expect(said).toContain(`tail ${relinked} arrived since and names record`);
+      expect(said).toContain('(another-record)');
+      expect(relinkedLines(ran.out)).toEqual([]);
+    },
+  );
 });

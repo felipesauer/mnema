@@ -222,15 +222,15 @@ describe('what arrived since a base (arrivalsSince), under the names a relink gi
     expect(arrived.relinked[0]?.from).not.toBe(arrived.records[0]);
   });
 
-  it.each([
-    'relink-uncovered',
-    'relinked-by-a-key-that-founded-itself-here',
-  ])('still names the tail as another record where the relink does not count: %s', (name) => {
-    const { base, here } = baseAndHere(name);
-    const arrived = arrivalsSince({ root: base }, { root: here }, catalogUpcasters());
-    expect(arrived.foreign.flatMap((group) => group.tails)).toEqual([relinkedTailOf(here)]);
-    expect(arrived.relinked).toEqual([]);
-  });
+  it.each(['relink-uncovered', 'relinked-by-a-key-that-founded-itself-here'])(
+    'still names the tail as another record where the relink does not count: %s',
+    (name) => {
+      const { base, here } = baseAndHere(name);
+      const arrived = arrivalsSince({ root: base }, { root: here }, catalogUpcasters());
+      expect(arrived.foreign.flatMap((group) => group.tails)).toEqual([relinkedTailOf(here)]);
+      expect(arrived.relinked).toEqual([]);
+    },
+  );
 
   it('reads the base whole: a relink that counted there is not said again', () => {
     const record = mutated('relinked-by-the-genesis-founder');
