@@ -229,6 +229,15 @@ export function askTheDoor(
   return refuse(build({ at: ASKED_ONLY, anchor: authorizingAnchor(ctx) }));
 }
 
+/**
+ * What this door says of an event built whole by a write that founds nothing (a relink, whose
+ * signer's standing the readers' own rule decides): the refusal it earns, or undefined. Asked of
+ * every event of the write before the first is appended, so a refusal leaves nothing.
+ */
+export function refusalOf(event: CatalogEvent): AppendRefusal | undefined {
+  return refuse(event);
+}
+
 /** The half {@link appendFact} and {@link appendFacts} share: ask, found, then build for real. */
 function foundedThenBuilt(
   ctx: WriteContext,

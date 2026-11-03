@@ -650,6 +650,27 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the anchor of the writer that signed the waiver',
   },
+  'tail.ts «Relinked tail {} into record {}...» #1': {
+    verdict: 'minted',
+    why: 'a tail the record was found holding, and the name a tail of the directory carries',
+  },
+  'tail.ts «{} event(s) through {}, from record {}...» #1': {
+    verdict: 'minted',
+    why: 'a count, a content hash, and the name the relinked tail carries',
+  },
+  'tail.ts «written in tail {} at seq {}, signed by {}, and checkpointed» #1': {
+    verdict: 'minted',
+    why: 'the tail the writer wrote the relink in, its seq, and the fingerprint that signed it',
+  },
+  'tail.ts «it brings {}» #1': {
+    verdict: 'minted',
+    why: 'counts and kind names of the catalog, and the instants of two entries the record holds',
+  },
+  'tail.ts «the tails here still name record {}... too ({}): \\`mnema verify\\` refuses the directory until the owners of {} relink them, or they are cut (\\`mnema tail prune\\`)» #1':
+    {
+      verdict: 'minted',
+      why: 'a record name, the tail ids that carry it, and the fingerprints those ids begin with',
+    },
   'task.ts «  The description is observation {} about it.» #1': {
     verdict: 'minted',
     why: 'the id of the observation the write just minted',
@@ -1060,9 +1081,10 @@ describe('every line this wiring words is classified', () => {
     // 161 with the line `init` prints when the answer to which host files is not on the list.
     // 163 with the two lines `verify --since` prints of a tail that arrived (born-unnamed, another-record).
     // 164 with the note it prints of an unnamed tail over a base with no name yet (unnamed-record).
-    // 168 with the four lines `record pull` prints.
-    // 169 with the line that names the files a pull left in conflict.
-    expect(FOUND.sites.length).toBe(169);
+    // 169 with the five lines `tail relink` prints of a relink it wrote.
+    // 173 with the four lines `record pull` prints.
+    // 174 with the line that names the files a pull left in conflict.
+    expect(FOUND.sites.length).toBe(174);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1083,7 +1105,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(93);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(76);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(81);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(93);
   });
 

@@ -12,6 +12,28 @@ with its own changelog.
 
 ### Added
 
+- **`mnema tail relink <tail>... [--into <record>] --reason <text>` writes the owner's relink, and `mnema doctor --fix
+  private-tree` relinks a private tree that names another record before it moves it (ADR-155, ADR-157).** Each relink is
+  signed by the key the relinked tail's id names, which the machine must hold (the person's, or an agent's kept there),
+  written in that key's tail that names the record joined, or in a new tail of that key born naming it, and checkpointed
+  at once. Before it writes, the command asks the readers' own rule over the directory as it would read, and writes
+  nothing they would not count: a key no membership of the record took in is refused by its words
+  (`RELINK_WOULD_NOT_COUNT`, `relink-not-a-member`, with ADR-157's rule: only the founder's keys relink, and an admission
+  of another person's tail does not exist in this version). It refuses too, each naming what it found, a tail not here,
+  one whose key the machine does not hold (`NOT_THE_OWNER`), that names no record, that names the record already
+  (`ALREADY_IN_THAT_RECORD`), that does not verify, that holds a relink or that one names already; `--into` is asked for
+  when the directory names three records or more. It says what each tail brings (its identity facts, its decisions,
+  its first entry when older than the record's genesis) and the records still left beside the one joined, with their
+  keys. The doctor, which refused two private trees of two records, now relinks each tail of the old tree by its own
+  key in the repository's tree, then moves them, and says both; a tail whose key is not on the machine keeps the
+  refusal, named. The writer names a directory as the readers do once a relink counts, so writes go on there, and a
+  checkout whose own tail was relinked, here or in a pull, writes in a new tail and leaves the frozen one as it is. A
+  write in a directory of two records is refused `STALE_ANCHOR` in words that name both records and `mnema tail relink`,
+  where it said to delete the anchor file, after which the write was refused `ANOTHER_RECORD`. `mnema tail prune`
+  refuses (`RELINK_WOULD_BE_UNDONE`) to cut the tail that holds a relink while the tail it relinked is on disk, unless
+  that tail's cut is authorized first by a covered waiver. Like `tail prune`, `tail relink` takes `--which` for the
+  agent that executed it; a relink an agent's key signs names the agent the record enrolled that key as.
+
 - **`mnema record pull` pulls over the record's uncommitted events, and a merge driver keeps the longer side of a tail
   (ADR-163, which replaces ADR-139).** A pull request that carries a tail's events to the branch you follow left `git
   pull` refusing ("Your local changes ... would be overwritten by merge") over a local file that only holds more.
@@ -44,8 +66,8 @@ with its own changelog.
   line a reader refuses holds no relink in either reader. A relink that counts is the census note `relinked-tail` and a
   clause of the verdict, and the namer the surfaces ask reads such a directory as `verify` does. The rule is
   `relinkedNaming` (`packages/chain/src/chain/record-name.ts`) and its mirror in the second reader; `mutate.py` builds
-  a record for every refusal and for the two that pass. No command writes a relink yet, and the writer, `doctor` and
-  `verify --since` read tails by their own artifacts as before. A version from before reads such a line as a kind it
+  a record for every refusal and for the two that pass. `mnema tail relink` and `mnema doctor --fix private-tree` write
+  one (below); `verify --since` reads tails by their own artifacts as before. A version from before reads such a line as a kind it
   does not read and refuses it, naming its version. The published vectors are 40: one for the kind, and the content
   root over all of them moves from `c87196ea4f715594eadcf089393a0d7d97c16a6253280c33e966505af0dc5cd8` to
   `a827adaa28e739a941a592efc04ac2c02fe228867069a940179719188d814d61`; the other three aggregate digests do not move.

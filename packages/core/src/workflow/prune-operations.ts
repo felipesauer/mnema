@@ -47,6 +47,7 @@ import {
   readTailEntries,
   tailPruned,
   tailStanding,
+  tailsACutWouldUnrelink,
 } from '@mnema/chain';
 import {
   type ScreenedWrite,
@@ -85,7 +86,8 @@ export type PruneError =
   | { readonly ok: false; readonly code: 'UNKNOWN_TAIL'; readonly message: string }
   | { readonly ok: false; readonly code: 'TAIL_IS_OWN'; readonly message: string }
   | { readonly ok: false; readonly code: 'KEYS_WOULD_BE_LOST'; readonly message: string }
-  | { readonly ok: false; readonly code: 'NO_KEYS_TO_LOSE'; readonly message: string };
+  | { readonly ok: false; readonly code: 'NO_KEYS_TO_LOSE'; readonly message: string }
+  | { readonly ok: false; readonly code: 'RELINK_WOULD_BE_UNDONE'; readonly message: string };
 
 const QUOTE = String.fromCharCode(39);
 const BACKSLASH = String.fromCharCode(92);
@@ -189,6 +191,23 @@ export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneO
         `No tail ${oneLine(input.tail)} holds events in this tree. A waiver is written BEFORE the ` +
         'cut, while what it claims can still be checked against the record: and a tail ' +
         'with no events has nothing to account for.',
+    };
+  }
+
+  // A cut of the tail a relink is written in takes the relink with it, and the tail it relinked,
+  // still here, names the record it came from again: the directory is two records, which both
+  // readers refuse (FORMAT.md section 6.11). Unless that tail goes too: its cut authorized first.
+  const unrelinked = tailsACutWouldUnrelink(ctx.layout, ctx.upcasters, input.tail);
+  if (unrelinked.length > 0) {
+    return {
+      ok: false,
+      code: 'RELINK_WOULD_BE_UNDONE',
+      message:
+        `Tail ${oneLine(input.tail)} holds the relink of ${unrelinked.map(oneLine).join(', ')}, ` +
+        'still on disk: cut without it, that tail names the record it came from again, and ' +
+        '`mnema verify` refuses the directory as two records (another-record). Cut it in the same ' +
+        `cut, its waiver first (\`mnema tail prune ${oneLine(unrelinked[0] as string)} --reason <why>\`), ` +
+        'or keep this tail.',
     };
   }
 

@@ -40,6 +40,7 @@ import {
 } from '../workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../workflow/operations.js';
 import { authorizeTailPrune } from '../workflow/prune-operations.js';
+import { relinkTails } from '../workflow/relink-operations.js';
 import { endRun, startRun } from '../workflow/session-operations.js';
 import { createSkill, recordConsultation, reviewSkill } from '../workflow/skill-operations.js';
 import { adoptStack, removeStack } from '../workflow/stack-operations.js';
@@ -135,10 +136,7 @@ const CATALOG = Object.keys(LATEST_VERSION) as EventKind[];
  * whole, so the day an operation writes one of them it fails until its driver is written and the
  * kind leaves the list.
  */
-const NOT_WRITTEN: { readonly [K in EventKind]?: string } = {
-  // ADR-155: the readers read a relink first; the verb that writes one comes after them.
-  'tail.relinked': 'the readers and the namer read it; no operation writes one yet',
-};
+const NOT_WRITTEN: { readonly [K in EventKind]?: string } = {};
 
 /** The kinds an operation of this package writes: every one is driven onto the chain. */
 const DRIVEN = CATALOG.filter((kind) => NOT_WRITTEN[kind] === undefined);
@@ -237,7 +235,7 @@ function landed<T extends { readonly ok: boolean }>(result: T): Extract<T, { ok:
  * every operation that accepts them. The kinds that accept neither pass neither, and
  * the harness reads that from the events rather than from a list here.
  */
-const DRIVERS: { readonly [K in Exclude<EventKind, 'tail.relinked'>]: Driver } = {
+const DRIVERS: { readonly [K in EventKind]: Driver } = {
   'run.started': (ctx, text) =>
     // A run's agent IS its envelope `which`, so this kind fills that slot through
     // the payload; there is no separate `which` to pass and no parent run to pin to.
@@ -424,6 +422,25 @@ const DRIVERS: { readonly [K in Exclude<EventKind, 'tail.relinked'>]: Driver } =
       which: text('which'),
       run: text('run'),
     });
+  },
+
+  'tail.relinked': (ctx, text) => {
+    // Two records of one key in one tree: the writer's own (founded here) and a tail of the same
+    // key born in another, copied in. Everything the relink claims is read off the disk; the
+    // reason and the run are the two values a caller hands it.
+    landed(createTask(ctx, { title: 'work of this record' }));
+    const keyRoot = ctx.layout.root;
+    const tail = aTailOfAnotherRecord(ctx.layout.root, keyRoot);
+    const fingerprint = ctx.writer.signerFingerprint;
+    return relinkTails(
+      {
+        layouts: [ctx.layout],
+        upcasters,
+        keys: new Map([[fingerprint, { fingerprint, keyRoot }]]),
+        openWriter: (_key, joins) => openChainForWriting(keyRoot, { keyRoot, joins }),
+      },
+      { tails: [tail], reason: text('payload.reason'), run: text('run') },
+    );
   },
 
   'channel.switched': (ctx, text) =>
@@ -643,6 +660,24 @@ function aSecondTailIn(root: string): string {
   }
 }
 
+/** A tail of this tree's key, born in a record of its own elsewhere, copied into `root`. */
+function aTailOfAnotherRecord(root: string, keyRoot: string): string {
+  const other = mkdtempSync(join(tmpdir(), 'mnema-field-elsewhere-'));
+  try {
+    const ctx: WriteContext = {
+      writer: openChainForWriting(other, { keyRoot }),
+      layout: { root: other },
+      upcasters,
+    };
+    landed(createTask(ctx, { title: 'work of another record' }));
+    const tail = ctx.writer.tail;
+    cpSync(join(other, 'tails', tail), join(root, 'tails', tail), { recursive: true });
+    return tail;
+  } finally {
+    rmSync(other, { recursive: true, force: true });
+  }
+}
+
 /** One text leaf of an event, addressed the way the classification is keyed. */
 interface Leaf {
   readonly path: string;
@@ -825,7 +860,7 @@ describe('every kind the catalog can hold is driven onto the chain', () => {
   });
 
   it('leaves out only the kinds no operation writes, each saying why', () => {
-    expect(Object.keys(NOT_WRITTEN)).toEqual(['tail.relinked']);
+    expect(Object.keys(NOT_WRITTEN)).toEqual([]);
     expect(Object.keys(NOT_WRITTEN).every((kind) => CATALOG.includes(kind as EventKind))).toBe(
       true,
     );
