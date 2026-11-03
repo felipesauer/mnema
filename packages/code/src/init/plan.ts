@@ -4,7 +4,7 @@
  * ONE FUNCTION FEEDS THREE READERS: the screen that asks for the one confirmation, `--dry-run`, and the
  * line a person is shown under the hosts once they have picked. A plan written three times would be
  * three promises that can disagree, and the writing that follows is the one that has to keep them:
- * `the-plan-names-what-the-founding-writes.test.ts` founds with every combination of answers it can
+ * `the-init-says-what-it-found-and-writes-nothing.test.ts` founds with every combination of answers it can
  * and requires the files that exist afterwards to be exactly the files the rows name.
  *
  * A ROW SAYS ONE THING, WITH A VERB: `create`, `add to` (after the person's own text, between two
@@ -123,12 +123,12 @@ function decisionRows(answers: Answers): readonly PlanRow[] {
           section: 'repository',
           verb: 'record',
           what: '1 decision, yours',
-          note: 'every decision waits until you accept it',
+          note: 'every decision waits for you',
         },
         {
           section: 'repository',
           verb: 'record',
-          what: 'the switch agent-accepts, off',
+          what: 'agent-accepts, off',
           note: 'an agent’s accept is refused here',
         },
       ];

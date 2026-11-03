@@ -12,7 +12,7 @@
  * answered, and a `│` runs between them. Every row ends in text, so no sentence depends on the colour: the
  * picked row has the product's own pointer (`repl/palette.ts`), a box says `[x]` or `[ ]`, and a step is
  * named in words. The one accent is the product's (`pick`), the bold is the question, and the dim is
- * what a reader scans past (a path's state, a hint): `the-init-is-drawn-in-one-colour.test.ts` counts
+ * what a reader scans past (a path's state, a hint): `the-init-draws-its-frames.test.ts` counts
  * the sequences for every way a caller can ask for none.
  *
  * A ROW IS THE PRODUCT'S COLUMNS AND NOTHING LAID OVER THEM: parts one separator apart
@@ -142,7 +142,15 @@ export function theFirstScreen(
     const pad = widestOf(around.found.map((found) => found.path)) + 2;
     for (const found of around.found) {
       lines.push(
-        ...noted(trail, [plain(`  ${found.path.padEnd(pad)}`)], dim(found.what), width, 2),
+        ...noted(
+          trail,
+          [plain(`  ${found.path.padEnd(pad)}`)],
+          dim(found.what),
+          width,
+          2,
+          [],
+          [plain(`  ${found.path}`)],
+        ),
       );
     }
   }

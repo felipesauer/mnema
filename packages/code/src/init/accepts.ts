@@ -17,6 +17,9 @@
  * decision, as the person's. An agent's `no` records the proposal only: an agent does not close its own
  * permission on the person's behalf, either.
  *
+ * `the-init-records-who-may-accept.test.ts` holds each of the four answers, on the record, and the absence of
+ * every other.
+ *
  * NOTHING HERE IS CHANGED BY `--yes`, which answers no question about this: it is not recorded, and the
  * summary says it was not asked (`wiring/init.ts`).
  */

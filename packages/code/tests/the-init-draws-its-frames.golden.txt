@@ -1,0 +1,453 @@
+--- the first screen (80 columns)
+mnema init  ·  0.0.0
+│
+◇  Here: shop/  (root of a git repository, branch main)
+│  No record yet: this folder becomes a mnema project. Nothing is written until
+│  you have seen the plan.
+│
+◇  Found around it
+│    AGENTS.md          yours, no mnema block in it
+│    CLAUDE.md          yours, no mnema block in it
+│    .cursor/           a Cursor folder
+│    docs/decisions/    1 decision file the record has never read
+│    package.json       declares prettier
+│
+
+--- the hosts, the pick on the first row (80 columns)
+◆  Which agent hosts should read the mnema instructions?
+│
+│  ❯  [x]  Claude Code                              detected: CLAUDE.md
+│          .claude/rules/mnema-instructions.md  new
+│          [x]  CLAUDE.md  yours: block added
+│     [x]  Cursor                                   detected: .cursor/
+│          .cursor/rules/mnema-instructions.mdc  new
+│     [ ]  VS Code and Copilot CLI
+│          .github/instructions/mnema-instructions.instructions.md  new
+│     [x]  Codex, OpenCode, Qwen Code and others    detected: AGENTS.md
+│          AGENTS.md  yours: block added
+│
+│  Claude Code reads the rules file at launch.
+│  ↑↓ move · space toggles · a all · Enter confirms · Esc leaves
+
+--- the hosts, the pick on a file of yours (80 columns)
+◆  Which agent hosts should read the mnema instructions?
+│
+│     [x]  Claude Code                              detected: CLAUDE.md
+│          .claude/rules/mnema-instructions.md  new
+│  ❯       [x]  CLAUDE.md  yours: block added
+│     [x]  Cursor                                   detected: .cursor/
+│          .cursor/rules/mnema-instructions.mdc  new
+│     [ ]  VS Code and Copilot CLI
+│          .github/instructions/mnema-instructions.instructions.md  new
+│     [x]  Codex, OpenCode, Qwen Code and others    detected: AGENTS.md
+│          AGENTS.md  yours: block added
+│
+│  Yours: the block goes after your text. Unchecked, it is left as it is.
+│  ↑↓ move · space toggles · a all · Enter confirms · Esc leaves
+
+--- the hosts, answered (80 columns)
+◇  Hosts: Claude Code, Cursor, Codex and others
+│    2 new files, 2 of yours get the block (CLAUDE.md, AGENTS.md)
+│
+
+--- who may accept (80 columns)
+◆  May an agent accept the decisions you choose?
+│
+│  When you pick an option an agent offered, or dictate a choice, the agent
+│  records it and accepts it at once, quoting your words. What it proposes on
+│  its own still waits for you: `mnema decision review`. Your answer is
+│  recorded as your own decision, and `mnema switch` changes it later.
+│
+│  ❯  Yes, accept at once what I choose  (the default)
+│     No, every decision stays proposed until I accept it
+│
+│  ↑↓ move · Enter confirms · Esc leaves, nothing founded
+
+--- who may accept, the second answer picked (80 columns)
+◆  May an agent accept the decisions you choose?
+│
+│  When you pick an option an agent offered, or dictate a choice, the agent
+│  records it and accepts it at once, quoting your words. What it proposes on
+│  its own still waits for you: `mnema decision review`. Your answer is
+│  recorded as your own decision, and `mnema switch` changes it later.
+│
+│     Yes, accept at once what I choose  (the default)
+│  ❯  No, every decision stays proposed until I accept it
+│
+│  ↑↓ move · Enter confirms · Esc leaves, nothing founded
+
+--- who may accept, answered yes (80 columns)
+◇  Agents may accept what you choose: yes
+│    recorded as your own decision
+│
+
+--- who may accept, answered no (80 columns)
+◇  Agents may accept what you choose: no
+│    every decision waits for you; recorded as your own decision
+│
+
+--- the plan (80 columns)
+◇  This is everything init will do
+│
+│  In this repository
+│    create    .mnema/                   the record, signed; with README.md,
+│                                        .gitattributes, .gitignore and more
+│    create    .prettierignore           keeps a formatter off .mnema/
+│    create    .claude/rules/mnema-instructions.md
+│    create    .cursor/rules/mnema-instructions.mdc
+│    add to    CLAUDE.md                 after your text, between two markers
+│    add to    AGENTS.md                 after your text, between two markers
+│    record    1 decision, yours         agents may accept what you choose
+│
+│  On this machine only, outside the repository
+│    create    ~/.mnema/identity/        your signing key and a backup key
+│                                        (new: first project on this machine)
+│
+
+--- the plan, with the second answer to who may accept (80 columns)
+◇  This is everything init will do
+│
+│  In this repository
+│    create    .mnema/                   the record, signed; with README.md,
+│                                        .gitattributes, .gitignore and more
+│    create    .prettierignore           keeps a formatter off .mnema/
+│    create    .claude/rules/mnema-instructions.md
+│    create    .cursor/rules/mnema-instructions.mdc
+│    add to    CLAUDE.md                 after your text, between two markers
+│    add to    AGENTS.md                 after your text, between two markers
+│    record    1 decision, yours         every decision waits for you
+│    record    agent-accepts, off        an agent’s accept is refused here
+│
+│  On this machine only, outside the repository
+│    create    ~/.mnema/identity/        your signing key and a backup key
+│                                        (new: first project on this machine)
+│
+
+--- the plan, a machine that has an identity (80 columns)
+◇  This is everything init will do
+│
+│  In this repository
+│    create    .mnema/                   the record, signed; with README.md,
+│                                        .gitattributes, .gitignore and more
+│    create    .prettierignore           keeps a formatter off .mnema/
+│    create    .claude/rules/mnema-instructions.md
+│    create    .cursor/rules/mnema-instructions.mdc
+│    add to    CLAUDE.md                 after your text, between two markers
+│    add to    AGENTS.md                 after your text, between two markers
+│
+│  On this machine only, outside the repository
+│    use       ~/.mnema/identity/
+│              the key this machine already has signs this record
+│
+
+--- the confirmation (80 columns)
+◆  Found the project with this plan?
+│
+│  ❯  Found the project           Change the answers           Leave
+│
+│  ←→ move · Enter confirms · Esc leaves, nothing founded
+
+--- the confirmation, Leave picked (80 columns)
+◆  Found the project with this plan?
+│
+│     Found the project           Change the answers        ❯  Leave
+│
+│  ←→ move · Enter confirms · Esc leaves, nothing founded
+
+--- the plan, agreed (80 columns)
+◇  Plan agreed
+│
+
+--- left (80 columns)
+■  Left. Nothing was founded and nothing was written.
+
+--- the founding (80 columns)
+◇  Founding
+│    done   .mnema/ and the identity
+│    done   .prettierignore  created
+│    done   .claude/rules/mnema-instructions.md
+│    done   .cursor/rules/mnema-instructions.mdc
+│    done   AGENTS.md  block added
+│    done   CLAUDE.md  block added
+│    done   ADR-1, recorded and accepted as yours
+│    `mnema instructions --remove` takes the block out of each file again.
+│
+
+--- the summary (80 columns)
+◇  Founded shop/.mnema
+│
+│  identity  mnid:xxxxxxxx  this machine’s, new; shown short
+│    mnid:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+│  backup key  xxxxxxxx  enrolled in this project
+│
+│  Move the backup key off this machine
+│    ~/.mnema/identity/backup/
+│    ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.key
+│    mnema has no central recovery: a backup left on this disk is lost with it.
+│
+│  Then
+│    1  Commit `.mnema/` with the repository; every clone reads the record.
+│    2  Claude Code: claude plugin marketplace add felipesauer/mnema
+│                    claude plugin install mnema@mnema
+│    3  Cursor: The Claude Code plugin, installed on the same machine
+│    4  Codex: codex plugin marketplace add felipesauer/mnema
+│              codex plugin add mnema@mnema
+│    5  1 decision file in docs/decisions is not in the record yet:
+│       mnema decision import docs/decisions
+│    6  `mnema status` shows where things stand.
+│
+└  Off until switched on: edit-first-write-gate, user-corrections.
+   `mnema switch` lists every channel and turns one on.
+
+--- the first screen (60 columns)
+mnema init  ·  0.0.0
+│
+◇  Here: shop/  (root of a git repository, branch main)
+│  No record yet: this folder becomes a mnema project.
+│  Nothing is written until you have seen the plan.
+│
+◇  Found around it
+│    AGENTS.md          yours, no mnema block in it
+│    CLAUDE.md          yours, no mnema block in it
+│    .cursor/           a Cursor folder
+│    docs/decisions/
+│    1 decision file the record has never read
+│    package.json       declares prettier
+│
+
+--- the hosts, the pick on the first row (60 columns)
+◆  Which agent hosts should read the mnema instructions?
+│
+│  ❯  [x]  Claude Code
+│          detected: CLAUDE.md
+│          .claude/rules/mnema-instructions.md  new
+│          [x]  CLAUDE.md  yours: block added
+│     [x]  Cursor
+│          detected: .cursor/
+│          .cursor/rules/mnema-instructions.mdc  new
+│     [ ]  VS Code and Copilot CLI
+│  .github/instructions/mnema-instructions.instructions.md
+│          new
+│     [x]  Codex, OpenCode, Qwen Code and others
+│          detected: AGENTS.md
+│          AGENTS.md  yours: block added
+│
+│  Claude Code reads the rules file at launch.
+│  ↑↓ move · space toggles · a all · Enter confirms · Esc
+│  leaves
+
+--- the hosts, the pick on a file of yours (60 columns)
+◆  Which agent hosts should read the mnema instructions?
+│
+│     [x]  Claude Code
+│          detected: CLAUDE.md
+│          .claude/rules/mnema-instructions.md  new
+│  ❯       [x]  CLAUDE.md  yours: block added
+│     [x]  Cursor
+│          detected: .cursor/
+│          .cursor/rules/mnema-instructions.mdc  new
+│     [ ]  VS Code and Copilot CLI
+│  .github/instructions/mnema-instructions.instructions.md
+│          new
+│     [x]  Codex, OpenCode, Qwen Code and others
+│          detected: AGENTS.md
+│          AGENTS.md  yours: block added
+│
+│  Yours: the block goes after your text. Unchecked, it is
+│  left as it is.
+│  ↑↓ move · space toggles · a all · Enter confirms · Esc
+│  leaves
+
+--- the hosts, answered (60 columns)
+◇  Hosts: Claude Code, Cursor, Codex and others
+│    2 new files, 2 of yours get the block (CLAUDE.md,
+│    AGENTS.md)
+│
+
+--- who may accept (60 columns)
+◆  May an agent accept the decisions you choose?
+│
+│  When you pick an option an agent offered, or dictate a
+│  choice, the agent records it and accepts it at once,
+│  quoting your words. What it proposes on its own still
+│  waits for you: `mnema decision review`. Your answer is
+│  recorded as your own decision, and `mnema switch`
+│  changes it later.
+│
+│  ❯  Yes, accept at once what I choose  (the default)
+│     No, every decision stays proposed until I accept it
+│
+│  ↑↓ move · Enter confirms · Esc leaves, nothing founded
+
+--- who may accept, the second answer picked (60 columns)
+◆  May an agent accept the decisions you choose?
+│
+│  When you pick an option an agent offered, or dictate a
+│  choice, the agent records it and accepts it at once,
+│  quoting your words. What it proposes on its own still
+│  waits for you: `mnema decision review`. Your answer is
+│  recorded as your own decision, and `mnema switch`
+│  changes it later.
+│
+│     Yes, accept at once what I choose  (the default)
+│  ❯  No, every decision stays proposed until I accept it
+│
+│  ↑↓ move · Enter confirms · Esc leaves, nothing founded
+
+--- who may accept, answered yes (60 columns)
+◇  Agents may accept what you choose: yes
+│    recorded as your own decision
+│
+
+--- who may accept, answered no (60 columns)
+◇  Agents may accept what you choose: no
+│    every decision waits for you; recorded as your own
+│    decision
+│
+
+--- the plan (60 columns)
+◇  This is everything init will do
+│
+│  In this repository
+│    create    .mnema/
+│              the record, signed; with README.md,
+│              .gitattributes, .gitignore and more
+│    create    .prettierignore
+│              keeps a formatter off .mnema/
+│    create    .claude/rules/mnema-instructions.md
+│    create    .cursor/rules/mnema-instructions.mdc
+│    add to    CLAUDE.md
+│              after your text, between two markers
+│    add to    AGENTS.md
+│              after your text, between two markers
+│    record    1 decision, yours
+│              agents may accept what you choose
+│
+│  On this machine only, outside the repository
+│    create    ~/.mnema/identity/
+│              your signing key and a backup key (new:
+│              first project on this machine)
+│
+
+--- the plan, with the second answer to who may accept (60 columns)
+◇  This is everything init will do
+│
+│  In this repository
+│    create    .mnema/
+│              the record, signed; with README.md,
+│              .gitattributes, .gitignore and more
+│    create    .prettierignore
+│              keeps a formatter off .mnema/
+│    create    .claude/rules/mnema-instructions.md
+│    create    .cursor/rules/mnema-instructions.mdc
+│    add to    CLAUDE.md
+│              after your text, between two markers
+│    add to    AGENTS.md
+│              after your text, between two markers
+│    record    1 decision, yours
+│              every decision waits for you
+│    record    agent-accepts, off
+│              an agent’s accept is refused here
+│
+│  On this machine only, outside the repository
+│    create    ~/.mnema/identity/
+│              your signing key and a backup key (new:
+│              first project on this machine)
+│
+
+--- the plan, a machine that has an identity (60 columns)
+◇  This is everything init will do
+│
+│  In this repository
+│    create    .mnema/
+│              the record, signed; with README.md,
+│              .gitattributes, .gitignore and more
+│    create    .prettierignore
+│              keeps a formatter off .mnema/
+│    create    .claude/rules/mnema-instructions.md
+│    create    .cursor/rules/mnema-instructions.mdc
+│    add to    CLAUDE.md
+│              after your text, between two markers
+│    add to    AGENTS.md
+│              after your text, between two markers
+│
+│  On this machine only, outside the repository
+│    use       ~/.mnema/identity/
+│              the key this machine already has signs this
+│              record
+│
+
+--- the confirmation (60 columns)
+◆  Found the project with this plan?
+│
+│  ❯  Found the project
+│     Change the answers
+│     Leave
+│
+│  ↑↓ move · Enter confirms · Esc leaves, nothing founded
+
+--- the confirmation, Leave picked (60 columns)
+◆  Found the project with this plan?
+│
+│     Found the project
+│     Change the answers
+│  ❯  Leave
+│
+│  ↑↓ move · Enter confirms · Esc leaves, nothing founded
+
+--- the plan, agreed (60 columns)
+◇  Plan agreed
+│
+
+--- left (60 columns)
+■  Left. Nothing was founded and nothing was written.
+
+--- the founding (60 columns)
+◇  Founding
+│    done   .mnema/ and the identity
+│    done   .prettierignore  created
+│    done   .claude/rules/mnema-instructions.md
+│    done   .cursor/rules/mnema-instructions.mdc
+│    done   AGENTS.md  block added
+│    done   CLAUDE.md  block added
+│    done   ADR-1, recorded and accepted as yours
+│    `mnema instructions --remove` takes the block out of
+│    each file again.
+│
+
+--- the summary (60 columns)
+◇  Founded shop/.mnema
+│
+│  identity  mnid:xxxxxxxx  this machine’s, new; shown short
+│    
+  mnid:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  xxxxxxxxxxx
+│  backup key  xxxxxxxx  enrolled in this project
+│
+│  Move the backup key off this machine
+│    ~/.mnema/identity/backup/
+│    
+  ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+  ffffff.key
+│    mnema has no central recovery: a backup left on this
+│    disk is lost with it.
+│
+│  Then
+│    1  Commit `.mnema/` with the repository; every clone
+│       reads the record.
+│    2  Claude Code:
+│       claude plugin marketplace add felipesauer/mnema
+│       claude plugin install mnema@mnema
+│    3  Cursor: The Claude Code plugin, installed on the
+│       same machine
+│    4  Codex:
+│       codex plugin marketplace add felipesauer/mnema
+│       codex plugin add mnema@mnema
+│    5  1 decision file in docs/decisions is not in the
+│       record yet:
+│       mnema decision import docs/decisions
+│    6  `mnema status` shows where things stand.
+│
+└  Off until switched on: edit-first-write-gate, 
+  user-corrections.
+   `mnema switch` lists every channel and turns one on.

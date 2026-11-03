@@ -13,7 +13,7 @@
  * NOTHING IS WRITTEN BEFORE THE ONE CONFIRMATION, and not by this module at all: it returns what the
  * person answered, and the verb writes. A person who leaves at any step (Esc, Ctrl-C, Ctrl-D, or the
  * `Leave` of the plan) gets a line that says nothing was founded and a zero exit, as the bare name's
- * menu does, and the folder and the home are as they were (`the-init-leaves-nothing-when-the-person-leaves.test.ts`
+ * menu does, and the folder and the home are as they were (`the-init-asks-which-host-files-to-write.test.ts`
  * compares both, byte for byte, at every step).
  *
  * THE PLAN IS PRINTED AND THE CONFIRMATION IS DRAWN, which is the one place this departs from drawing a

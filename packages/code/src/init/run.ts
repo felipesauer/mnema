@@ -17,7 +17,7 @@
  * their answer would put words in their mouth.
  *
  * NOTHING IS WRITTEN BEFORE THE CONFIRMATION, and `--dry-run` never writes: it prints the plan of the same function
- * and stops, in a project already founded as in one that is not (`the-init-writes-nothing-before-the-plan.test.ts`).
+ * and stops, in a project already founded as in one that is not (`the-init-says-what-it-found-and-writes-nothing.test.ts`).
  */
 
 import { join, sep } from 'node:path';

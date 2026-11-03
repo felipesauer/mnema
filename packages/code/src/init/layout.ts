@@ -10,7 +10,7 @@
  * the first row of it is the width. A renderer that does not fold (a pipe, a file, a terminal that said
  * nothing) hands the line back whole, and that is no width: the frame is then laid out for 80, the width the
  * product's pages are written for, and nothing is folded afterwards because nothing folds.
- * (`the-init-frames-fit-the-width-they-are-drawn-at.test.ts` draws every frame at 80 and at 60.)
+ * (`the-init-draws-its-frames.test.ts` draws every frame at 80 and at 60.)
  *
  * WHAT DOES NOT FIT IS MOVED BEFORE IT IS FOLDED. The product's own fold keeps a row whole by breaking it
  * under the first word of the row, and a trail wants a guide down the left of every row of it; so a note
@@ -80,7 +80,12 @@ export function noted(
   more: readonly string[] = [],
   stackedLead: readonly Part[] = lead,
 ): readonly Line[] {
-  if (note === undefined) return [row(...stackedLead)];
+  // A lead that is wider than the width by itself (a path longer than the room, after the columns it hangs
+  // in) loses its indentation: the path is the one thing that is never cut, so it starts as far left as the
+  // trail lets it, and stays whole on a row of its own when it fits there.
+  const fitting = (parts: readonly Part[]): readonly Part[] =>
+    widthOfText(renderPlain(row(...parts))) <= width ? parts : outdented(parts);
+  if (note === undefined) return [row(...fitting(stackedLead))];
   const together = row(...lead, note);
   // Where the note starts, measured on the row as it will be drawn: the lead, and the separator before the note.
   const gap = widthOfText(separatorBefore('id'));
@@ -98,9 +103,15 @@ export function noted(
   }
   const rows = wrap([note.text, ...more].join(' '), roomOf(width, hang));
   return [
-    row(...stackedLead),
+    row(...fitting(stackedLead)),
     ...rows.map((each) => row({ role: 'id', text: `${' '.repeat(hang)}${each}` })),
   ];
+}
+
+/** `parts` with the indentation of the first one taken off. */
+function outdented(parts: readonly Part[]): readonly Part[] {
+  const [first, ...rest] = parts;
+  return first === undefined ? parts : [{ ...first, text: first.text.trimStart() }, ...rest];
 }
 
 /**

@@ -12,6 +12,7 @@
  */
 
 import { neutralized } from '../one-line.js';
+import type { Leaving } from '../repl/leaving.js';
 import { PAINTING } from '../presentation/styled.js';
 
 /** Every sequence the painted renderer writes, as one pattern: built from its constants. */
@@ -59,6 +60,8 @@ export interface CliIo {
   readonly terminal?: {
     readonly input: NodeJS.ReadStream;
     readonly output: NodeJS.WriteStream;
+    /** Every way this process can stop, so the terminal is given back in all of them: absent is the process's own. */
+    readonly leaving?: Leaving;
   };
 }
 
