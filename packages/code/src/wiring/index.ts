@@ -247,6 +247,7 @@ import { registerObserve } from './observe.js';
 import { registerProblemReport } from './problem-report.js';
 import { registerPromote } from './promote.js';
 import { registerRecall } from './recall.js';
+import { registerRecord } from './record.js';
 import { registerReferences } from './refs.js';
 import { registerRepl } from './repl.js';
 import { registerResume } from './resume.js';
@@ -339,7 +340,14 @@ export const GROUPS: readonly Group[] = [
   },
   {
     heading: 'The git log:',
-    verbs: [registerWhy, registerCommits, registerAging, registerTrailer, registerCommitHook],
+    verbs: [
+      registerWhy,
+      registerCommits,
+      registerAging,
+      registerTrailer,
+      registerCommitHook,
+      registerRecord,
+    ],
   },
   {
     heading: 'This machine:',

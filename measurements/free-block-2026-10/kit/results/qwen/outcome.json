@@ -1,0 +1,1 @@
+{"exit": null, "ended": "exited before the 480 s timeout (requests from 20:38:13Z to 20:39:02Z, relay.log); not killed by the relay (meta.json: invalid null, stop null)", "version": "0.26.1 (install-output.txt)", "note": "written by hand: the first version of run-host kept the exit code only in a verdict.json that finalize.mjs has since rewritten, so the exit code is not known"}

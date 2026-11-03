@@ -332,6 +332,9 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
   'wiring/verify.ts':
     'it words and prints what `commands/verify.ts` ruled and reads no record of its own; ' +
     'a notice here would be the verdict carrying a summary of a line already in it',
+  'commands/record-pull.ts':
+    'it hands back the verdict of `commands/verify.ts` over the record the pull left, whole, and ' +
+    'the pull prints each tree of it: a notice beside it would be that verdict said a second time',
   'commands/verify-github.ts':
     'it runs after the verdict, over the trees the verdict ruled on, and reads only those whose ' +
     'verdict was not a break: a tree whose chain does not close is named as not compared ' +

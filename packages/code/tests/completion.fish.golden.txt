@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write beside-a-write tally corrections after-a-write handback settled dispatched help'
+            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file instructions switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook record key tail doctor report completion mcp run before-a-write beside-a-write tally corrections after-a-write handback settled dispatched help'
         case 'decision'
             echo 'record move review supersede import help'
         case 'skill'
@@ -33,6 +33,8 @@ function __mnema_commands --description 'the subcommands one level of the tree o
             echo 'accountability antipatterns exposure help'
         case 'commit-hook'
             echo 'install uninstall suggest help'
+        case 'record'
+            echo 'pull merge-tail help'
         case 'key'
             echo 'restore request enroll github sigstore revoke protect unprotect help'
         case 'tail'
@@ -110,6 +112,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'commits' -d 'show the commits that c
 complete -c mnema -f -n '__mnema_at ""' -a 'aging' -d 'show accepted decisions whose addressed paths changed in many commits since'
 complete -c mnema -f -n '__mnema_at ""' -a 'trailer' -d 'print the commit trailer that ties a commit to a decision'
 complete -c mnema -f -n '__mnema_at ""' -a 'commit-hook' -d 'install or remove an optional git hook that suggests the Mnema-Decision trailer'
+complete -c mnema -f -n '__mnema_at ""' -a 'record' -d 'pull the record over events not yet committed, and merge its tails for git'
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
 complete -c mnema -f -n '__mnema_at ""' -a 'doctor' -d 'say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix)'
@@ -745,6 +748,24 @@ complete -c mnema -f -n '__mnema_at "commit-hook uninstall"' -l color -x -a 'aut
 complete -c mnema -f -n '__mnema_at "commit-hook suggest"' -s h -l help
 complete -c mnema -f -n '__mnema_at "commit-hook suggest"' -s V -l version
 complete -c mnema -f -n '__mnema_at "commit-hook suggest"' -l color -x -a 'auto always never'
+
+# mnema record
+complete -c mnema -f -n '__mnema_at "record"' -a 'pull' -d 'git pull over tails grown here and not yet committed'
+complete -c mnema -f -n '__mnema_at "record"' -a 'merge-tail' -d 'the merge driver git runs for a tail\'s files'
+complete -c mnema -f -n '__mnema_at "record"' -a 'help' -d 'display help for command'
+complete -c mnema -f -n '__mnema_at "record"' -s h -l help
+complete -c mnema -f -n '__mnema_at "record"' -s V -l version
+complete -c mnema -f -n '__mnema_at "record"' -l color -x -a 'auto always never'
+
+# mnema record pull
+complete -c mnema -f -n '__mnema_at "record pull"' -s h -l help
+complete -c mnema -f -n '__mnema_at "record pull"' -s V -l version
+complete -c mnema -f -n '__mnema_at "record pull"' -l color -x -a 'auto always never'
+
+# mnema record merge-tail
+complete -c mnema -f -n '__mnema_at "record merge-tail"' -s h -l help
+complete -c mnema -f -n '__mnema_at "record merge-tail"' -s V -l version
+complete -c mnema -f -n '__mnema_at "record merge-tail"' -l color -x -a 'auto always never'
 
 # mnema key
 complete -c mnema -f -n '__mnema_at "key"' -a 'restore' -d 'restore a key from a copy of its private half: this machine\'s identity, or an agent\'s'

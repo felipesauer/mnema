@@ -1,0 +1,11 @@
+{
+  "ended": "cut",
+  "exit": null,
+  "wall_ms": 3831,
+  "version": "GitHub Copilot CLI 1.0.104.",
+  "ended_reason": "a request was cut (429, 402, 5xx or an error event in the stream)",
+  "key_scan": {
+    "scanned_files": 201,
+    "files_with_a_key": 0
+  }
+}

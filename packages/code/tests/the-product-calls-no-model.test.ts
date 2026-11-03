@@ -98,6 +98,9 @@ const MAY_REACH_THE_NETWORK: readonly string[] = [
   // `mnema stack add <https://…>`: one shallow `git clone` of the address the person typed,
   // following no redirect and over HTTPS only, to read a stack's files; never a model.
   'packages/code/src/commands/stack-source.ts',
+  // `mnema record pull`: `git fetch` and `git pull` from the remote the person's branch follows,
+  // the pull they would have typed; never a model.
+  'packages/code/src/commands/record-pull.ts',
   // `mnema witness sigstore`: Fulcio and Rekor at the public Sigstore instance, the sign-in at
   // oauth2.sigstore.dev (and its callback on localhost), or the Actions runner's token endpoint.
   // What leaves of the record is a checkpoint digest; the identity leaves by design. Only when

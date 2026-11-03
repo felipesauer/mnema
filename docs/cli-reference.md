@@ -1325,6 +1325,45 @@ comments. It needs `mnema` on the `PATH` git runs hooks with; when
 `mnema` is missing or fails, the hook does nothing and the commit goes through. It looks for the
 project from the repository's top directory, so a record kept in a subdirectory draws no suggestion.
 
+### Pulling a record that grew here
+
+A tail only grows, and a writer appends to it without committing. A pull request carries those
+events to the branch you follow, which then holds the start of your local file, and `git pull`
+refuses ("Your local changes ... would be overwritten by merge") before any merge runs, although
+nothing would be lost.
+
+```sh
+# git pull over the record's uncommitted events, when the branch followed holds their start.
+mnema record pull
+
+# Teach this repository's git the tails' merge driver, for every merge (writes .git/config).
+mnema doctor --fix merge-driver --dry-run
+mnema doctor --fix merge-driver
+```
+
+`record pull` refuses, writing nothing, when a file outside `.mnema/` has changes (commit or stash
+them first), and when a tail file here and on the branch followed is not one the start of the other,
+byte for byte: that is a fork, and it names each file and the line where the two sides part. Then it
+runs `git pull --autostash` with the merge driver given on that one command line, puts back a file
+of the record git did not track yet (a tail opened here) when this checkout's side is the longer,
+and verifies the record. It writes no git configuration. It fails, printing what git said, when the
+pull fails (branches that diverged with no `pull.rebase` set, say) and when git puts its autostash
+back with conflicts: a file of the record that is not a tail, `.gitattributes` for one, merges as
+text, and git then keeps the stash; it names the files and leaves the rest to you.
+
+**The merge driver.** `mnema init` writes `tails/*/*.jsonl merge=mnema-tail` into the record's
+`.gitattributes`: a tail's segments and checkpoints merge through `mnema record merge-tail`, which
+keeps the longer side when one is the start of the other, and on a fork keeps your side byte for byte,
+says it is a fork and where the sides part, and leaves the file conflicted. It never joins the two:
+a file holding both sides is a fork, which both readers refuse. Git runs a driver only where its own
+configuration says what the name means, and a committed file cannot say it, so a clone merges the
+tails as text, as git merges any file, until a person runs `mnema doctor --fix merge-driver`; `mnema
+doctor` names a clone where it is missing. That setting names `mnema` as git finds it on its `PATH`:
+where git runs without it there, the merge stops on a conflict, as it does without the setting.
+**What it does not do.** No driver makes a plain `git pull` pass over uncommitted changes: git
+refuses those before it merges, which is why `record pull` exists. A `git pull --autostash`, or
+`merge.autoStash` set by you, puts the events back through the driver.
+
 ### A record that inherits another repository's decisions
 
 A project can read the decisions in force of another repository (a team's shared conventions, say)
@@ -1454,7 +1493,7 @@ configurations are read by their JSON or their lines, so a form this does not re
 reported as one that could not be confirmed, with the same line to add. It looks in the project's directory and in
 each one above it up to the git root.
 
-`mnema doctor --fix vscode` is one of the two things it writes, and only when you type it: it shows what it
+`mnema doctor --fix vscode` is one of the three things it writes (with `--fix private-tree` and `--fix merge-driver`), and only when you type it: it shows what it
 will change (`--dry-run` stops there), copies `settings.json` to a file beside it, adds the plugin's
 folder in the Claude Code marketplace to `chat.pluginLocations` and drops an entry that points into
 a versioned folder of the plugin cache, keeps the file's comments and the rest of its text, and a
@@ -2470,7 +2509,8 @@ key really signed.
 
 ```
 <repo>/.mnema/              the project record: commit this, the team shares it
-  .gitattributes            `* -text`: a checkout never rewrites the signed lines' ends
+  .gitattributes            `* -text`: a checkout never rewrites the signed lines' ends;
+                            `merge=mnema-tail` for a tail's files (`mnema record pull`)
   tails/<id>/witness/       external attestations over this tail's checkpoints (T3)
   locks/                    gitignored: writers' locks, and the projection a read keeps
 <git common dir>/mnema/<encoded path>/private/

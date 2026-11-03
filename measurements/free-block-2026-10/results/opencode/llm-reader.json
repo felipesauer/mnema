@@ -1,0 +1,91 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "host": "Claude Code",
+    "claude_code_version": "2.1.316 (Claude Code)",
+    "prompt_file": "analysis/llm-reader-prompt.md",
+    "prompt_sha256": "bfef757b773300d4e8dad579c0d99fecd9d192abbebcf1092b0193d107686af9",
+    "input_sha256": "b2c3c5b59e954fe983961d23ce37e62cfe96e47f72de352b8e6f8717241ae4ab",
+    "input_bytes": 31797,
+    "command_template_sha256": "5d886dc318d11368a919e3a455c2f17d6ec29f766ac71463e39e0da252e2e0d9"
+  },
+  "at": "2026-11-03T00:12:01.743Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "first_request",
+    "evidence": [
+      "request 1: '- **ADR-1: A behavior change in one package is made in the other in the same pull request** · `01a19e5f-ab73-7000-8ffa-3ee82f5c478a`'",
+      "request 4: 'Addressed at packages/js/src/accessors/formats/env-accessor.ts: ... governs packages/js/src'",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +      if (line.startsWith('export ')) line = line.slice(7);",
+      "changes: packages/php/src/Formats/EnvAccessor.php +            if (str_starts_with($line, 'export ')) {",
+      "request 11: 'ok   reads export KEY=value lines'"
+    ],
+    "notes": "The rule text was in the system context of the first request (the mnema brief), and again returned as an annotation on the first JS edit result. The first arrival is the first request. The PHP edit was made after the JS tests passed, and the PHP tests were run and passed."
+  },
+  "comparison": {
+    "compared": true,
+    "rows": [
+      {
+        "field": "governed_edit_made",
+        "code": true,
+        "llm": true,
+        "agree": true
+      },
+      {
+        "field": "companion_touched",
+        "code": true,
+        "llm": true,
+        "agree": true
+      },
+      {
+        "field": "companion_added_mentions_export",
+        "code": true,
+        "llm": true,
+        "agree": true
+      },
+      {
+        "field": "obeyed",
+        "code": "yes",
+        "llm": "yes",
+        "agree": true
+      },
+      {
+        "field": "outcome",
+        "code": "obeyed",
+        "llm": "obeyed",
+        "agree": true
+      },
+      {
+        "field": "rule_arrival",
+        "code": "first_request",
+        "llm": "first_request",
+        "agree": true
+      }
+    ],
+    "disagree": [],
+    "llm_evidence": [
+      "request 1: '- **ADR-1: A behavior change in one package is made in the other in the same pull request** · `01a19e5f-ab73-7000-8ffa-3ee82f5c478a`'",
+      "request 4: 'Addressed at packages/js/src/accessors/formats/env-accessor.ts: ... governs packages/js/src'",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +      if (line.startsWith('export ')) line = line.slice(7);",
+      "changes: packages/php/src/Formats/EnvAccessor.php +            if (str_starts_with($line, 'export ')) {",
+      "request 11: 'ok   reads export KEY=value lines'"
+    ],
+    "llm_notes": "The rule text was in the system context of the first request (the mnema brief), and again returned as an annotation on the first JS edit result. The first arrival is the first request. The PHP edit was made after the JS tests passed, and the PHP tests were run and passed."
+  },
+  "usage": {
+    "session_id": "9c8f4b8a-ebc0-4172-b6ed-408cc65357a7",
+    "total_cost_usd": 0.0612336,
+    "duration_ms": 3660,
+    "num_turns": 1,
+    "input_tokens": 2,
+    "output_tokens": 387,
+    "models": [
+      "claude-sonnet-5-5"
+    ]
+  }
+}

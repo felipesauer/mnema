@@ -1,0 +1,31 @@
+{
+  "comment": "Where the rule and the prompts of the measured sessions of the free block come from. Paths are relative to the root of the private backup repository; the git blob ids are of its HEAD when this was extracted.",
+  "rule": {
+    "id": "org-08",
+    "copied_from": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/rules.yaml",
+    "source_file_sha256": "bb25212f7e5edb759216b236f31729b1d12c0f8eaa8a020699b600e0d9f93b95",
+    "source_file_git_blob": "c8504563dfa155f5c9b36e63bbc646ee9e1d8de7",
+    "copied_as": "org-08.json (title, why, alternatives, addresses, field by field; unedited)",
+    "recorded_by": "the failure-modes kit (arm B) with: decision record <title> --body-file <why> --alternatives <alternatives>; link <ADR> <path> --rel governs; decision move accept (gen.py of the pilot kit)",
+    "rule_json_sha256": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00"
+  },
+  "scoped_prompt": {
+    "copied_from": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/failure-modes/prompts/inline.g.md",
+    "source_file_sha256": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59",
+    "source_file_git_blob": "b93a6b288229576a78b0e3a552cd2f3a0985339f",
+    "copied_as": "prompts/inline.g.md (byte for byte)"
+  },
+  "neutral_prompt": {
+    "status": "DERIVED, not copied: no file of the 0.1.4 kits holds a neutral prompt",
+    "defined_by": "mnema/archive/active/comparison-after-0.1.4/design.md section 1 (Q4: 'o NEUTRO (sem nomear o pacote)') and section 5 (Novo, 2: 'o prompt neutro de paridade (inline.g.neutral.md)')",
+    "derived_from": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/failure-modes/prompts/inline.g.md",
+    "derivation": "drop the leading clause 'In the JS package, ' and capitalise the next letter; nothing else",
+    "derived_as": "prompts/parity-neutral.md",
+    "sha256": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059"
+  },
+  "failure_modes_design": {
+    "file": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/failure-modes/design.yaml",
+    "source_file_sha256": "d6cdbda2a95bbacf485bafce028bd3876bdfcaf49c9c2337ed0a216522b04a85",
+    "used_for": "rule_facts.org-08 (governed paths, the governed edit, the companion path, what the companion must add)"
+  }
+}

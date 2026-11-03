@@ -1,0 +1,11 @@
+Warning: running headless with --yolo / approval-mode=yolo and no sandbox. All tool calls (shell, write, edit) auto-execute at this process's privilege level. Configure tools.executionSandbox on Linux or a supported legacy sandbox via --sandbox / QWEN_SANDBOX, or set QWEN_CODE_SUPPRESS_YOLO_WARNING=1 to silence this notice.
+All tests pass for both packages. The changes I made:
+
+1. **JavaScript `EnvAccessor`** (`packages/js/src/accessors/formats/env-accessor.ts`): Added logic to strip the `export ` prefix before parsing the key-value pair.
+
+2. **PHP `EnvAccessor`** (`packages/php/src/Formats/EnvAccessor.php`): Added the same logic using `str_starts_with()` and `substr()`.
+
+3. **Tests in both packages**: Added test cases for:
+   - Lines with `export KEY=value` format
+   - Mixed lines with and without `export` prefix
+   - Quoted values with `export` prefix

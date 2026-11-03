@@ -98,6 +98,8 @@ $ mnema --help
 |   trailer         print the commit trailer that ties a commit to a decision
 |   commit-hook     install or remove an optional git hook that suggests the
 |                   Mnema-Decision trailer
+|   record          pull the record over events not yet committed, and merge its
+|                   tails for git
 |
 | This machine:
 |   key             manage this machine's signing keys
@@ -1174,6 +1176,20 @@ $ mnema commit-hook --help
 | It runs only where `install` put it, never overwrites a hook that is not its own, follows
 | core.hooksPath, and never fails a commit.
 
+### mnema record --help
+$ mnema record --help
+| Usage: mnema record [options] [command]
+|
+| pull the record over events not yet committed, and merge its tails for git
+|
+| Options:
+|   -h, --help                                    display help for command
+|
+| Commands:
+|   pull                                          git pull over tails grown here and not yet committed
+|   merge-tail <ancestor> <ours> <theirs> [path]  the merge driver git runs for a tail's files
+|   help [command]                                display help for command
+
 ### mnema key --help
 $ mnema key --help
 | Usage: mnema key [options] [command]
@@ -1234,7 +1250,9 @@ $ mnema doctor --help
 |                 `vscode` lists the plugin in the chat.pluginLocations setting of
 |                 VS Code’s settings.json, after keeping a copy of the file;
 |                 `private-tree` moves the private notes a worktree still holds in
-|                 .mnema/private/ into the repository’s git directory
+|                 .mnema/private/ into the repository’s git directory;
+|                 `merge-driver` tells this repository’s git configuration what
+|                 the merge driver the record’s tails name is
 |   --dry-run     with --fix: say what would change and write nothing
 |   -h, --help    display help for command
 |
@@ -1254,6 +1272,8 @@ $ mnema doctor --help
 | it, keeps the file’s comments, and refuses a file it cannot edit safely.
 | `--fix private-tree` writes: it moves each tail, as it is, into the repository’s private
 | tree, and leaves where it was anything whose name there holds other bytes.
+| `--fix merge-driver` writes: two settings in this repository’s .git/config, the only git
+| configuration mnema writes, and leaves a setting of the same name it did not write.
 
 ### mnema report --help
 $ mnema report --help
@@ -2510,6 +2530,36 @@ $ mnema commit-hook suggest --help
 |
 | Options:
 |   -h, --help    display help for command
+
+### mnema record pull --help
+$ mnema record pull --help
+| Usage: mnema record pull [options]
+|
+| git pull over tails grown here and not yet committed
+|
+| Options:
+|   -h, --help  display help for command
+|
+| It refuses, writing nothing, when a file outside .mnema/ has changes, or when a tail file
+| here and on the branch followed is not one the start of the other (a fork), naming each.
+| Then it runs `git pull --autostash` with the mnema merge driver given on that one command
+| line, puts back a new tail git did not track yet, and verifies the record. It writes no
+| git configuration.
+
+### mnema record merge-tail --help
+$ mnema record merge-tail --help
+| Usage: mnema record merge-tail [options] <ancestor> <ours> <theirs> [path]
+|
+| the merge driver git runs for a tail's files
+|
+| Arguments:
+|   ancestor    the common ancestor git hands (%O); not read
+|   ours        our side (%A), where the result is written
+|   theirs      their side (%B)
+|   path        the path git is merging (%P), named when the sides fork
+|
+| Options:
+|   -h, --help  display help for command
 
 ### mnema key restore --help
 $ mnema key restore --help

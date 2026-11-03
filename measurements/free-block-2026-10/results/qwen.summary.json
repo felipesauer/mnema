@@ -1,0 +1,70 @@
+{
+  "started": true,
+  "served_verification": {
+    "checked": 13,
+    "ok": 13,
+    "mismatched": [],
+    "unverified": []
+  },
+  "mode": "live",
+  "kind": "measured",
+  "host": "qwen",
+  "label": "qwen-measured",
+  "version": "0.26.1",
+  "ended": "exited",
+  "wall_ms": 388682,
+  "requests": 13,
+  "refused_by_relay": 0,
+  "cost_per_request": 1,
+  "cost_source": "seen on 29 October: 1 per request",
+  "account_units_spent": 13,
+  "key_scan_hits": 0,
+  "result": {
+    "read_by": "CODE",
+    "requests_read": 13,
+    "ended": "exited",
+    "read": true,
+    "status": "finished",
+    "obeyed": {
+      "value": "yes",
+      "governed_edit_made": true,
+      "companion_touched": true,
+      "companion_files": [
+        "packages/php/src/Formats/EnvAccessor.php"
+      ],
+      "companion_added_lines": 4,
+      "companion_added_mentions_export": true
+    },
+    "outcome": "obeyed",
+    "outcome_note": null,
+    "final_message": {
+      "text": "All tests pass for both packages. The changes I made:\n\n1. **JavaScript `EnvAccessor`** (`packages/js/src/accessors/formats/env-accessor.ts`): Added logic to strip the `export ` prefix before parsing the key-value pair.\n\n2. **PHP `EnvAccessor`** (`packages/php/src/Formats/EnvAccessor.php`): Added the same logic using `str_starts_with()` and `substr()`.\n\n3. **Tests in both packages**: Added test cases for:\n   - Lines with `export KEY=value` format\n   - Mixed lines with and without `export` prefix\n   - Quoted values with `export` prefix",
+      "cites_pattern": true,
+      "ends_in_question": false
+    },
+    "two_numbers": {
+      "violation": {
+        "value": false,
+        "by": "CODE"
+      },
+      "work_barred": {
+        "value": null,
+        "vacuous": true,
+        "by": "CODE",
+        "note": "org-08 refuses no write, so this number is vacuous in this block"
+      }
+    },
+    "arrival": {
+      "arrived": true,
+      "request": 1,
+      "carrier": "first_request",
+      "role": "system",
+      "tool": null,
+      "via_mnema_tool": false,
+      "requests": 13,
+      "first_non_mnema_call_at_response": 1,
+      "before_first_non_mnema_call": true
+    }
+  },
+  "scenario": null
+}

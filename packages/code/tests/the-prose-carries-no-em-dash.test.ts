@@ -96,9 +96,18 @@ const WHERE_THE_DASH_IS_DATA: Readonly<Record<string, { times: number; why: stri
 /**
  * One directory is not ours to write: the test vectors other people wrote, copied byte for byte
  * and held to their SHA-256 by `packages/chain/src/chain/outside-vectors.test.ts`. Some of them
- * are invalid UTF-8 on purpose. Nothing else is left out.
+ * are invalid UTF-8 on purpose. The frozen catalogs below are held the same way.
  */
 const COPIED_BYTE_FOR_BYTE = 'packages/chain/conformance/vectors/';
+
+/**
+ * The two OpenRouter model catalogs the free block's measurement froze: text other people wrote, whose bytes
+ * the manifest holds to a SHA-256 that `kit/freeze/verify-prereg.mjs` recomputes, so a dash in them cannot be rewritten.
+ */
+const THE_FROZEN_CATALOGS: ReadonlySet<string> = new Set([
+  'measurements/free-block-2026-10/kit/freeze/models-20261030.json',
+  'measurements/free-block-2026-10/kit/freeze/superseded-20261029/models-20261029.json',
+]);
 
 /** The signed tails of the repository's own record: append-only, people's words verbatim. */
 const THE_SIGNED_RECORD = '.mnema/tails/';
@@ -120,6 +129,7 @@ const listed = (): readonly string[] =>
         where !== '' &&
         !where.startsWith(COPIED_BYTE_FOR_BYTE) &&
         !where.startsWith(THE_SIGNED_RECORD) &&
+        !THE_FROZEN_CATALOGS.has(where) &&
         existsSync(join(ROOT, where)),
     );
 

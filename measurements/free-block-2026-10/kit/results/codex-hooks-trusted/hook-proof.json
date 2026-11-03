@@ -1,0 +1,41 @@
+{
+  "hooksRan": true,
+  "reasons": [],
+  "trusted": {
+    "run": "codex-hooks-trusted",
+    "inputItems": 4,
+    "roles": [
+      "developer",
+      "user",
+      "developer",
+      "user"
+    ],
+    "briefHookOutput": {
+      "index": 2,
+      "role": "developer",
+      "characters": 1913,
+      "sha256": "9209b23cc98cc795de0c04b134a884c265293ab12d6bb9a613889c5da0d4c924",
+      "carriesMarker": true
+    },
+    "markerAnywhereInFirstRequest": true
+  },
+  "reference": {
+    "run": "codex",
+    "inputItems": 3,
+    "roles": [
+      "developer",
+      "user",
+      "user"
+    ],
+    "briefHookOutput": null,
+    "markerAnywhereInFirstRequest": false
+  },
+  "policy_the_host_ran_under": {
+    "approval_policy": "never",
+    "sandbox_policy": {
+      "type": "read-only"
+    },
+    "network_of_tools": "restricted",
+    "model": "nvidia/nemotron-3-ultra-550b-a55b:free"
+  }
+}

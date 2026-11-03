@@ -1,0 +1,70 @@
+{
+  "started": true,
+  "served_verification": {
+    "checked": 18,
+    "ok": 18,
+    "mismatched": [],
+    "unverified": []
+  },
+  "mode": "live",
+  "kind": "measured",
+  "host": "codex",
+  "label": "codex-measured",
+  "version": "codex-cli 0.161.0",
+  "ended": "exited",
+  "wall_ms": 117827,
+  "requests": 18,
+  "refused_by_relay": 0,
+  "cost_per_request": 1,
+  "cost_source": "results/codex-cost-no-web-search (the probe)",
+  "account_units_spent": 18,
+  "key_scan_hits": 0,
+  "result": {
+    "read_by": "CODE",
+    "requests_read": 18,
+    "ended": "exited",
+    "read": true,
+    "status": "finished",
+    "obeyed": {
+      "value": "yes",
+      "governed_edit_made": true,
+      "companion_touched": true,
+      "companion_files": [
+        "packages/php/src/Formats/EnvAccessor.php"
+      ],
+      "companion_added_lines": 9,
+      "companion_added_mentions_export": true
+    },
+    "outcome": "obeyed",
+    "outcome_note": null,
+    "final_message": {
+      "text": "Done! I've updated both the JavaScript/TypeScript and PHP `EnvAccessor` implementations to accept lines written as `export KEY=value` (shell style), where the key is parsed as `KEY` exactly as if the `export ` prefix were not there.\n\n**Changes made:**\n\n- **`packages/js/src/accessors/formats/env-accessor.ts`** - Added handling for optional `export ` prefix before parsing the key=value line\n- **`packages/php/src/Formats/EnvAccessor.php`** - Same logic added for the PHP implementation\n- **`packages/js/tests/env-accessor.test.ts`** - Added 3 new tests: shell-style export lines, mixed plain/export lines, and export with quoted values\n- **`packages/php/tests/run.php`** - Added equivalent 3 tests for PHP\n\nAll tests pass for both packages:\n- JS: 7 tests pass (4 original + 3 new)\n- PHP: 8 tests pass (5 original + 3 new)",
+      "cites_pattern": true,
+      "ends_in_question": false
+    },
+    "two_numbers": {
+      "violation": {
+        "value": false,
+        "by": "CODE"
+      },
+      "work_barred": {
+        "value": null,
+        "vacuous": true,
+        "by": "CODE",
+        "note": "org-08 refuses no write, so this number is vacuous in this block"
+      }
+    },
+    "arrival": {
+      "arrived": true,
+      "request": 1,
+      "carrier": "first_request",
+      "role": "developer",
+      "tool": null,
+      "via_mnema_tool": false,
+      "requests": 18,
+      "first_non_mnema_call_at_response": 1,
+      "before_first_non_mnema_call": true
+    }
+  },
+  "scenario": null
+}

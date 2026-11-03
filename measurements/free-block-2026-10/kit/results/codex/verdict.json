@@ -1,0 +1,77 @@
+{
+  "host": "codex",
+  "version": "0.161.0",
+  "label": "passed",
+  "why": "the three calls in order, the id carried, the marker said",
+  "directPassed": true,
+  "verdict": {
+    "pass": true,
+    "reasons": [],
+    "requests": 4,
+    "toolCalls": 3,
+    "discoveryCalls": 0,
+    "otherHostCalls": 0,
+    "toolCallsCountingDiscovery": 3,
+    "calls": [
+      {
+        "name": "mcp__mnema__governing_rules",
+        "via": null,
+        "argsOk": true,
+        "args": {
+          "path": "src/index.js"
+        },
+        "resultStart": "Wall time: 0.0991 seconds\nOutput:{\"path\":\"<RUNS>/ab"
+      },
+      {
+        "name": "mcp__mnema__search",
+        "via": null,
+        "argsOk": true,
+        "args": {
+          "term": "capcheck"
+        },
+        "resultStart": "Wall time: 0.0326 seconds\nOutput:{\"hits\":[{\"id\":\"01a18967-88ae-7000-964a-3fe5157c57d1\",\"kind\":\"decision\",\"scope\":\"public\",\"project\":\"<SESSIONS>"
+      },
+      {
+        "name": "mcp__mnema__read_record",
+        "via": null,
+        "argsOk": true,
+        "args": {
+          "id": "01a18967-88ae-7000-964a-3fe5157c57d1"
+        },
+        "resultStart": "Wall time: 0.0188 seconds\nOutput:{\"kind\":\"decision\",\"id\":\"01a18967-88ae-7000-964a-3fe5157c57d1\",\"scope\":\"public\",\"project\":\"<SESSIONS>"
+      }
+    ],
+    "finalText": "capcheck-7f3a",
+    "offered": [
+      "mcp__mnema__governing_rules",
+      "mcp__mnema__read_record",
+      "mcp__mnema__search"
+    ]
+  },
+  "outcome": {
+    "exit": 0,
+    "ended": "exited",
+    "version": "version: WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"<RUNS>/ab-runs/codex-1793306625427/codex\"))"
+  },
+  "forwarded": 4,
+  "used_by_this_run": 4,
+  "quota_before": {
+    "used": 22,
+    "limit": 50,
+    "remaining": 28,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 22,
+    "ledgerUsed": 22
+  },
+  "quota_after": {
+    "used": 26,
+    "limit": 50,
+    "remaining": 24,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 22,
+    "ledgerUsed": 26
+  },
+  "served": {
+    "nvidia/nemotron-3-ultra-550b-a55b:free | ?": 12
+  }
+}

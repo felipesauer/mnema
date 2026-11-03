@@ -461,6 +461,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The commit-hook group's declaration; a-commit-hook-only-suggests.test.ts drives `install` through the CLI and reads the refusal that names the foreign hook, while the success lines and the help are read only in the golden.",
   },
+  'packages/code/src/wiring/record.ts': {
+    reached: 'nobody imports it',
+    why: "The record group's declaration and the lines `pull` prints; a-tail-merges-and-pulls.test.ts drives `pull` and `merge-tail` through the built binary over real git and reads the line a pull ends on, a refusal and a fork, while the help is read only in the golden.",
+  },
   'packages/code/src/wiring/commits.ts': {
     reached: 'nobody imports it',
     why: "The commits verb's wiring; the-record-meets-the-git-log.test.ts drives it through the CLI and reads its --json and its page.",
@@ -673,7 +677,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 50,
+  wiring: 51,
   presentation: 7,
   projections: 3,
   completion: 4,
@@ -906,6 +910,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/next-actions.test.ts': 9,
   'packages/code/src/commands/observe.test.ts': 8,
   'packages/code/src/commands/recall.test.ts': 17,
+  'packages/code/src/commands/record-merge-tail.test.ts': 6,
   'packages/code/src/commands/references.test.ts': 15,
   'packages/code/src/commands/resume.test.ts': 9,
   'packages/code/src/commands/run-end.test.ts': 9,
@@ -1056,6 +1061,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-sticky-pattern-answers-differently-each-call.test.ts': 3,
   'packages/code/tests/a-stopped-import-fails-the-run.test.ts': 1,
   'packages/code/tests/a-subagent-hands-back-its-decisions.test.ts': 12,
+  'packages/code/tests/a-tail-merges-and-pulls.test.ts': 10,
   'packages/code/tests/a-tail-that-arrives-is-held-to-the-base.test.ts': 7,
   'packages/code/tests/a-tail-that-holds-keys-is-not-cut-without-naming-them.test.ts': 6,
   'packages/code/tests/a-task-carries-its-prose.test.ts': 10,
@@ -1691,6 +1697,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/decision-transition.ts',
   'packages/code/src/commands/decision.ts',
   'packages/code/src/commands/dispatched.ts',
+  'packages/code/src/commands/doctor-merge-driver.ts',
   'packages/code/src/commands/doctor-vscode.ts',
   'packages/code/src/commands/doctor.ts',
   'packages/code/src/commands/export.ts',
@@ -1714,6 +1721,8 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/observe.ts',
   'packages/code/src/commands/promote.ts',
   'packages/code/src/commands/recall.ts',
+  'packages/code/src/commands/record-merge-tail.ts',
+  'packages/code/src/commands/record-pull.ts',
   'packages/code/src/commands/references.ts',
   'packages/code/src/commands/report.ts',
   'packages/code/src/commands/resume.ts',
@@ -1953,6 +1962,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/problem-report.ts',
   'packages/code/src/wiring/promote.ts',
   'packages/code/src/wiring/recall.ts',
+  'packages/code/src/wiring/record.ts',
   'packages/code/src/wiring/refs.ts',
   'packages/code/src/wiring/repl.ts',
   'packages/code/src/wiring/report.ts',
@@ -2189,8 +2199,9 @@ describe('every file has a test that names it', () => {
     // 79 once the inherited rule's test asserts on the governance page's rows.
     // 80 with the beside-a-write verb's wiring, which a-rule-is-handed-after-a-write drives through the built binary.
     // 79 once the status printer's test imports it.
-    expect(found.size).toBe(79);
-    expect(byReach('nobody imports it')).toBe(79);
+    // 80 with the record group's wiring, which a-tail-merges-and-pulls.test.ts drives through the binary.
+    expect(found.size).toBe(80);
+    expect(byReach('nobody imports it')).toBe(80);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -2212,7 +2223,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(79);
+    expect(reasons).toHaveLength(80);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

@@ -1,0 +1,91 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "host": "Claude Code",
+    "claude_code_version": "2.1.316 (Claude Code)",
+    "prompt_file": "analysis/llm-reader-prompt.md",
+    "prompt_sha256": "bfef757b773300d4e8dad579c0d99fecd9d192abbebcf1092b0193d107686af9",
+    "input_sha256": "9c1f1c45ae57c81a6520ce5a162e8b258b1c9197b68a477d54d83c2ed5f67c6e",
+    "input_bytes": 28983,
+    "command_template_sha256": "5d886dc318d11368a919e3a455c2f17d6ec29f766ac71463e39e0da252e2e0d9"
+  },
+  "at": "2026-11-03T00:12:07.229Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "first_request",
+    "evidence": [
+      "request 1: '- **ADR-1: A behavior change in one package is made in the other in the same pull request** · `01a19e63-604e-7000-895e-5325d464a864`'",
+      "request 5: 'Additional guidance from postToolUse hooks: ... governs packages/js/src'",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const withoutExport = line.startsWith('export ') ? line.slice(7) : line;",
+      "changes: packages/php/src/Formats/EnvAccessor.php +$withoutExport = str_starts_with($line, 'export ') ? substr($line, 7) : $line;",
+      "request 12: 'Both packages now accept `export KEY=value` lines'"
+    ],
+    "notes": "The rule's title was in the first request's brief (a user message listing ADR-1), so it arrived at the start; it was also repeated by a postToolUse hook on edits. The agent edited the PHP file after seeing the hook, and the PHP tests were extended and passed."
+  },
+  "comparison": {
+    "compared": true,
+    "rows": [
+      {
+        "field": "governed_edit_made",
+        "code": true,
+        "llm": true,
+        "agree": true
+      },
+      {
+        "field": "companion_touched",
+        "code": true,
+        "llm": true,
+        "agree": true
+      },
+      {
+        "field": "companion_added_mentions_export",
+        "code": true,
+        "llm": true,
+        "agree": true
+      },
+      {
+        "field": "obeyed",
+        "code": "yes",
+        "llm": "yes",
+        "agree": true
+      },
+      {
+        "field": "outcome",
+        "code": "obeyed",
+        "llm": "obeyed",
+        "agree": true
+      },
+      {
+        "field": "rule_arrival",
+        "code": "first_request",
+        "llm": "first_request",
+        "agree": true
+      }
+    ],
+    "disagree": [],
+    "llm_evidence": [
+      "request 1: '- **ADR-1: A behavior change in one package is made in the other in the same pull request** · `01a19e63-604e-7000-895e-5325d464a864`'",
+      "request 5: 'Additional guidance from postToolUse hooks: ... governs packages/js/src'",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const withoutExport = line.startsWith('export ') ? line.slice(7) : line;",
+      "changes: packages/php/src/Formats/EnvAccessor.php +$withoutExport = str_starts_with($line, 'export ') ? substr($line, 7) : $line;",
+      "request 12: 'Both packages now accept `export KEY=value` lines'"
+    ],
+    "llm_notes": "The rule's title was in the first request's brief (a user message listing ADR-1), so it arrived at the start; it was also repeated by a postToolUse hook on edits. The agent edited the PHP file after seeing the hook, and the PHP tests were extended and passed."
+  },
+  "usage": {
+    "session_id": "3c21bd52-d648-4792-980f-98b971ba8efb",
+    "total_cost_usd": 0.0551076,
+    "duration_ms": 4375,
+    "num_turns": 1,
+    "input_tokens": 2,
+    "output_tokens": 400,
+    "models": [
+      "claude-sonnet-5-5"
+    ]
+  }
+}

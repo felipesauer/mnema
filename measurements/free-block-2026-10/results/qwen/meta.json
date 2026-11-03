@@ -1,0 +1,122 @@
+{
+  "label": "qwen-measured",
+  "kind": "measured",
+  "mode": "live",
+  "host": "qwen",
+  "at": "2026-10-31T05:17:02.001Z",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "provider_tag": "nvidia",
+  "budget_requests": 50,
+  "forwarded": 13,
+  "refusedLocally": 0,
+  "cuts": [],
+  "upstreamStatuses": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "served": {
+    "nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia": 392
+  },
+  "baseline": {
+    "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "provider": "Nvidia"
+  },
+  "invalid": null,
+  "generations": [
+    {
+      "seq": 1,
+      "status": 404
+    },
+    {
+      "seq": 2,
+      "status": 404
+    },
+    {
+      "seq": 3,
+      "status": 404
+    },
+    {
+      "seq": 4,
+      "status": 404
+    },
+    {
+      "seq": 5,
+      "status": 404
+    },
+    {
+      "seq": 6,
+      "status": 404
+    },
+    {
+      "seq": 7,
+      "status": 404
+    },
+    {
+      "seq": 8,
+      "status": 404
+    },
+    {
+      "seq": 9,
+      "status": 404
+    },
+    {
+      "seq": 10,
+      "status": 404
+    },
+    {
+      "seq": 11,
+      "status": 404
+    },
+    {
+      "seq": 12,
+      "status": 404
+    },
+    {
+      "seq": 13,
+      "status": 404
+    }
+  ],
+  "stop": null,
+  "served_verification": {
+    "checked": 13,
+    "ok": 13,
+    "mismatched": [],
+    "unverified": []
+  },
+  "quota_before": {
+    "status": 200,
+    "isFreeTier": true,
+    "limit": 50,
+    "apiUsed": 0,
+    "ledgerRequests": 0,
+    "ledgerUnits": 0,
+    "used": 0,
+    "remaining": 50
+  },
+  "quota_after": {
+    "status": 200,
+    "isFreeTier": true,
+    "limit": 50,
+    "apiUsed": 12,
+    "ledgerRequests": 13,
+    "ledgerUnits": 13,
+    "used": 13,
+    "remaining": 37,
+    "settled": true,
+    "account_used_when_settled": 13,
+    "polls": 6
+  },
+  "account_units_spent": 13,
+  "cost_per_request_measured": 1
+}

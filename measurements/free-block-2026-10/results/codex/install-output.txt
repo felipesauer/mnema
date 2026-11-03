@@ -1,0 +1,11 @@
+$ codex plugin marketplace add -> exit 0
+Added marketplace `mnema` from <KIT>/plugin-tag.
+Installed marketplace root: <KIT>/plugin-tag
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("<RUNS>/ab-runs-live/codex-measured-1793664166935/codex"))
+
+$ codex plugin add mnema@mnema -> exit 0
+Added plugin `mnema` from marketplace `mnema`.
+Installed plugin root: <RUNS>/ab-runs-live/codex-measured-1793664166935/codex/plugins/cache/mnema/mnema/0.1.4
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("<RUNS>/ab-runs-live/codex-measured-1793664166935/codex"))
+
+after install: {"pluginFiles":48,"before":[{"key":"mnema@mnema:hooks/codex.json:pre_tool_use:0:0","trustStatus":"untrusted"},{"key":"mnema@mnema:hooks/codex.json:post_tool_use:0:0","trustStatus":"untrusted"},{"key":"mnema@mnema:hooks/codex.json:session_start:0:0","trustStatus":"untrusted"},{"key":"mnema@mnema:hooks/codex.json:session_start:0:1","trustStatus":"untrusted"}],"after":[{"key":"mnema@mnema:hooks/codex.json:pre_tool_use:0:0","trustStatus":"trusted","event":"preToolUse","matcher":"apply_patch"},{"key":"mnema@mnema:hooks/codex.json:post_tool_use:0:0","trustStatus":"trusted","event":"postToolUse","matcher":"request_user_input"},{"key":"mnema@mnema:hooks/codex.json:session_start:0:0","trustStatus":"trusted","event":"sessionStart","matcher":null},{"key":"mnema@mnema:hooks/codex.json:session_start:0:1","trustStatus":"trusted","event":"sessionStart","matcher":null}]}
