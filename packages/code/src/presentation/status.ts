@@ -65,6 +65,7 @@
  */
 
 import type { AwaitingJudgement, Bootstrap, ReportedRun, TaskStanding } from '@mnema/context';
+import { type EventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js';
 import { oneLine } from '../one-line.js';
 import type { DecisionsOutside, UnimportedBase } from '../outside-the-record.js';
 import { fact } from './detail.js';
@@ -106,6 +107,7 @@ export function statusReport(
   neverImported: readonly UnimportedBase[],
   runsByTree: readonly { readonly tree: string; readonly run: ReportedRun }[],
   asThisMachine = false,
+  notInGit?: EventsNotInGit,
 ): string[] {
   return [
     `${actor}, where things stand.`,
@@ -124,6 +126,7 @@ export function statusReport(
     ...unreadLines(status),
     ...outsideLines(outside),
     ...neverImportedLines(neverImported),
+    ...(notInGit === undefined ? [] : ['', 'Not in git yet:', `  ${saysEventsNotInGit(notInGit)}`]),
   ];
 }
 
