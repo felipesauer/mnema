@@ -1959,12 +1959,15 @@ $ mnema stack index --help
 | list the stacks an index names, with the digest each must have
 |
 | Arguments:
-|   folder      the folder holding index.json (default: "stack-index")
+|   folder      the folder holding index.json (default: the index that comes with
+|               mnema)
 |
 | Options:
 |   --json      emit the entries as JSON, for a program to take
 |   -h, --help  display help for command
 |
+| With no folder, the index that comes with mnema is read: the example stacks, each in a
+| folder inside the installed package. With a folder, the index.json in it is read.
 | The index holds no stack: each entry is a name, a link and a digest, and one kept in the
 | same checkout names its folder. Being listed does not make a stack safe. Add one with
 | `mnema stack add <source> --dry-run`, and it is the stack listed only if the digest the

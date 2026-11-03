@@ -1611,6 +1611,12 @@ measured. `mnema stack remove` keeps every file changed since it was written, an
 fails when the files or their receipt part from the record. A hook a stack declares stays off until
 `mnema stack enable` shows its script and a person at a terminal types its name.
 
+`mnema stack index [<folder>] [--json]` lists the stacks an index names, with the digest each must have,
+and installs nothing. With no folder it reads the index that comes with mnema, in any folder you run it
+from: the two example stacks of this repository, each with its folder inside the installed package, so
+`mnema stack add <that folder> --dry-run` shows the digest the index lists. With a folder, it reads the
+`index.json` in it; a folder with none is refused. Being listed does not make a stack safe.
+
 After it writes, the install asks `skills-ref` (the validator the Agent Skills specification
 publishes; its command is `agentskills`) about each skill folder it wrote and prints one line each,
 `skills-ref accepted <folder>` or `skills-ref refused <folder>`, with what it said. It does this only

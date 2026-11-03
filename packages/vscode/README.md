@@ -91,8 +91,9 @@ the `mnema` command line, which the extension does not bring: `@mnema/code` stay
     the person confirms, the write is `mnema stack add <source> --scope <scope> --expect <digest>`
     with the digest that plan printed, so the files written are the ones shown. From the index, the
     plan's digest must also be the one the index lists, or nothing is asked and nothing is written.
-    The index is read by `mnema stack index` from the folder named by `mnema.stackIndex` (default
-    `stack-index`, relative to the workspace folder); an entry the checkout does not hold is not
+    The index is read by `mnema stack index`. With `mnema.stackIndex` empty (the default) it is the
+    index that comes with the installed `mnema`, in any workspace; set to a folder (relative to the
+    workspace folder), it is the `index.json` there. An entry with no folder on this machine is not
     installed from here, and the message names the digest to compare.
   - Show Stack, Compare Stack and Check Stack run the verbs `show`,
     `diff` and `check` of `stack` and print what they printed, a departure included.

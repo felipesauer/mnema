@@ -2,7 +2,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { indexJson, indexLines, readStackIndex } from './stack-index.js';
+import {
+  BUILT_IN_INDEX,
+  indexJson,
+  indexLines,
+  readStackIndex,
+  readTheIndex,
+} from './stack-index.js';
 
 const DIGEST = 'd8ef7d9252d24840adb4ac3804ed6fe1f525c25f477d7eca275aa7af7ad7f174';
 const entry = (over: Record<string, unknown> = {}) => ({
@@ -43,6 +49,27 @@ describe('reading the index of stacks', () => {
     const read = readStackIndex(checkout, 'stack-index');
     expect(read).toMatchObject({ ok: false, code: 'STACK_INDEX_REFUSED' });
     expect(read.ok ? '' : read.message).toContain('stack-index');
+  });
+
+  it('says, for a folder with no index.json, what an index is and that no folder reads the built-in one', () => {
+    const read = readStackIndex(checkout, 'stack-index');
+    if (read.ok) throw new Error('read an index that is not there');
+    expect(read.lines?.join('\n')).toContain('An index is a folder holding an index.json');
+    expect(read.lines?.join('\n')).toContain(
+      'With no folder given, the index that comes with this installation is read.',
+    );
+  });
+
+  it('reads the built-in index with no folder, and the folder given when there is one', () => {
+    write([entry({ name: 'mine', path: undefined })]);
+    const builtIn = readTheIndex(checkout);
+    if (!builtIn.ok) throw new Error(builtIn.message);
+    expect(builtIn.folder).toBe(BUILT_IN_INDEX);
+    expect(builtIn.entries.map((e) => e.name)).not.toContain('mine');
+    for (const e of builtIn.entries) expect(e.source?.startsWith(BUILT_IN_INDEX)).toBe(true);
+    const given = readTheIndex(checkout, 'stack-index');
+    if (!given.ok) throw new Error(given.message);
+    expect(given.entries.map((e) => e.name)).toEqual(['mine']);
   });
 
   it.each([
