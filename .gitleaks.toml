@@ -18,7 +18,7 @@ paths = [
 [[allowlists]]
 description = "The pre-registration manifest lists the sha256 of each kit script, and the generic-api-key rule reads the one named scan-for-key.mjs as a key: a file digest, not a secret."
 condition = "AND"
-paths = ['''measurements/free-block-2026-10/prereg\.json''']
+paths = ['''measurements/free-block-2026-10/(prereg|kit/freeze/prereg|kit/freeze/freeze)\.json''']
 regexTarget = "line"
 regexes = ['''"lib/scan-for-key\.mjs": "[0-9a-f]{64}"''']
 
@@ -46,3 +46,10 @@ regexes = ['''SIGNING_KEY: [0-9A-F]{40}''']
 [[allowlists]]
 description = "RFC 8032 section 7.1 TEST 1's secret key, which the RFC publishes: the published signed-message vectors are signed by it so anyone can reproduce them (FORMAT.md, The published vectors). This value and no other."
 regexes = ['''^9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60$''']
+
+[[allowlists]]
+description = "The free block's kit tests its relay and its summaries against a made-up key (sk-or-v1- and the digits 0123456789abcdef repeated), the same string its own key scan recognises as a fake; the real key is in none of the kit's files."
+condition = "AND"
+paths = ['''measurements/free-block-2026-10/kit/(relay/relay\.test|measured/fake-upstream|measured/session\.test)\.mjs''']
+regexTarget = "match"
+regexes = ['''sk-or-v1-(0123456789abcdef)+''']
