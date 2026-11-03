@@ -260,6 +260,7 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   `verify` and the Python reader refuse what it leaves as before, and now name it: `fork: two different entries hold seq N and
   follow the same entry`, and `a fork in the sequence` under section 3. No byte of the format changes (`FORMAT.md` section 3).
 - `mnema verify --against-sigstore` and the signature line of a stack being added no longer print `1970-01-01` as the time a Rekor v2 entry was logged. A v2 entry carries no `integratedTime`, so the time now comes from the timestamp authority the Sigstore library verified, and says so; a bundle with no verified time says "time not carried", never a date made up. In `verify --json`, `sigstore.findings[].reading.loggedAt` can now be absent (it always came, even as 1970) and `loggedAtBy` (`"rekor"` or `"timestamp-authority"`) is new; the text line reads `logged in Rekor, timestamped by the timestamp authority at <time>` for a timestamp authority's time.
+- **`minimatch` is lifted to 11 in the release job's tool folder, closing GHSA-g3hv-75wg-m249 there as well.** The workspace lockfile already resolved it to 11.0.3; `.github/release-tools` still held 10.2.6, reached through `@vscode/vsce`. An override to `^11.0.1` moves it to 11.0.4 (ADR-153); the extension packs the same fourteen files with the tool folder's own `vsce`.
 
 ### Added
 
