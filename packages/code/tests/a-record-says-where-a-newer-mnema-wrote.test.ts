@@ -212,6 +212,15 @@ describe('a record a newer mnema wrote a line into', { timeout: 120_000 }, () =>
     expect(mnema('show', otherId).err).not.toContain('newer mnema');
   });
 
+  it('says so in show for a memory too, which is read over every tree and not the first', () => {
+    aDecision();
+    const memoryId = anotherRecord();
+    newerWrites({ subject: memoryId });
+    const shown = mnema('show', memoryId);
+    expect(shown.status, shown.err).toBe(0);
+    expect(shown.err).toContain(ABOUT_THIS_ONE);
+  });
+
   it('says so in the finding of doctor, and in nothing else of its checklist', () => {
     aDecision();
     newerWrites();
