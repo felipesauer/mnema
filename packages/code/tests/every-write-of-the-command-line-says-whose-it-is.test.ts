@@ -6,8 +6,10 @@
  * where `MNEMA_AGENT_KEY` is read; or writes a fact of the person's (the founding, an enrolment,
  * a retirement, a key bound to an identity, a checker's result), and does not look at the
  * variable, because the formats refuse the agent's key there and a verb that read it would sign
- * what the format refuses. A new verb that writes is in neither list until somebody chooses: this
- * is the test that makes the choice be made.
+ * what the format refuses; or writes the owner's relink of a tail (FORMAT.md section 6.11), which is
+ * signed by the key the tail's id names, the person's or an agent's, chosen by the record and never
+ * by the variable. A new verb that writes is in none of the lists until somebody chooses: this is
+ * the test that makes the choice be made.
  *
  * It enumerates the files by what they CALL, not by a list of verbs, so the verb nobody remembered
  * is the one it finds. The tests of the commands (`*.test.ts`) open trees to set a record up and
@@ -56,6 +58,9 @@ const THE_PERSON = [
   'key-sigstore.ts',
 ];
 
+/** The verbs whose write is signed by the key a tail's id names: `tail relink`, and the doctor's. */
+const THE_TAILS_OWNER = ['doctor.ts', 'tail-relink.ts'];
+
 const sourceOf = (file: string): string => readFileSync(join(commands, file), 'utf-8');
 
 /** The code of a file: its block comments and its line comments taken out. */
@@ -71,7 +76,7 @@ const writing = readdirSync(commands)
 
 describe('every verb that opens a tree for writing is the agent’s or the person’s', () => {
   it('is in exactly one of the two lists, and no verb is in neither', () => {
-    expect(writing).toEqual([...THE_AGENTS, ...THE_PERSON].sort());
+    expect(writing).toEqual([...THE_AGENTS, ...THE_PERSON, ...THE_TAILS_OWNER].sort());
   });
 
   it('takes its trees from the module that reads the variable, for each verb of the agent', () => {
@@ -112,8 +117,8 @@ describe('every verb that opens a tree for writing is the agent’s or the perso
     }
   });
 
-  it('does not look at the agent in a verb of the person', () => {
-    for (const file of THE_PERSON) {
+  it('does not look at the agent in a verb of the person, nor where the tail names the key', () => {
+    for (const file of [...THE_PERSON, ...THE_TAILS_OWNER]) {
       const source = sourceOf(file);
       expect(source, file).not.toContain('write-as-the-agent');
       expect(source, file).not.toMatch(/\bagentKey\b/);

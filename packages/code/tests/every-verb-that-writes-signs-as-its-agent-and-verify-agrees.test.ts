@@ -358,13 +358,19 @@ const VERBS: Record<string, readonly Verb[]> = {
 /** The files of the commands that write as the agent: found by what they call. */
 function theAgentsFiles(): string[] {
   const WRITES = /\b(openTreeForWriting|deferredWrite)\(/;
-  return readdirSync(commands)
-    .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
-    .filter((file) => {
-      const source = readFileSync(join(commands, file), 'utf-8');
-      return WRITES.test(source) && /write-as-the-agent|withAgentKey\(/.test(source);
-    })
-    .sort();
+  return (
+    readdirSync(commands)
+      .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+      .filter((file) => {
+        const source = readFileSync(join(commands, file), 'utf-8');
+        return WRITES.test(source) && /write-as-the-agent|withAgentKey\(/.test(source);
+      })
+      // The doctor asks `withAgentKey` to say where an agent's key stands, and its one write, the
+      // relink of a private tree, is signed by the key each tail's id names, never the variable's
+      // (`every-write-of-the-command-line-says-whose-it-is.test.ts`, the tail's owner).
+      .filter((file) => file !== 'doctor.ts')
+      .sort()
+  );
 }
 
 beforeAll(async () => {

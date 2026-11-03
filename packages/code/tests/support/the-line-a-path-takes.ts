@@ -121,6 +121,8 @@ export interface Fixture {
   readonly skill: string;
   /** A tail this machine did not write: the only kind `tail prune` can name. */
   readonly foreignTail: string;
+  /** A tail of this machine's key in another record: what `tail relink` joins to this one. */
+  readonly relinkableTail: string;
   /** A directory of decision files, inside the project, for `decision import`. */
   readonly decisionFiles: string;
   /** A memory, for `retract`. */
@@ -135,6 +137,7 @@ export const NOTHING_FOUNDED: Fixture = {
   successor: '00000000-0000-7000-8000-000000000000',
   skill: '00000000-0000-7000-8000-000000000000',
   foreignTail: 'no-such-tail',
+  relinkableTail: 'no-such-tail',
   decisionFiles: 'adr',
   note: '00000000-0000-7000-8000-000000000000',
 };
@@ -164,6 +167,7 @@ function byName(name: string, fixture: Fixture): string | undefined {
     dir: fixture.decisionFiles,
     source: fixture.decisionFiles,
     tail: fixture.foreignTail,
+    tails: fixture.relinkableTail,
     path: 'src',
     term: 'task',
     topic: 'review',

@@ -604,6 +604,136 @@ type Verdict = 'collapsed' | 'minted' | 'composed';
  * the part that rots (which values exist, and whether each is collapsed) is derived.
  */
 const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = {
+  '@mnema/chain chain/relink-plan.ts «No tail here names record {} by its own artifacts, other than a tail a relink » oneLine(ask) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the record `--into` named, a value nothing validates before the directory is asked for it',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} already names record {}...: a relink moves a tail between two » oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, a positional nothing validates before the record answers about it',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} already names record {}...: a relink moves a tail between two » oneLine(whole.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of a record name read off the tails here, or the `--into` the caller typed',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} does not verify: {}. A relink binds every » oneLine(broken.detail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the verifier’s own finding over a tail on disk, which quotes what it read there',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} does not verify: {}. A relink binds every » oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, a positional nothing validates before the record answers about it',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} holds a relink of another tail: a relink counts only from a tail » oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, a positional nothing validates before the record answers about it',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} holds no events here: a relink names a tail on disk, whole, » oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, a positional nothing validates before the record answers about it',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} is named by the relink at {} already: a tail is » oneLine(already) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the host tail and seq of a relink read off the disk, a tail id being a directory name',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} is named by the relink at {} already: a tail is » oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, a positional nothing validates before the record answers about it',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} names no record (it was written before records were named, and » oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, a positional nothing validates before the record answers about it',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} names record {}..., and no other tail here names another » oneLine(from.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the record name the tail carries, read off its proof or checkpoint',
+    },
+  '@mnema/chain chain/relink-plan.ts «Tail {} names record {}..., and no other tail here names another » oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, a positional nothing validates before the record answers about it',
+    },
+  '@mnema/chain chain/relink-plan.ts «The readers would not count the relink of tail {}. Nothing was written.» oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, a positional nothing validates before the record answers about it',
+    },
+  '@mnema/chain chain/relink-plan.ts «The readers would not count the relink of tail {}: {}.{} Nothing was written.» oneLine(tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, a positional nothing validates before the record answers about it',
+    },
+  '@mnema/chain chain/relink-plan.ts «The readers would not count the relink of tail {}: {}.{} Nothing was written.» refused.detail #1':
+    {
+      verdict: 'composed',
+      why: 'the readers’ own sentence of the refusal (`relinkedNaming`), whose values it collapses where it words them',
+    },
+  '@mnema/chain chain/relink-plan.ts «The readers would not count the relink of tail {}: {}.{} Nothing was written.» rule #1':
+    {
+      verdict: 'minted',
+      why: 'one sentence of this module, or nothing, chosen by the readers’ token',
+    },
+  '@mnema/chain chain/relink-plan.ts «The tails here name {} records ({}...): » names.length + 1 #1':
+    {
+      verdict: 'minted',
+      why: 'how many records the tails here name: a count',
+    },
+  "@mnema/chain chain/relink-plan.ts «The tails here name {} records ({}...): » oneLine([from, ...names].map((name) => name.slice(0, 12)).join('..., ')) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the heads of the record names the tails here carry, joined',
+    },
+  "@mnema/chain chain/relink-plan.ts «{} joins, with --into <record> (the record's name as \\`mnema verify\\` prints it, whole).» oneLine(tail) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, a positional nothing validates before the record answers about it',
+    },
+  '@mnema/core identity/membership.ts «this directory holds tails of {} records, {}, and no reading of the record reads either until it holds one (another-record), so the identity this checkout records cannot be found in it: the anchor is not what is wrong, and deleting it would only reach the refusal of writing into two records. Each tail of one record is relinked into the other by the key its id names, with \\`mnema tail relink <tail> --reason "<why>"\\` (\\`mnema tail list\\` spells the ids), or cut with \\`mnema tail prune\\`» oneLine(records) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the heads of the record names and the tail ids of each group, collapsed here, where the sentence takes it',
+    },
+  '@mnema/core identity/membership.ts «this directory holds tails of {} records, {}, and no reading of the record reads either until it holds one (another-record), so the identity this checkout records cannot be found in it: the anchor is not what is wrong, and deleting it would only reach the refusal of writing into two records. Each tail of one record is relinked into the other by the key its id names, with \\`mnema tail relink <tail> --reason "<why>"\\` (\\`mnema tail list\\` spells the ids), or cut with \\`mnema tail prune\\`» several.length #1':
+    {
+      verdict: 'minted',
+      why: 'how many records the tails here name: a count',
+    },
+  '@mnema/core workflow/prune-operations.ts «Tail {} holds the relink of {}, » oneLine(input.tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail `tail prune` was given, a positional nothing validates',
+    },
+  "@mnema/core workflow/prune-operations.ts «Tail {} holds the relink of {}, » unrelinked.map(oneLine).join(', ') #1":
+    {
+      verdict: 'collapsed',
+      why: 'the ids of tails on disk a relink names, each a directory name',
+    },
+  '@mnema/core workflow/prune-operations.ts «cut, its waiver first (\\`mnema tail prune {} --reason <why>\\`), » oneLine(unrelinked[0] as string) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the id of a tail on disk a relink names, in the command the refusal hands over',
+    },
+  '@mnema/core workflow/relink-operations.ts «Only the key that signed tail {} may relink it: it is » oneLine(relink.tail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the tail the caller named, found on disk under that name',
+    },
+  '@mnema/core workflow/relink-operations.ts «{}, and this machine holds no key with that fingerprint (neither » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the fingerprint the tail id begins with, a directory name read off the disk',
+    },
   '@mnema/chain chain/record-name.ts \u00ab{} relinks tail {} from record {}... into the same record: a relink moves a tail between two records\u00bb oneLine(relink.source.slice(0, 12)) #1':
     {
       verdict: 'collapsed',
@@ -2567,6 +2697,22 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
  * appears has to be declared, and a declaration whose template went away has to leave.
  */
 const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
+  '@mnema/chain chain/relink-plan.ts «{}#{}» entry.link.seq':
+    'half of where a relink sits, `<host>#<seq>`, a key of a `Map` that a refusal quotes through `oneLine`',
+  '@mnema/chain chain/relink-plan.ts «{}#{}» host':
+    'the other half of the same `Map` key, a tail id the disk named',
+  '@mnema/core identity/membership.ts «{}... ({})» group.name.slice(0, 12)':
+    'one group of the records a directory holds, joined into the list the refusal collapses whole',
+  "@mnema/core identity/membership.ts «{}... ({})» group.tails.join(', ')":
+    'the tail ids of that group, inside the same list, collapsed with it',
+  '@mnema/core workflow/relink-operations.ts «{} {}» fingerprint':
+    'a fingerprint read off a tail id, half of a `Map` key or of a stand-in tail id, never printed as a sentence',
+  '@mnema/core workflow/relink-operations.ts «{} {}» relink.into':
+    'the record a relink joins, the other half of a `Map` key that groups the relinks by writer, never printed',
+  "@mnema/core workflow/relink-operations.ts «{}-{}» '0'.repeat(32)":
+    'the installation half of a stand-in tail id, for a tail a writer opens and that no writer holds yet',
+  '@mnema/core workflow/relink-operations.ts «{}-{}» fingerprint':
+    'a fingerprint read off a tail id, half of a `Map` key or of a stand-in tail id, never printed as a sentence',
   '@mnema/core workflow/prune-operations.ts « --which {}» shellQuote(asked.which)':
     'the optional tail of the command a refusal hands over: the agent name, quoted for a shell, ' +
     'or nothing; a fragment of the command and not a sentence.',
@@ -2663,9 +2809,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(409);
-    expect(FOUND[0]?.sites.length).toBe(202);
-    expect(FOUND[1]?.sites.length).toBe(207);
+    expect(SITES.length).toBe(435);
+    expect(FOUND[0]?.sites.length).toBe(221);
+    expect(FOUND[1]?.sites.length).toBe(214);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -2715,11 +2861,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(276);
-    expect(count('minted')).toBe(102);
-    expect(count('composed')).toBe(31);
+    expect(count('collapsed')).toBe(298);
+    expect(count('minted')).toBe(105);
+    expect(count('composed')).toBe(32);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      276,
+      298,
     );
   });
 

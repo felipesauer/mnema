@@ -146,14 +146,24 @@ export type WriteUnder =
  *
  * Refused, whatever the writer's own tail names, where the other tails name two records; and
  * where its own tail names one and the other named tails another.
+ *
+ * `joins`, where the writer's caller decided the record (the host of a relink, FORMAT.md section
+ * 6.11, which is written to mend a directory of two records): that name, whatever the other tails
+ * name, unless the writer's own tail names another, which is refused as `foreign`.
  */
 export function recordToWriteUnder(
   tail: string,
   named: ReadonlyMap<string, string | undefined>,
   firsts: () => Iterable<{ readonly tail: string; readonly at: string }>,
   continues: () => string | undefined = () => undefined,
+  joins?: string,
 ): WriteUnder {
   const own = named.get(tail);
+  if (joins !== undefined) {
+    return own === undefined || own === joins
+      ? { name: joins }
+      : { refused: 'foreign', own, record: joins };
+  }
   const others = recordOf(new Map([...named].filter(([other]) => other !== tail)));
   if (others.state === 'several') return { refused: 'several', groups: others.groups };
   if (own !== undefined) {

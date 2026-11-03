@@ -103,7 +103,8 @@ $ mnema --help
 |
 | This machine:
 |   key             manage this machine's signing keys
-|   tail            authorize a cut in the record's own tails
+|   tail            act on the record's own tails: list them, authorize a cut,
+|                   relink one
 |   doctor          say how mnema is installed on this machine, and what to do
 |                   about each thing found (writes nothing unless you pass --fix)
 |   report          show, whole, what mnema would say about its own last internal
@@ -1218,17 +1219,19 @@ $ mnema key --help
 $ mnema tail --help
 | Usage: mnema tail [options] [command]
 |
-| authorize a cut in the record's own tails
+| act on the record's own tails: list them, authorize a cut, relink one
 |
 | Options:
-|   -h, --help              display help for command
+|   -h, --help                   display help for command
 |
 | Commands:
-|   list                    list the tails that hold events here, the ones a cut
-|                           can name, with the id `prune` takes
-|   prune [options] <tail>  record that one whole tail was authorized to be cut
-|                           (it removes nothing)
-|   help [command]          display help for command
+|   list                         list the tails that hold events here, the ones a
+|                                cut can name, with the id `prune` takes
+|   prune [options] <tail>       record that one whole tail was authorized to be
+|                                cut (it removes nothing)
+|   relink [options] <tails...>  relink whole tails of another record into the one
+|                                this directory names, each signed by its own key
+|   help [command]               display help for command
 
 ### mnema doctor --help
 $ mnema doctor --help
@@ -2745,6 +2748,41 @@ $ mnema tail prune --help
 |                               cannot write, and the cut's reason starts with
 |                               them
 |   -h, --help                  display help for command
+|
+| What recording means here:
+|   Permanent: mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema tail relink --help
+$ mnema tail relink --help
+| Usage: mnema tail relink [options] <tails...>
+|
+| relink whole tails of another record into the one this directory names, each
+| signed by its own key
+|
+| Arguments:
+|   tails            the tails to relink, as `tail list` spells them:
+|                    <fingerprint>-<installation>
+|
+| Options:
+|   --into <record>  the record they join, as `mnema verify` names it; omitted,
+|                    the one other record the tails here name
+|   --reason <text>  why they are relinked (recorded in the fact)
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema: omit it when you are acting directly.
+|                    It names the executor only: a relink an agent key signs names
+|                    the agent the record enrolled that key as
+|   -h, --help       display help for command
+|
+| Each relink is signed by the key the tail id names, which this machine must hold, and
+| written in a tail of that key that names the record joined, or in a new one born naming it,
+| checkpointed at once. Only a key the record joined took in counts: the founder of its genesis
+| identity, or a key that identity enrolled. A relinked tail is frozen at its head.
+| Nothing is written where the readers would not count a relink.
 |
 | What recording means here:
 |   Permanent: mnema is append-only and nothing deletes a fact. A public record
