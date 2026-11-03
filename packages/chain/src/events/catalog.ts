@@ -818,6 +818,46 @@ export interface TailPrunedV1 extends Envelope {
 }
 
 /**
+ * A tail's owner moved it into another record: the relink ADR-134 allows and ADR-155 shapes
+ * (FORMAT.md section 6.11).
+ *
+ * A tail is named by its tail proof, signed once at birth and never rewritten, so no signed act
+ * of the tail itself can move it from the record it was born in. This event is that act, written
+ * ELSEWHERE: in a tail of the same key that already names the record it joins, covered by a
+ * verified checkpoint of that tail. It binds the relinked tail whole, by its head hash and its
+ * count, as `tail.pruned` binds the tail it cuts, and the relinked tail is frozen there: an entry
+ * of it after `throughHash` is refused.
+ *
+ * IT COUNTS ONLY WHERE THE READERS SAY SO, and that is the rule's whole weight: unlike a waiver,
+ * which is a census note, a relink changes the record a tail is read in, so the readers take it
+ * only when it is covered by a checkpoint, signed by the key the relinked tail's id names, hosted
+ * by a tail that names `into` by its own artifacts, and that key is a member not revoked of an
+ * identity of `into` at the relink's point (`relinkedNaming`, `chain/record-name.ts`).
+ */
+export interface TailRelinkedV1 extends Envelope {
+  readonly kind: 'tail.relinked';
+  readonly v: 1;
+  /**
+   * Subject is the ANCHOR the relinked tail spoke for, as `tail.pruned`'s is: the `who` of that
+   * tail's last event.
+   */
+  readonly payload: {
+    /** The tail id being relinked: `<fingerprint>-<installationId>`. */
+    readonly tail: string;
+    /** The record that tail names by its own artifacts: what it is relinked from. */
+    readonly from: string;
+    /** The record it joins: the one the tail this event lives on names. */
+    readonly into: string;
+    /** The hash of that tail's last entry: where it is frozen. */
+    readonly throughHash: string;
+    /** How many events that tail holds. */
+    readonly eventCount: number;
+    /** Why it was relinked, as free text. */
+    readonly reason: string;
+  };
+}
+
+/**
  * A channel of this product was switched: someone turned OFF, or back ON, one of the
  * places mnema puts the record in front of a model without being asked.
  *
@@ -1321,6 +1361,7 @@ export type CatalogEvent =
   | SkillTransitionedV1
   | SkillConsultedV1
   | TailPrunedV1
+  | TailRelinkedV1
   | ChannelSwitchedV1
   | ChannelServedV1
   | ChannelAskedV1
@@ -1365,6 +1406,7 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'skill.transitioned': 1,
   'skill.consulted': 1,
   'tail.pruned': 1,
+  'tail.relinked': 1,
   'channel.switched': 1,
   'channel.served': 1,
   'channel.asked': 1,

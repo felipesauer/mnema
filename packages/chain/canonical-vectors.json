@@ -401,6 +401,27 @@
       "sha256": "dca90c05b50e224d143a425a98dd396e30bebca1991709f282a72766fe1885d7"
     },
     {
+      "name": "tail.relinked (a whole tail, by its own key, into the record it joins)",
+      "kind": "tail.relinked",
+      "event": {
+        "v": 1,
+        "kind": "tail.relinked",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "payload": {
+          "tail": "2222222222222222222222222222222222222222222222222222222222222222-55555555555555555555555555555555",
+          "from": "6666666666666666666666666666666666666666666666666666666666666666",
+          "into": "7777777777777777777777777777777777777777777777777777777777777777",
+          "throughHash": "4444444444444444444444444444444444444444444444444444444444444444",
+          "eventCount": 402,
+          "reason": "two inits on two branches, joined by a merge"
+        }
+      },
+      "sha256": "affc892d08624bcb8538021c884cd98e1a15b9a1c98f435590be2d60491598e1"
+    },
+    {
       "name": "channel.switched (off, with a reason)",
       "kind": "channel.switched",
       "event": {
@@ -741,7 +762,7 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "c87196ea4f715594eadcf089393a0d7d97c16a6253280c33e966505af0dc5cd8"
+    "contentRootOverAllVectors": "a827adaa28e739a941a592efc04ac2c02fe228867069a940179719188d814d61"
   },
   "signedMessages": {
     "key": {

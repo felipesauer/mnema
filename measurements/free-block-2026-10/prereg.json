@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "revision": 5,
+  "revision": 6,
   "supersedes_revision": {
-    "sha256": "3ce3d259f1bc9fe3fd0e1f804f724594e2be9a5f67ad420fe670655c69fe4edb",
-    "kit_commit": "6597be030d462e05fbdc238dd637015795a6324b",
-    "committed_as": "283a7d5",
-    "published": "measurements/free-block-2026-10/prereg.json in felipesauer/mnema (#1081), cited by ADR-138",
-    "note": "revision 4 was the manifest ADR-138 accepted and #1081 published. Revision 5 is the eve catalog snapshot its snapshot_policy asked for, taken on 30 October 2026 at 23:13:53Z before any counted session: the primary and the reserve project to the same sha256 as on 29 October (the same model, provider, context and price), so only the catalog file, its hash and the kit commit change. Nothing counted has run under any revision: no counted session."
+    "sha256": "a3cbad181e118ad832e4881f0e0c0c580d00550600da72c3b7dde7ec413a0cd3",
+    "kit_commit": "eb38f2c7a2bb154757fc9377c3928e4dd98a54a8",
+    "committed_as": "885718f",
+    "published": "measurements/free-block-2026-10/prereg.json in felipesauer/mnema (#1085), cited by ADR-150",
+    "note": "revision 5 was the manifest ADR-150 cited and #1085 published. Revision 6 is the maintainer's decision of 2 November 2026, taken before this revision: the round uses the free quota of each UTC day with TWO counted sessions a day instead of one, and a counted session sends at most 24 requests (it was 50, the whole day). A counted session starts when the day's remaining (the larger of the account's counter and the ledger's units) is at least 24 times the cost of a request of the host; the relay is given a budget of 24 times that cost, not the day; a cut session is redone from scratch once per host, the same day if it still fits, else the next day, after the host scheduled for that day; a host that needs more than 24 requests goes as \"did not finish within the session's cap\" with the requests read, never \"silent\". The model, provider, hosts, prompt, labels, reader, time limits and the edit check's stop at 40 do not change. Two sessions ran under revision 5 and stand as they are: the Qwen Code session (13 requests, within the new cap) and the Copilot CLI session that was cut (discarded, redone under this revision)."
   },
   "earlier_revisions": [
     {
@@ -27,7 +27,7 @@
   ],
   "title": "Pre-registration of the free block of the comparison after 0.1.4",
   "decision": "ADR-119 (01a187e7-3f61-7000-8c52-5babaec74f0d), which supersedes ADR-106",
-  "frozen_at": "2026-10-30T23:15:29.908Z",
+  "frozen_at": "2026-11-02T22:07:33.704Z",
   "what_this_is": "The manifest the public pre-registration cites by its sha256. Anything below changed after the first counted session is a new decision that supersedes the earlier one, with its reason; the result cites the hash it ran under.",
   "rulings_of_the_maintainer": {
     "source": "observation 01a1897f-99c4-7000-8339-195800c9f316 on ADR-119, 29 October 2026",
@@ -231,11 +231,11 @@
     "plugin_tree_sha256": "0449de9ffb847d8bfb40f1fadf1df4bf6974690da5f6b310047104d3bc3a6ecc"
   },
   "kit": {
-    "commit": "eb38f2c7a2bb154757fc9377c3928e4dd98a54a8",
-    "tree": "caa729059dda7fd38006b0309d6fff650988380e",
+    "commit": "98abae8",
+    "tree": "ac4ad69ec3253c9ea4a1f0073ed7bf7045b097e1",
     "files_sha256": {
       ".gitignore": "41d0be9f3bdbd9835aac1a1cacca2542a2388ba03638d44f8192cbca6a1cf758",
-      "README.md": "c1a2216d633ddec3269c93ba57614089a23be4e9287f8b7a79cff72cc5698340",
+      "README.md": "75e295ff613fcaa828562e6d5f840e3f45c2920b126f87a18516e90bb93e1a53",
       "analysis/compare.mjs": "7826597840069f6f24caa7a675e8c54e8f283698ea62060d9948cd480fc05834",
       "analysis/labels.mjs": "866194c5f61615844b12e34655eec803e918e33b0d467d3e5fc2eb767d2865f8",
       "analysis/labels.test.mjs": "6b8bd7701da61dbf5bc50da57f642d1a091598758cbdb54922659a2c03ae05a0",
@@ -259,7 +259,7 @@
       "editcheck/edit-check.mjs": "db62f30b73ac0e65b1f2e84085c2b2304ccab133c63c492de146b11d8a805058",
       "editcheck/edit-check.test.mjs": "75495652f26271b872a6e7c873c3f82ac826f3729f3c59c260127c39a3c6315f",
       "freeze/make-freeze.mjs": "b8a351082f76b4793e37f17aa2aebe127582b27c719c261e8d0055910eed353d",
-      "freeze/make-prereg.mjs": "1249d5e2337f105800ed5278b9c5979615d3365ebe763372421bb8001d347598",
+      "freeze/make-prereg.mjs": "021e19aa7fe0bc7bc6cb4b40f5c9b7fcd14fcd1b8d70f02ee58b3b39af4d3476",
       "freeze/verify-prereg.mjs": "2abee4cbef516040cec61ee33aa9eac4a6f7fc8f23f2a3064d804c4439f9a0f6",
       "hosts/adapters.mjs": "6927f6f042600d25c0cef446ff6b8ac07ed8ebba2c3bdada9c246e8709823722",
       "hosts/codex-trust.mjs": "3c02995b3072e4f3f114ff3215d69c59d84c09e8c1c6588f2f879c6ddc7b257e",
@@ -272,13 +272,13 @@
       "lib/run-common.mjs": "d21ed2e4e6d7ef676331a61d597d6a826c70f5b9a38a80a8ff8c418feb1a7eab",
       "lib/scan-for-key.mjs": "eded4bf05f226c7e83f7c6590286fdbfaaaedd8eee2cf52b009e971fdf56fe86",
       "measured/fake-upstream.mjs": "d133c0e3564da8a44bc581405e6af4433df316c5640445f9ee223b8de7015d7b",
-      "measured/protocol.mjs": "5a248d07bfa9388bdc6fc80c553f31a90d12843fe7d8d314d15fa2999e53c0c6",
-      "measured/protocol.test.mjs": "b5456350862646bc41fb4858a098ffd5da8cb60a1145170e00d6b3519497d15f",
+      "measured/protocol.mjs": "0f3ecd3330dfccf14ea97277b631a74640475c35ed26b44f213fd6fbe00a92ea",
+      "measured/protocol.test.mjs": "896b87602dacd20983bcbc8f4f2241282406a6c92679f72b7936d789a06cac24",
       "measured/rejudge.mjs": "74233066135ea83c46f8909499ee8fe689d8e0cd7c7657d1f794ecaae1089410",
       "measured/rejudge.test.mjs": "aa7fb31ac108e02815165d599a8b59e61dbc3db7749870057a8279c12a2d6804",
-      "measured/run-session.mjs": "04a6cc55a806df8cdfd8fa45bb5a48e65945c5b45b096a98e2204e648635faa5",
-      "measured/session.mjs": "164cb675a8b918c025f386a95be2b5e4dbe52617d7825e8db0d2a29f4bbd3eb8",
-      "measured/session.test.mjs": "7f0ac0fa16fa707c6cfa22ee3575e1a3d0e285e521272616ce8372b409019fc2",
+      "measured/run-session.mjs": "1d477b85b91fa48154adffd3df3e8ebd0ca704ba8f2eeba4fd4bf96c8084489e",
+      "measured/session.mjs": "ec9754690056c988167b5c07b1e866c94858e8dab131fa560b6231e2ef3871d5",
+      "measured/session.test.mjs": "3d671d816fc9294de8ba101b7816110531d96115cee56cd15e3ee18ff1e06dd1",
       "measured/summarize-dry.mjs": "8c77e4ce9020a42fe0187e22a398b6aeb3ccf20093c8938591a2f4896bb70a33",
       "measured/summarize-live.mjs": "e4cbacd9991c7e8ec251c9e4e8b86fcc3f585405643d7f9bbed684442488cb48",
       "measured/summarize-step4.mjs": "ddc32dbe6ebadb5914307d5ee8113ea7ebe0604ea6b7267949a43a844459e550",
@@ -298,7 +298,7 @@
       "seed/parity/provenance.json": "8efd74100772f1e1861cc3a3b912f0ee713438d676d7ed28a10519667963ffb5"
     },
     "node": "v24.22.1",
-    "freeze_json_sha256": "0f915d03eef8b9b048b2a72fd88e814195b47849f7c4e5c1461d6c8c323c4476",
+    "freeze_json_sha256": "7b4115ad94e02db3395bb5d3f6e5aad1d3ea525514d9b58da1ece657e20426f0",
     "kit_json_sha256": "63bed1abdf69a2b7df51d1a9a9fd2b80069c875c5e2a005b3379fc3aa6a9402e"
   },
   "measured_session_repository": {
@@ -498,8 +498,10 @@
       "opencode",
       "codex"
     ],
-    "one_counted_session_per_utc_day": true,
-    "reserve_days": "two (design.md 4.2: D7 and D8), only to redo a cut session, in the order they were cut",
+    "counted_sessions_per_utc_day": 2,
+    "session_cap_requests": 24,
+    "session_starts_when": "the day's remaining, the larger of the account's counter and the ledger's units, is at least 24 times the cost of one request of the host (measured/protocol.mjs SESSION_MAX_REQUESTS; measured/session.mjs)",
+    "redo_of_a_cut_session": "a cut session is redone from scratch at most once per host: the same UTC day if the day still holds the room above, else the next day, after the host scheduled for that day; no day is held in reserve",
     "precondition_the_arm_is_what_it_says": [
       "the host's capability check was passed (results/<host>/verdict.json, Codex: results/codex-hooks-trusted), else 'incapable in this host': no counted session",
       "the host's edit check says 'edits' (results/<host>-edit-check/editcheck.json; Codex: results/codex-edit-check-no-web-search/editcheck.json, the one of its web search configuration), else the host is 'incapable of editing': no counted session",
@@ -576,7 +578,7 @@
     "how_each_session_ends": {
       "exited": "the session is read",
       "timeout": "did_not_finish: the wall-clock limit of 30 minutes was reached",
-      "budget": "did_not_finish: the relay's budget (the day's requests) was spent",
+      "budget": "did_not_finish: the relay's budget (the session's cap of requests) was spent",
       "daily_limit": "did_not_finish: the account answered that the day's limit was reached",
       "invalid": "discarded: the model or provider served differs from the capability check's baseline",
       "cut": "discarded: a request was cut (429, 402, 5xx or an error event in the stream)",
@@ -587,7 +589,7 @@
       "the wall clock limit of 30 minutes is reached (the maintainer's ruling): the session did not finish; the host process group is killed",
       "the relay marks the session invalid (the model or the provider served differs from the capability check's baseline): the host is killed and the session is discarded",
       "the relay records a cut (a 429, a 402, a 5xx, a stream event with finish_reason \"error\" or an error object): the host is killed and the session is discarded whole, with no partial reading, even if the host would have gone on; the number of requests read so far is kept",
-      "the relay's budget is spent (the day's 50 units divided by what one request of the host costs: 50 requests, 25 for a host at 2 each), or the account answers 429 with the day's limit (free-models-per-day): the session did not finish within the daily quota",
+      "the relay's budget is spent (the session's cap of 24 requests: the relay is given 24 times what one request of the host costs, not the day), or the account answers 429 with the day's limit (free-models-per-day): the session did not finish within the session's cap (or the day's limit)",
       "a session must start at least 35 minutes before 00:00 UTC and end before it: the counter resets at 00:00 UTC and a session that crosses it is discarded"
     ],
     "discard_rules": [
@@ -595,15 +597,15 @@
       "cut_by_quota_mid_session: a 429 or a 402 or a 5xx or an error event in the stream (an isolated 429 of the per-minute limit counts too, conservatively)",
       "arm_not_what_it_says: any precondition above fails (then the session does not start and is not counted)",
       "account_not_expected: the key is not on the free tier",
-      "daily_remaining_below_threshold_at_start: the account's remaining is below its limit (below 50 of 50)"
+      "daily_remaining_below_threshold_at_start: the day's remaining is below 24 times the cost of a request of the host (below 24 of 50 at 1 each)"
     ],
-    "one_retry_per_host": "a discarded session is redone FROM THE START on a reserve day, at most once per host, its cost reported apart; if the second also fails, or a session would need more than 50 requests, the host goes as \"did not finish within the daily quota\" with the number of requests read, never as \"silent\"; nothing is redone after the last reserve day, and the host goes as \"did not finish\""
+    "one_retry_per_host": "a discarded session is redone FROM THE START, at most once per host, the same UTC day if the day still holds the room to start (the rule above), else the next day after the host scheduled for that day, its cost reported apart; if the second also fails, or a session would need more than 24 requests, the host goes as \"did not finish within the session's cap\" with the number of requests read, never as \"silent\""
   },
   "quota": {
     "service": "OpenRouter free models: 50 requests a day for the account, summed over every free model, 20 a minute; resets at 00:00 UTC (21:00 in Brasilia)",
-    "floor": "a counted session starts only if the account's remaining equals its limit: the whole UTC day, 50 of 50 (design.md: min(70, limit) with limit 50). The day is counted by the larger of the account's counter and the kit's ledger, because the account's counter lags by minutes and has been seen to run ahead of the ledger",
+    "floor": "a counted session starts only if the day's remaining is at least 24 times the cost of one request of the host (24 of 50 at 1 each; two sessions fit a UTC day). The day is counted by the larger of the account's counter and the kit's ledger, because the account's counter lags by minutes and has been seen to run ahead of the ledger",
     "read": "GET /api/v1/key, data.free_model_daily_requests {used, limit, remaining} (the label of the key is never printed); before the session and after it; the difference is the real number of requests the host spent and goes to the result",
-    "capability_check_stop": "the capability checks stop at 40 used (kit.json daily.stop_at_used); the counted sessions have no such stop, only the 50",
+    "capability_check_stop": "the capability checks stop at 40 used (kit.json daily.stop_at_used); the counted sessions have no such stop, only the cap of 24 requests and the day's 50",
     "observation": "on 29 October the account's counter moved by 8 for each of the two Codex capability runs of 4 forwarded requests, and by 1 for each request of the other three hosts and of the single-request probes. MEASURED on 30 October by the cost probe (live_checks): a Codex request costs 2 of the day (three replays of Codex's own request bodies, each moved the counter by exactly 2, and the live Codex edit check spent 8 for 4 requests); the other three hosts cost 1 each (4, 4 and 3 for 4, 4 and 3 requests). The runner counts a host at its measured cost: the budget of the relay is the day's units divided by it, and the day is counted by the larger of the account's counter and the ledger's units (each ledger line says what its request cost: units). MEASURED again on 30 October with Codex configured without its web_search tool (codex_web_search_test): three requests moved the counter by 1 each and its edit check spent 5 units for 5 requests, so Codex without web search costs 1 like the others"
   },
   "labels": {
@@ -623,7 +625,7 @@
     "cite_pattern": "(?i)(parity|both packages|the php (package|port|counterpart|side|version)|php (counterpart|port|equivalent)|mirror|same behaviou?r|keep(s|ing)? .{0,30}in sync)",
     "outside_the_three": {
       "incapable": "the capability check was not passed in that host: \"model incapable in this host\", never \"host disobedient\"; no counted session",
-      "did_not_finish": "a counted session that reached no final answer under the stop conditions (wall clock, second cut, the day's quota): \"did not finish within the daily quota (or time)\", with the number of requests read; never \"silent\""
+      "did_not_finish": "a counted session that reached no final answer under the stop conditions (wall clock, second cut, the cap of requests, the day's quota): \"did not finish within the session's cap (or the day's quota, or time)\", with the number of requests read; never \"silent\""
     },
     "two_numbers_per_rule": {
       "violation": "CODE: not obeyed in the final state when the governed edit was made",
@@ -638,17 +640,17 @@
   "runner": {
     "what": "the runner of ONE session of ONE host, a counted session or an edit check (measured/run-session.mjs, over measured/session.mjs): the pinned host binary in a throwaway HOME and a working directory outside any checkout (a fresh synthetic repository), configured for OpenRouter through the relay, the quota read before and after, the stop and discard rules of session_protocol",
     "files": {
-      "measured/protocol.mjs": "5a248d07bfa9388bdc6fc80c553f31a90d12843fe7d8d314d15fa2999e53c0c6",
-      "measured/session.mjs": "164cb675a8b918c025f386a95be2b5e4dbe52617d7825e8db0d2a29f4bbd3eb8",
-      "measured/run-session.mjs": "04a6cc55a806df8cdfd8fa45bb5a48e65945c5b45b096a98e2204e648635faa5",
+      "measured/protocol.mjs": "0f3ecd3330dfccf14ea97277b631a74640475c35ed26b44f213fd6fbe00a92ea",
+      "measured/session.mjs": "ec9754690056c988167b5c07b1e866c94858e8dab131fa560b6231e2ef3871d5",
+      "measured/run-session.mjs": "1d477b85b91fa48154adffd3df3e8ebd0ca704ba8f2eeba4fd4bf96c8084489e",
       "measured/fake-upstream.mjs": "d133c0e3564da8a44bc581405e6af4433df316c5640445f9ee223b8de7015d7b",
       "measured/summarize-dry.mjs": "8c77e4ce9020a42fe0187e22a398b6aeb3ccf20093c8938591a2f4896bb70a33",
       "measured/summarize-live.mjs": "e4cbacd9991c7e8ec251c9e4e8b86fcc3f585405643d7f9bbed684442488cb48",
       "measured/summarize-step4.mjs": "ddc32dbe6ebadb5914307d5ee8113ea7ebe0604ea6b7267949a43a844459e550",
       "measured/test-support/stub-host.mjs": "42bfcf3ebaf6677e179fa548e326fc1d29ddea80d294a3bd8f345634cc9a9d7c",
       "measured/test-support/commands.mjs": "a0c7feb471be3476b077eae293bcedf7b68a0733e118516f1a051126858e0974",
-      "measured/protocol.test.mjs": "b5456350862646bc41fb4858a098ffd5da8cb60a1145170e00d6b3519497d15f",
-      "measured/session.test.mjs": "7f0ac0fa16fa707c6cfa22ee3575e1a3d0e285e521272616ce8372b409019fc2",
+      "measured/protocol.test.mjs": "896b87602dacd20983bcbc8f4f2241282406a6c92679f72b7936d789a06cac24",
+      "measured/session.test.mjs": "3d671d816fc9294de8ba101b7816110531d96115cee56cd15e3ee18ff1e06dd1",
       "relay/relay.mjs": "42cfcc47362329b54c1431ebd6c5df0badb252e6228dd37af7a88b98c520e5f0",
       "lib/quota.mjs": "bb09578aa68ca5fdde7b067c8d2ecc0bf08d01bdcd26bd757764d806809017b6",
       "lib/scan-for-key.mjs": "eded4bf05f226c7e83f7c6590286fdbfaaaedd8eee2cf52b009e971fdf56fe86",
@@ -659,7 +661,7 @@
     "key": "the real key is read from ~/.config/mnema-ab/openrouter.key by the relay and the quota reader at the moment of each request and held only inside that call: never an argument, a variable, a file, a log or a commit; the host is handed a made-up key and an environment built from nothing (HOME, PATH, LANG and git's own); after every run the whole run folder and the session folder are scanned for the key, in booleans",
     "dry_mode": "the SAME code with the endpoints changed (assertApi): the base is the loopback, the key file a made-up one, the ledger the run's own; a dry run cannot open the real key file or write the real ledger, and the tests run with an empty HOME to prove it",
     "live_refuses_unless": [
-      "a counted session: the account's remaining equals its limit (50 of 50) AND the kit's ledger holds none of the day",
+      "a counted session: the day's remaining (the larger of the account's counter and the ledger's units) is at least 24 times the cost of one request of the host",
       "an edit check: the day is under the stop at 40, and at least one request at the host's measured cost fits under it (the check sends at most 6 requests: 6 units for a host at 1 each, 12 for a host at 2)"
     ],
     "arm_check_before_the_host_runs": [
@@ -905,6 +907,11 @@
     "ran_under_kit_commit": "efe115817f4d40df0c44b973a8cf1db58cd59442",
     "code_files_changed_since_the_runs": [
       "README.md",
+      "measured/protocol.mjs",
+      "measured/protocol.test.mjs",
+      "measured/run-session.mjs",
+      "measured/session.mjs",
+      "measured/session.test.mjs",
       "measured/summarize-step4.mjs"
     ],
     "why_they_changed": "after the runs only the summary script of this step, the README and (outside this list) the freeze scripts; the runner, the adapters, the relay, the probe and the analysis are byte for byte what the runs ran under",
@@ -944,7 +951,7 @@
       "results/codex-edit-check-no-web-search/summary.json": "00b89e14389df0e9a8bb9d15f05cf2801d70fb287eb9223a580ba334fceb8a40",
       "results/codex-edit-check-no-web-search/wire.jsonl.gz": "0a644a33a884a21a91cfac1b647f45eafea81e374a0eed7ae0d297be1a0407d4",
       "results/codex-edit-check-no-web-search.summary.json": "00b89e14389df0e9a8bb9d15f05cf2801d70fb287eb9223a580ba334fceb8a40",
-      "results/live-checks/summary-step4.json": "bf415187aacecec22ccdf87e77a207ca0facbbc5a8263cbdf3d4b85e90c18158"
+      "results/live-checks/summary-step4.json": "6a13f702413a937fb7e4320f8e0ab1b5bdf090de4bcadc7c5b427ebea7a4d9bf"
     },
     "ledger_note": "the three ledger lines of the probe say units: 2 (the cost it was taken at until it was measured; it was 1), so the kit's ledger reads the day as 36 where the account says 33; the account's counter is the truth and the larger of the two is used, which can only make a run refuse early",
     "spent_in_the_live_part": "no counted session; the day ended this part at 33 of 50 on the account's counter (stop at 40): 3 units for the probe and 5 for the edit check"
@@ -952,12 +959,10 @@
   "dry_runs": {
     "what": "the runner, the edit check and the analysis were run with the REAL host binaries (pinned) against a fake OpenRouter on the loopback and a scripted model: no key, no OpenRouter request, nothing spent. They prove the plumbing (the argv of each host, the throwaway HOME, the relay, the sandbox of Codex letting an edit through, the reading of the finished session), not what any model does",
     "file": "results/dry-runs/summary.json",
-    "sha256": "38a89dc74471f37fa53e206b32c118c78b36c96ac28c7430c2dbd26e3082acd3",
-    "kit_commit": "6597be030d462e05fbdc238dd637015795a6324b",
+    "sha256": "26e35bf8e8c8ebd1b6446e6006d62e6d7dc94da212d27abb100126e10e39ee5a",
+    "kit_commit": "98abae801351c92f9b95ec5c48e9e347ff114ce9",
     "kit_tree_clean": true,
-    "files_of_the_frozen_commit_that_differ_from_the_dry_run_commit": [
-      "freeze/make-prereg.mjs"
-    ],
+    "files_of_the_frozen_commit_that_differ_from_the_dry_run_commit": [],
     "that_means": "the runner, the analysis, the edit check, the probe and the host adapters of the dry runs are byte for byte those of the frozen commit; only the freeze scripts (which make and check this manifest) may differ",
     "runs": 12,
     "codex_cost_probe_dry": "results/dry-runs/codex-cost-dry.json",

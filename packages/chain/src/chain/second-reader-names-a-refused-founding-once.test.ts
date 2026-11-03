@@ -638,7 +638,12 @@ pairs = sys.argv[1:]
 print(json.dumps([{"damaged": read(pairs[i]), "oracle": read(pairs[i + 1])} for i in range(0, len(pairs), 2)]))
 `;
 
-  /** Every event a record's segments hold, by the place a 6.2 finding names it. */
+  /**
+   * Every event a record's segments hold, by its tail and seq (`<tail>#<seq>`). A 6.2 finding names
+   * its place by the first twenty characters of the tail id, which two tails of one key share (a
+   * relink is written in another tail of the key it moves), so a finding is matched to the damaged
+   * tail by that prefix and its own seq, never by the place alone.
+   */
   function eventsByPlace(root: string): Map<string, Record<string, unknown>> {
     const byPlace = new Map<string, Record<string, unknown>>();
     for (const tail of tailsWithSegments(root)) {
@@ -651,7 +656,7 @@ print(json.dumps([{"damaged": read(pairs[i]), "oracle": read(pairs[i + 1])} for 
               event: Record<string, unknown>;
               link: { seq: number };
             };
-            byPlace.set(`${tail.slice(0, 20)}... seq ${link.seq}`, event);
+            byPlace.set(`${tail}#${link.seq}`, event);
           } catch {
             // A line that is not an entry names no event.
           }
@@ -828,14 +833,14 @@ print(json.dumps([{"damaged": read(pairs[i]), "oracle": read(pairs[i + 1])} for 
                     (e.payload as { foundingFp?: unknown }).foundingFp === key),
               );
               const ownCauses = expected.folds.filter((finding) => {
-                const place = /^FAIL 6\.2 (\S+\.\.\. seq \d+): (.*)$/.exec(finding);
-                if (place === null) return false;
-                const event = events.get(place[1] as string);
+                const place = /^FAIL 6\.2 (\S+)\.\.\. seq (\d+): (.*)$/.exec(finding);
+                if (place === null || place[1] !== tail.slice(0, 20)) return false;
+                const event = events.get(`${tail}#${place[2]}`);
                 return (
                   event !== undefined &&
                   event.signerFp === key &&
                   event.who === anchor &&
-                  /signed by a key not valid for|is not a key enrolled for/.test(place[2] as string)
+                  /signed by a key not valid for|is not a key enrolled for/.test(place[3] as string)
                 );
               });
               const accounted = line === 1 && !founded ? ownCauses : [];

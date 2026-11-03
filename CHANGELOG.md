@@ -10,6 +10,31 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **Both readers read a tail its owner relinked into another record (`tail.relinked`, `FORMAT.md` section 6.11).** A
+  tail is named by its tail proof, signed once at birth, so nothing signed in it could move it to another record, and
+  a directory joining two (two `mnema init` on two branches and a merge, or a genesis cut on one of them) stayed
+  `another-record` for good. The new kind, `tail.relinked` v1 `{tail, from, into, throughHash, eventCount, reason}`, is
+  written in a tail of the same key that already names the record joined, and the relinked tail is frozen at its head.
+  Both readers apply one rule, in this order, and refuse by the same names: covered by a verified checkpoint of its tail
+  (else the census note `relink-uncovered`, and it counts for nothing), signed by the key the relinked tail's id names
+  (`relink-not-the-owner`), once per tail (`relink-conflict`), from a tail not itself relinked
+  (`relink-hosted-by-a-relinked-tail`) that names the record joined (`relink-into-mismatch`) and is not the one it
+  leaves (`relink-into-its-own-record`), of a tail that names `from` (`relink-from-mismatch`; a tail not here is the note `relinked-tail-absent`) and ends at the head and count
+  the relink froze (`relinked-tail-grew`, `relink-head-mismatch`), and by a key holding a membership the record gave
+  it: the founding of the record's genesis identity, or an enrolment rooted in it; a key that founded its own identity
+  in the record does not count (`relink-not-a-member`). So, for now, only the founder's keys relink: a second person
+  writes again in the record, or their tail is cut, and after a cut of the genesis no relink counts. A tail holding a
+  line a reader refuses holds no relink in either reader. A relink that counts is the census note `relinked-tail` and a
+  clause of the verdict, and the namer the surfaces ask reads such a directory as `verify` does. The rule is
+  `relinkedNaming` (`packages/chain/src/chain/record-name.ts`) and its mirror in the second reader; `mutate.py` builds
+  a record for every refusal and for the two that pass. No command writes a relink yet, and the writer, `doctor` and
+  `verify --since` read tails by their own artifacts as before. A version from before reads such a line as a kind it
+  does not read and refuses it, naming its version. The published vectors are 40: one for the kind, and the content
+  root over all of them moves from `c87196ea4f715594eadcf089393a0d7d97c16a6253280c33e966505af0dc5cd8` to
+  `a827adaa28e739a941a592efc04ac2c02fe228867069a940179719188d814d61`; the other three aggregate digests do not move.
+
 ### Changed
 
 - **Every page of the site says what it is, and the places a stranger first reads point at the site.** The site's

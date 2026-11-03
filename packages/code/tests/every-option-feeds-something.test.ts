@@ -231,14 +231,25 @@ function reachableFrom(seeds: Iterable<string>): Set<string> {
 }
 
 /** Where a name is read among those functions: `x.name`, `{ name } =`, or `[name]`. */
-function readSites(names: ReadonlySet<string>, key: string): string[] {
-  const access = new RegExp(`\\.\\s*${key}\\b`);
+/**
+ * Whether `body` reads the key `key`: a property access, a destructuring or an index. A call of a
+ * built-in's static method is not a read of an option's value: `Buffer.from(…)` and `Array.from(…)`
+ * name `from` and read nothing a flag was handed, and they were the only reads of `from` the
+ * window option `search --from` met once the namer of the surfaces reached the key reader
+ * (`keys.ts`, `Buffer.from`).
+ */
+export function readsKey(body: string, key: string): boolean {
+  const access = new RegExp(`(?<!\\b(?:Buffer|Array)\\s*)\\.\\s*${key}\\b`);
   const destructured = new RegExp(`\\{[^{}]*\\b${key}\\b[^{}]*\\}\\s*=`);
   const indexed = new RegExp(`\\[\\s*['"\`]?${key}\\b`);
+  return access.test(body) || destructured.test(body) || indexed.test(body);
+}
+
+function readSites(names: ReadonlySet<string>, key: string): string[] {
   const sites: string[] = [];
   for (const name of names) {
     for (const { path, body } of BODIES.get(name) ?? []) {
-      if (access.test(body) || destructured.test(body) || indexed.test(body)) {
+      if (readsKey(body, key)) {
         sites.push(`${name} (${path})`);
       }
     }
@@ -686,6 +697,14 @@ describe('every option the CLI declares feeds something', () => {
     expect(BODIES.get('completeWitness')?.[0]?.body.length ?? 0).toBeGreaterThan(300);
     // The annotation case, which cost this instrument a body until it was handled.
     expect(BODIES.get('heldChains')?.[0]?.body ?? '').toContain('resolveTrees');
+  });
+
+  it('reads an access, a destructuring and an index as a read, and a built-in’s static call as none', () => {
+    expect(readsKey('return opts.from;', 'from')).toBe(true);
+    expect(readsKey('const { from } = window;', 'from')).toBe(true);
+    expect(readsKey("return window['from'];", 'from')).toBe(true);
+    expect(readsKey("return Buffer.from(body, 'base64');", 'from')).toBe(false);
+    expect(readsKey('return Array.from(rows);', 'from')).toBe(false);
   });
 
   it('follows the value where the NAME changes, which is the point', () => {

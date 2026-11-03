@@ -128,6 +128,21 @@ const upcasters = catalogUpcasters();
 /** Every kind the catalog can hold: the enumeration both axes are measured against. */
 const CATALOG = Object.keys(LATEST_VERSION) as EventKind[];
 
+/**
+ * THE KINDS NO OPERATION OF THIS PACKAGE WRITES, each with why, and nothing else. A kind here has
+ * no write for a field to slip past, so it is driven by nothing below; its classification is
+ * still asked (the first describe walks {@link CATALOG}, these included). The list is asserted
+ * whole, so the day an operation writes one of them it fails until its driver is written and the
+ * kind leaves the list.
+ */
+const NOT_WRITTEN: { readonly [K in EventKind]?: string } = {
+  // ADR-155: the readers read a relink first; the verb that writes one comes after them.
+  'tail.relinked': 'the readers and the namer read it; no operation writes one yet',
+};
+
+/** The kinds an operation of this package writes: every one is driven onto the chain. */
+const DRIVEN = CATALOG.filter((kind) => NOT_WRITTEN[kind] === undefined);
+
 /** The value a poisoned field is asked to carry. It must never be found. */
 const SECRET = 'AKIAIOSFODNN7EXAMPLE';
 
@@ -222,7 +237,7 @@ function landed<T extends { readonly ok: boolean }>(result: T): Extract<T, { ok:
  * every operation that accepts them. The kinds that accept neither pass neither, and
  * the harness reads that from the events rather than from a list here.
  */
-const DRIVERS: { readonly [K in EventKind]: Driver } = {
+const DRIVERS: { readonly [K in Exclude<EventKind, 'tail.relinked'>]: Driver } = {
   'run.started': (ctx, text) =>
     // A run's agent IS its envelope `which`, so this kind fills that slot through
     // the payload; there is no separate `which` to pass and no parent run to pin to.
@@ -720,7 +735,9 @@ function drive(kind: EventKind, text: Poison): Driven {
       layout: { root },
       upcasters,
     };
-    const result = DRIVERS[kind](ctx, (path) => {
+    const driver = (DRIVERS as { readonly [K in EventKind]?: Driver })[kind];
+    if (driver === undefined) throw new Error(`no operation writes ${kind}: ${NOT_WRITTEN[kind]}`);
+    const result = driver(ctx, (path) => {
       asked.add(path);
       return text(path);
     });
@@ -804,7 +821,14 @@ describe('every kind the catalog can hold is driven onto the chain', () => {
     // The by-kind axis. A kind added to the catalog fails here until it is driven,
     // and this is an assertion rather than a type because test files are excluded
     // from `tsc -b`: a mapped type here would compile no matter what it omitted.
-    expect(Object.keys(DRIVERS).sort()).toEqual([...CATALOG].sort());
+    expect(Object.keys(DRIVERS).sort()).toEqual([...DRIVEN].sort());
+  });
+
+  it('leaves out only the kinds no operation writes, each saying why', () => {
+    expect(Object.keys(NOT_WRITTEN)).toEqual(['tail.relinked']);
+    expect(Object.keys(NOT_WRITTEN).every((kind) => CATALOG.includes(kind as EventKind))).toBe(
+      true,
+    );
   });
 
   it('actually appends an event of the kind it claims to drive', {
@@ -812,7 +836,7 @@ describe('every kind the catalog can hold is driven onto the chain', () => {
   }, () => {
     // A driver that wrote nothing, or wrote something else, would make every
     // assertion below vacuous for its kind.
-    for (const kind of CATALOG) {
+    for (const kind of DRIVEN) {
       const driven = drive(kind, poisoningBodies(kind));
       expect(driven.result.ok, `${kind}: ${JSON.stringify(driven.result)}`).toBe(true);
       expect(
@@ -824,7 +848,7 @@ describe('every kind the catalog can hold is driven onto the chain', () => {
 });
 
 describe('no field slips past the door', () => {
-  for (const kind of CATALOG) {
+  for (const kind of DRIVEN) {
     it(`redacts every body of ${kind}, and leaves its names and identifiers alone`, () => {
       const driven = drive(kind, poisoningBodies(kind));
       expect(driven.result.ok, `${kind}: ${JSON.stringify(driven.result)}`).toBe(true);
@@ -898,7 +922,7 @@ describe('a name carrying a credential refuses the write, on every field of ever
   // clean pass, filtered by the classification. A name added to a kind is driven here
   // the day it is classified and the driver passes it, and a field that changes from
   // body to name moves into this pass with no edit.
-  for (const kind of CATALOG) {
+  for (const kind of DRIVEN) {
     it(`refuses ${kind} for a credential in any name it takes`, () => {
       const clean = drive(kind, poisoningBodies(kind));
       expect(clean.result.ok, `${kind}: ${JSON.stringify(clean.result)}`).toBe(true);
@@ -923,7 +947,7 @@ describe('a name carrying a credential refuses the write, on every field of ever
     // empty loops. It re-drives rather than reading a counter the cases filled,
     // because a counter makes every case above depend on the ones before it, and
     // then running one of them alone reports a failure that is not there.
-    const driven = CATALOG.flatMap((kind) =>
+    const driven = DRIVEN.flatMap((kind) =>
       namesOf(kind, drive(kind, poisoningBodies(kind))).map((path) => `${kind} ${path}`),
     );
     expect(driven.length).toBeGreaterThan(20);
@@ -956,7 +980,7 @@ describe('the envelope’s own text goes through the door on every kind that car
       timeout: EVERY_KIND_DRIVEN,
     }, () => {
       let carried = 0;
-      for (const kind of CATALOG) {
+      for (const kind of DRIVEN) {
         const driven = drive(kind, poisoningBodies(kind));
         expect(driven.result.ok, `${kind}: ${JSON.stringify(driven.result)}`).toBe(true);
         // The events of the kind under test. A driver's SETUP writes are events of
@@ -986,7 +1010,7 @@ describe('the envelope’s own text goes through the door on every kind that car
       // per-kind proof would say the same thing twenty times and still miss a kind
       // that stopped passing the field. `run` rides here for the same reason.
       let refused = 0;
-      for (const kind of CATALOG) {
+      for (const kind of DRIVEN) {
         const clean = drive(kind, poisoningBodies(kind));
         if (!clean.asked.has(path)) continue;
         refused += 1;
@@ -1013,7 +1037,7 @@ describe('the size ceiling holds on every field the door owes', () => {
   // What each kind is measured on is what its driver ASKED for (the fields the
   // write accepts, observed in the clean pass), so nothing is listed here and a
   // field filled indirectly is charged to the input the caller actually hands in.
-  for (const kind of CATALOG) {
+  for (const kind of DRIVEN) {
     it(`refuses an oversize value in any field ${kind} takes`, {
       timeout: EVERY_KIND_DRIVEN,
     }, () => {
@@ -1092,7 +1116,7 @@ describe('an identifier is never screened, even when it looks like a credential'
     // derives ever comes back carrying a placeholder, however dirty the body beside
     // it was. Without this, a door made total over the fields would be one edit away
     // from replacing the record's own identity with `<SECRET:…>`.
-    for (const kind of CATALOG) {
+    for (const kind of DRIVEN) {
       const driven = drive(kind, poisoningBodies(kind));
       for (const event of driven.events) {
         for (const leaf of textLeaves(event)) {

@@ -220,6 +220,17 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
     eventCount: 'count',
     reason: 'string',
   },
+  // The relink's shape is the waiver's, with the two names it moves a tail between. Whether the
+  // relink COUNTS is no field rule: it is the readers' rule over the whole directory (FORMAT.md
+  // section 6.11), so a relink whose tail is absent is a line both readers read.
+  'tail.relinked': {
+    tail: 'string',
+    from: 'string',
+    into: 'string',
+    throughHash: 'string',
+    eventCount: 'count',
+    reason: 'string',
+  },
   // The catalog's only BOOLEAN, and the rule is that it is one: a `"off"`, a `0` or
   // a missing key are three ways for two readers to disagree about whether a channel
   // was on, and this kind is read to decide whether the product says anything at all.

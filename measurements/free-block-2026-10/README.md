@@ -1,15 +1,16 @@
 # The free block of the comparison after 0.1.4: its pre-registration
 
-`prereg.json` is the manifest that fixes this measurement before its first session, published with the decision that
-pre-registers it. This is revision 5 (ADR-150 in this repository's record, titled "Revision 5 of the pre-registration of
-the free block"). Its SHA-256 is `a3cbad181e118ad832e4881f0e0c0c580d00550600da72c3b7dde7ec413a0cd3`, which anyone can
-compute over the file.
+`prereg.json` is the manifest that fixes this measurement, published with the decision that pre-registers it. This is
+revision 6 (ADR-164 in this repository's record, titled "Revision 6 of the pre-registration of the free block"). Its
+SHA-256 is `f827a02a7f0a9fadcbc863ada8c081976d97a37f4b64d6eed7cb8425534f3139`, which anyone can compute over the file.
 
-Revision 5 replaces revision 4 (ADR-138, SHA-256 `3ce3d259f1bc9fe3fd0e1f804f724594e2be9a5f67ad420fe670655c69fe4edb`,
-in this file's history) for the one reason revision 4 itself fixed in advance: the catalog snapshot is taken again on the
-eve of the first counted session. Taken on 30 October 2026 at 23:13:53Z, it projects the model and its reserve to the
-same values as the day before, so only the catalog file, its hash and the kit commit changed. No session had run.
+Revision 6 replaces revision 5 (ADR-150, SHA-256 `a3cbad181e118ad832e4881f0e0c0c580d00550600da72c3b7dde7ec413a0cd3`,
+in this file's history) so that a day's free quota is not thrown away: two counted sessions a UTC day, each capped at
+24 requests, a session starting when the day still holds that room, and a cut session redone once, the same day if it
+fits. Two sessions ran under revision 5 and say so: Qwen Code (13 requests, below the new cap) and a Copilot CLI
+session cut by a 503 on its first request. Revision 5 itself replaced revision 4 (ADR-138, SHA-256
+`3ce3d259f1bc9fe3fd0e1f804f724594e2be9a5f67ad420fe670655c69fe4edb`) for the eve catalog snapshot.
 
-Four agent hosts (Codex CLI, Copilot CLI, OpenCode, Qwen Code), one session each, on one free model fixed by id and
-provider, with mnema installed. Each session is a story, never a rate, and names the revision it ran under. The result
-is published here when the round closes, beside this file; the kit that ran it is published with the result.
+Four agent hosts (Codex CLI, Copilot CLI, OpenCode, Qwen Code), one counted session each, on one free model fixed by
+id and provider, with mnema installed. Each session is a story, never a rate, and names the revision it ran under. The
+result is published here when the round closes, beside this file; the kit that ran it is published with the result.

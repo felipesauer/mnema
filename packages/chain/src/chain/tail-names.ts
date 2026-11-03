@@ -14,12 +14,22 @@
  * installation in a record written before records were named, and the first write of a new one.
  */
 
-import { closeSync, existsSync, openSync, readFileSync, readSync } from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  readSync,
+  statSync,
+} from 'node:fs';
+import { join } from 'node:path';
 
+import { catalogUpcasters } from '../events/registry.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { checkpointSignatureHolds, NAMED_SCHEME } from './checkpoint.js';
 import { parseEntry } from './entry.js';
-import { type ChainLayout, tailFingerprint, tailProofPath } from './layout.js';
+import { type ChainLayout, keysDir, tailDir, tailFingerprint, tailProofPath } from './layout.js';
 import {
   type Arrivals,
   arrivedSince,
@@ -32,6 +42,7 @@ import {
 } from './record-name.js';
 import { committedKeys, lastTailCheckpoint, listTails, orderedSegments } from './store.js';
 import { NAMED_TAILPROOF_SCHEME, parseTailProof, verifyTailProof } from './tailproof.js';
+import { relinkedNamingAt } from './verify.js';
 
 /** What every tail of the directory names, by its id: `undefined` for a tail that names none. */
 export function namesOfTails(layout: ChainLayout): Map<string, string | undefined> {
@@ -86,13 +97,33 @@ export function arrivalsSince(
  * directory of two records governs, and a surface that says what governs says why from `several`
  * (`code/tests/a-directory-of-two-records-governs-nothing.test.ts`).
  *
+ * WHERE ITS TAILS WOULD NAME TWO RECORDS AND ONE OF THEM HOLDS A RELINK (FORMAT.md section 6.11),
+ * the directory is named as `verify` names it: a relink that counts moves its tail into the record
+ * it joins, and a surface that read nothing there would fail closed where both readers verify. The
+ * rule is the readers' own (`relinkedNaming`, `record-name.ts`), asked through
+ * `relinkedNamingAt` (`verify.ts`), which reads only what it needs: every event, the coverage of
+ * the tails that hold a relink or name a record one joins (one signature per tail, the earlier
+ * checkpoints bound through `prev`), and the identity fold of the record joined. A directory with
+ * no relink line reads none of that, and the answer is kept until a file of the directory changes
+ * (`second-reader-agrees-on-a-relink.test.ts`, "the namer of the surfaces").
+ *
  * WHAT IT COSTS: nothing more than `listTails` for a directory of one tail. Else what
  * {@link namesOfTails} costs, a small file, the last checkpoint line and an Ed25519 verification
  * per tail, at each catch-up of the projection, which is each write a hook gates. The projection
  * keeps what its catch-up found (`ProjectionCache.severalRecords`), so a surface asking reads
  * nothing again. Measured on the built binary, the rules pushed at a write, median of 15, base and
  * head alternated: one tail +0 ms, 8 tails +7 ms, 32 tails +18 ms, about 0.6 ms per tail (before the
- * surfaces took the catch-up's answer it was about 1 ms: 8 tails +11 ms, 32 tails +32 ms).
+ * surfaces took the catch-up's answer it was about 1 ms: 8 tails +11 ms, 32 tails +32 ms). Only a
+ * directory whose tails name two records pays more: the bytes of its segments, read once for a
+ * relink line, and, where one is there, the reading above, once per change to the directory.
+ * Measured on the built package, base and head alternated, median of 15 rounds of 5 calls: a
+ * relinked directory whose joined record holds 553 events and 551 checkpoints, 0.79 ms on the base
+ * (which reads nothing of it) against 24.16 ms on the head after a change, where a whole
+ * `verifyChain` costs 86.02 ms (it was the namer's cost before), and 0.84 ms against 1.20 ms when
+ * nothing changed since the last reading; a directory of two records with no relink, 0.57 ms
+ * against 0.60 ms; one record, 0.02 against 0.01. A write changes the directory, so each catch-up
+ * after a write pays the reading once.
+ * The reading grows with the events of the record joined, about 0.04 ms each.
  */
 export function tailsReadAt(layout: ChainLayout): TheRecordRead {
   const tails = listTails(layout);
@@ -103,7 +134,54 @@ export function tailsReadAt(layout: ChainLayout): TheRecordRead {
       named.set(tail, undefined);
     }
   }
-  return tailsReadAsOneRecord(named);
+  const reading = tailsReadAsOneRecord(named);
+  if (reading.several.length === 0 || !holdsARelink(layout, tails)) return reading;
+  const extent = extentOf(layout, tails);
+  const kept = relinkedReadings.get(layout.root);
+  const record =
+    kept?.extent === extent ? kept.record : relinkedNamingAt(layout, catalogUpcasters(), named);
+  relinkedReadings.set(layout.root, { extent, record });
+  return record.state === 'several'
+    ? { read: [], several: record.groups }
+    : { read: [...named.keys()], several: [] };
+}
+
+/**
+ * The bytes a relink's stored line holds wherever it is: its kind, as the canonical form writes
+ * it. A line that holds the kind in any other spelling is not canonical, and both readers refuse
+ * it, so it can name nothing.
+ */
+const RELINK_BYTES = Buffer.from('"kind":"tail.relinked"', 'utf-8');
+
+/**
+ * The last relinked reading of each directory, by its root, with the extent it was taken over: one
+ * entry per directory a process reads, replaced when any of its files changes.
+ */
+const relinkedReadings = new Map<
+  string,
+  { readonly extent: string; readonly record: RecordNaming }
+>();
+
+/** Every file of the tails and the keys, by name, size and modification time, as one string. */
+function extentOf(layout: ChainLayout, tails: readonly string[]): string {
+  const said: string[] = [];
+  const add = (dir: string): void => {
+    if (!existsSync(dir)) return;
+    for (const name of readdirSync(dir).sort()) {
+      const stat = statSync(join(dir, name));
+      said.push(`${dir}/${name}:${stat.size}:${stat.mtimeMs}`);
+    }
+  };
+  for (const tail of tails) add(tailDir(layout, tail));
+  add(keysDir(layout));
+  return said.join('\n');
+}
+
+/** Whether a segment of any of `tails` holds a relink's line, read as bytes. */
+function holdsARelink(layout: ChainLayout, tails: readonly string[]): boolean {
+  return tails.some((tail) =>
+    orderedSegments(layout, tail).some((segment) => readFileSync(segment).includes(RELINK_BYTES)),
+  );
 }
 
 /**

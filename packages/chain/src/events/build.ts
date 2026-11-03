@@ -494,6 +494,38 @@ export function tailPruned(
 }
 
 /**
+ * Builds a `tail.relinked` event (subject = the ANCHOR the relinked tail spoke for).
+ *
+ * As with {@link tailPruned}, nothing here is checked: whether a relink counts is the readers'
+ * rule (FORMAT.md section 6.11).
+ */
+export function tailRelinked(
+  envelope: EnvelopeInput,
+  payload: {
+    tail: string;
+    from: string;
+    into: string;
+    throughHash: string;
+    eventCount: number;
+    reason: string;
+  },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'tail.relinked',
+    ...envelopeFields(envelope),
+    payload: {
+      tail: payload.tail,
+      from: payload.from,
+      into: payload.into,
+      throughHash: payload.throughHash,
+      eventCount: payload.eventCount,
+      reason: payload.reason,
+    },
+  };
+}
+
+/**
  * Builds a `channel.switched` event (subject = the CHANNEL that was switched).
  *
  * The `reason` key is OMITTED when the caller gave none, never set to an empty

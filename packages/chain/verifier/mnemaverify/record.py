@@ -58,7 +58,7 @@ from .checkpoint import (
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry, entry_hash, read_line
 from .keys import HOLDS_NO_KEY, PublicKey, load_keyring
-from .record_name import record_of
+from .record_name import record_of, relinked_naming
 from .root import which_reading_closes
 from .verdict import Refusal, Report
 
@@ -676,6 +676,46 @@ def _check_tail_naming(
     return sorted(named)[-1][1] if named else None
 
 
+def _check_relinks(
+    report: Report,
+    entries_by_tail: dict[str, list[Entry]],
+    covered_by_tail: dict[str, int],
+    named_by_tail: dict[str, str | None],
+    ring: dict[str, PublicKey],
+) -> dict[str, str | None]:
+    """Section 6.11: the tails their owner relinked, and the names the relinks that count give them.
+
+    The rule is `record_name.relinked_naming`, check by check in the section's order; the fold
+    its last check asks is section 6.2's, over the tails that name the record joined by their own
+    artifacts. Each refusal is said in the product's words and by its token, and the three notes
+    are the product's census lines. Returns the names `_check_record` then judges.
+    """
+
+    def fold(entries: dict[str, list[Entry]], covered: dict[str, int]) -> list[tuple[str, int]]:
+        return [(issue.tail, issue.seq) for issue in enrolment.resolve(entries, covered, ring).issues]
+
+    found = relinked_naming(named_by_tail, entries_by_tail, covered_by_tail, fold)
+    for relink, line in found.counted:
+        report.note("6.11", line, relink.tail)
+    for relink in found.uncovered:
+        report.note(
+            "6.11",
+            f"tail {relink.host} holds a relink of tail {relink.tail} at seq {relink.seq}, above its "
+            "last verified checkpoint: chained only, it counts for nothing (relink-uncovered)",
+            relink.tail,
+        )
+    for relink in found.absent:
+        report.note(
+            "6.11",
+            f"tail {relink.host} relinks tail {relink.tail} at seq {relink.seq}, and that tail is "
+            "not here: the relink names nothing in this directory",
+            relink.tail,
+        )
+    for _token, relink, detail in found.refused:
+        report.fail("6.11", detail, f"{relink.host[:20]}... seq {relink.seq}")
+    return found.named
+
+
 def _check_record(report: Report, named_by_tail: dict[str, str | None]) -> None:
     """Section 6.10: every named tail of the directory names one record.
 
@@ -1079,6 +1119,9 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
     named_by_tail: dict[str, str | None] = {}
     # The tails whose FIRST line this reader refused, before any entry of theirs: where it was.
     refused_first: dict[str, str] = {}
+    # The tails holding an event line this reader refused: section 6.11 reads no relink of theirs,
+    # and no entry of theirs as a relinked tail's head, as the product reads nothing of such a tail.
+    holed: set[str] = set()
     for tail_id in tail_ids:
         tail_dir = os.path.join(tails_dir, tail_id)
         _check_tail_id(report, tail_id, ring)
@@ -1099,7 +1142,16 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         covered_by_tail[tail_id] = found.covered_through
         if refused and before_refused == 0:
             refused_first[tail_id] = refused[0]
+        if refused:
+            holed.add(tail_id)
 
+    named_by_tail = _check_relinks(
+        report,
+        {tail: ([] if tail in holed else entries) for tail, entries in entries_by_tail.items()},
+        covered_by_tail,
+        named_by_tail,
+        ring,
+    )
     _check_record(report, named_by_tail)
     resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring, refused_first)
     _check_retractions(report, entries_by_tail)
