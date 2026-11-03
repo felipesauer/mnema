@@ -11,6 +11,13 @@
  * (`where-things-stand.test.ts`: "the CLI's `--json` and the MCP's payload are the same
  * answer").
  *
+ * `--json` WAS SAID TO SERVE THE DERIVATION AND ONLY THE DERIVATION, AND IT NO LONGER DOES (ADR-104): where events of the record are in no git commit yet
+ * ({@link StatusDone.notInGit}), `--json` carries them as one key, `eventsNotInGit`, beside the
+ * derivation's own, and the key is absent otherwise. The derivation is unchanged and still the
+ * MCP's `bootstrap` object where nothing waits; the one fact that is not in it is a count of a
+ * checkout's git state, and `outside` and `neverImported` stay out of `--json` as before
+ * (`where-things-stand.test.ts`).
+ *
  * THAT SENTENCE READ "IT DERIVES NOTHING", FLAT, AND ONE FIELD FALSIFIED IT. This answer
  * carries a second fact now, and it is not the derivation's: which decision bases of this
  * CHECKOUT hold documents the record has no decision for ({@link StatusDone.outside}). It

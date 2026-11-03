@@ -33,6 +33,12 @@
  * switched off, reads the whole transcript as before and keeps no file. The counts the line
  * carries come from the journal's reading, so the line says the same thing either way.
  *
+ * IT ALSO SAYS WHAT NO GIT COMMIT HOLDS YET, in the same line and under the same switch: where events
+ * of the record are above what HEAD holds, the sentence of `events-not-in-git.ts` follows the two
+ * counts (`events-not-in-git-are-said.test.ts`). It is a fact about the record and not about the
+ * session, and it keeps the rule above: it states what waits and names the verb that prepares it, and
+ * asks nobody to run it. It is read where the counts are, after a response that wrote a file.
+ *
  * WHERE THE LINE LANDS IS THE HOST'S. It is written as the `systemMessage` of the reply, the field
  * every hook reply may carry, and which host shows it, to whom, was not measured.
  */
