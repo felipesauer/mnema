@@ -1,6 +1,6 @@
 # mnema next to a folder of ADRs
 
-<!-- description: A decision record for the work of coding agents, not a memory service: it keeps what was decided and why, and anyone can check it has not changed. -->
+<!-- description: Keep your ADR files where they are and bring them into mnema as proposed decisions that are signed, can be superseded and can be addressed to code. -->
 
 If your team already keeps its decisions as ADR files, they stay where they are. mnema does not move them, edit
 them or ask you to stop writing them. What it adds is a record of the same decisions that is signed and checkable,
@@ -40,9 +40,10 @@ Once the team has judged a proposal, it is a decision of the record like any oth
   anything in the record has been touched since.
 - **Superseded, not lost.** A decision that replaces another is recorded and the earlier one is marked with the new
   one's id (`mnema decision supersede <old-id> <new-id> --reason "..."`); both stay in the record.
-- **Addressed to the code it governs.** `mnema link ADR-1 src/billing --rel refuses-a-write` says which part of the
-  code the decision is about. That address is how a rule reaches an agent at an edit it governs, on the hosts that do
-  it ([Hosts](hosts.md)).
+- **Addressed to the code it governs.** `mnema link ADR-1 src/billing --rel governs` says which part of the code the
+  decision is about. That address is how a rule reaches an agent at an edit it governs, on the hosts that do it
+  ([Hosts](hosts.md)). A separate, stronger relation, `refuses-a-write`, makes the rule refuse a write there instead
+  of only informing it.
 
 ## What it does not do
 

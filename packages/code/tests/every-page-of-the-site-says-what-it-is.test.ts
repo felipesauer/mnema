@@ -12,7 +12,8 @@
  *   - THE STRUCTURED DATA IS BUILT FROM FACTS (`structuredDataOf`), is on the landing and on `/record/` and on no
  *     other page, names GitHub, npm and the two extension stores as where the software is, and carries no rating
  *     and no review on any page.
- *   - A PAGE OF `docs/` DESCRIBES ITSELF WITH ITS OWN FIRST PARAGRAPH (`descriptionOf`), read and never typed.
+ *   - A PAGE OF `docs/` IS DESCRIBED BY THE FIRST SENTENCE OF ITS PROSE, or by its own `<!-- description: ... -->`
+ *     line (`descriptionOf`), read and never typed in the build; each is unique and at most 160 characters.
  *
  * The cases over the built pages need the site built (`cd site && npm ci --ignore-scripts && npm run build`, after
  * `pnpm build`); with no build they stand down by name, as the guard of the built site does, and the site workflow's
@@ -20,7 +21,7 @@
  * everywhere.
  *
  * WHAT IT DOES NOT CHECK: that a search engine shows these words, indexes the site or ranks it (nothing here asks
- * one), nor that a description is a good one: it is the page's own first paragraph, and a reader judges that.
+ * one), nor that a description is a good one: it is the page's first sentence or its own line, and a reader judges that.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
