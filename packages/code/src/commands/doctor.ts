@@ -58,9 +58,12 @@ import {
   listAppleDoubleKeyFiles,
   listPrivateKeyFingerprints,
   namesOfTails,
+  readTailEntries,
   recordNamedIn,
+  tailsReadAt,
+  unreadLinesOf,
 } from '@mnema/chain';
-import { newerLinesOf } from '@mnema/context';
+import { newerLinesFrom } from '@mnema/context';
 import {
   AGENT_NAME,
   type AgentStanding,
@@ -87,7 +90,6 @@ import {
   personsKeyInTheClear,
   THE_AGENT_KEY_SEPARATES_NOTHING,
 } from '../the-persons-key-in-the-clear.js';
-import { caches, withScopedCaches } from '../tree-sources.js';
 import { isOlderThan } from '../version.js';
 import { mergeDriverLines } from './doctor-merge-driver.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
@@ -1292,9 +1294,16 @@ function twoRecords(from: string, to: string): string | undefined {
  */
 function newerMnemaFindings(ctx: DoctorContext): Finding[] {
   try {
-    const newer = withScopedCaches(resolveTrees(ctx.cwd, ctx.env), (sources) =>
-      newerLinesOf(caches(sources)),
+    // The tails themselves, and not a projection cache: `doctor` writes nothing, and a cache opened
+    // over a record leaves its file under the record's own folder. The lines are the ones
+    // `unreadLinesOf` takes from an entry list, as the cache takes them for every other surface.
+    const upcasters = catalogUpcasters();
+    const lines = reachableTrees(resolveTrees(ctx.cwd, ctx.env)).flatMap(({ chainRoot }) =>
+      tailsReadAt({ root: chainRoot }).read.flatMap((tail) =>
+        unreadLinesOf(tail, readTailEntries({ root: chainRoot }, tail, upcasters)),
+      ),
     );
+    const newer = newerLinesFrom(lines);
     return newer === undefined
       ? []
       : [{ topic: 'newer-mnema', state: 'attention', line: newerLinesSentence(newer) }];

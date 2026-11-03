@@ -97,6 +97,7 @@ export {
   type NewerKind,
   type NewerLines,
   newerLinesAbout,
+  newerLinesFrom,
   newerLinesOf,
 } from './context/newer-lines.js';
 export {

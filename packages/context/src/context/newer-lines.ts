@@ -32,7 +32,11 @@ export interface NewerLines {
   readonly kinds: readonly NewerKind[];
 }
 
-function summed(lines: readonly UnreadLine[]): NewerLines | undefined {
+/**
+ * The lines a newer mnema wrote, summed and grouped: from the lines themselves, for a reading that
+ * has none of the caches (`mnema doctor`, which writes nothing and so opens no cache file).
+ */
+export function newerLinesFrom(lines: readonly UnreadLine[]): NewerLines | undefined {
   if (lines.length === 0) return undefined;
   return {
     lines: lines.length,
@@ -42,7 +46,7 @@ function summed(lines: readonly UnreadLine[]): NewerLines | undefined {
 
 /** The lines a newer mnema wrote in `caches`, or undefined when there are none. */
 export function newerLinesOf(caches: readonly ProjectionCache[]): NewerLines | undefined {
-  return summed(caches.flatMap((cache) => cache.unread));
+  return newerLinesFrom(caches.flatMap((cache) => cache.unread));
 }
 
 /**
@@ -53,5 +57,7 @@ export function newerLinesAbout(
   caches: readonly ProjectionCache[],
   id: string,
 ): NewerLines | undefined {
-  return summed(caches.flatMap((cache) => cache.unread.filter((line) => line.subject === id)));
+  return newerLinesFrom(
+    caches.flatMap((cache) => cache.unread.filter((line) => line.subject === id)),
+  );
 }
