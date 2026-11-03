@@ -259,21 +259,26 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
   const index = stack
     .command('index')
     .description('list the stacks an index names, with the digest each must have')
-    .argument('[folder]', 'the folder holding index.json', 'stack-index')
+    .argument(
+      '[folder]',
+      'the folder holding index.json (default: the index that comes with mnema)',
+    )
     .option('--json', 'emit the entries as JSON, for a program to take')
     .addHelpText(
       'after',
       [
         '',
+        'With no folder, the index that comes with mnema is read: the example stacks, each in a',
+        'folder inside the installed package. With a folder, the index.json in it is read.',
         'The index holds no stack: each entry is a name, a link and a digest, and one kept in the',
         'same checkout names its folder. Being listed does not make a stack safe. Add one with',
         '`mnema stack add <source> --dry-run`, and it is the stack listed only if the digest the',
         'plan shows is the one the index gives.',
       ].join('\n'),
     )
-    .action(async (folder: string, opts: { json?: boolean }) => {
-      const { indexJson, indexLines, readStackIndex } = await import('../commands/stack-index.js');
-      const read = readStackIndex(here().cwd, folder);
+    .action(async (folder: string | undefined, opts: { json?: boolean }) => {
+      const { indexJson, indexLines, readTheIndex } = await import('../commands/stack-index.js');
+      const read = readTheIndex(here().cwd, folder);
       if (!read.ok) {
         reportRefusal(wiring, said(read));
         return;

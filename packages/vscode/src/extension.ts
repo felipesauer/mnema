@@ -1085,9 +1085,7 @@ export function activate(
   keep(
     api.commands.registerCommand('mnema.stacks.addFromIndex', async () => {
       if (!needsRecord()) return;
-      const where = api.workspace
-        .getConfiguration('mnema')
-        .get<string>('stackIndex', 'stack-index');
+      const where = api.workspace.getConfiguration('mnema').get<string>('stackIndex', '');
       const index = await read(indexArgs(where));
       if (index.code !== 0) {
         void api.window.showErrorMessage(refusalOf(index));
