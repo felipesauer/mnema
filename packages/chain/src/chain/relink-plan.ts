@@ -21,7 +21,7 @@
 
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
-import type { Entry } from './entry.js';
+import { type ChainEntry, readEntries } from './entry.js';
 import { type ChainLayout, tailFingerprint } from './layout.js';
 import { RELINK_NOT_A_MEMBER, recordName, recordOf } from './record-name.js';
 import { lastTailCheckpoint, listTails, readTail } from './store.js';
@@ -80,11 +80,11 @@ function readAll(
   layouts: readonly ChainLayout[],
   upcasters: UpcasterRegistry,
 ): {
-  readonly entries: ReadonlyMap<string, readonly Entry[]>;
+  readonly entries: ReadonlyMap<string, readonly ChainEntry[]>;
   readonly named: ReadonlyMap<string, string | undefined>;
   readonly where: ReadonlyMap<string, ChainLayout>;
 } {
-  const entries = new Map<string, readonly Entry[]>();
+  const entries = new Map<string, readonly ChainEntry[]>();
   const named = new Map<string, string | undefined>();
   const where = new Map<string, ChainLayout>();
   for (const layout of layouts) {
@@ -112,7 +112,7 @@ export function planRelinks(
   // The tails some relink on disk already names, and the tails that hold one.
   const relinkedOnDisk = new Map<string, string>();
   for (const [host, held] of entries) {
-    for (const entry of held) {
+    for (const entry of readEntries(held)) {
       if (entry.event.kind !== 'tail.relinked') continue;
       relinkedOnDisk.set(entry.event.payload.tail, `${host}#${entry.link.seq}`);
     }
@@ -259,16 +259,16 @@ export function planRelinks(
 
 /** What the entries of a tail bring into the record `into` names, beside its genesis. */
 function bringsOf(
-  held: readonly Entry[],
+  held: readonly ChainEntry[],
   into: string,
-  entries: ReadonlyMap<string, readonly Entry[]>,
+  entries: ReadonlyMap<string, readonly ChainEntry[]>,
 ): RelinkBrings {
   const identity = IDENTITY_KINDS.map((kind) => ({
     kind,
     count: held.filter((entry) => entry.event.kind === kind).length,
   })).filter((one) => one.count > 0);
   const decisions = held.filter((entry) => entry.event.kind === 'decision.recorded').length;
-  const firstAt = (held[0] as Entry).event.at;
+  const firstAt = (held[0] as ChainEntry).event.at;
   const genesis = [...entries].find(([tail]) => recordName(tail) === into)?.[1][0]?.event.at;
   return genesis !== undefined && firstAt < genesis
     ? { identity, decisions, olderThanTheGenesis: { firstAt, genesisAt: genesis } }
@@ -371,14 +371,14 @@ export function tailsACutWouldUnrelink(
   const waived = new Set<string>();
   for (const [id, entries] of tails) {
     const signed = lastTailCheckpoint(layout, id)?.toSeq ?? -1;
-    for (const entry of entries) {
+    for (const entry of readEntries(entries)) {
       if (entry.event.kind === 'tail.pruned' && entry.link.seq <= signed) {
         waived.add(entry.event.payload.tail);
       }
     }
   }
   const undone: string[] = [];
-  for (const entry of tails.get(host) ?? []) {
+  for (const entry of readEntries(tails.get(host) ?? [])) {
     if (entry.event.kind !== 'tail.relinked' || entry.link.seq > covered) continue;
     const tail = entry.event.payload.tail;
     if ((tails.get(tail) ?? []).length > 0 && !waived.has(tail)) undone.push(tail);

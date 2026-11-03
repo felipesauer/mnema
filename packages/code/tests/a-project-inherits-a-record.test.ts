@@ -330,10 +330,31 @@ describe('an origin whose record holds a line this mnema has no contract for', (
     `mnema ${READER_VERSION} does not read ${said}. If a newer mnema wrote the line, read the ` +
     'record with it.';
 
-  it.each([
-    ['memory.foretold', 1, '"memory.foretold" at v1: it reads no version of that kind'],
-    ['memory.captured', 2, '"memory.captured" at v2: it reads that kind up to v1'],
-  ])(
+  it('reads a line of a kind it holds no version of PAST, and inherits the record (ADR-113)', () => {
+    // This was the first row of the case below, refused like a version ahead; since ADR-113 a kind
+    // this mnema does not know is checked and read past, so the origin is read and inherited.
+    const source = join(sandbox, 'decisions');
+    const project = join(sandbox, 'service');
+    const homeS = join(sandbox, 'home-s');
+    const homeP = join(sandbox, 'home-p');
+    for (const dir of [source, project, homeS, homeP]) mkdirSync(dir, { recursive: true });
+    git(source, 'init', '-q', '-b', 'main');
+    expect(mnema(source, homeS, 'init').status).toBe(0);
+    decide(source, homeS, 'Postgres in every new service');
+    appendAhead(source, 'memory.foretold', 1);
+    commit(source);
+    expect(mnema(project, homeP, 'init').status).toBe(0);
+
+    const set = mnema(project, homeP, 'inherit', 'set', source, '--write');
+    expect(set.status, set.err).toBe(0);
+    expect(set.out).toContain('+ Postgres in every new service');
+    const brief = mnema(project, homeP, 'brief');
+    expect(brief.status, brief.err).toBe(0);
+    expect(brief.out).toContain('Postgres in every new service');
+    expect(brief.out).not.toContain('## Inherited decisions (not read)');
+  }, 120_000);
+
+  it.each([['memory.captured', 2, '"memory.captured" at v2: it reads that kind up to v1']])(
     'refuses %s at v%i by naming it, in `inherit set`, `inherit update` and the brief',
     (kind, v, said) => {
       const source = join(sandbox, 'decisions');

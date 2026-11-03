@@ -409,6 +409,10 @@ const UNWIRED: Readonly<Record<string, string>> = {
   '@mnema/sdk mnemaHooks':
     'what a program built on the Agent SDK imports; the package is a library door and nothing in ' +
     'this workspace is that program. the-three-doors-are-one.test.ts calls it.',
+  '@mnema/chain parseEvent':
+    'the reading of ONE event as a catalog event, which refuses a kind it does not know by naming it; ' +
+    'every stored line is read through readEvent, which reads such a kind past (ADR-113). ' +
+    'parse.test.ts, canonical-vectors.test.ts and registry.test.ts call it.',
   '@mnema/sdk openRecord':
     'what a program that records and reads imports; nothing in this workspace is that program. ' +
     'the-three-doors-are-one.test.ts calls it.',

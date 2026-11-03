@@ -21,7 +21,7 @@
 
 import { type CanonicalValue, canonicalStringify } from '../events/canonical.js';
 import type { CatalogEvent } from '../events/catalog.js';
-import { parseEvent } from '../events/parse.js';
+import { type ReadEvent, readEvent, type UnreadEvent } from '../events/parse.js';
 import { holdsExactly, keyList, parseCanonicalLine } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
@@ -46,6 +46,36 @@ export interface Entry {
   /** The event as it reached the disk: the only form a proof may be recomputed over. */
   readonly written: WrittenEvent;
   readonly link: EntryLink;
+}
+
+/**
+ * A stored line under a `kind` this binary does not know (ADR-113, `FORMAT.md` section 7.1): what a
+ * newer mnema wrote and this one reads PAST rather than refusing.
+ *
+ * It carries everything that proves the line and nothing that says what it means: the written
+ * form (the entry hash and the checkpoint's content root are taken over it), the link (its place in
+ * the chain) and the envelope (who signed it, when, what it cites). Its payload is not here, so no
+ * projection, fold or surface can read or apply it; each one that walks the lines of a tail has to
+ * say what it does with one, which is the point of making it a different type from {@link Entry}.
+ */
+export interface UnreadEntry {
+  readonly unread: true;
+  readonly event: UnreadEvent;
+  readonly written: WrittenEvent;
+  readonly link: EntryLink;
+}
+
+/** One line of a tail as the chain holds it: an event this binary reads, or one it reads past. */
+export type ChainEntry = Entry | UnreadEntry;
+
+/** Whether this line is an event this binary reads, and so one a projection may apply. */
+export function isRead(entry: ChainEntry): entry is Entry {
+  return !('unread' in entry);
+}
+
+/** The lines of `entries` this binary reads: what every projection folds, in the same order. */
+export function readEntries(entries: readonly ChainEntry[]): Entry[] {
+  return entries.filter(isRead);
 }
 
 /** Thrown when a stored line is not a structurally valid entry. */
@@ -84,7 +114,7 @@ export function sealEntry(input: {
  * the entry hash was taken over, and re-serializing an entry read back from a
  * line reproduces that line rather than a lifted rewrite of it.
  */
-export function serializeEntry(entry: Entry): string {
+export function serializeEntry(entry: ChainEntry): string {
   const value: CanonicalValue = {
     event: entry.written.value,
     link: {
@@ -108,7 +138,7 @@ export function serializeEntry(entry: Entry): string {
  * read form is the fully lifted, fully validated event. Every proof recomputed
  * later goes over the first; everything that wants meaning takes the second.
  */
-export function parseEntry(line: string, upcasters: UpcasterRegistry): Entry {
+export function parseEntry(line: string, upcasters: UpcasterRegistry): ChainEntry {
   let raw: unknown;
   try {
     raw = parseCanonicalLine(line, entryShape);
@@ -127,13 +157,14 @@ export function parseEntry(line: string, upcasters: UpcasterRegistry): Entry {
   // compare it with the stored bytes, so a line with no canonical bytes is
   // refused above, at the parse, like any other line that is not canonical.
   const written = writtenAsStored(obj.event as CanonicalValue);
-  let event: CatalogEvent;
+  let read: ReadEvent;
   try {
-    event = parseEvent(JSON.stringify(obj.event), upcasters);
+    read = readEvent(JSON.stringify(obj.event), upcasters);
   } catch (error) {
     throw new EntryParseError(`entry event is invalid: ${(error as Error).message}`);
   }
-  return { event, written, link };
+  if ('unread' in read) return { unread: true, event: read.unread, written, link };
+  return { event: read.event, written, link };
 }
 
 /** The keys of a stored line, and of its link: these, and nothing a writer never puts there. */
@@ -246,7 +277,7 @@ export type HeldLinkAt = (seq: number) => Pick<EntryLink, 'hash' | 'prev'> | und
 
 export function linkBreakAt(
   tail: string,
-  entry: Entry,
+  entry: ChainEntry,
   expectedSeq: number,
   expectedPrev: string | null,
   heldAt: HeldLinkAt,

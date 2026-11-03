@@ -84,10 +84,11 @@ import {
   enrollmentMessage,
 } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
+import type { Envelope } from '../events/envelope.js';
 import { isUnannounced, unannouncedRuns } from '../events/unannounced.js';
 import { oneLine } from '../one-line.js';
 import { causalOrder } from './causal-order.js';
-import type { Entry } from './entry.js';
+import { type ChainEntry, isRead } from './entry.js';
 import { deriveAnchor, verify as verifySignature } from './keys.js';
 import type { ChainLayout } from './layout.js';
 import { type CommittedKeys, committedKeys } from './store.js';
@@ -258,7 +259,7 @@ export interface CitationsRead {
  */
 export function resolveIdentity(
   layout: ChainLayout,
-  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+  entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
   checkpointedThroughByTail: ReadonlyMap<string, number>,
   keys: CommittedKeys = committedKeys(layout),
   retiredElsewhere: ReadonlyMap<string, RetiredElsewhere> = new Map(),
@@ -410,6 +411,38 @@ export function resolveIdentity(
       });
       continue;
     }
+    // A kind this binary does not know (ADR-113, FORMAT.md section 7.1) changes nothing here: what
+    // it means is not read, so it founds, enrols, retires and revokes no key. It is held to the
+    // rule every other fact is held to, by its envelope alone: its signer is a key valid for its
+    // `who` at this point.
+    if (!isRead(entry)) {
+      requireMember(event, tail, seq);
+    } else {
+      foldRead(entry.event, tail, seq);
+    }
+    // Only a fact the fold accepted names its agent; a refused one is an issue already.
+    if (issues.length !== before) continue;
+    if (role !== undefined) {
+      attested.set(event.signerFp, (attested.get(event.signerFp) ?? 0) + 1);
+    } else if (event.which !== undefined) {
+      const named = isUnannounced(event, marked) ? unannounced : declared;
+      named.set(event.which, (named.get(event.which) ?? 0) + 1);
+    }
+  }
+
+  /** The single identity rule: the signer is a key valid for the event's `who` at this point. */
+  function requireMember(event: Envelope, tail: string, seq: number): void {
+    if (!keysOf(event.who).has(event.signerFp)) {
+      issues.push({
+        tail,
+        seq,
+        detail: `event signer ${oneLine(event.signerFp)} is not a key enrolled for ${oneLine(event.who)} at this point`,
+      });
+    }
+  }
+
+  /** What a fact of a kind this binary reads does to who may sign, past the role checks above. */
+  function foldRead(event: CatalogEvent, tail: string, seq: number): void {
     switch (event.kind) {
       case 'identity.founded': {
         // The anchor must derive from the founding key, and the founding key
@@ -759,22 +792,8 @@ export function resolveIdentity(
       default: {
         // Every other event is authentic only if its signer is a key valid for
         // its anchor at this point: the single identity rule.
-        if (!keysOf(event.who).has(event.signerFp)) {
-          issues.push({
-            tail,
-            seq,
-            detail: `event signer ${oneLine(event.signerFp)} is not a key enrolled for ${oneLine(event.who)} at this point`,
-          });
-        }
+        requireMember(event, tail, seq);
       }
-    }
-    // Only a fact the fold accepted names its agent; a refused one is an issue already.
-    if (issues.length !== before) continue;
-    if (role !== undefined) {
-      attested.set(event.signerFp, (attested.get(event.signerFp) ?? 0) + 1);
-    } else if (event.which !== undefined) {
-      const named = isUnannounced(event, marked) ? unannounced : declared;
-      named.set(event.which, (named.get(event.which) ?? 0) + 1);
     }
   }
 
@@ -830,8 +849,8 @@ function inAnyIdentity(validKeys: ReadonlyMap<string, ReadonlySet<string>>, fp: 
  * of the record that has every tail in hand: which citations named nothing the record holds,
  * and which events were stamped by a clock behind what they cite.
  */
-function totalOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>): {
-  readonly order: Array<{ tail: string; entry: Entry }>;
+function totalOrder(entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>): {
+  readonly order: Array<{ tail: string; entry: ChainEntry }>;
   readonly citations: CitationsRead;
 } {
   const tails = [...entriesByTail].map(([tail, entries]) => ({
@@ -840,18 +859,18 @@ function totalOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>): {
     entries,
     length: entries.length,
   }));
-  const entryAt = (tail: number, position: number): Entry =>
-    (tails[tail] as (typeof tails)[number]).entries[position] as Entry;
+  const entryAt = (tail: number, position: number): ChainEntry =>
+    (tails[tail] as (typeof tails)[number]).entries[position] as ChainEntry;
   const merged = causalOrder(tails, {
     at: (tail, position) => eventAt(entryAt(tail, position)),
     hash: (tail, position) => entryAt(tail, position).link.hash,
-    after: (tail, position) => (entryAt(tail, position).event as CatalogEvent).after,
+    after: (tail, position) => entryAt(tail, position).event.after,
   });
   const cursors = tails.map(() => 0);
-  const order: Array<{ tail: string; entry: Entry }> = [];
+  const order: Array<{ tail: string; entry: ChainEntry }> = [];
   for (const step of merged.steps) {
     const { tail, entries } = tails[step] as (typeof tails)[number];
-    order.push({ tail, entry: entries[cursors[step] as number] as Entry });
+    order.push({ tail, entry: entries[cursors[step] as number] as ChainEntry });
     cursors[step] = (cursors[step] as number) + 1;
   }
   const notHeld = merged.notHeld.map((citation) => ({
@@ -880,8 +899,8 @@ function totalOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>): {
   return { order, citations: { notHeld, behind } };
 }
 
-function eventAt(entry: Entry): string {
-  return (entry.event as CatalogEvent).at;
+function eventAt(entry: ChainEntry): string {
+  return entry.event.at;
 }
 
 /**

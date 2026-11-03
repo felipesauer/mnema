@@ -156,10 +156,20 @@ def undefined_rules(schema: Schema) -> list[str]:
 
 
 class Rebuilt(NamedTuple):
-    """One event, rebuilt from exactly what its contract declares."""
+    """One event, rebuilt from exactly what its contract declares.
+
+    `contract` is None for an event of a kind the table declares no version of (section 7.1): its
+    envelope was rebuilt, and its payload was not read.
+    """
 
     event: dict[str, Any]
-    contract: Contract
+    contract: Contract | None
+
+
+def declares_kind(schema: Schema, kind: str) -> bool:
+    """Whether the declarations hold any version of `kind`: the one question that separates a
+    line this reader reads from a line it reads past (section 7.1)."""
+    return any(held_kind == kind for (held_kind, _v) in schema.contracts)
 
 
 def rebuild(schema: Schema, event: Any) -> Rebuilt:
@@ -178,11 +188,16 @@ def rebuild(schema: Schema, event: Any) -> Rebuilt:
     if not isinstance(v, int) or isinstance(v, bool) or v < 1:
         raise Refusal("4.1", f"event {kind!r} carries no whole-number `v` of at least 1")
     contract = schema.contracts.get((kind, v))
+    if contract is None and not declares_kind(schema, kind):
+        # Section 7.1 (ADR-113): a kind the table declares no version of is read PAST, not
+        # refused. Its envelope is held to the declarations like any event's; its payload must be
+        # an object and is not read, so nothing it says is applied.
+        return Rebuilt(_rebuild_envelope(schema, event, kind), None)
     if contract is None:
         # Section 7.1: the refusal names the pair and what this table holds of the kind. Which
         # version declares the pair no line can say, so it names the table it was read against.
         held = [held_v for (held_kind, held_v) in schema.contracts if held_kind == kind]
-        holds = f"{kind} up to v{max(held)}" if held else f"no version of {kind}"
+        holds = f"{kind} up to v{max(held)}"
         raise Refusal(
             "4.1",
             f"no published contract declares {kind}@{v}: the table this reader read declares "
@@ -191,20 +206,8 @@ def rebuild(schema: Schema, event: Any) -> Rebuilt:
             "with it declares the pair",
         )
 
-    declared_top = schema.top_level_keys()
-    extra = sorted(set(event) - declared_top)
-    if extra:
-        raise Refusal("4.1", f"event {kind!r} carries top-level field(s) {extra}, which nothing declares")
-
-    rebuilt: dict[str, Any] = {}
-    for field, rule in schema.envelope.items():
-        value = _apply(kind, field, rule, event.get(field, _MISSING))
-        if value is not _MISSING:
-            rebuilt[field] = value
-
-    payload = event.get("payload", _MISSING)
-    if not isinstance(payload, dict):
-        raise Refusal("4.1", f"event {kind!r} needs an object payload")
+    rebuilt = _rebuild_envelope(schema, event, kind)
+    payload = event["payload"]
     forged = sorted(set(payload) - set(contract.payload))
     if forged:
         raise Refusal(
@@ -219,6 +222,26 @@ def rebuild(schema: Schema, event: Any) -> Rebuilt:
             rebuilt_payload[field] = value
     rebuilt["payload"] = rebuilt_payload
     return Rebuilt(rebuilt, contract)
+
+
+def _rebuild_envelope(schema: Schema, event: dict[str, Any], kind: str) -> dict[str, Any]:
+    """The envelope of any event, its kind known or not: no top-level key the declarations do
+    not name, every envelope field under its rule, and a payload that is a JSON object."""
+    declared_top = schema.top_level_keys()
+    extra = sorted(set(event) - declared_top)
+    if extra:
+        raise Refusal("4.1", f"event {kind!r} carries top-level field(s) {extra}, which nothing declares")
+
+    rebuilt: dict[str, Any] = {}
+    for field, rule in schema.envelope.items():
+        value = _apply(kind, field, rule, event.get(field, _MISSING))
+        if value is not _MISSING:
+            rebuilt[field] = value
+
+    payload = event.get("payload", _MISSING)
+    if not isinstance(payload, dict):
+        raise Refusal("4.1", f"event {kind!r} needs an object payload")
+    return rebuilt
 
 
 class _Missing:

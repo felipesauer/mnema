@@ -1067,6 +1067,10 @@ function censusLocus(note: CensusNote): string {
     case 'declared-which':
     case 'unannounced-which':
       return note.which;
+    // Lines of a kind this binary does not know name the kind: what a person looks up in the
+    // changelog of a newer mnema.
+    case 'unread-kind':
+      return note.eventKind;
   }
 }
 

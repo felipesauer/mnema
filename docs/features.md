@@ -27,8 +27,8 @@ Each line says what it does and what it leaves unproven; the page it points to h
   host reads a command that fails to start as nothing to say; and Claude Code's call into the server,
   where a tool error does not block. A write by a shell command meets no hook, as on every host.
   A record the gate cannot read is not that case either: it refuses. Where a line of the record is one
-  the reader refuses (not JSON, a kind or a field this version does not know, as a newer mnema's
-  line is, or bytes that are not canonical), every write the gate is asked about is answered
+  the reader refuses (not JSON, a version of a kind or a field this version does not know, as a
+  newer mnema's line is, or bytes that are not canonical), every write the gate is asked about is answered
   `deny`, by the command and by the MCP route alike, with the tree and the line named in the
   reader's own words. The reach is the tree's: a line of the project's public or private tree refuses
   every write in that project, and a line of the machine's global tree, which every project reads,

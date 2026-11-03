@@ -324,7 +324,7 @@ describe('a record that cannot be read refuses the write, and nothing else does'
     { scope: 'global', chainRoot: '/h/.mnema/global' },
   ] as const;
   const reader =
-    'mnema 0.2.0 does not read "bogus.kind" at v1: it reads no version of that kind. If a newer mnema wrote the line, read the record with it.';
+    'mnema 0.2.0 does not read "memory.captured" at v2: it reads that kind up to v1. If a newer mnema wrote the line, read the record with it.';
   const lineIn = (file: string) => new UnreadableLineError(`${file} byte offset 2104`, reader);
 
   it('names the public tree, the line, the reader’s own words, and the repository’s history', () => {

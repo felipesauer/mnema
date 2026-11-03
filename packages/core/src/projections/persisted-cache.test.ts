@@ -37,6 +37,7 @@ import {
   decisionTransitioned,
   openChainForWriting,
   projectionCachePath,
+  readEntries,
   readTail,
   tailDir,
 } from '@mnema/chain';
@@ -217,7 +218,7 @@ describe('a cache kept in the tree is brought forward, not built again', () => {
     // not the acceptance, and says so by citing the birth: a move from what its writer saw is
     // a divergence, where one from a state nothing says it saw is a move no reader applies
     // (FORMAT.md §6.7).
-    const born = readTail({ root }, ctx.writer.tail, upcasters).entries.find(
+    const born = readEntries(readTail({ root }, ctx.writer.tail, upcasters).entries).find(
       ({ event }) =>
         event.kind === 'decision.transitioned' &&
         event.subject === decision &&

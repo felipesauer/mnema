@@ -58,12 +58,13 @@
 
 import {
   type CatalogEvent,
+  type ChainEntry,
   type ChainLayout,
   causalOrder,
   decisionTexts,
-  type Entry,
   firstLinkBreakFrom,
   illegalMoves,
+  isCatalogEvent,
   type LinkBreak,
   orderedSegments,
   precedesItsText,
@@ -72,6 +73,7 @@ import {
   readTailSince,
   type TailBoundary,
   tailsReadAt,
+  type UnreadEvent,
   type UpcasterRegistry,
 } from '@mnema/chain';
 
@@ -80,7 +82,7 @@ import {
  * resumed reading and the whole one answer in, so {@link chainArrivals} has one case.
  */
 interface ReadSoFar {
-  readonly arrivals: readonly Entry[];
+  readonly arrivals: readonly ChainEntry[];
   readonly boundary: TailBoundary | undefined;
 }
 
@@ -93,7 +95,12 @@ interface ReadSoFar {
  */
 interface TailStream {
   readonly tree: number;
-  readonly events: readonly CatalogEvent[];
+  /**
+   * Every line of the tail, by position, those of a kind this binary does not know included
+   * (ADR-113): they take their place in the merge, by their `at` and their citations, and are
+   * left out of what the merge hands a projection ({@link mergeStreams}).
+   */
+  readonly events: readonly (CatalogEvent | UnreadEvent)[];
   /** The entry hash of each event, by position: what a citation names. */
   readonly hashes: readonly string[];
   /**
@@ -461,7 +468,7 @@ export function chainArrivals(
     // A seq below the boundary is asked about only when an arrival takes one again, which is
     // the question that tells a fork from a gap: the whole tail is read then, and only then, so
     // the arrivals name it in the words a full reading of the same bytes does.
-    let whole: readonly Entry[] | undefined;
+    let whole: readonly ChainEntry[] | undefined;
     const broke = firstLinkBreakFrom(
       tail,
       entries,
@@ -600,7 +607,7 @@ function wholeTail(layout: ChainLayout, tail: string, upcasters: UpcasterRegistr
 }
 
 /** The greatest `at` in an order, or the empty string when it holds nothing. */
-function latestAt(events: readonly CatalogEvent[]): string {
+function latestAt(events: readonly (CatalogEvent | UnreadEvent)[]): string {
   let latest = '';
   for (const event of events) {
     if (event.at > latest) latest = event.at;
@@ -700,8 +707,8 @@ function streamsOf(
       events: entries.map((entry) => entry.event),
       hashes: entries.map((entry) => entry.link.hash),
       tail,
-      lastSeq: entries.length === 0 ? -1 : (entries[entries.length - 1] as Entry).link.seq,
-      lastHash: entries.length === 0 ? null : (entries[entries.length - 1] as Entry).link.hash,
+      lastSeq: entries.length === 0 ? -1 : (entries[entries.length - 1] as ChainEntry).link.seq,
+      lastHash: entries.length === 0 ? null : (entries[entries.length - 1] as ChainEntry).link.hash,
       ...(read.boundary !== undefined ? { boundary: read.boundary } : {}),
       ...(read.linkBreak !== undefined ? { linkBreak: read.linkBreak } : {}),
     };
@@ -726,8 +733,8 @@ function mergeStreams(
   readonly left: ReadonlySet<CatalogEvent>;
   readonly unresolved: string[];
 } {
-  const eventAt = (tail: number, position: number): CatalogEvent =>
-    (streams[tail] as TailStream).events[position] as CatalogEvent;
+  const eventAt = (tail: number, position: number): CatalogEvent | UnreadEvent =>
+    (streams[tail] as TailStream).events[position] as CatalogEvent | UnreadEvent;
   const merged = causalOrder(
     streams.map((stream) => ({
       tree: stream.tree,
@@ -741,11 +748,16 @@ function mergeStreams(
     },
   );
   const cursors = streams.map(() => 0);
-  const placed = merged.steps.map((tail) => {
+  // A line of a kind this binary does not know held its place in the merge and leaves here: no
+  // move is judged against it and no projection is handed it. Its position still counts, so a
+  // citation of a line after it on its tail resolves where it did.
+  const placed: { event: CatalogEvent; tail: number; position: number }[] = [];
+  for (const tail of merged.steps) {
     const position = cursors[tail] as number;
     cursors[tail] = position + 1;
-    return { event: eventAt(tail, position), tail, position };
-  });
+    const event = eventAt(tail, position);
+    if (isCatalogEvent(event)) placed.push({ event, tail, position });
+  }
   const illegal = judged ? illegalMoves(placed, merged.held) : new Map();
   // A decision is the text its first judgment saw (FORMAT.md section 6.8): a writing before that
   // text is left out, so the fold, which takes the first writing it meets, meets the text.
