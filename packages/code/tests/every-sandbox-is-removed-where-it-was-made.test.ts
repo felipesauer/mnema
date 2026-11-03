@@ -88,7 +88,12 @@ const SOURCES: readonly string[] = execFileSync(
   { cwd: ROOT, encoding: 'utf-8', maxBuffer: 32 * 1024 * 1024 },
 )
   .split('\n')
-  .filter((where) => /\.(ts|mts|cts|js|mjs|cjs)$/.test(where));
+  .filter(
+    (where) =>
+      /\.(ts|mts|cts|js|mjs|cjs)$/.test(where) &&
+      // The kit that ran the free block's measurement is published as it ran, and its own tests run under `node --test` in the kit, never here.
+      !where.startsWith('measurements/free-block-2026-10/kit/'),
+  );
 
 /** One call to `mkdtempSync`, with whatever follows it on its line. */
 const A_MAKING = /mkdtempSync\(([^;]*)/g;
