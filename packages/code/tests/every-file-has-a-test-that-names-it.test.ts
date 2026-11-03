@@ -1303,7 +1303,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-hooks-run-mnema-on-a-node-it-takes.test.ts': 10,
   'packages/code/tests/the-host-contract-checks-have-stable-names.test.ts': 3,
   'packages/code/tests/the-host-files-are-generated.test.ts': 5,
-  'packages/code/tests/the-init-asks-which-host-files-to-write.test.ts': 13,
+  'packages/code/tests/the-init-asks-which-host-files-to-write.test.ts': 14,
   'packages/code/tests/the-init-completes-what-a-founded-project-lacks.test.ts': 8,
   'packages/code/tests/the-init-draws-its-frames.test.ts': 17,
   'packages/code/tests/the-init-offers-the-files-of-yours-as-marks.test.ts': 9,

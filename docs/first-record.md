@@ -42,39 +42,8 @@ the work, or in a pull request of their own that `mnema record commit` prepares.
 
 At a terminal `mnema init` does not print those lines. It shows what it found around the folder, asks which agent
 hosts should read the mnema instructions (the arrows move, Space marks, Enter confirms, Esc founds nothing) and whether
-an agent may accept what you choose, and shows everything it is about to write, once, before it writes any of it. This
-is the first question, in a repository that already holds an `AGENTS.md`, a `CLAUDE.md` and a `.cursor/` folder (a `…`
-marks what this page shortens); the lines above are what it prints with no terminal, or with `--all-hosts`:
-
-```text
-mnema init  ·  …
-│
-◇  Here: shop/  (root of a git repository, branch main)
-│  No record yet: this folder becomes a mnema project. Nothing is written until
-│  you have seen the plan.
-│
-◇  Found around it
-│    AGENTS.md          yours, no mnema block in it
-│    CLAUDE.md          yours, no mnema block in it
-│    .cursor/           a Cursor folder
-│
-◆  Which agent hosts should read the mnema instructions?
-│
-│  ❯  [x]  Claude Code                              detected: CLAUDE.md
-│          .claude/rules/mnema-instructions.md  new
-│          [x]  CLAUDE.md  yours: block added
-│     [x]  Cursor                                   detected: .cursor/
-│          .cursor/rules/mnema-instructions.mdc  new
-│     [ ]  VS Code and Copilot CLI
-│          .github/instructions/mnema-instructions.instructions.md  new
-│     [x]  Codex, OpenCode, Qwen Code and others    detected: AGENTS.md
-│          AGENTS.md  yours: block added
-│
-│  Claude Code reads the rules file at launch.
-│  ↑↓ move · space toggles · a all · Enter confirms · Esc leaves
-```
-
-`mnema init --dry-run` prints the plan and writes nothing; `--hosts`, `--yes` and `--accepts` answer the questions
+an agent may accept what you choose, and shows everything it is about to write, once, before it writes any of it.
+`mnema init --dry-run` prints that plan and writes nothing; `--hosts`, `--yes` and `--accepts` answer the questions
 without asking them ([the reference](cli-reference.md#the-mnema-instructions-in-the-files-a-host-reads)).
 
 ## 2. Record a call, and accept it
