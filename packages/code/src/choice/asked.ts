@@ -32,6 +32,7 @@
  * (`tests/one-authority-over-colour.test.ts`).
  */
 
+import type { Render } from '../presentation/render.js';
 import { buildProgram } from '../program.js';
 import { type Keystroke, keystrokesOf } from '../repl/editing.js';
 import type { Leaving } from '../repl/leaving.js';
@@ -41,7 +42,7 @@ import { standing } from '../repl/standing.js';
 import { paintsAtAll } from '../wiring/color.js';
 import type { CliIo } from '../wiring/io.js';
 import { type Door, theChoicePage, theDoors } from './doors.js';
-import type { Screen } from './screen.js';
+import type { Screen, ScreenRequest } from './screen.js';
 
 /** Which way an arrow moves the pick: one door back, or one door on. */
 const A_DOOR_BACK = -1;
@@ -64,6 +65,26 @@ export interface ChoiceRequest {
   readonly output: NodeJS.WriteStream;
   /** Every way this process can stop, so the terminal is given back in all of them. */
   readonly leaving: Leaving;
+}
+
+/** How a screen is opened: the one function `./screen.js` exports, for the callers that draw their own page. */
+export type OpenScreen = (request: ScreenRequest) => Screen;
+
+/**
+ * THE SCREEN, LOADED AFTER THE DECISION ABOUT COLOUR HAS BEEN SAID.
+ *
+ * It is the one door onto the layout library for everything that draws a question: the bare name's
+ * menu here, and the questions `mnema init` and `mnema instructions` put to a person
+ * (`init/flow.ts`). It is one door and not two for the reason the order of its two lines is the
+ * mechanism: that library reads the channel once, while it is being loaded, so the answer has to be
+ * said first, and a second place that loaded it would be a second place to get the order wrong
+ * (`tests/one-authority-over-colour.test.ts` enumerates the doors by what they load and holds this
+ * to one call and one load).
+ */
+export async function theScreens(render: Render): Promise<OpenScreen> {
+  theLibraryIsTold(paintsAtAll(render));
+  const { openScreen } = await import('./screen.js');
+  return openScreen;
 }
 
 /**
@@ -97,8 +118,7 @@ export async function theChoice(request: ChoiceRequest): Promise<readonly string
   // cursor. Everything after this instant is `theNextPicked`'s.
   let picked = doors[0]?.word ?? '';
 
-  theLibraryIsTold(paintsAtAll(built.render));
-  const { openScreen } = await import('./screen.js');
+  const openScreen = await theScreens(built.render);
 
   return await new Promise<readonly string[] | undefined>((resolve) => {
     let screen: Screen | undefined;

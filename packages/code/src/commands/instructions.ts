@@ -260,15 +260,52 @@ export const EVERY_HOST_FILE: readonly string[] = CHOOSABLE_INSTRUCTIONS.map(
  * The targets this project has: the offered files that were chosen (`choice`, or else the ones the files
  * on disk show chosen, or else every one when nothing shows it), and the person's own files
  * (`CLAUDE.md` and its kin) where the file or a link is there.
+ *
+ * THE PERSON'S OWN FILES ARE A CHOICE TOO, where somebody was asked (`yours`): the ones listed, and
+ * only where they exist. Left out, as it is for every caller that asked nobody, every one that exists
+ * is a target, which is what a founding with nobody to ask has always written. It was the only rule,
+ * and an `init` that listed a `CLAUDE.md` it was going to write into, and could not leave it out,
+ * was asking a question whose answer was partly decided before it was asked
+ * (`the-init-offers-the-files-of-yours-as-marks.test.ts`).
  */
-function targetsOf(project: string, choice?: readonly string[]): readonly InstructionsTarget[] {
+function targetsOf(
+  project: string,
+  choice?: readonly string[],
+  yours?: readonly string[],
+): readonly InstructionsTarget[] {
   const onDisk = chosenOnDisk(project);
   const chosen = choice ?? (onDisk.length > 0 ? onDisk : EVERY_HOST_FILE);
-  return INSTRUCTIONS_TARGETS.filter((target) =>
-    target.when === 'always'
-      ? chosen.includes(target.path)
-      : existsAsALink(join(project, target.path)),
-  );
+  return INSTRUCTIONS_TARGETS.filter((target) => {
+    if (target.when === 'always') return chosen.includes(target.path);
+    if (yours !== undefined && !yours.includes(target.path)) return false;
+    return existsAsALink(join(project, target.path));
+  });
+}
+
+/** What one file of the instructions is before a write: the facts a person is shown before anything is written. */
+export interface InstructionsPeek {
+  /** The file's path from the project's root, with `/`. */
+  readonly path: string;
+  /** Whether the file (or a link) is there. */
+  readonly exists: boolean;
+  /** Whether the file is wholly mnema's own, and not the person's. */
+  readonly own: boolean;
+  /** What it holds of the block: the state a write is decided by. */
+  readonly found: InstructionsState;
+}
+
+/**
+ * What every file the product writes the instructions into holds now, read and not written. It is
+ * asked of the very reading a write is decided by (`inspect`), so what `mnema init` says before it
+ * writes is what the write then does.
+ */
+export function peekInstructions(project: string): readonly InstructionsPeek[] {
+  return INSTRUCTIONS_TARGETS.map((target) => ({
+    path: target.path,
+    exists: existsAsALink(join(project, target.path)),
+    own: target.own !== undefined,
+    found: inspect(project, target).found,
+  }));
 }
 
 /** What each instructions file of the project at `project` holds of the block. Reads only. */
@@ -351,8 +388,9 @@ function writeOne(project: string, target: InstructionsTarget): InstructionsFile
 export function writeInstructions(
   project: string,
   choice?: readonly string[],
+  yours?: readonly string[],
 ): readonly InstructionsFile[] {
-  return targetsOf(project, choice).map((target) => writeOne(project, target));
+  return targetsOf(project, choice, yours).map((target) => writeOne(project, target));
 }
 
 /** Removes the directories `from` and above it, up to `project`, while each is empty. */

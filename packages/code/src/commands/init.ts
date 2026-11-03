@@ -75,6 +75,12 @@ export interface InitContext {
    * nobody to ask has always done. A project already founded writes none of them either way.
    */
   readonly instructionFiles?: readonly string[];
+  /**
+   * Which of the person's own files (`CLAUDE.md`, `.claude/CLAUDE.md`, `GEMINI.md`) a founding writes the
+   * block into, where somebody was asked: the ones listed, and only where they exist. Absent is every one
+   * that exists, which is what a founding with nobody to ask has always done.
+   */
+  readonly yoursFiles?: readonly string[];
 }
 
 /** A project was established (or was already here). */
@@ -280,7 +286,11 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
 
   const gitRoot = nearestGitRoot(ctx.cwd);
   const { prettierIgnore } = complete(ctx.cwd);
-  const instructions = writeInstructions(ctx.cwd, ctx.instructionFiles ?? EVERY_HOST_FILE);
+  const instructions = writeInstructions(
+    ctx.cwd,
+    ctx.instructionFiles ?? EVERY_HOST_FILE,
+    ctx.yoursFiles,
+  );
   return {
     created: true,
     root,
@@ -307,6 +317,20 @@ export function wouldFound(ctx: InitContext): boolean {
   return (
     whyNoProjectRootAt(ctx.cwd, ctx.env) === undefined && !isDirectory(join(ctx.cwd, PROJECT_DIR))
   );
+}
+
+/**
+ * What {@link runInit} would do at `cwd`, read and not done: found a project, find one already there, or
+ * refuse. It is what `--dry-run` answers with, and it asks the two questions `runInit` asks in the same
+ * order, so a dry run cannot say a founding would happen where the real one refuses.
+ */
+export function readInit(
+  ctx: InitContext,
+): { readonly kind: 'founds' } | { readonly kind: 'already'; readonly root: string } | InitRefused {
+  const root = join(ctx.cwd, PROJECT_DIR);
+  const refused = whyNoProjectRootAt(ctx.cwd, ctx.env);
+  if (refused !== undefined) return { refused, root };
+  return isDirectory(root) ? { kind: 'already', root } : { kind: 'founds' };
 }
 
 function isDirectory(path: string): boolean {

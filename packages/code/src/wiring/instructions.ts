@@ -50,8 +50,9 @@ export function registerInstructions(program: Command, wiring: Wiring): Declared
         '',
         'The files on disk are the choice: where some of AGENTS.md and the three files of mnema’s own',
         'hold the instructions, those are written, checked and removed, and the others are not',
-        'expected; where none does, a terminal is asked which of the four (Enter for all), and',
-        'without one all four are written. --all-hosts writes all four, whichever are there.',
+        'expected; where none does, a terminal is asked which hosts (arrows and space to mark, Enter',
+        'to confirm; a CLAUDE.md or GEMINI.md that exists is a mark of its own), and without one all',
+        'four are written. --all-hosts writes all four, whichever are there.',
       ].join('\n'),
     )
     .action(async (opts: { check?: boolean; remove?: boolean; allHosts?: boolean }) => {
@@ -89,36 +90,36 @@ export function registerInstructions(program: Command, wiring: Wiring): Declared
         return;
       }
       let choice: readonly string[] | undefined;
+      let yours: readonly string[] | undefined;
       if (opts.allHosts === true) choice = EVERY_HOST_FILE;
       else if (
         opts.remove !== true &&
         chosenOnDisk(root).length === 0 &&
         io.aPersonIsHere === true &&
-        io.ask !== undefined
+        io.terminal !== undefined
       ) {
         // THE FILES ON DISK ARE THE CHOICE: with one of them there, this updates what is there and asks
-        // nothing; with none, and a person at the terminal, it asks what `mnema init` asks.
-        const { askWhichHostFiles, HOST_FILES_NOT_UNDERSTOOD, saidLeft } = await import(
-          './which-host-files.js'
+        // nothing; with none, and a person at a terminal, it asks what `mnema init` asks, on the same
+        // screen, and the person's own files (`CLAUDE.md` and its kin) are marks the person can leave off.
+        const { detectAround } = await import('../init/detect.js');
+        const { askTheHosts, defaultMarks } = await import('../init/flow.js');
+        const { ownFilesOf, yoursOf } = await import('../init/hosts.js');
+        const { leftLine } = await import('../init/screens.js');
+        const around = detectAround(root);
+        const asking = { io, render, terminal: io.terminal };
+        const answer = await askTheHosts(
+          asking,
+          around,
+          defaultMarks(around),
+          'Which agent hosts should the mnema instructions be written for?',
+          [leftLine('Left. Nothing was written.')],
         );
-        const answer = await askWhichHostFiles({ ...io, ask: io.ask }, render);
-        if (answer.kind === 'cancelled') {
-          saidLeft(io, render, 'Nothing was written.');
-          return;
-        }
-        if (answer.kind === 'unclear') {
-          reportRefusal(wiring, {
-            reason: 'REFUSED',
-            code: HOST_FILES_NOT_UNDERSTOOD,
-            message:
-              'the answer was not one of the numbers listed. Nothing was written; `mnema instructions --all-hosts` writes every file without asking.',
-          });
-          return;
-        }
-        choice = answer.files;
+        if (answer.kind === 'left') return;
+        choice = ownFilesOf(answer.answer);
+        yours = yoursOf(answer.answer);
       }
       const files =
-        opts.remove === true ? removeInstructions(root) : writeInstructions(root, choice);
+        opts.remove === true ? removeInstructions(root) : writeInstructions(root, choice, yours);
       for (const file of files) io.out(render(fact(changeLine(file))));
       if (files.some((file) => file.did === 'refused' || file.did === 'failed')) io.fail();
     });
