@@ -38,11 +38,12 @@ let originalHome: string | undefined;
 let originalXdg: string | undefined;
 
 /** Runs `mnema <argv>` in process and refuses to continue if it failed: setup, not assertion. */
-async function did(...argv: string[]): Promise<void> {
+async function did(...argv: string[]): Promise<string[]> {
   const err: string[] = [];
+  const out: string[] = [];
   let failed = false;
   const io: CliIo = {
-    out: () => {},
+    out: (line) => out.push(line),
     err: (line) => err.push(line),
     fail: () => {
       failed = true;
@@ -50,6 +51,7 @@ async function did(...argv: string[]): Promise<void> {
   };
   await run(argv, io);
   expect(failed, `${argv.join(' ')}: ${err.join(' / ')}`).toBe(false);
+  return out;
 }
 
 /** An assistant line carrying one tool call. */
@@ -245,7 +247,7 @@ describe('mnema tally', () => {
     const { reply, notes } = answer(payload('Stop', transcript(aWritingSession())));
     expect(reply).toEqual({
       systemMessage:
-        'Since this session opened, its own tool calls wrote 2 files, and 1 decision was recorded in this project’s record.',
+        'Since this session opened, its own tool calls wrote 2 files, and 1 decision was recorded in this project’s record.\n1 decision recorded since it opened still awaits a person’s judgement: `mnema decision review`.',
     });
     expect(notes).toEqual([]);
   });
@@ -256,6 +258,30 @@ describe('mnema tally', () => {
     expect(answer(payload('Stop', transcript(opened))).reply).toEqual({
       systemMessage:
         'Since this session opened, its own tool calls wrote 2 files, and 0 decisions were recorded in this project’s record.',
+    });
+  });
+
+  it('adds a second line counting the decisions recorded since it opened that still await a person, and drops it once each is ruled on', async () => {
+    const first = await did('decision', 'record', 'Use UTC', 'The ledger is UTC');
+    const second = await did('decision', 'record', 'Use WAL', 'Readers do not block');
+    const one = answer(payload('Stop', transcript(aWritingSession())));
+    expect(one.reply).toEqual({
+      systemMessage:
+        'Since this session opened, its own tool calls wrote 2 files, and 2 decisions were recorded in this project’s record.\n' +
+        '2 decisions recorded since it opened still await a person’s judgement: `mnema decision review`.',
+    });
+    const id = /Recorded decision ADR-1 \(([^)]+)\)/.exec(first[0] as string)?.[1] as string;
+    await did('decision', 'move', 'accept', id, '--note', 'The person chose it.');
+    expect(answer(payload('Stop', transcript(aWritingSession()))).reply).toEqual({
+      systemMessage:
+        'Since this session opened, its own tool calls wrote 2 files, and 2 decisions were recorded in this project’s record.\n' +
+        '1 decision recorded since it opened still awaits a person’s judgement: `mnema decision review`.',
+    });
+    const other = /Recorded decision ADR-2 \(([^)]+)\)/.exec(second[0] as string)?.[1] as string;
+    await did('decision', 'move', 'reject', other, '--note', 'Not this.');
+    expect(answer(payload('Stop', transcript(aWritingSession()))).reply).toEqual({
+      systemMessage:
+        'Since this session opened, its own tool calls wrote 2 files, and 2 decisions were recorded in this project’s record.',
     });
   });
 
@@ -389,7 +415,7 @@ describe('the plugin command a host runs at Stop', () => {
     expect(spoke.status).toBe(0);
     expect(JSON.parse(spoke.stdout)).toEqual({
       systemMessage:
-        'Since this session opened, its own tool calls wrote 2 files, and 1 decision was recorded in this project’s record.',
+        'Since this session opened, its own tool calls wrote 2 files, and 1 decision was recorded in this project’s record.\n1 decision recorded since it opened still awaits a person’s judgement: `mnema decision review`.',
     });
     const quiet = host(payload('Stop', transcript([prompt(LONG_AGO, 'hello')])));
     expect(quiet.status).toBe(0);

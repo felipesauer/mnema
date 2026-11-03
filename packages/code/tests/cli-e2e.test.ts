@@ -628,11 +628,11 @@ describe('mnema CLI: decision, end to end', () => {
     // The human name is the ADR, never a `t-xxxx`-style alias, which a decision
     // does not have. The output is `ADR-<n> (<uuid>)`: the label and the id, and
     // no alias in between.
-    // Two lines: the headline, then WHERE it landed; a decision is a declaration
-    // about the project, so it goes to the tree that travels, and nothing in the
-    // command said so.
+    // Three lines: the headline, then its state (born proposed, a person accepts it: no agent
+    // was declared), then WHERE it landed; a decision is a declaration about the project, so it
+    // goes to the tree that travels, and nothing in the command said so.
     expect(c.out.join('\n')).toMatch(
-      /^Recorded decision ADR-1 \([0-9a-f-]{36}\)\n {2}Landed in the public tree: committed with the repository, so it reaches every clone\.$/,
+      /^Recorded decision ADR-1 \([0-9a-f-]{36}\)\n {2}Born proposed, so not yet in force\. A person accepts it with `mnema decision review`\.\n {2}Landed in the public tree: committed with the repository, so it reaches every clone\.$/,
     );
 
     const root = resolveTrees(repo, {

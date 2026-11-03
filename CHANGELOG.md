@@ -129,6 +129,21 @@ with its own changelog.
 
 ### Changed
 
+- **The product says when an agent accepts a decision it recorded, in every repository (ADR-173).** A decision is born
+  `proposed`; where the person dictated it, or chose it among the options an agent offered (a recommended one included),
+  the agent accepts it at once, with a note quoting the answer, and one it concluded alone waits for the person. It is
+  said in four places, always under the switch `agent-accepts`: the reply of `record_decision` and of the command that
+  records one (a line after "Recorded decision ADR-n": the state, and `decision_transition` or `mnema decision move accept
+  <id>` while the switch is on, or that only a person accepts while it is off; the command with no `--which` says a
+  person accepts it with `mnema decision review`); the sentence `mnema settled` hands the agent after a question the
+  person answered (it records and accepts, or says a person accepts); the block `mnema init` and `mnema instructions`
+  write, now `v4` (one sentence in place of the parenthesis, and `mnema instructions` replaces a `v3` block, which is
+  kept, as it replaced the earlier ones; a block somebody edited is never overwritten); and the `Stop` line of
+  `session-tally`, which adds a second line when decisions recorded since the session opened still await a person: how
+  many, and `mnema decision review`. The MCP server's instructions are unchanged: they stand at 2,019 of 2,048 bytes
+  and the rule does not fit. Words only: the gate that refuses an agent's accept while the switch is off is the same,
+  and the product reads no answer (`packages/code/tests/a-recorded-decision-says-when-to-accept.test.ts`,
+  `a-settled-choice-is-said.test.ts`, `the-instructions-block.test.ts`, `a-session-says-what-it-wrote.test.ts`).
 - **Every page of the site says what it is, and the places a stranger first reads point at the site.** The site's
   configuration set one meta description for the whole site and it beat the one in each page, so every page said the
   same thing; now each page of `docs/` is described by the first sentence of its prose (`descriptionOf`) or by its own description line, the landing

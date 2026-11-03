@@ -98,7 +98,7 @@ import {
   type ToolAnnotations,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { acceptedByAnAgent } from '../agent-accepts.js';
+import { acceptedByAnAgent, stateOfANewDecision } from '../agent-accepts.js';
 import { keyFileLineForAModel } from '../key-file.js';
 import { movedLine } from '../moved-record.js';
 import { passedOverSentences } from '../not-a-project.js';
@@ -1377,7 +1377,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         return replied(active, [alreadyRecordedLine(result, result.scope)], { wrote: false });
       }
       return recorded(active, `Recorded decision ${result.adr} (${result.id})`, result, {
-        after: result.offered,
+        after: [stateOfANewDecision(result.agentsAccept, 'agent-tool'), ...result.offered],
       });
     },
   );
