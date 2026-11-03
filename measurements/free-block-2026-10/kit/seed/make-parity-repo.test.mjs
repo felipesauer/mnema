@@ -45,7 +45,7 @@ test('the copies equal what the archive gives now', { skip: !archiveThere || spa
 
 test('the seed has no personal identifier and no machine path', () => {
   for (const [path, text] of Object.entries(FILES)) {
-    assert.doesNotMatch(text, /\/home\/|\/tmp\/|felipe|plantae|@[a-z0-9-]+\.[a-z]{2,}/i, path);
+    assert.doesNotMatch(text, /\/home\/|\/tmp\/|<USER>|<EMPLOYER>|@[a-z0-9-]+\.[a-z]{2,}/i, path);
   }
 });
 
@@ -104,6 +104,6 @@ test('the repository holds nothing personal: no machine path, no name, no addres
   assert.ok(files.length > 15);
   for (const f of files) {
     const text = readFileSync(join(r.project, f), 'utf8').replaceAll('https://github.com/felipesauer/mnema', '');
-    assert.doesNotMatch(text, /\/home\/|\/tmp\/|plantae|felipe|@[a-z0-9-]+\.[a-z]{2,}/i, f);
+    assert.doesNotMatch(text, /\/home\/|\/tmp\/|<EMPLOYER>|<USER>|@[a-z0-9-]+\.[a-z]{2,}/i, f);
   }
 });

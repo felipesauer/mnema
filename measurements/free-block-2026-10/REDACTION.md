@@ -21,9 +21,11 @@ Applied in this order, each over the whole content of a file (a `.gz` is decompr
 | R5 | the machine's host name | `<HOST>` | 0 |
 | R6 | the user name, in any other place | `<USER>` | 0 |
 | R7 | the user id folder of `/tmp`, in any other place | `<UID>` | 0 |
+| R9 | the name of the maintainer's employer, in any spelling and case, in a file of the kit (applied to the kit's own files only; none of the recorded sessions carries it) | `<EMPLOYER>` | 2 |
+| R10 | the user name, in a file of the kit, except inside the public repository address `<account>/mnema` that the project is published at | `<USER>` | 2 |
 | R8 | the em dash (U+2014) in a text file that is not a gzip (the repository bans it; the compressed traffic is not text to that rule and keeps its characters) | the en dash (U+2013) | 3 |
 
-1902 substitutions in 30 of the 113 files. R3, R5, R6 and R7 matched nothing after the rules before them ran,
+1906 substitutions in 31 of the 114 files. R3, R5, R6 and R7 matched nothing after the rules before them ran,
 and stay in the table so the rule is the same for any file added. After the table, a scan of the whole published tree (each gzip decompressed)
 found no user name, host name, home path, uid folder, private address, MAC address, `USER`, `LOGNAME`, `HOSTNAME` or `PWD` value, or `uname` output in `results/` or `kit/results/`.
 The first scan, before the table, had found 3796 matches of these in the same files.
@@ -33,11 +35,11 @@ The first scan, before the table, had found 3796 matches of these in the same fi
 The reading of CODE (`analysis/labels.mjs`, the kit's own) was run again over the redacted copies of the five measured sessions:
 its output is identical to the one over the originals and to each session's recorded `labels.json`, for every session. The second reader's
 `llm-reader.json` files were not produced again (a call costs money and the maintainer's subscription): they were written over the
-originals, and what is published is their redacted text. The kit's `freeze/` and the code were not redacted: the manifest holds their hashes.
+originals, and what is published is their redacted text. The kit's files are the ones of the commit the manifest names, except the one file listed below under `kit/` with R9 and R10: its SHA-256 no longer equals the one in the manifest, and the file is the only one of the kit that differs. In it, a test that checks the seeded repository carries no personal word listed the user name and the employer's name as the words to refuse; the copy lists the two placeholders instead, so that copy refuses less than the original did.
 
 ## Every published file, with the SHA-256 of the original and of the published copy
 
-A file the table did not change has the same hash twice. For a `.gz`, the first pair is of the file as stored and the second of the content once decompressed.
+Every file of `results/` and of `kit/results/` is listed. Of the rest of the kit only the file the table changed is listed; the others are as the commit holds them. A file the table did not change has the same hash twice. For a `.gz`, the first pair is of the file as stored and the second of the content once decompressed.
 
 | File | Original | Published | Substitutions |
 |---|---|---|---|
@@ -165,3 +167,4 @@ A file the table did not change has the same hash twice. For a `.gz`, the first 
 | `results/qwen/summary.json` | `c548efdea67bd16989a34c90a9d1d5a84af45f8e1a18b81818c846f582381599` | `c548efdea67bd16989a34c90a9d1d5a84af45f8e1a18b81818c846f582381599` | none |
 | `results/qwen/wire.jsonl.gz` | `e5190d0f1f3a11334a8469678d4dc6ecdd9418347942dce025f2b960e857c8b5` | `183feb475385539959a14b4ebcea53b0c8bc68e3458f15dc76f0746e18c2dfaa` | R0 x41, R1 x359 |
 | `results/qwen/wire.jsonl.gz` (decompressed) | `1499dccfad3ee54859953dcda6912c1baf5b52b7fc6963ad34ca31b01472e964` | `de1f6f12ac84d93cac9fcd076643ad20ff41af820a25f317617acc26249134c2` | |
+| `kit/seed/make-parity-repo.test.mjs` | `377f2e67aea51b18852d8d418e51361baa4608494d716f6f99807551c617f441` | `83291dbbe84a2cef4a38df00ab52264207a89514199b8552d8e3fe17ee833f2b` | R9 x2, R10 x2 |
