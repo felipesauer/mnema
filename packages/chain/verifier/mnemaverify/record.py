@@ -1158,6 +1158,11 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
     not_applied = _check_moves(report, entries_by_tail, declarations)
     _check_rewrites(report, entries_by_tail, not_applied)
     _check_divergences(report, entries_by_tail, not_applied)
+    _say_unread_kinds(
+        report,
+        {tail: entries for tail, entries in entries_by_tail.items() if tail not in holed},
+        declarations,
+    )
     _say_keys_without_tail(report, ring, tail_ids, resolution)
     _refuse_a_record_no_tail_holds(report, tails_dir, tail_ids, entries_by_tail)
     _check_requirement(report, require, entries_by_tail, covered_by_tail)
@@ -1263,6 +1268,40 @@ def _check_moves(
             "the merged order against the tables event-schema.json publishes",
         )
     return {(ruling.tail, ruling.seq) for ruling in rulings}
+
+
+def _say_unread_kinds(
+    report: Report,
+    entries_by_tail: dict[str, list[Entry]],
+    declarations: schema.Schema | None,
+) -> None:
+    """Section 7.1: the lines of a kind the declarations hold no version of, one note per kind.
+
+    Such a line is read past, not refused: its envelope was rebuilt (section 4.1), its hash and its
+    place in the chain checked (section 3), its signer held to the rule every fact is held to
+    (section 6.2) and its checkpoint verified (section 6). What it says is not read, so no rule of a
+    section that reads a payload applies it. The sentence is the product's, word for word.
+    """
+    if declarations is None:
+        return  # Section 4.1 has already said no event could be rebuilt.
+    by_kind: dict[str, tuple[int, list[str]]] = {}
+    for tail, entries in entries_by_tail.items():
+        for entry in entries:
+            kind = entry.event.get("kind")
+            if not isinstance(kind, str) or schema.declares_kind(declarations, kind):
+                continue
+            count, tails = by_kind.get(kind, (0, []))
+            if tail not in tails:
+                tails.append(tail)
+            by_kind[kind] = (count + 1, tails)
+    for kind, (count, tails) in by_kind.items():
+        report.note(
+            "7.1",
+            f"{count} line(s) of kind {json.dumps(kind, ensure_ascii=False)} in tail(s) "
+            f"{', '.join(tails)}: a kind this reader does not know, so their hash, chain, signer "
+            "and checkpoint were checked and what they say was not read and none of it applied "
+            "(a newer mnema wrote them)",
+        )
 
 
 def _holds_nothing(tail_dir: str) -> bool:

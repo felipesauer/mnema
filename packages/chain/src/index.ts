@@ -49,12 +49,16 @@ export {
   resolveIdentity,
 } from './chain/enrollment.js';
 export {
+  type ChainEntry,
   type Entry,
   type EntryLink,
   EntryParseError,
+  isRead,
   parseEntry,
+  readEntries,
   sealEntry,
   serializeEntry,
+  type UnreadEntry,
 } from './chain/entry.js';
 export { type ChainExtent, chainExtent } from './chain/freshness.js';
 export {
@@ -346,7 +350,16 @@ export {
   type TransitionFields,
 } from './events/catalog.js';
 export type { Envelope, Which, Who } from './events/envelope.js';
-export { EventParseError, parseEvent, toCanonical, unreadableReason } from './events/parse.js';
+export {
+  EventParseError,
+  parseEvent,
+  type ReadEvent,
+  readEvent,
+  readsKind,
+  toCanonical,
+  type UnreadEvent,
+  unreadableReason,
+} from './events/parse.js';
 export { PROOF_FIELDS, proofFields, transitionProse } from './events/proof.js';
 export { catalogUpcasters } from './events/registry.js';
 export { mayRetract } from './events/retraction.js';

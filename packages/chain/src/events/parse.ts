@@ -39,6 +39,7 @@
 
 import type { CanonicalValue } from './canonical.js';
 import type { CatalogEvent, TransitionFields } from './catalog.js';
+import type { Envelope } from './envelope.js';
 import {
   ENVELOPE_SCHEMA,
   type EnvelopeRule,
@@ -71,15 +72,66 @@ const ENVELOPE_FIELDS: readonly string[] = [...Object.keys(ENVELOPE_SCHEMA), 'pa
  * an event carrying fields its kind does not declare.
  */
 export function parseEvent(line: string, upcasters: UpcasterRegistry): CatalogEvent {
+  // A kind this reader does not know is refused here, naming it (the upcaster's refusal): this
+  // asks for a CATALOG event. A stored line is read through {@link readEvent}, which reads past it.
+  return validateAndRebuild(upcasters.upcast(versionedOf(line)));
+}
+
+/** One line as JSON, required to be an object with a string `kind` and a whole-number `v`. */
+function versionedOf(line: string): VersionedEvent {
   let raw: unknown;
   try {
     raw = parseStoredJson(line);
   } catch (error) {
     throw new EventParseError((error as Error).message);
   }
-  const versioned = asVersioned(raw);
+  return asVersioned(raw);
+}
+
+/**
+ * An event under a `kind` this reader does not know (`FORMAT.md` section 7.1): its envelope,
+ * checked and rebuilt like any event's, and nothing of its payload.
+ *
+ * The payload is not carried at all, so nothing downstream can read it, project it or apply it:
+ * a reader that does not know the kind does not know what its fields mean, and guessing is what
+ * the closed catalog exists to prevent. What proves the line (its hash, its place in the chain,
+ * its signer and the checkpoint over it) is taken from the line as written and from this
+ * envelope, never from the payload.
+ */
+export type UnreadEvent = Readonly<Omit<Envelope, 'kind'>> & { readonly kind: string };
+
+/** What reading one event gives: a catalog event, or an event of a kind this reader does not know. */
+export type ReadEvent = { readonly event: CatalogEvent } | { readonly unread: UnreadEvent };
+
+/**
+ * Whether this reader knows `kind`: the one question that separates a line it reads from a line
+ * it reads past (ADR-113). Asked of the catalog's own table, by its OWN keys: `toString` is not a
+ * kind because every object answers to it.
+ */
+export function readsKind(kind: string): boolean {
+  return Object.hasOwn(PAYLOAD_SCHEMA, kind);
+}
+
+/**
+ * Parses one event, as {@link parseEvent} does, except for a `kind` this reader does not know:
+ * that line is not refused, it is checked for everything that does not need its payload (a JSON
+ * object, a whole-number `v`, every envelope field well formed, no top-level key the envelope does
+ * not declare, a payload that is a JSON object) and answered as {@link UnreadEvent}. A KNOWN kind
+ * is read exactly as before: an unknown field, an unknown `v`, a malformed value all refuse.
+ *
+ * This is the single site of that rule (ADR-113). Every reading of a stored line reaches it
+ * through `parseEntry`, and the second reader states the same rule in `schema.rebuild`.
+ */
+export function readEvent(line: string, upcasters: UpcasterRegistry): ReadEvent {
+  const versioned = versionedOf(line);
+  if (!readsKind(versioned.kind)) {
+    const event = versioned as unknown as CatalogEvent;
+    const envelope = validateEnvelope(event);
+    requirePayloadObject(event);
+    return { unread: envelope as unknown as UnreadEvent };
+  }
   const upcast = upcasters.upcast(versioned);
-  return validateAndRebuild(upcast);
+  return { event: validateAndRebuild(upcast) };
 }
 
 /**

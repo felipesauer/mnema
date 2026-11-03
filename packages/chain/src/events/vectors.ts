@@ -75,7 +75,9 @@ import {
   taskCreated,
   taskTransitioned,
 } from './build.js';
+import type { CanonicalValue } from './canonical.js';
 import type { CatalogEvent, EventKind } from './catalog.js';
+import { toCanonical } from './parse.js';
 
 /** One vector: a stable name and the fixed event whose canonical bytes are frozen. */
 export interface CanonicalVector {
@@ -617,6 +619,62 @@ export const CANONICAL_VECTORS: {
     },
   ],
 };
+
+/**
+ * A vector of a kind no version of the catalog declares, nor ever will: `x.from-the-future` is
+ * reserved for it (`FORMAT.md` section 7.1). It is what a newer writer leaves for an older reader,
+ * frozen: its digest is taken like any event's, and a reader that does not know its kind reads its
+ * envelope and leaves its payload unread (ADR-113), so the payload holds fields no contract
+ * declares and the reader still does not refuse it.
+ */
+export interface UnreadVector {
+  readonly name: string;
+  /** The event as a newer writer would write it: an envelope, a kind, and a payload object. */
+  readonly event: { readonly kind: string } & Readonly<Record<string, CanonicalValue>>;
+}
+
+/** The kind of {@link UNREAD_VECTORS}: no version of the catalog declares it. */
+export const UNREAD_VECTOR_KIND = 'x.from-the-future';
+
+/** The vectors of a kind no reader knows, listed in the published file after the catalog's. */
+export const UNREAD_VECTORS: readonly UnreadVector[] = [
+  {
+    name: 'x.from-the-future (a kind no version declares, read past)',
+    event: {
+      v: 3,
+      kind: UNREAD_VECTOR_KIND,
+      at: VECTOR_AT,
+      who: VECTOR_WHO,
+      signerFp: VECTOR_SIGNER_FP,
+      subject: 'f-1',
+      which: 'claude',
+      payload: { says: 'what a newer mnema means by it', count: 2 },
+    },
+  },
+];
+
+/**
+ * Every vector the published file lists, in its order: the catalog's, then the ones of a kind no
+ * version declares. The aggregate content root folds over these.
+ */
+export function publishedVectors(): readonly {
+  readonly name: string;
+  readonly kind: string;
+  readonly value: CanonicalValue;
+}[] {
+  return [
+    ...canonicalVectors().map(({ name, event }) => ({
+      name,
+      kind: event.kind as string,
+      value: toCanonical(event),
+    })),
+    ...UNREAD_VECTORS.map(({ name, event }) => ({
+      name,
+      kind: event.kind,
+      value: event as CanonicalValue,
+    })),
+  ];
+}
 
 /**
  * Every vector, flattened in the table's declaration order.
