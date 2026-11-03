@@ -95,12 +95,14 @@ export function runTailRelink(
       ...(input.run !== undefined ? { run: input.run } : {}),
     },
   );
-  // Signed before this returns, as every write path of the surface is: the operation checkpoints
-  // each relink it wrote, and a writer with nothing left to sign signs nothing here.
-  for (const writer of writers) writer.checkpoint();
   if (!relinked.ok) {
     return { ok: false, reason: 'REFUSED', code: relinked.code, message: relinked.message };
   }
+  // Signed before this returns, as every write path of the surface is: the operation checkpoints
+  // each relink it wrote, and a writer with nothing left to sign signs nothing here. Never after a
+  // refusal: a writer's first act reads its tail, and one whose tail names the other record moves
+  // the installation to a new id, which a refusal that wrote nothing must not do.
+  for (const writer of writers) writer.checkpoint();
   const { replaced: _replaced, ...written } = relinked;
   return { ...written, opened, scope: tree, ...forwardReplacement(relinked) };
 }

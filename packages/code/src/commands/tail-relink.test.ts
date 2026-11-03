@@ -8,7 +8,15 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { catalogUpcasters, openChainForWriting, verifyChain } from '@mnema/chain';
@@ -109,6 +117,35 @@ describe('mnema tail relink', () => {
     expect(done.opened.map((one) => one.from)).toEqual([tail]);
     expect(done.relinks[0]?.host).not.toBe(host);
     expect(done.relinks[0]?.host).toBe(done.opened[0]?.to);
+  });
+});
+
+describe('a relink refused', () => {
+  /** Every file under `dir`, by path, with its bytes. */
+  function filesOf(dir: string): Map<string, string> {
+    const held = new Map<string, string>();
+    for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const path = join(entry.parentPath, entry.name);
+      held.set(path, readFileSync(path, 'utf-8'));
+    }
+    return held;
+  }
+
+  it('leaves keys/ and tails/ as they were, the installation id included', () => {
+    const { repo, env, tail } = twoRecords();
+    const pub = resolveTrees(repo, env).projectPublic as string;
+    // The installation whose own tail is the one asked for: a writer of it that acted would move
+    // the installation to a new id.
+    const fingerprint = tail.slice(0, tail.indexOf('-'));
+    writeFileSync(join(pub, 'keys', `${fingerprint}.inst`), tail.slice(fingerprint.length + 1));
+    rmSync(join(pub, 'locks'), { recursive: true, force: true });
+    const keys = filesOf(join(pub, 'keys'));
+    const tails = filesOf(join(pub, 'tails'));
+    const done = runTailRelink({ cwd: repo, env }, { tails: [tail], reason: '***' });
+    expect(done).toMatchObject({ ok: false, reason: 'REFUSED', code: 'NOT_A_REASON' });
+    expect(filesOf(join(pub, 'keys'))).toEqual(keys);
+    expect(filesOf(join(pub, 'tails'))).toEqual(tails);
   });
 });
 

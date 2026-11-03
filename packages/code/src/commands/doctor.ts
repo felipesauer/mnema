@@ -1123,7 +1123,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
  * then the tails move, and the fix says both. A tail whose key this machine does not hold, or
  * whose relink the readers would not count (`relinkTails`, which asks their rule first), keeps the
  * refusal, named, and nothing of that tree is written or moved
- * (`code/tests/a-private-tree-from-before-the-repository-is-relinked.test.ts`).
+ * (`code/tests/the-private-tree-moves-out-of-the-worktree.test.ts`).
  */
 export function fixPrivateTree(
   ctx: DoctorContext,
@@ -1236,10 +1236,11 @@ function relinkLeftBehind(
     },
     { tails: tails.map(([tail]) => tail), into: into.name, reason: RELINKED_BY_THE_DOCTOR },
   );
-  // Signed before this returns, as every write path is: each relink is checkpointed by the
-  // operation, and a writer with nothing left to sign signs nothing here.
-  for (const writer of writers) writer.checkpoint();
   if (!relinked.ok) return { ok: false, why: `${relinked.code}: ${oneLine(relinked.message)}` };
+  // Signed before this returns, as every write path is: each relink is checkpointed by the
+  // operation, and a writer with nothing left to sign signs nothing here. Never after a refusal,
+  // which must leave the installation's id where it was.
+  for (const writer of writers) writer.checkpoint();
   const hosts = [...new Set(relinked.relinks.map((one) => one.host))];
   return {
     ok: true,
