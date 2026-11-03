@@ -169,6 +169,10 @@ export function registerRecord(program: Command, wiring: Wiring): Declared {
       if (!result.ok) {
         reportRefusal(wiring, result, {
           NOT_A_REPOSITORY: 'The record here is not inside a git repository.',
+          A_LINK:
+            result.reason === 'A_LINK'
+              ? onOneLine`Nothing was made: these are symbolic links where the record keeps files, and a link is not followed into a commit: ${someOf(result.paths)}.`
+              : '',
           NO_REMOTE:
             result.reason === 'NO_REMOTE'
               ? result.remotes.length === 0

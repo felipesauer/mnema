@@ -14,17 +14,20 @@ import { spawnSync } from 'node:child_process';
 import {
   appendFileSync,
   chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkpointHash, parseCheckpoint } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   cutBranch,
@@ -168,7 +171,7 @@ describe('mnema record commit', SLOW, () => {
       ['ADR-1', 'proposed'],
       ['ADR-2', 'proposed'],
     ]);
-    expect(made.branch).toMatch(/^mnema-record\/adr-1-to-2-[0-9a-f]{12}$/);
+    expect(made.branch).toMatch(/^mnema-record\/adr-1-2-[0-9a-f]{12}$/);
     expect(made.title).toBe('Record ADR-1 and ADR-2');
 
     // The commit's tree is the base's with the tail grown to its last checkpoint, and nothing else.
@@ -449,6 +452,95 @@ describe('mnema record commit', SLOW, () => {
   });
 });
 
+/** The hash of the last checkpoint of a tail, the name its witness files carry. */
+function lastCheckpointHash(checkout: string, tail: string): string {
+  const lines = readFileSync(join(checkout, tail, 'checkpoints.jsonl'), 'utf-8')
+    .trimEnd()
+    .split('\n');
+  return checkpointHash(parseCheckpoint(lines[lines.length - 1] as string));
+}
+
+describe('mnema record commit, run from where git points elsewhere', SLOW, () => {
+  it('writes no index a hook or a caller named, and still makes the branch', () => {
+    const { local } = world();
+    decide(local, 'one');
+    const outside = join(sandbox, 'outside-index');
+    const held = join(sandbox, 'held-index');
+    writeFileSync(held, 'not an index\n');
+    for (const index of [outside, held]) {
+      const before = existsSync(index) ? readFileSync(index) : undefined;
+      const ran = spawnSync(process.execPath, [CLI, 'record', 'commit', '--json'], {
+        cwd: local,
+        encoding: 'utf-8',
+        env: { ...env(), GIT_INDEX_FILE: index },
+      });
+      expect(ran.status, `${ran.stdout}${ran.stderr}`).toBe(0);
+      expect(existsSync(index) ? readFileSync(index) : undefined).toEqual(before);
+      expect((JSON.parse(ran.stdout) as { kind: string }).kind).toMatch(/^(made|exists)$/);
+    }
+    expect(git(local, 'for-each-ref', 'refs/heads/mnema-record/').out).not.toBe('');
+  });
+});
+
+describe('mnema record commit, and the files beside a tail', SLOW, () => {
+  it('carries the witness of a checkpoint it carries, and passes over a folder there', () => {
+    const { local } = world();
+    decide(local, 'one');
+    const tail = theTail(local);
+    const hash = lastCheckpointHash(local, tail);
+    mkdirSync(join(local, tail, 'witness'));
+    writeFileSync(join(local, tail, 'witness', `${hash}.blocks`), '');
+    mkdirSync(join(local, tail, 'witness', `${hash}.d`));
+    const made = commitIn(local);
+    if (!made.ok || made.kind !== 'made') throw new Error(JSON.stringify(made));
+    const carried = git(local, 'ls-tree', '-r', '--name-only', made.commit, `${tail}/witness`).out;
+    expect(carried.split('\n').filter(Boolean)).toEqual([`${tail}/witness/${hash}.blocks`]);
+  });
+
+  it('refuses a key, a tail file or a witness that is a symbolic link, naming it', () => {
+    const cases: readonly ((local: string, tail: string) => string)[] = [
+      (local) => {
+        const key = readdirSync(join(local, '.mnema', 'keys')).find((name) =>
+          name.endsWith('.pub'),
+        ) as string;
+        const path = join(local, '.mnema', 'keys', key);
+        const copy = join(sandbox, 'elsewhere.pub');
+        writeFileSync(copy, readFileSync(path));
+        rmSync(path);
+        symlinkSync(copy, path);
+        return `.mnema/keys/${key}`;
+      },
+      (local, tail) => {
+        const path = join(local, tail, 'checkpoints.jsonl');
+        const copy = join(sandbox, 'elsewhere.jsonl');
+        writeFileSync(copy, readFileSync(path));
+        rmSync(path);
+        symlinkSync(copy, path);
+        return `${tail}/checkpoints.jsonl`;
+      },
+      (local, tail) => {
+        const hash = lastCheckpointHash(local, tail);
+        mkdirSync(join(local, tail, 'witness'));
+        writeFileSync(join(sandbox, 'secret'), 'a file of the machine\n');
+        symlinkSync(join(sandbox, 'secret'), join(local, tail, 'witness', `${hash}.ots`));
+        return `${tail}/witness/${hash}.ots`;
+      },
+    ];
+    for (const [n, link] of cases.entries()) {
+      rmSync(join(sandbox, 'remote.git'), { recursive: true, force: true });
+      rmSync(join(sandbox, 'local'), { recursive: true, force: true });
+      rmSync(join(sandbox, 'secret'), { force: true });
+      const { local } = world();
+      decide(local, `one ${n}`);
+      const named = link(local, theTail(local));
+      expect(commitIn(local)).toEqual({ ok: false, reason: 'A_LINK', paths: [named] });
+    }
+    const said = mnema(join(sandbox, 'local'), 'record', 'commit');
+    expect(said.status).toBe(1);
+    expect(said.out).toMatch(/symbolic links/);
+  });
+});
+
 describe('mnema record commit, where there is nothing to cut from', SLOW, () => {
   it('refuses outside a project, and outside a repository', () => {
     const empty = join(sandbox, 'empty');
@@ -522,13 +614,26 @@ describe('what a cut is named', () => {
     expect(cutTitle([], 1)).toBe('Record 1 event');
     expect(cutTitle([], 3)).toBe('Record 3 events');
     expect(cutTitle(['ADR-4'], 2)).toBe('Record ADR-4');
-    expect(cutTitle(['ADR-4', 'ADR-6', 'ADR-9'], 9)).toBe('Record 3 decisions, ADR-4 to ADR-9');
+    expect(cutTitle(['ADR-4', 'ADR-9'], 2)).toBe('Record ADR-4 and ADR-9');
+    // A range only where the labels run without a gap: one the cut does not carry is never inside one.
+    expect(cutTitle(['ADR-1', 'ADR-2', 'ADR-3', 'ADR-4'], 9)).toBe('Record ADR-1 to ADR-4');
+    expect(cutTitle(['ADR-1', 'ADR-2', 'ADR-4'], 9)).toBe('Record ADR-1, ADR-2 and ADR-4');
+    expect(cutTitle(['ADR-1', 'ADR-2', 'ADR-3', 'ADR-5', 'ADR-6', 'ADR-7', 'ADR-9'], 9)).toBe(
+      'Record ADR-1 to ADR-3, ADR-5 to ADR-7 and ADR-9',
+    );
   });
 
-  it('names the branch by the labels and the digest', () => {
+  it('names the branch by the labels and the digest, with no range over a gap', () => {
     expect(cutBranch([], '0123456789ab')).toBe('mnema-record/events-0123456789ab');
     expect(cutBranch(['ADR-4'], 'ab')).toBe('mnema-record/adr-4-ab');
-    expect(cutBranch(['ADR-4', 'ADR-9'], 'ab')).toBe('mnema-record/adr-4-to-9-ab');
+    expect(cutBranch(['ADR-4', 'ADR-9'], 'ab')).toBe('mnema-record/adr-4-9-ab');
+    expect(cutBranch(['ADR-1', 'ADR-2', 'ADR-3', 'ADR-4'], 'ab')).toBe(
+      'mnema-record/adr-1-to-4-ab',
+    );
+    expect(cutBranch(['ADR-1', 'ADR-2', 'ADR-4'], 'ab')).toBe('mnema-record/adr-1-2-4-ab');
+    expect(cutBranch(['ADR-1', 'ADR-3', 'ADR-5', 'ADR-7'], 'ab')).toBe(
+      'mnema-record/4-decisions-ab',
+    );
   });
 });
 

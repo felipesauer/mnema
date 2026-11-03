@@ -51,12 +51,12 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -91,6 +91,7 @@ export interface NotGrown {
 export type RecordCommitRefused =
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   | { readonly ok: false; readonly reason: 'NOT_A_REPOSITORY' }
+  | { readonly ok: false; readonly reason: 'A_LINK'; readonly paths: readonly string[] }
   | { readonly ok: false; readonly reason: 'NO_REMOTE'; readonly remotes: readonly string[] }
   | { readonly ok: false; readonly reason: 'NO_DEFAULT_BRANCH'; readonly remote: string }
   | { readonly ok: false; readonly reason: 'NOT_A_PREFIX'; readonly found: readonly NotGrown[] }
@@ -173,16 +174,48 @@ export const STALE_AFTER_HOURS = 1;
 
 type Ran = { readonly status: number; readonly out: Buffer; readonly err: string };
 
+/**
+ * The variables that point git at a repository, an index or a work tree other than the one its
+ * directory names, as git itself lists them (`git rev-parse --local-env-vars`), with the ones
+ * this verb must never inherit named too in case git answers nothing. A git hook runs with
+ * `GIT_INDEX_FILE` and `GIT_DIR` set, and a `read-tree` that inherited them wrote the caller's
+ * index; so no git this verb starts, nor any reading it runs in process, sees them.
+ */
+export function repositoryVariables(): readonly string[] {
+  const listed = spawnSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf-8' });
+  return [
+    ...new Set([
+      ...(listed.stdout ?? '').split('\n').filter(Boolean),
+      'GIT_DIR',
+      'GIT_WORK_TREE',
+      'GIT_INDEX_FILE',
+      'GIT_COMMON_DIR',
+      'GIT_OBJECT_DIRECTORY',
+      'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+    ]),
+  ];
+}
+
+/** `env` without {@link repositoryVariables}. */
+function withoutRepositoryVariables(
+  env: NodeJS.ProcessEnv,
+  names: readonly string[],
+): NodeJS.ProcessEnv {
+  const kept = { ...env };
+  for (const name of names) Reflect.deleteProperty(kept, name);
+  return kept;
+}
+
 /** A git with automatic maintenance off; bytes out, so a tail is read as it is. */
 function git(
-  ctx: RecordCommitContext,
+  ctx: Scrubbed,
   cwd: string,
   args: readonly string[],
   extra: { readonly input?: Buffer; readonly env?: NodeJS.ProcessEnv } = {},
 ): Ran {
   const ran = spawnSync('git', ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args], {
     cwd,
-    env: { ...ctx.processEnv, ...extra.env },
+    env: { ...withoutRepositoryVariables(ctx.processEnv, ctx.repository), ...extra.env },
     maxBuffer: 1 << 30,
     ...(extra.input !== undefined ? { input: extra.input } : {}),
   });
@@ -305,6 +338,39 @@ export function whatInitWritesInTheRecord(): readonly string[] {
   }
 }
 
+/**
+ * Every symbolic link where the cut reads a file: a tail's folder and what is in it, its witness
+ * files, the key files, the files `init` writes. A link is refused, never followed: its target
+ * could be any file of the machine, and the commit would carry it under the record's name.
+ * Paths from the repository's top.
+ */
+function linksIn(record: string, recordDir: string): string[] {
+  const links: string[] = [];
+  const look = (dir: string, under: string) => {
+    if (!existsSync(dir)) return [];
+    const names = readdirSync(dir).sort();
+    for (const name of names) {
+      if (lstatSync(join(dir, name)).isSymbolicLink()) links.push(`${recordDir}${under}${name}`);
+    }
+    return names;
+  };
+  look(join(record, 'keys'), 'keys/');
+  for (const name of whatInitWritesInTheRecord()) {
+    const path = join(record, name);
+    if (existsSync(path) && lstatSync(path).isSymbolicLink()) links.push(`${recordDir}${name}`);
+  }
+  for (const id of look(join(record, 'tails'), 'tails/')) {
+    const tail = join(record, 'tails', id);
+    if (!lstatSync(tail).isDirectory()) continue;
+    look(tail, `tails/${id}/`);
+    const witness = join(tail, 'witness');
+    if (existsSync(witness) && lstatSync(witness).isDirectory()) {
+      look(witness, `tails/${id}/witness/`);
+    }
+  }
+  return links;
+}
+
 /** The decisions of the committed tree at `root` (its `.mnema/`), read in memory. */
 function decisionsOf(root: string): DecisionFacts[] {
   return withTreesRead([{ scope: 'public', chainRoot: root }], (sources) =>
@@ -370,31 +436,87 @@ function labelNumber(adr: string): number {
   return n === undefined ? Number.MAX_SAFE_INTEGER : Number(n);
 }
 
-/** The pull request's title, the commit's subject: what the cut carries, with no name or path. */
-export function cutTitle(labels: readonly string[], events: number): string {
-  const events1 = `${events} event${events === 1 ? '' : 's'}`;
-  if (labels.length === 0) return `Record ${events1}`;
-  if (labels.length === 1) return `Record ${labels[0]}`;
-  if (labels.length === 2) return `Record ${labels[0]} and ${labels[1]}`;
-  return `Record ${labels.length} decisions, ${labels[0]} to ${labels[labels.length - 1]}`;
+/**
+ * The labels in runs: a run of three or more consecutive numbers is one range, every other label
+ * stands alone, so a range never hides a label the cut does not carry.
+ */
+function runsOf(labels: readonly string[]): (readonly [string] | readonly [string, string])[] {
+  const runs: (readonly [string] | readonly [string, string])[] = [];
+  let run: string[] = [];
+  const close = () => {
+    const [first] = run;
+    const last = run[run.length - 1];
+    if (first !== undefined && last !== undefined && run.length >= 3) runs.push([first, last]);
+    else for (const one of run) runs.push([one]);
+    run = [];
+  };
+  for (const label of labels) {
+    const previous = run[run.length - 1];
+    const next =
+      previous !== undefined &&
+      labelNumber(previous) !== Number.MAX_SAFE_INTEGER &&
+      labelNumber(label) === labelNumber(previous) + 1;
+    if (!next) close();
+    run.push(label);
+  }
+  close();
+  return runs;
 }
+
+/** The pull request's title, the commit's subject: every label the cut carries, with no name or path. */
+export function cutTitle(labels: readonly string[], events: number): string {
+  if (labels.length === 0) return `Record ${events} event${events === 1 ? '' : 's'}`;
+  const said = runsOf(labels).map((run) => run.join(' to '));
+  const last = said.pop() as string;
+  return `Record ${said.length > 0 ? `${said.join(', ')} and ${last}` : last}`;
+}
+
+/** At most this many runs of labels name a branch; past them it says how many decisions. */
+const RUNS_IN_A_NAME = 3;
 
 /** The branch the cut is put on: from the labels it carries and a digest of where it ends. */
 export function cutBranch(labels: readonly string[], digest: string): string {
-  const first = labels[0];
-  const last = labels[labels.length - 1];
+  const runs = runsOf(labels);
   const words =
-    first === undefined || last === undefined
+    labels.length === 0
       ? 'events'
-      : first === last
-        ? first.toLowerCase()
-        : `${first.toLowerCase()}-to-${last.slice(4)}`;
-  return `mnema-record/${words.replace(/[^a-z0-9-]/g, '-')}-${digest}`;
+      : runs.length > RUNS_IN_A_NAME
+        ? `${labels.length}-decisions`
+        : `adr-${runs.map((run) => run.map((label) => label.replace(/^ADR-/, '')).join('-to-')).join('-')}`;
+  return `mnema-record/${words.toLowerCase().replace(/[^a-z0-9-]/g, '-')}-${digest}`;
 }
 
-/** Cuts the committed tree here at a signed checkpoint and makes it a commit on a branch of its own. */
+/** The context inside the verb: with the variables no git of it may inherit. */
+interface Scrubbed extends RecordCommitContext {
+  readonly repository: readonly string[];
+}
+
+/**
+ * Cuts the committed tree here at a signed checkpoint and makes it a commit on a branch of its own.
+ *
+ * Every git it starts runs without {@link repositoryVariables}, and so do the readings it runs in
+ * process (the trees resolved, `verify`, `verify --since`), which spawn git with this process's
+ * environment: those variables are taken out of it for the call, and put back after.
+ */
 export function runRecordCommit(
   ctx: RecordCommitContext,
+  input: { readonly through?: string },
+): RecordCommitDone | RecordCommitRefused {
+  const repository = repositoryVariables();
+  const saved = new Map<string, string | undefined>();
+  for (const name of repository) {
+    if (name in process.env) saved.set(name, process.env[name]);
+    Reflect.deleteProperty(process.env, name);
+  }
+  try {
+    return cut({ ...ctx, repository }, input);
+  } finally {
+    for (const [name, value] of saved) process.env[name] = value;
+  }
+}
+
+function cut(
+  ctx: Scrubbed,
   input: { readonly through?: string },
 ): RecordCommitDone | RecordCommitRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
@@ -406,6 +528,8 @@ export function runRecordCommit(
     return { ok: false, reason: 'NOT_A_REPOSITORY' };
   }
   const recordDir = prefix.endsWith('/') ? prefix : `${prefix}/`;
+  const links = linksIn(record, recordDir);
+  if (links.length > 0) return { ok: false, reason: 'A_LINK', paths: links };
 
   // 1. The base: the default branch of the remote, as this clone last read it.
   const remotes = (said(git(ctx, top, ['remote'])) ?? '').split('\n').filter(Boolean);
@@ -462,7 +586,7 @@ export function runRecordCommit(
   const tailsDir = join(record, 'tails');
   const tails = existsSync(tailsDir)
     ? readdirSync(tailsDir)
-        .filter((id) => statSync(join(tailsDir, id)).isDirectory())
+        .filter((id) => lstatSync(join(tailsDir, id)).isDirectory())
         .sort()
         .map((id) => readTail(join(tailsDir, id), id))
     : [];
@@ -578,6 +702,7 @@ export function runRecordCommit(
     if (existsSync(witness)) {
       for (const name of readdirSync(witness).sort()) {
         if (!covered.has(name.slice(0, name.indexOf('.')))) continue;
+        if (!lstatSync(join(witness, name)).isFile()) continue;
         const bytes = readFileSync(join(witness, name));
         if (!heldBytes(at(`witness/${name}`))?.equals(bytes))
           writes.set(at(`witness/${name}`), bytes);
@@ -742,7 +867,7 @@ export function runRecordCommit(
  * --since` the base. With the decisions that tree reads, for what the output says of them.
  */
 function checkTree(
-  ctx: RecordCommitContext,
+  ctx: Scrubbed,
   top: string,
   scratch: string,
   tree: string,
