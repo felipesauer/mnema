@@ -1,0 +1,77 @@
+{
+  "host": "opencode",
+  "version": "1.18.35",
+  "label": "passed",
+  "why": "the three calls in order, the id carried, the marker said",
+  "directPassed": true,
+  "verdict": {
+    "pass": true,
+    "reasons": [],
+    "requests": 4,
+    "toolCalls": 3,
+    "discoveryCalls": 0,
+    "otherHostCalls": 0,
+    "toolCallsCountingDiscovery": 3,
+    "calls": [
+      {
+        "name": "mnema_governing_rules",
+        "via": null,
+        "argsOk": true,
+        "args": {
+          "path": "src/index.js"
+        },
+        "resultStart": "{\"path\":\"<RUNS>/ab-runs/opencode-1793306520719/proj"
+      },
+      {
+        "name": "mnema_search",
+        "via": null,
+        "argsOk": true,
+        "args": {
+          "term": "capcheck"
+        },
+        "resultStart": "{\"hits\":[{\"id\":\"01a18965-f026-7000-b3df-f78cedd219ef\",\"kind\":\"decision\",\"scope\":\"public\",\"project\":\"<SESSIONS>"
+      },
+      {
+        "name": "mnema_read_record",
+        "via": null,
+        "argsOk": true,
+        "args": {
+          "id": "01a18965-f026-7000-b3df-f78cedd219ef"
+        },
+        "resultStart": "{\"kind\":\"decision\",\"id\":\"01a18965-f026-7000-b3df-f78cedd219ef\",\"scope\":\"public\",\"project\":\"<SESSIONS>"
+      }
+    ],
+    "finalText": "capcheck-7f3a",
+    "offered": [
+      "mnema_governing_rules",
+      "mnema_read_record",
+      "mnema_search"
+    ]
+  },
+  "outcome": {
+    "exit": 0,
+    "ended": "exited",
+    "version": "version: 1.18.35"
+  },
+  "forwarded": 4,
+  "used_by_this_run": 4,
+  "quota_before": {
+    "used": 18,
+    "limit": 50,
+    "remaining": 32,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 16,
+    "ledgerUsed": 18
+  },
+  "quota_after": {
+    "used": 22,
+    "limit": 50,
+    "remaining": 28,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 18,
+    "ledgerUsed": 22
+  },
+  "served": {
+    "nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia": 60
+  }
+}

@@ -1,0 +1,17 @@
+● Which recorded rules govern this path (MCP: mnema) · src/index.js · path: "src/index.js"
+  └ {"path":"<SESSIONS>...
+
+● Search: find what has been recorded (MCP: mnema) · term: "capcheck"
+  └ {"hits":[{"id":"01a18964-dc21-7000-8504-f639d22e74cf","kind":"decision","scop...
+
+● Read record: one whole record by id (MCP: mnema) · id: "01a18964-dc21-7000-8504-f639d22e74cf"
+  └ {"kind":"decision","id":"01a18964-dc21-7000-8504-f639d22e74cf","scope":"publi...
+
+capcheck-7f3a
+
+
+
+Changes    +0 -0
+Duration   48s
+Tokens     ↑ 123.9k (77.8k cached) • ↓ 284 (122 reasoning)
+Resume     copilot --resume=650408fe-587e-4f08-850c-acc22ba612de

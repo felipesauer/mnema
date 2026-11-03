@@ -83,7 +83,14 @@ const SCANNED: readonly string[] = execFileSync(
   { cwd: ROOT, encoding: 'utf-8', maxBuffer: 32 * 1024 * 1024 },
 )
   .split('\n')
-  .filter((where) => where !== '' && TEXT.test(where) && !where.startsWith(COPIED_BYTE_FOR_BYTE))
+  .filter(
+    (where) =>
+      where !== '' &&
+      TEXT.test(where) &&
+      !where.startsWith(COPIED_BYTE_FOR_BYTE) &&
+      // What a host printed to its terminal, recorded as it was, escape bytes included: the free block's sessions.
+      !/^measurements\/free-block-2026-10\/(kit\/)?results\/.*host-output\.txt$/.test(where),
+  )
   .map((where) => join(ROOT, where));
 
 /** What each scanned file is, relative to the root, paired with the text it holds. */

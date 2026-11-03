@@ -1,0 +1,7 @@
+[0m
+> build · nvidia/nemotron-3-ultra-550b-a55b:free
+[0m
+[0m⚙ [0mmnema_governing_rules {"path":"src/index.js"}
+[0m⚙ [0mmnema_search {"term":"capcheck"}
+[0m⚙ [0mmnema_read_record {"id":"01a18965-f026-7000-b3df-f78cedd219ef"}
+capcheck-7f3a

@@ -1,0 +1,20 @@
+{
+  "started": false,
+  "kind": "measured",
+  "host": "copilot",
+  "label": "daily_remaining_below_threshold_at_start",
+  "reasons": [
+    "the account's remaining is below its limit: used 1 of 50 (account 0, ledger 1); a counted session starts only on a whole day"
+  ],
+  "before": {
+    "status": 200,
+    "isFreeTier": true,
+    "limit": 50,
+    "apiUsed": 0,
+    "ledgerRequests": 1,
+    "ledgerUnits": 1,
+    "used": 1,
+    "remaining": 49
+  },
+  "scenario": null
+}

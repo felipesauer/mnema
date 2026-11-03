@@ -1,0 +1,48 @@
+{
+  "label": "qwen",
+  "at": "2026-10-29T20:39:03.799Z",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "provider_tag": "nvidia",
+  "budget": 15,
+  "forwarded": 10,
+  "refusedLocally": 0,
+  "cuts": [],
+  "upstreamStatuses": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "served": {
+    "nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia": 321
+  },
+  "baseline": {
+    "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "provider": "Nvidia"
+  },
+  "invalid": null,
+  "stop": null,
+  "quota_before": {
+    "used": 4,
+    "limit": 50,
+    "remaining": 46,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 3,
+    "ledgerUsed": 4
+  },
+  "quota_after": {
+    "used": 14,
+    "limit": 50,
+    "remaining": 36,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 4,
+    "ledgerUsed": 14
+  },
+  "used_by_this_run": 10
+}

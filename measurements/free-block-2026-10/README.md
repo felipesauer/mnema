@@ -13,4 +13,11 @@ session cut by a 503 on its first request. Revision 5 itself replaced revision 4
 
 Four agent hosts (Codex CLI, Copilot CLI, OpenCode, Qwen Code), one counted session each, on one free model fixed by
 id and provider, with mnema installed. Each session is a story, never a rate, and names the revision it ran under. The
-result is published here when the round closes, beside this file; the kit that ran it is published with the result.
+result is published here, beside this file:
+
+- [`RESULT.md`](RESULT.md): the four sessions as stories, the one disagreement between the two readers, the two revisions, and what the result does not say.
+- [`kit/`](kit/): the kit that ran it, as the commit the manifest names holds it (`kit.commit` in `prereg.json`), with the results of the capability checks the freeze cites in `kit/results/`.
+- [`results/`](results/): each counted session's folder, the Copilot session cut under revision 5 and the redo that was refused at its start.
+- [`REDACTION.md`](REDACTION.md): the published traffic and log files are redacted copies (the machine's paths and user name), with the table and the SHA-256 of every original and every copy.
+
+Left out of the kit: the installed packages and binaries it rebuilds (`installed/`, `mnema-pkg/`, `plugin-tag/`), the run folders and any key file, which the kit's own `.gitignore` keeps out of a commit.

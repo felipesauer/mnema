@@ -1,0 +1,50 @@
+{
+  "host": "opencode",
+  "kind": "measured",
+  "mode": "live",
+  "at": "2026-11-02T22:27:15.160Z",
+  "version": "1.18.35",
+  "start_commit": "bded547224a485ae5780b9f4c741387986f407a5",
+  "kit_commit": "95ab40dbc6a76ec6942cd3d865c27066e2aac4fa",
+  "kit_code_clean": true,
+  "prompt_sha256": "0e5e79a50e12b9720d2c0c513311a0bf4fe841d2042442ce545622230047f13d",
+  "argv": [
+    "opencode",
+    "run",
+    "<neutral prompt>"
+  ],
+  "rule_sha256": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00",
+  "prereg_verify": {
+    "ok": true,
+    "exit": 0,
+    "advisory": false
+  },
+  "budget_requests": 24,
+  "units": 24,
+  "cost_per_request": 1,
+  "wall_clock_ms": 1800000,
+  "before": {
+    "status": 200,
+    "isFreeTier": true,
+    "limit": 50,
+    "apiUsed": 0,
+    "ledgerRequests": 1,
+    "ledgerUnits": 1,
+    "used": 1,
+    "remaining": 49
+  },
+  "arm": {
+    "rules_js": true,
+    "rules_php": true,
+    "js_tests_pass": true,
+    "js_accepts_export": false,
+    "php_tests_pass": true,
+    "php_accepts_export": false
+  },
+  "kit_files_left_in_the_working_directory": [
+    ".opencode/package-lock.json",
+    ".opencode/package.json",
+    ".opencode/plugins/mnema.js",
+    "opencode.json"
+  ]
+}

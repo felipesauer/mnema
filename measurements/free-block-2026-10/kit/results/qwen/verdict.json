@@ -1,0 +1,101 @@
+{
+  "host": "qwen",
+  "version": "0.26.1",
+  "label": "passed",
+  "why": "the three calls in order, the id carried, the marker said",
+  "directPassed": true,
+  "verdict": {
+    "pass": true,
+    "reasons": [],
+    "requests": 10,
+    "toolCalls": 6,
+    "discoveryCalls": 3,
+    "otherHostCalls": 0,
+    "toolCallsCountingDiscovery": 9,
+    "calls": [
+      {
+        "name": "mcp__mnema__governing_rules",
+        "via": "tool_call",
+        "argsOk": true,
+        "args": {
+          "path": "src/index.js"
+        },
+        "resultStart": "[tool_call bridge refused] Deferred tool \"mcp__mnema__governing_rules\" has no verified schema review in the current context. Run tool_search with select:mcp__mn"
+      },
+      {
+        "name": "mcp__mnema__governing_rules",
+        "via": "tool_call",
+        "argsOk": true,
+        "args": {
+          "path": "src/index.js"
+        },
+        "resultStart": "{\"path\":\"<RUNS>/ab-runs/qwen-1793306280708/project/"
+      },
+      {
+        "name": "mcp__mnema__search",
+        "via": "tool_call",
+        "argsOk": true,
+        "args": {
+          "text": "capcheck"
+        },
+        "resultStart": "[tool_call bridge refused] Deferred tool \"mcp__mnema__search\" has no verified schema review in the current context. Run tool_search with select:mcp__mnema__sear"
+      },
+      {
+        "name": "mcp__mnema__search",
+        "via": "tool_call",
+        "argsOk": true,
+        "args": {
+          "term": "capcheck"
+        },
+        "resultStart": "{\"hits\":[{\"id\":\"01a18962-44bf-7000-8f2c-73dae17d47ed\",\"kind\":\"decision\",\"scope\":\"public\",\"project\":\"<SESSIONS>"
+      },
+      {
+        "name": "mcp__mnema__read_record",
+        "via": "tool_call",
+        "argsOk": true,
+        "args": {
+          "id": "01a18962-44bf-7000-8f2c-73dae17d47ed"
+        },
+        "resultStart": "[tool_call bridge refused] Deferred tool \"mcp__mnema__read_record\" has no verified schema review in the current context. Run tool_search with select:mcp__mnema_"
+      },
+      {
+        "name": "mcp__mnema__read_record",
+        "via": "tool_call",
+        "argsOk": true,
+        "args": {
+          "id": "01a18962-44bf-7000-8f2c-73dae17d47ed"
+        },
+        "resultStart": "{\"kind\":\"decision\",\"id\":\"01a18962-44bf-7000-8f2c-73dae17d47ed\",\"scope\":\"public\",\"project\":\"<SESSIONS>"
+      }
+    ],
+    "finalText": "capcheck-7f3a",
+    "offered": []
+  },
+  "outcome": {
+    "exit": null,
+    "ended": "exited before the 480 s timeout (requests from 20:38:13Z to 20:39:02Z, relay.log); not killed by the relay (meta.json: invalid null, stop null)",
+    "version": "0.26.1 (install-output.txt)",
+    "note": "written by hand: the first version of run-host kept the exit code only in a verdict.json that finalize.mjs has since rewritten, so the exit code is not known"
+  },
+  "forwarded": 10,
+  "used_by_this_run": 10,
+  "quota_before": {
+    "used": 4,
+    "limit": 50,
+    "remaining": 46,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 3,
+    "ledgerUsed": 4
+  },
+  "quota_after": {
+    "used": 14,
+    "limit": 50,
+    "remaining": 36,
+    "path": "data.free_model_daily_requests",
+    "apiUsed": 4,
+    "ledgerUsed": 14
+  },
+  "served": {
+    "nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia": 321
+  }
+}

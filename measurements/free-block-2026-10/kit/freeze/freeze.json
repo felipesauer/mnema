@@ -1,0 +1,369 @@
+{
+  "frozen_at": "2026-10-30T23:15:29.270Z",
+  "design": {
+    "directory": "mnema/archive/active/comparison-after-0.1.4",
+    "design.yaml_sha256": "8eb4e7318fae1a90c2805076999bce141f80c84fcc72d8660ed02300f3f6c0fc",
+    "design.md_sha256": "09478a0b7bd36cb038384d7080806891828a4fac25d0cf24138c51867afc270b"
+  },
+  "models": {
+    "primary": {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "provider_tag": "nvidia",
+      "endpoint_name": "Nvidia | nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
+      "context_length": 1000000,
+      "endpoints_file": "freeze/endpoints-nvidia_nemotron-3-ultra-550b-a55b_free-20261030.json",
+      "endpoints_raw_sha256": "99c7eacd860b81ae2a73e99fde65e68033335f4550b594f843da564aa5d6fde0",
+      "projection_sha256": "bce8b3c4c9b58a3297eb01204ede4057fc6e7268acf48e137092c5175351f981",
+      "created": 1780551208,
+      "created_iso": "2026-06-04T05:33:28.000Z",
+      "endpoints": [
+        {
+          "name": "Nvidia | nvidia/nemotron-3-ultra-550b-a55b-20260604:free",
+          "tag": "nvidia",
+          "context_length": 1000000,
+          "supports_tool_choice": {
+            "none": true,
+            "auto": true,
+            "required": true,
+            "function": true
+          }
+        }
+      ]
+    },
+    "reserve": {
+      "id": "google/gemma-4-31b-it:free",
+      "provider_tag": "google-ai-studio",
+      "endpoint_name": "Google AI Studio | google/gemma-4-31b-it-20260402:free",
+      "context_length": 262144,
+      "endpoints_file": "freeze/endpoints-google_gemma-4-31b-it_free-20261030.json",
+      "endpoints_raw_sha256": "f6eaf8b4458cbde2e75694c29f770d4839ea9c7c4b352c1a79164f2bf980b3d0",
+      "projection_sha256": "b834d5d5d7542f8e7271fc55e0e05c2f79d9fc36a9d1b0934c2413a850464e3f",
+      "created": 1775148486,
+      "created_iso": "2026-04-02T16:48:06.000Z",
+      "endpoints": [
+        {
+          "name": "Google AI Studio | google/gemma-4-31b-it-20260402:free",
+          "tag": "google-ai-studio",
+          "context_length": 262144,
+          "supports_tool_choice": {
+            "none": true,
+            "auto": true,
+            "required": true,
+            "function": true
+          }
+        }
+      ]
+    }
+  },
+  "served_in_the_capability_check": {
+    "by_stream_events": {
+      "nvidia/nemotron-3-ultra-550b-a55b:free | Nvidia": 509,
+      "nvidia/nemotron-3-ultra-550b-a55b:free | ?": 28
+    },
+    "by_generation_record": {
+      "nvidia/nemotron-3-ultra-550b-a55b-20260604:free | Nvidia": 32
+    },
+    "requests_checked": 32
+  },
+  "catalog_snapshot": {
+    "file": "freeze/models-20261030.json",
+    "taken_at": "2026-10-30T23:13:53Z",
+    "bytes": 810075,
+    "raw_sha256": "5819341f0f32e96c44ee8b11beb5ced6835203847d3a9fcfe76bdb2d0e9956c7"
+  },
+  "hosts": {
+    "codex": {
+      "package": "@openai/codex",
+      "version": "0.161.0",
+      "binary": "installed/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex",
+      "binary_sha256": "9a820c17865fa825d04db416818679a9d63bd72e50835c396f496e5684626c9c",
+      "integrity": {
+        "@openai/codex": {
+          "version": "0.161.0",
+          "integrity": "sha512-+ZnJFGBbQBwYnjUTs+PoacgYVxmNyxMLiadIz6eSJ0AzQW0mRVxuuOQizSbz2qeNAJia9Syxag6j2uGf7guD2Q=="
+        },
+        "@openai/codex-linux-x64": {
+          "version": "0.161.0-linux-x64",
+          "integrity": "sha512-AVkNzeJWyCHHPyg5vxD8UE6aFsYaOwq0/x6mtmkOKy6LdjvsyxLr7Q7UULlk+Ma3+PnrN8uIxG2/XGPQ936hgA=="
+        }
+      },
+      "npm_audit_signatures": "2 packages have verified attestations (use --json --include-attestations to view attestation details)"
+    },
+    "copilot": {
+      "package": "@github/copilot",
+      "version": "1.0.104",
+      "binary": "installed/copilot/node_modules/@github/copilot-linux-x64/copilot",
+      "binary_sha256": "c90a6829edd5d6f9aea4928489e8686a8190c2fd3f1b77e6cc7369bd3f3def64",
+      "integrity": {
+        "@github/copilot": {
+          "version": "1.0.104",
+          "integrity": "sha512-C2fPHjSM8HanINktDaqaalPzNSsth9H3zj9V4+ier8ziOIqi+U6OiLXwH44e+QR1vIEaRLKnX40tXUS8SeJDVw=="
+        },
+        "@github/copilot-linux-x64": {
+          "version": "1.0.104",
+          "integrity": "sha512-HGxTAkwrlzIAoQRQ25uWoKToujHzmO1sKC0qGP/yQTv8UhWufHYGHKkHj4sjEbHhRqwXfZvcUzKL9t/vUtklFg=="
+        }
+      },
+      "npm_audit_signatures": "1 package has a verified attestation (use --json --include-attestations to view attestation details)"
+    },
+    "opencode": {
+      "package": "opencode-ai",
+      "version": "1.18.35",
+      "binary": "installed/opencode/node_modules/opencode-linux-x64/bin/opencode",
+      "binary_sha256": "77b2cfe4b97df6f15c3673b22100b9f79c711f25ecb9bf513bb82526b15d24fa",
+      "integrity": {
+        "opencode-ai": {
+          "version": "1.18.35",
+          "integrity": "sha512-tDQKThIZ3amp8NSn3XDP2Dj5BlhRbZC0VkIxgYuf6gvRSXkseqD31j/U4KfpPwha593i8M59hdsDfz32yJx4Og=="
+        },
+        "opencode-linux-x64": {
+          "version": "1.18.35",
+          "integrity": "sha512-xs/DPt8bK6NTWHpOlVJDWC/P3BnAuAQFHwa+mjrbxhDGd0Pi/GGWGjh4Sr4cpv6KwvfUKVoLKfHc/J8Nnz0XMg=="
+        }
+      },
+      "npm_audit_signatures": "audited 3 packages in 1s 3 packages have verified registry signatures"
+    },
+    "qwen": {
+      "package": "@qwen-code/qwen-code",
+      "version": "0.26.1",
+      "binary": "installed/qwen/node_modules/.bin/qwen",
+      "binary_sha256": "113efe4104a9fc66f507d34bfd6abbd896ceb77de47f4b468a0825a327fdc6a5",
+      "integrity": {
+        "@img/sharp-libvips-linux-x64": {
+          "version": "1.3.3",
+          "integrity": "sha512-4vKmvAst9nrowcqquKFAyZJUDolUaIp8uRiN0mWFguJ1IplC9/pitXtlnnlU4aa/eJw3J7i67V+pwUL+wZGdsA=="
+        },
+        "@img/sharp-linux-x64": {
+          "version": "0.35.4",
+          "integrity": "sha512-9qvvEAuk8k89TfWUoX2htWjbAMX8p+NxCppjpcg5k6xMsjhBQPTsoIh36h9Qde4WRuGpJeYnOjdosDn/cnv+OA=="
+        },
+        "@lydell/node-pty-linux-x64": {
+          "version": "1.2.0-beta.10",
+          "integrity": "sha512-J9HnxvSzEeMH748+Ul1VrmCLWMo7iCVJy9EGijRR62+YO/Yk5GaCydUTZ+KzlH0/X5aTrgt5cfiof4vx45tRRg=="
+        },
+        "@oven/bun-linux-x64": {
+          "version": "1.3.14",
+          "integrity": "sha512-7OVTAKvwfPmSbIV1HpdOoVVx5VRc427GuPPne93N6vk4eQBPId9nXmZDh9/zGaKPdbVjVtQSZafWQoUjx38Utw=="
+        },
+        "@qwen-code/qwen-code": {
+          "version": "0.26.1",
+          "integrity": "sha512-4kpIzrlrgmawivim0yCZjr1AP5cfHTanyL7eL1g2R8WYU6QDBq7j9fiAye7REXL4EEXkRIq45D7+ngTw5n3GqQ=="
+        }
+      },
+      "npm_audit_signatures": "10 packages have verified attestations (use --json --include-attestations to view attestation details)"
+    }
+  },
+  "mnema": {
+    "package": "@mnema/code",
+    "version": "0.1.4",
+    "integrity": "sha512-DwQStrsVstofNY6exGtBFb3vZXk59SqQKzGXa+n3JBnhY0DEZbR7ArGsBQ6WNC6X5qk/6UpHSP4Y8PUav5yVaw==",
+    "npm_audit_signatures": "25 packages have verified attestations (use --json --include-attestations to view attestation details)",
+    "tag": "v0.1.4",
+    "plugin_commit": "tag v0.1.4 is commit cebc4e8da68cdfffc59e1e52c4fd3e964c157c3d",
+    "plugin_tree_sha256": "0449de9ffb847d8bfb40f1fadf1df4bf6974690da5f6b310047104d3bc3a6ecc"
+  },
+  "kit": {
+    "commit": "eb38f2c7a2bb154757fc9377c3928e4dd98a54a8",
+    "tree": "caa729059dda7fd38006b0309d6fff650988380e",
+    "files_sha256": {
+      ".gitignore": "41d0be9f3bdbd9835aac1a1cacca2542a2388ba03638d44f8192cbca6a1cf758",
+      "README.md": "c1a2216d633ddec3269c93ba57614089a23be4e9287f8b7a79cff72cc5698340",
+      "analysis/compare.mjs": "7826597840069f6f24caa7a675e8c54e8f283698ea62060d9948cd480fc05834",
+      "analysis/labels.mjs": "866194c5f61615844b12e34655eec803e918e33b0d467d3e5fc2eb767d2865f8",
+      "analysis/labels.test.mjs": "6b8bd7701da61dbf5bc50da57f642d1a091598758cbdb54922659a2c03ae05a0",
+      "analysis/llm-reader-prompt.md": "bfef757b773300d4e8dad579c0d99fecd9d192abbebcf1092b0193d107686af9",
+      "analysis/llm-reader.mjs": "cd9fe25d86ce6b2dbe460c0b1b7e58fccf676c935a486e47d2dc186b64260979",
+      "analysis/llm-reader.test.mjs": "feadb95aa9912b0adfe978f17979df71e607e0fb7a51f244076247f3e311ce13",
+      "analysis/repo-facts.mjs": "f0c4b4ee458d5182f381b0c4b838edb4d1f5a206245ec917c285272a3a981432",
+      "analysis/transcript.mjs": "e6b8b24cf1ad1cdcf54e0e0fac77be16b1d94e257484a502d828d197b7c1f160",
+      "capcheck/capture-tools.mjs": "1ea99aa01b8538bf76a8eaad0a16050f30ed228384c7a1bc9066c362148b88c6",
+      "capcheck/criterion.mjs": "e00e03a3afa11440905294949e8b4a4b007ee0b28130c7de6fc6055618054ce2",
+      "capcheck/criterion.test.mjs": "1d7b4e384171d75b08729a71dd376af4f0ab68624f86c9374da155ea98b309e5",
+      "capcheck/direct.mjs": "f885e40ad5585026f4ed6e10d3d72d476dc1f966cb2320cc7612a118a8c62209",
+      "capcheck/finalize.mjs": "8e1b2593534864f934f24ad3fd3346ce39f747c6ab8b310a79ddc125fb64f9f3",
+      "capcheck/hook-proof.mjs": "0693032de3bac724661556889e5be6bef1d8196993f4781d411390d4838cd4f2",
+      "capcheck/hook-proof.test.mjs": "303bc4ce918a65bc5f0d44ec76939b570ce18605ed14946bed078b2a71775c89",
+      "capcheck/probe-request-cost.mjs": "058d662cda8eaf7f6e7ac0dfdfd7a46b6370f74f2cbaa240a0a63866f15ed9e3",
+      "capcheck/rejudge.mjs": "0c4253c8d1c8f5f7e9210cc17dc80a3778fa0bf162d5d30d210bc2a134cdbcb9",
+      "capcheck/run-host.mjs": "6a79c3631001751307ba12cfa9f50324b72584055532886305a65522045d8f87",
+      "capcheck/tools.json": "fe749481cdc52255d924bc636ed33a0d99f848622d98be830e018024dcc06357",
+      "capcheck/verify-served.mjs": "a25354868ea2272abb725a515fd2daae8cb85f2f77972aa707d7fcfce109e0e1",
+      "editcheck/edit-check.mjs": "db62f30b73ac0e65b1f2e84085c2b2304ccab133c63c492de146b11d8a805058",
+      "editcheck/edit-check.test.mjs": "75495652f26271b872a6e7c873c3f82ac826f3729f3c59c260127c39a3c6315f",
+      "freeze/make-freeze.mjs": "b8a351082f76b4793e37f17aa2aebe127582b27c719c261e8d0055910eed353d",
+      "freeze/make-prereg.mjs": "1249d5e2337f105800ed5278b9c5979615d3365ebe763372421bb8001d347598",
+      "freeze/verify-prereg.mjs": "2abee4cbef516040cec61ee33aa9eac4a6f7fc8f23f2a3064d804c4439f9a0f6",
+      "hosts/adapters.mjs": "6927f6f042600d25c0cef446ff6b8ac07ed8ebba2c3bdada9c246e8709823722",
+      "hosts/codex-trust.mjs": "3c02995b3072e4f3f114ff3215d69c59d84c09e8c1c6588f2f879c6ddc7b257e",
+      "hosts/codex-trust.test.mjs": "c43a69c088aa52d8d332eb037091f46ad555d10df42937dbfa70866d8c89322b",
+      "install.sh": "9183368b09a16b0d2098bf94f446454034b41e26bd357d8991a37e29a9d6e1ae",
+      "kit.json": "63bed1abdf69a2b7df51d1a9a9fd2b80069c875c5e2a005b3379fc3aa6a9402e",
+      "lib/generation.mjs": "e80d9a8c198a7fde73c74d6340320e3b3c31aae1d156066b134f82a990adfb61",
+      "lib/mcp-client.mjs": "7fe406438b7a44b78b5a0ebea643f0342e452c92a0464366dfc0e711bb41caf4",
+      "lib/quota.mjs": "bb09578aa68ca5fdde7b067c8d2ecc0bf08d01bdcd26bd757764d806809017b6",
+      "lib/run-common.mjs": "d21ed2e4e6d7ef676331a61d597d6a826c70f5b9a38a80a8ff8c418feb1a7eab",
+      "lib/scan-for-key.mjs": "eded4bf05f226c7e83f7c6590286fdbfaaaedd8eee2cf52b009e971fdf56fe86",
+      "measured/fake-upstream.mjs": "d133c0e3564da8a44bc581405e6af4433df316c5640445f9ee223b8de7015d7b",
+      "measured/protocol.mjs": "5a248d07bfa9388bdc6fc80c553f31a90d12843fe7d8d314d15fa2999e53c0c6",
+      "measured/protocol.test.mjs": "b5456350862646bc41fb4858a098ffd5da8cb60a1145170e00d6b3519497d15f",
+      "measured/rejudge.mjs": "74233066135ea83c46f8909499ee8fe689d8e0cd7c7657d1f794ecaae1089410",
+      "measured/rejudge.test.mjs": "aa7fb31ac108e02815165d599a8b59e61dbc3db7749870057a8279c12a2d6804",
+      "measured/run-session.mjs": "04a6cc55a806df8cdfd8fa45bb5a48e65945c5b45b096a98e2204e648635faa5",
+      "measured/session.mjs": "164cb675a8b918c025f386a95be2b5e4dbe52617d7825e8db0d2a29f4bbd3eb8",
+      "measured/session.test.mjs": "7f0ac0fa16fa707c6cfa22ee3575e1a3d0e285e521272616ce8372b409019fc2",
+      "measured/summarize-dry.mjs": "8c77e4ce9020a42fe0187e22a398b6aeb3ccf20093c8938591a2f4896bb70a33",
+      "measured/summarize-live.mjs": "e4cbacd9991c7e8ec251c9e4e8b86fcc3f585405643d7f9bbed684442488cb48",
+      "measured/summarize-step4.mjs": "ddc32dbe6ebadb5914307d5ee8113ea7ebe0604ea6b7267949a43a844459e550",
+      "measured/test-support/commands.mjs": "a0c7feb471be3476b077eae293bcedf7b68a0733e118516f1a051126858e0974",
+      "measured/test-support/stub-host.mjs": "42bfcf3ebaf6677e179fa548e326fc1d29ddea80d294a3bd8f345634cc9a9d7c",
+      "probe/codex-cost.mjs": "0744db0ef16b62d84b95b8f517b4ffa53d6a5e555736cce0d536b78329656e37",
+      "probe/codex-cost.test.mjs": "f7d5b839141c5630143b0e885d427395839832e306360ba6652d4447fc4b45f7",
+      "relay/relay.mjs": "42cfcc47362329b54c1431ebd6c5df0badb252e6228dd37af7a88b98c520e5f0",
+      "relay/relay.test.mjs": "0a0bd3435355c067709e1656c31c693c5e3e325294f42ca2ecbc50a70b80d12a",
+      "seed/make-parity-repo.mjs": "2f3b78382939e3a0d9062a745896b414806b57c53997a5fe0bb9a1b351c1a9b9",
+      "seed/make-parity-repo.test.mjs": "377f2e67aea51b18852d8d418e51361baa4608494d716f6f99807551c617f441",
+      "seed/make-repo.mjs": "acf0deaf467a61a08b502dc2871c83cfad51ad84df3fe7c0967aeb5c77c41eb9",
+      "seed/parity/extract.py": "0f66111f65b0e208101104948926d1e5a567c3e91a2ab37d22cbd6857e8ab80c",
+      "seed/parity/org-08.json": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00",
+      "seed/parity/prompts/inline.g.md": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59",
+      "seed/parity/prompts/parity-neutral.md": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059",
+      "seed/parity/provenance.json": "8efd74100772f1e1861cc3a3b912f0ee713438d676d7ed28a10519667963ffb5"
+    },
+    "node": "v24.22.1"
+  },
+  "criterion": {
+    "marker": "capcheck-7f3a",
+    "max_model_requests": 15,
+    "ceiling": {
+      "calls_to_mnema": 6,
+      "counts": "calls to mnema (a refused attempt through a host bridge is a call to mnema)",
+      "does_not_count": [
+        "the host's own tool_search of deferred tools (discovery_calls)",
+        "any other tool of the host (other_host_calls)"
+      ],
+      "also_kept": "calls_of_every_kind (every call of every kind), beside the number the ceiling is read against",
+      "ruled_by": "the maintainer, 29 October 2026, observation 01a1897f-99c4 on ADR-119"
+    }
+  },
+  "measured_session_repository": {
+    "generator": "seed/make-parity-repo.mjs",
+    "provenance": {
+      "comment": "Where the rule and the prompts of the measured sessions of the free block come from. Paths are relative to the root of the private backup repository; the git blob ids are of its HEAD when this was extracted.",
+      "rule": {
+        "id": "org-08",
+        "copied_from": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/rules.yaml",
+        "source_file_sha256": "bb25212f7e5edb759216b236f31729b1d12c0f8eaa8a020699b600e0d9f93b95",
+        "source_file_git_blob": "c8504563dfa155f5c9b36e63bbc646ee9e1d8de7",
+        "copied_as": "org-08.json (title, why, alternatives, addresses, field by field; unedited)",
+        "recorded_by": "the failure-modes kit (arm B) with: decision record <title> --body-file <why> --alternatives <alternatives>; link <ADR> <path> --rel governs; decision move accept (gen.py of the pilot kit)",
+        "rule_json_sha256": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00"
+      },
+      "scoped_prompt": {
+        "copied_from": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/failure-modes/prompts/inline.g.md",
+        "source_file_sha256": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59",
+        "source_file_git_blob": "b93a6b288229576a78b0e3a552cd2f3a0985339f",
+        "copied_as": "prompts/inline.g.md (byte for byte)"
+      },
+      "neutral_prompt": {
+        "status": "DERIVED, not copied: no file of the 0.1.4 kits holds a neutral prompt",
+        "defined_by": "mnema/archive/active/comparison-after-0.1.4/design.md section 1 (Q4: 'o NEUTRO (sem nomear o pacote)') and section 5 (Novo, 2: 'o prompt neutro de paridade (inline.g.neutral.md)')",
+        "derived_from": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/failure-modes/prompts/inline.g.md",
+        "derivation": "drop the leading clause 'In the JS package, ' and capitalise the next letter; nothing else",
+        "derived_as": "prompts/parity-neutral.md",
+        "sha256": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059"
+      },
+      "failure_modes_design": {
+        "file": "mnema/archive/round-0.1.4-2026-10-29/claude-md-comparison-0.1.4/failure-modes/design.yaml",
+        "source_file_sha256": "d6cdbda2a95bbacf485bafce028bd3876bdfcaf49c9c2337ed0a216522b04a85",
+        "used_for": "rule_facts.org-08 (governed paths, the governed edit, the companion path, what the companion must add)"
+      }
+    },
+    "files_sha256": {
+      "seed/parity/org-08.json": "f69e873f1ce4fa1ada9d1dd67530f468b302588f3dbf639af16acb668179ba00",
+      "seed/parity/prompts/inline.g.md": "b0ac033454caa8123c292f9b427bfe3d64c7de3294e21a69a8f329a66fe4ee59",
+      "seed/parity/prompts/parity-neutral.md": "b68985798c925fd7d2c1622ce37be48422106fdbb9802109134756962bce3059",
+      "seed/parity/extract.py": "0f66111f65b0e208101104948926d1e5a567c3e91a2ab37d22cbd6857e8ab80c"
+    },
+    "seed_working_tree_sha256": "09c8acb6561dbbb718cf1902edb232baf0b76d809ae24e696155c4ab16d2232d",
+    "seed_files": [
+      ".gitignore",
+      "AGENTS.md",
+      "README.md",
+      "package.json",
+      "packages/js/package.json",
+      "packages/js/src/accessors/accessor.ts",
+      "packages/js/src/accessors/formats/env-accessor.ts",
+      "packages/js/src/accessors/formats/json-accessor.ts",
+      "packages/js/src/index.ts",
+      "packages/js/tests/env-accessor.test.ts",
+      "packages/js/tests/json-accessor.test.ts",
+      "packages/php/composer.json",
+      "packages/php/src/Accessor.php",
+      "packages/php/src/Formats/EnvAccessor.php",
+      "packages/php/src/Formats/JsonAccessor.php",
+      "packages/php/tests/run.php"
+    ]
+  },
+  "capability_check": {
+    "direct": {
+      "label": "passed",
+      "requests_forwarded": 4,
+      "refused_by_relay": 0,
+      "calls_to_mnema": 3,
+      "discovery_calls_tool_search": 0,
+      "other_host_calls": 0,
+      "calls_of_every_kind": 3,
+      "final_text": "capcheck-7f3a"
+    },
+    "qwen": {
+      "label": "passed",
+      "requests_forwarded": 10,
+      "refused_by_relay": 0,
+      "calls_to_mnema": 6,
+      "discovery_calls_tool_search": 3,
+      "other_host_calls": 0,
+      "calls_of_every_kind": 9,
+      "final_text": "capcheck-7f3a"
+    },
+    "copilot": {
+      "label": "passed",
+      "requests_forwarded": 4,
+      "refused_by_relay": 0,
+      "calls_to_mnema": 3,
+      "discovery_calls_tool_search": 0,
+      "other_host_calls": 0,
+      "calls_of_every_kind": 3,
+      "final_text": "capcheck-7f3a"
+    },
+    "opencode": {
+      "label": "passed",
+      "requests_forwarded": 4,
+      "refused_by_relay": 1,
+      "calls_to_mnema": 3,
+      "discovery_calls_tool_search": 0,
+      "other_host_calls": 0,
+      "calls_of_every_kind": 3,
+      "final_text": "capcheck-7f3a"
+    },
+    "codex": {
+      "label": "passed",
+      "requests_forwarded": 4,
+      "refused_by_relay": 0,
+      "calls_to_mnema": 3,
+      "discovery_calls_tool_search": 0,
+      "other_host_calls": 0,
+      "calls_of_every_kind": 3,
+      "final_text": "capcheck-7f3a"
+    },
+    "codex-hooks-trusted": {
+      "label": "passed",
+      "requests_forwarded": 4,
+      "refused_by_relay": 0,
+      "calls_to_mnema": 3,
+      "discovery_calls_tool_search": 0,
+      "other_host_calls": 0,
+      "calls_of_every_kind": 3,
+      "final_text": "capcheck-7f3a"
+    }
+  }
+}
