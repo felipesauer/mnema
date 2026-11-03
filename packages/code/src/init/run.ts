@@ -23,9 +23,8 @@
 import { join, sep } from 'node:path';
 import { listPrivateKeyFingerprints } from '@mnema/chain';
 import { PROJECT_DIR, resolveTrees } from '@mnema/core';
-import { type InitContext, type InitResult, readInit, runInit } from '../commands/init.js';
+import { type InitContext, readInit, runInit } from '../commands/init.js';
 import { fact } from '../presentation/detail.js';
-import type { Render } from '../presentation/render.js';
 import { VERSION } from '../version.js';
 import { here } from '../wiring/context.js';
 import {
@@ -33,17 +32,10 @@ import {
   HOSTS_OFFERED,
   HOSTS_WORDS,
   type InitOptions,
-  NOT_A_PROJECT_ROOT,
-  REACHES_AN_AGENT,
-  REACHES_AN_AGENT_AFTER_A_WRITE,
-  reportIdentity,
-  reportIgnore,
-  reportInstructions,
-  reportWhoWritesHere,
-  THE_LINE_IN_THEIRS,
-  whatComesNext,
+  refuseTheRoot,
+  sayAlready,
+  sayClassic,
 } from '../wiring/init.js';
-import type { CliIo } from '../wiring/io.js';
 import { onOneLine } from '../wiring/on-one-line.js';
 import { reportRefusal, reportUsage } from '../wiring/report.js';
 import type { Wiring } from '../wiring/verb.js';
@@ -57,9 +49,12 @@ import { planPage } from './screens.js';
 import { foundingPage, summaryPage } from './summary.js';
 
 /** A path as a person is told it: the home directory as `~`. */
-function shownFrom(home: string): (path: string) => string {
-  return (path) =>
-    home !== '' && path.startsWith(`${home}${sep}`) ? `~${path.slice(home.length)}` : path;
+export function shownFrom(home: string): (path: string) => string {
+  return (path) => {
+    if (home === '') return path;
+    if (path === home) return '~';
+    return path.startsWith(`${home}${sep}`) ? `~${path.slice(home.length)}` : path;
+  };
 }
 
 /** What this machine will do about the identity: make one, or use the one it has. */
@@ -69,67 +64,6 @@ function machineOf(ctx: InitContext, shown: (path: string) => string): Machine {
     newIdentity: listPrivateKeyFingerprints({ root: keyRoot }).length === 0,
     where: `${shown(keyRoot)}/`,
   };
-}
-
-/** The refusal of a directory that can be no project's root, in the words every surface uses. */
-async function refuseTheRoot(
-  wiring: Wiring,
-  refused: Extract<ReturnType<typeof readInit>, { refused: unknown }>,
-): Promise<void> {
-  const { WHY_NO_PROJECT_ROOT } = await import('../not-a-project.js');
-  reportRefusal(wiring, {
-    reason: NOT_A_PROJECT_ROOT,
-    message: onOneLine`no project can be founded at ${refused.root}: ${WHY_NO_PROJECT_ROOT[refused.refused]}. Run \`mnema init\` in the project’s own directory; a note that belongs to no project already goes to the machine-global tree, which needs none.`,
-  });
-}
-
-/** What a run that founded nothing says: a project is already here, and what it lacked is added. */
-async function sayAlready(io: CliIo, render: Render, result: InitResult): Promise<void> {
-  if (result.completed === undefined) {
-    io.out(onOneLine`Already a mnema project at ${result.root}: nothing to found.`);
-  } else {
-    io.out(
-      onOneLine`Already a mnema project at ${result.root}: nothing to found, and what it lacked beside the record is added.`,
-    );
-    if (result.completed.readme) io.out('Added .mnema/README.md.');
-    if (result.completed.editorconfig) io.out('Added .mnema/.editorconfig.');
-    if (result.completed.gitignore) io.out('Added the lines it lacked to .mnema/.gitignore.');
-    reportIgnore(io, result.completed.prettierIgnore);
-  }
-  reportWhoWritesHere(result, io, render, (await import('../key-file.js')).keyFileLine);
-}
-
-/** What the lines of a founding without a screen are: the ones this verb has always printed. */
-async function sayClassic(
-  io: CliIo,
-  render: Render,
-  result: InitResult,
-  recorded: WhoMayAcceptRecorded | undefined,
-): Promise<void> {
-  io.out(onOneLine`Initialized mnema project at ${result.root}`);
-  io.out(render(fact(`identity: ${result.anchor}`)));
-  reportIdentity(result.identity, io, render);
-  reportIgnore(io, result.around?.prettierIgnore);
-  const wroteInstructions = await reportInstructions(io, render, result.around?.instructions ?? []);
-  if (recorded !== undefined) {
-    io.out(
-      render(
-        fact(
-          recorded.as === 'accepted'
-            ? `Recorded ${recorded.adr}: agents ${recorded.switchedOff ? 'may not' : 'may'} accept what you choose, accepted as yours.`
-            : `Recorded ${recorded.adr} as the agent’s proposal: it waits for you (\`mnema decision review\`).`,
-        ),
-      ),
-    );
-  }
-  io.out('');
-  const reaches =
-    result.around?.prettierIgnore === undefined && !wroteInstructions
-      ? REACHES_AN_AGENT
-      : REACHES_AN_AGENT_AFTER_A_WRITE;
-  for (const line of reaches) io.out(render(fact(line)));
-  io.out(render(fact(THE_LINE_IN_THEIRS, 2)));
-  for (const line of whatComesNext(result)) io.out(line === '' ? '' : render(fact(line)));
 }
 
 /** All four of the product's rows, and every file of the person's that is there: what a founding with nobody to ask does. */

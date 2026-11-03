@@ -935,10 +935,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the revision as typed, and a PATH git listed: a file name, chosen on disk',
   },
-  'which-host-files.ts «"{}" is not on the list: {}.» #1': {
-    verdict: 'collapsed',
-    why: 'the answer as the person typed it, trimmed: any text, so every value goes through the tag',
-  },
   'verify.ts «{}: {} no longer begins with the bytes it held there» #1': {
     verdict: 'collapsed',
     why: 'the revision as typed, and a path git listed',
@@ -1090,7 +1086,9 @@ describe('every line this wiring words is classified', () => {
     // 173 with the four lines `record pull` prints.
     // 174 with the line that names the files a pull left in conflict.
     // 175 with the line `verify --since` prints of a tail a relink moved into the record (relinked).
-    expect(FOUND.sites.length).toBe(175);
+    // 174 without the line `init` printed of an answer to which host files that was not on the list: the
+    // question is asked with arrows now, and an answer cannot be off the list.
+    expect(FOUND.sites.length).toBe(174);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1270,9 +1268,6 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'record.ts «{}: put back as this checkout held it, the longer side or the only one» #1':
     'needs an untracked tail the branch followed already holds, over a real remote; the built binary ' +
     'prints it over real git in `a-tail-merges-and-pulls.test.ts`',
-  'which-host-files.ts «"{}" is not on the list: {}.» #1':
-    'needs a person at a terminal who types an answer off the list; driven with a break in it in ' +
-    '`the-init-asks-which-host-files-to-write.test.ts`',
   'accountability.ts «{} {} ({} with {})» #1':
     'the name is the default the MCP server writes for a client that announced none, the only writer ' +
     'of a run.unannounced; the tag is the fence for one written by hand',

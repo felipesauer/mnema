@@ -28,6 +28,7 @@ import type { DiscoveryEnv } from '@mnema/core';
 import { runDecision } from '../commands/decision.js';
 import { runDecisionTransition } from '../commands/decision-transition.js';
 import { runSwitch } from '../commands/switch.js';
+import { movedLine } from '../moved-record.js';
 import type { Accepts } from './plan.js';
 import { ACCEPTS_OPTIONS } from './screens.js';
 
@@ -71,6 +72,8 @@ export interface WhoMayAcceptRecorded {
   readonly as: 'accepted' | 'proposed';
   /** Whether the switch was turned off as well. */
   readonly switchedOff: boolean;
+  /** The line a move of a decision is echoed as, where the answer was accepted. */
+  readonly moved?: string;
 }
 
 /** The record refused, and why, in the words the refusing operation used. */
@@ -123,7 +126,10 @@ export function recordWhoMayAccept(
       ? { ok: false, code: accepted.code, message: accepted.message }
       : { ok: false, code: accepted.reason, message: 'the decision could not be accepted' };
   }
-  if (answer === 'yes') return { ok: true, adr: recorded.adr, as: 'accepted', switchedOff: false };
+  const moved = movedLine('decision', accepted.adr, accepted.id, accepted.to);
+  if (answer === 'yes') {
+    return { ok: true, adr: recorded.adr, as: 'accepted', switchedOff: false, moved };
+  }
   const switched = runSwitch(ctx, {
     channel: 'agent-accepts',
     on: false,
@@ -136,5 +142,5 @@ export function recordWhoMayAccept(
       ? { ok: false, code: switched.code, message: switched.message }
       : { ok: false, code: switched.reason, message: 'the switch could not be recorded' };
   }
-  return { ok: true, adr: recorded.adr, as: 'accepted', switchedOff: true };
+  return { ok: true, adr: recorded.adr, as: 'accepted', switchedOff: true, moved };
 }

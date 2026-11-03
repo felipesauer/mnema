@@ -64,7 +64,7 @@ const PROMPT = 'mnema>';
 const OPENED = 'a session over this project';
 
 /** The first words of what `mnema init` reports when it founds a project. */
-const FOUNDED = 'Initialized mnema project at';
+const FOUNDED = 'Founded ';
 
 /** The keys a caller answers a question with, as a terminal sends them. */
 const RETURN = '\r';
@@ -345,9 +345,11 @@ describe('at a terminal the bare name asks, and the doors are the directory’s'
       where: nowhere,
       steps: [
         asks(false),
-        // The founding asks which host files to write before it founds (`wiring/which-host-files.ts`),
-        // and Enter on that question is all four.
-        { types: RETURN, until: arrivedSince('Enter for all'), what: 'asked which host files' },
+        // The founding asks which hosts read the instructions, who may accept what the person chooses, and
+        // then shows the plan and asks once (`init/flow.ts`); Enter on each is the default of each.
+        { types: RETURN, until: arrivedSince('Which agent hosts'), what: 'asked which hosts' },
+        { types: RETURN, until: arrivedSince('May an agent accept'), what: 'asked who may accept' },
+        { types: RETURN, until: arrivedSince('with this plan?'), what: 'showed the plan' },
         { types: RETURN, until: arrivedSince(FOUNDED), what: 'founded the project' },
       ],
     });

@@ -14,10 +14,11 @@
  */
 
 import type { Command } from 'commander';
-import type { InitResult } from '../commands/init.js';
+import type { InitRefused, InitResult } from '../commands/init.js';
 import type { InstructionsFile } from '../commands/instructions.js';
 import type { PrettierIgnoreChange } from '../commands/the-record-page.js';
 import type { HostName } from '../host-names.js';
+import type { WhoMayAcceptRecorded } from '../init/accepts.js';
 import { fact } from '../presentation/detail.js';
 import type { Render } from '../presentation/render.js';
 import { STARTS_OFF, SWITCH_ON_COMMAND } from '../record-framing.js';
@@ -26,6 +27,7 @@ import { enumeratedOption } from './enumerated.js';
 import type { CliIo } from './io.js';
 import { onOneLine } from './on-one-line.js';
 import { declaredAgent, WHICH_HELP } from './options.js';
+import { reportRefusal } from './report.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /**
@@ -143,12 +145,12 @@ const HOSTS_HELP = `which hosts get the mnema instructions, without asking: ${[.
 
 /** What the verb is given, as commander hands it over. */
 export interface InitOptions {
-  readonly hosts?: string;
-  readonly allHosts?: boolean;
-  readonly yes?: boolean;
-  readonly dryRun?: boolean;
-  readonly accepts?: (typeof ACCEPTS_ANSWERS)[number];
-  readonly which?: string;
+  readonly hosts?: string | undefined;
+  readonly allHosts?: boolean | undefined;
+  readonly yes?: boolean | undefined;
+  readonly dryRun?: boolean | undefined;
+  readonly accepts?: (typeof ACCEPTS_ANSWERS)[number] | undefined;
+  readonly which?: string | undefined;
 }
 
 /** Registers `mnema init` on the program. */
@@ -188,7 +190,16 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
     )
     .action(async (opts: InitOptions) => {
       const { runTheFounding } = await import('../init/run.js');
-      await runTheFounding(wiring, opts);
+      // Each option is named where it is read, and handed on by name: an option handed over inside a whole
+      // object is one nobody can trace to what it feeds (`every-option-feeds-something.test.ts`).
+      await runTheFounding(wiring, {
+        hosts: opts.hosts,
+        allHosts: opts.allHosts,
+        yes: opts.yes,
+        dryRun: opts.dryRun,
+        accepts: opts.accepts,
+        which: opts.which,
+      });
     });
   return mutatesTheRecord(init);
 }
@@ -350,4 +361,63 @@ export function reportWhoWritesHere(
   if (refused.keyFile !== undefined) {
     io.out(render(fact(keyFileLine(refused.keyFile, here().env.mnemaHome))));
   }
+}
+
+/** The refusal of a directory that can be no project's root, in the words every surface uses. */
+export async function refuseTheRoot(wiring: Wiring, refused: InitRefused): Promise<void> {
+  const { WHY_NO_PROJECT_ROOT } = await import('../not-a-project.js');
+  reportRefusal(wiring, {
+    reason: NOT_A_PROJECT_ROOT,
+    message: onOneLine`no project can be founded at ${refused.root}: ${WHY_NO_PROJECT_ROOT[refused.refused]}. Run \`mnema init\` in the project’s own directory; a note that belongs to no project already goes to the machine-global tree, which needs none.`,
+  });
+}
+
+/** What a run that founded nothing says: a project is already here, and what it lacked is added. */
+export async function sayAlready(io: CliIo, render: Render, result: InitResult): Promise<void> {
+  if (result.completed === undefined) {
+    io.out(onOneLine`Already a mnema project at ${result.root}: nothing to found.`);
+  } else {
+    io.out(
+      onOneLine`Already a mnema project at ${result.root}: nothing to found, and what it lacked beside the record is added.`,
+    );
+    if (result.completed.readme) io.out('Added .mnema/README.md.');
+    if (result.completed.editorconfig) io.out('Added .mnema/.editorconfig.');
+    if (result.completed.gitignore) io.out('Added the lines it lacked to .mnema/.gitignore.');
+    reportIgnore(io, result.completed.prettierIgnore);
+  }
+  reportWhoWritesHere(result, io, render, (await import('../key-file.js')).keyFileLine);
+}
+
+/** What the lines of a founding without a screen are: the ones this verb has always printed. */
+export async function sayClassic(
+  io: CliIo,
+  render: Render,
+  result: InitResult,
+  recorded: WhoMayAcceptRecorded | undefined,
+): Promise<void> {
+  io.out(onOneLine`Initialized mnema project at ${result.root}`);
+  io.out(render(fact(`identity: ${result.anchor}`)));
+  reportIdentity(result.identity, io, render);
+  reportIgnore(io, result.around?.prettierIgnore);
+  const wroteInstructions = await reportInstructions(io, render, result.around?.instructions ?? []);
+  if (recorded !== undefined) {
+    if (recorded.moved !== undefined) io.out(recorded.moved);
+    io.out(
+      render(
+        fact(
+          recorded.as === 'accepted'
+            ? `Recorded ${recorded.adr}: agents ${recorded.switchedOff ? 'may not' : 'may'} accept what you choose, accepted as yours.`
+            : `Recorded ${recorded.adr} as the agent’s proposal: it waits for you (\`mnema decision review\`).`,
+        ),
+      ),
+    );
+  }
+  io.out('');
+  const reaches =
+    result.around?.prettierIgnore === undefined && !wroteInstructions
+      ? REACHES_AN_AGENT
+      : REACHES_AN_AGENT_AFTER_A_WRITE;
+  for (const line of reaches) io.out(render(fact(line)));
+  io.out(render(fact(THE_LINE_IN_THEIRS, 2)));
+  for (const line of whatComesNext(result)) io.out(line === '' ? '' : render(fact(line)));
 }

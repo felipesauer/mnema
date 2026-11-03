@@ -32,6 +32,7 @@ import { detectAround } from '../src/init/detect.js';
 import { defaultMarks, marksForHosts } from '../src/init/flow.js';
 import { HOST_NAMES_OFFERED, hostMark, readHostsFlag, yoursMark } from '../src/init/hosts.js';
 import { planOf } from '../src/init/plan.js';
+import { shownFrom } from '../src/init/run.js';
 import { INSTRUCTIONS_BLOCK } from '../src/instructions-block.js';
 import { type CliIo, run } from '../src/program.js';
 
@@ -193,6 +194,17 @@ describe('what is found', () => {
     expect(readHostsFlag('cursor,pi')).toEqual({ ok: false, unknown: 'pi' });
     expect(readHostsFlag('all,cursor')).toEqual({ ok: false, unknown: 'all' });
     expect(readHostsFlag('')).toEqual({ ok: false, unknown: '' });
+  });
+});
+
+describe('what the plan says of a path', () => {
+  it('tells the home as `~`, and only a path under it: a folder that merely starts the same is not it', () => {
+    const shown = shownFrom('/home/someone');
+    expect(shown('/home/someone')).toBe('~');
+    expect(shown('/home/someone/.mnema/identity')).toBe('~/.mnema/identity');
+    expect(shown('/home/someone-else/.mnema')).toBe('/home/someone-else/.mnema');
+    expect(shown('/srv/shop')).toBe('/srv/shop');
+    expect(shownFrom('')('/srv/shop')).toBe('/srv/shop');
   });
 });
 
