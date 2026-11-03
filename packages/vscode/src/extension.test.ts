@@ -77,7 +77,7 @@ function world(
   hidden: readonly string[] = [],
   extensionVersion?: string,
 ) {
-  const setting = { command: 'mnema', statusBarEnabled: true };
+  const setting = { command: 'mnema', statusBarEnabled: true, stackIndex: '' };
   const settingListeners: ((e: { affectsConfiguration(s: string): boolean }) => void)[] = [];
   const makeRuns: string[] = [];
   const ran: string[][] = [];
@@ -169,7 +169,9 @@ function world(
             ? (setting.command as T)
             : k === 'statusBar.enabled'
               ? (setting.statusBarEnabled as T)
-              : d,
+              : k === 'stackIndex'
+                ? (setting.stackIndex as T)
+                : d,
       }),
       onDidChangeConfiguration: (l: (e: { affectsConfiguration(s: string): boolean }) => void) => {
         settingListeners.push(l);
@@ -1627,7 +1629,7 @@ describe('a stack is added through the plan the command line shows', () => {
 });
 
 describe('a stack is added from the index', () => {
-  const INDEX_ARGS = 'stack index stack-index --json';
+  const INDEX_ARGS = 'stack index --json';
   const entry = (over: Record<string, unknown> = {}) => ({
     name: 'hello-stack',
     version: '1.0.0',
@@ -1686,6 +1688,20 @@ describe('a stack is added from the index', () => {
     expect(w.shown.at(-1)).toContain('in a terminal');
     expect(w.shown.at(-1)).toContain(DIGEST);
     expect(w.ran.some((a) => a[1] === 'add')).toBe(false);
+  });
+
+  it('passes no folder when the setting is empty, so the built-in index is read, and the folder when it is set', async () => {
+    const w = world({
+      ...withStack(),
+      [INDEX_ARGS]: ok(JSON.stringify({ stacks: [] })),
+      'stack index docs/my-index --json': ok(JSON.stringify({ stacks: [] })),
+    });
+    await settle();
+    await w.command('mnema.stacks.addFromIndex')();
+    expect(w.ran).toContainEqual(['stack', 'index', '--json']);
+    w.setting.stackIndex = 'docs/my-index';
+    await w.command('mnema.stacks.addFromIndex')();
+    expect(w.ran).toContainEqual(['stack', 'index', 'docs/my-index', '--json']);
   });
 
   it('shows the command line refusing an index that is not there', async () => {
@@ -1834,7 +1850,7 @@ describe('no control of the extension turns a hook on', () => {
       ...withStack(),
       [PLAN_ARGS]: ok(PLAN),
       [WRITE_ARGS]: ok('Installed hello-stack 1.0.0: 5 files written.\n'),
-      'stack index stack-index --json': ok(
+      'stack index --json': ok(
         JSON.stringify({
           stacks: [
             {
@@ -1906,6 +1922,7 @@ describe('the same acts against the built command line, in a project of their ow
         }),
       );
       const w = world({}, real, project);
+      w.setting.stackIndex = 'stack-index';
       await vi.waitFor(() => expect(w.bar.text).not.toBe('mnema: reading'), { timeout: 20_000 });
       expect(w.stackTree().getChildren()).toEqual([]);
 

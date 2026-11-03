@@ -1251,6 +1251,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-brief-is-the-same-bytes-in-any-order.properties.test.ts': 9,
   'packages/code/tests/the-broken-link-reaches-every-reader.test.ts': 5,
   'packages/code/tests/the-built-binary-runs-from-a-symlink.test.ts': 7,
+  'packages/code/tests/the-built-in-index-is-the-repositorys.test.ts': 7,
   'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts': 11,
   'packages/code/tests/the-busy-tail-is-a-refusal.test.ts': 11,
   'packages/code/tests/the-cache-dir-reaches-every-door.test.ts': 9,

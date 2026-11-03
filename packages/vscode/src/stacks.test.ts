@@ -7,6 +7,7 @@ import { createRun } from './cli.js';
 import {
   digestOf,
   folderProblem,
+  indexArgs,
   readIndex,
   readStacks,
   showsHooks,
@@ -60,6 +61,14 @@ describe('what the command line listed', () => {
     expect(
       readIndex(JSON.stringify({ stacks: [ok, { ...ok, digest: 3 }, { ...ok, source: '/s' }] })),
     ).toEqual([ok, { ...ok, source: '/s' }]);
+  });
+});
+
+describe('the command that lists the index', () => {
+  it('names no folder for an empty or blank setting, and passes one that is set as it is', () => {
+    expect(indexArgs('')).toEqual(['stack', 'index', '--json']);
+    expect(indexArgs('  ')).toEqual(['stack', 'index', '--json']);
+    expect(indexArgs('docs/my-index')).toEqual(['stack', 'index', 'docs/my-index', '--json']);
   });
 });
 

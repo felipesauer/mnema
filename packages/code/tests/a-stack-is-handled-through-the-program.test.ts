@@ -182,7 +182,7 @@ describe('reading what is installed, and the index, for a program', () => {
         ],
       }),
     );
-    const shown = await mnema(['stack', 'index']);
+    const shown = await mnema(['stack', 'index', 'stack-index']);
     expect(shown.failed, shown.err).toBe(false);
     expect(shown.out).toContain('elsewhere 1.0.0  Kept elsewhere.');
     expect(shown.out).toContain(`digest  ${'a'.repeat(64)}`);
