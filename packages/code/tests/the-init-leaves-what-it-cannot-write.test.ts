@@ -72,15 +72,17 @@ describe('files that cannot be written', { timeout: 60_000 }, () => {
     expect(founded.failed).toBe(false);
     expect(read('CLAUDE.md')).toBe('# Claude, mine\n');
     expect(read('AGENTS.md')).toBe('# Agents, mine\n');
-    expect(founded.out).toContain('`mnema instructions --all-hosts`');
+    expect(founded.out).toContain('`mnema instructions --hosts claude`');
+    expect(founded.out).toContain('`mnema instructions --hosts codex`');
+    expect(founded.out).not.toContain('--all-hosts');
     expect(founded.out).not.toContain('`mnema instructions` tries again');
   });
 
-  it('get the block from the explicit command once the permission is fixed, and are then chosen', async () => {
+  it('get the block from the host form once the permission is fixed, and are then chosen', async () => {
     await alone(['init']);
     chmodSync(join(repo, 'CLAUDE.md'), 0o644);
     chmodSync(join(repo, 'AGENTS.md'), 0o644);
-    await alone(['instructions', '--all-hosts']);
+    await alone(['instructions', '--hosts', 'claude,codex']);
     expect(read('CLAUDE.md')).toContain('mnema:begin');
     expect(read('AGENTS.md')).toContain('mnema:begin');
     const check = await alone(['instructions', '--check']);
@@ -93,6 +95,35 @@ describe('files that cannot be written', { timeout: 60_000 }, () => {
       running: { file: join(sandbox, 'mnema'), version: '9.9.9' },
     }).findings.filter((one) => one.topic === 'instructions' && one.state === 'attention');
     expect(doctor).toEqual([]);
+  });
+});
+
+describe('the narrow form that adds the block', { timeout: 60_000 }, () => {
+  it('writes the host it names and nothing to a file the person left unchecked under another host', async () => {
+    writeFileSync(join(repo, 'CLAUDE.md'), '# Claude, mine\n');
+    writeFileSync(join(repo, 'GEMINI.md'), '# Gemini, mine\n');
+    await alone(['init', '--hosts', 'cursor']);
+    const before = {
+      gemini: read('GEMINI.md'),
+      cursor: read('.cursor/rules/mnema-instructions.mdc'),
+    };
+    const ran = await alone(['instructions', '--hosts', 'claude']);
+    expect(ran.failed).toBe(false);
+    expect(read('CLAUDE.md')).toContain('mnema:begin');
+    expect(read('GEMINI.md')).toBe(before.gemini);
+    expect(read('.cursor/rules/mnema-instructions.mdc')).toBe(before.cursor);
+    expect(() => readFileSync(join(repo, 'AGENTS.md'), 'utf-8')).toThrow();
+  });
+
+  it('refuses a host it does not know, and the options it cannot be given with', async () => {
+    await alone(['init', '--hosts', 'none']);
+    const unknown = await alone(['instructions', '--hosts', 'pi']);
+    expect(unknown.failed).toBe(true);
+    expect(unknown.out).toContain('HOSTS_NOT_UNDERSTOOD');
+    for (const other of ['--check', '--remove', '--all-hosts']) {
+      const refused = await alone(['instructions', '--hosts', 'claude', other]);
+      expect(refused.failed, other).toBe(true);
+    }
   });
 });
 

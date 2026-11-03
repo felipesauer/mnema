@@ -41,6 +41,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
+import { HOST_ROWS } from '../init/hosts.js';
 import {
   beginMarker,
   CHOOSABLE_INSTRUCTIONS,
@@ -310,7 +311,8 @@ export function leftOut(project: string): readonly string[] {
 
 /** The one line that says which files were left out, and the command that adds the block if it is wanted. */
 export function leftOutLine(paths: readonly string[]): string {
-  return `${paths.join(', ')} ${paths.length === 1 ? 'was' : 'were'} left out: no block there while another file holds it counts as not chosen; \`mnema instructions --all-hosts\` adds it.`;
+  const forms = [...new Set(paths.map((path) => writeAgainFor(path)))].join('` or `');
+  return `${paths.join(', ')} ${paths.length === 1 ? 'was' : 'were'} left out: no block there while another file holds it counts as not chosen; \`${forms}\` adds it.`;
 }
 
 /** What one file of the instructions is before a write: the facts a person is shown before anything is written. */
@@ -389,10 +391,16 @@ function withTheBlock(left: string, eol: Eol): string {
 }
 
 /**
- * The command a refused or failed write names to try again. It is the explicit form: plain `mnema instructions`
- * leaves a file of the person's that holds no block alone where another one does (ADR-177), so it would not.
+ * The command a refused or failed write names to try again: the NARROW form, `--hosts` with the host the file belongs
+ * to (`init/hosts.ts`, one table). Plain `mnema instructions` leaves a file of the person's that holds no block alone
+ * where another one does (ADR-177), and `--all-hosts` would write every other offered file too, undoing what the
+ * person left unchecked. A file no host claims falls back to plain `mnema instructions`.
  */
-const WRITE_AGAIN = 'mnema instructions --all-hosts';
+function writeAgainFor(path: string): string {
+  const row = HOST_ROWS.find((each) => [...each.files, ...each.yours].includes(path));
+  return row === undefined ? 'mnema instructions' : `mnema instructions --hosts ${row.id}`;
+}
+
 const REMOVE_AGAIN = 'mnema instructions --remove';
 
 type Done = (did: InstructionsChange, extra?: Partial<InstructionsFile>) => InstructionsFile;
@@ -415,7 +423,7 @@ function attempt(
 }
 
 function writeOne(project: string, target: InstructionsTarget): InstructionsFile {
-  return attempt(project, target, WRITE_AGAIN, (done, text, path) => {
+  return attempt(project, target, writeAgainFor(target.path), (done, text, path) => {
     if (stateOf(target, text).state === 'current') return done('unchanged');
     const whole =
       target.own !== undefined ? (ownText(target.own, INSTRUCTIONS_VERSION) as string) : undefined;
@@ -545,7 +553,7 @@ export function stateLine(file: InstructionsFile): string {
 
 /** The sentence a write or a removal says about one file. */
 export function changeLine(file: InstructionsFile): string {
-  const again = file.again ?? WRITE_AGAIN;
+  const again = file.again ?? writeAgainFor(file.path);
   switch (file.did) {
     case 'created':
       return `Created ${file.path}, with the mnema instructions.`;

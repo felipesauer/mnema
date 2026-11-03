@@ -66,7 +66,7 @@ describe('a CLAUDE.md left off where another file holds the block', { timeout: 6
 
   it('is read from the disk as left out, and the line names it and the command', () => {
     expect(leftOut(repo)).toEqual(['CLAUDE.md']);
-    expect(leftOutLine(['CLAUDE.md'])).toContain('`mnema instructions --all-hosts` adds it');
+    expect(leftOutLine(['CLAUDE.md'])).toContain('`mnema instructions --hosts claude` adds it');
   });
 
   it('is not complained about by --check, which says the one line and exits clean', async () => {
@@ -88,8 +88,8 @@ describe('a CLAUDE.md left off where another file holds the block', { timeout: 6
     expect(ran.out).toContain(leftOutLine(['CLAUDE.md']));
   });
 
-  it('is written with --all-hosts, which is the command the line names', async () => {
-    await alone(['instructions', '--all-hosts']);
+  it('is written with --hosts claude, which is the command the line names, and nothing else is', async () => {
+    await alone(['instructions', '--hosts', 'claude']);
     expect(readFileSync(join(repo, 'CLAUDE.md'), 'utf-8')).toContain('mnema:begin');
   });
 });

@@ -141,7 +141,7 @@ describe('mnema instructions', () => {
     expect(init.text).toContain('backup key: created and enrolled');
     expect(init.text).toContain('Move that file off this machine');
     expect(init.text).toContain(
-      'Left AGENTS.md as it is: it could not be read: it is a directory, not a file. Once that is fixed, `mnema instructions --all-hosts` tries again.',
+      'Left AGENTS.md as it is: it could not be read: it is a directory, not a file. Once that is fixed, `mnema instructions --hosts codex` tries again.',
     );
     expect(init.text).toContain('Created .cursor/rules/mnema-instructions.mdc');
     expect(init.text).not.toMatch(/EISDIR|\bat .*\.js/);

@@ -141,7 +141,7 @@ export const ACCEPTS_ANSWERS = ['yes', 'no'] as const;
 export const HOSTS_NOT_UNDERSTOOD = 'HOSTS_NOT_UNDERSTOOD';
 
 /** What `--hosts` is, said once. */
-const HOSTS_HELP = `which hosts get the mnema instructions, without asking: ${[...HOSTS_OFFERED].join(', ')} (several, separated by commas), or one of ${[...HOSTS_WORDS].join(', ')}`;
+export const HOSTS_HELP = `which hosts get the mnema instructions, without asking: ${[...HOSTS_OFFERED].join(', ')} (several, separated by commas), or one of ${[...HOSTS_WORDS].join(', ')}`;
 
 /**
  * What `--which` says on this verb, which writes no fact of an agent's of its own: the founding is the

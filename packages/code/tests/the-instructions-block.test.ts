@@ -275,7 +275,7 @@ describe('a file that cannot be read or written', () => {
     const byPath = Object.fromEntries(files.map((file) => [file.path, file]));
     expect(byPath['AGENTS.md']?.did).toBe('refused');
     expect(changeLine(byPath['AGENTS.md'] as InstructionsFile)).toMatch(
-      /Left AGENTS\.md as it is: it could not be read: it is a directory, not a file\..*`mnema instructions --all-hosts` tries again/,
+      /Left AGENTS\.md as it is: it could not be read: it is a directory, not a file\..*`mnema instructions --hosts codex` tries again/,
     );
     expect(byPath['.claude/rules/mnema-instructions.md']?.did).toBe('refused');
     expect(byPath['.cursor/rules/mnema-instructions.mdc']?.did).toBe('created');
@@ -293,7 +293,7 @@ describe('a file that cannot be read or written', () => {
       const claude = files.find((file) => file.path === 'CLAUDE.md') as InstructionsFile;
       expect(claude.did).toBe('failed');
       expect(changeLine(claude)).toBe(
-        'Did not change CLAUDE.md: permission denied. Once that is fixed, `mnema instructions --all-hosts` tries again.',
+        'Did not change CLAUDE.md: permission denied. Once that is fixed, `mnema instructions --hosts claude` tries again.',
       );
       expect(text('CLAUDE.md')).toBe('# Ours\n');
       expect(files.find((file) => file.path === 'AGENTS.md')?.did).toBe('created');
