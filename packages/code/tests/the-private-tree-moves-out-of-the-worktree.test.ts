@@ -457,7 +457,7 @@ describe('private trees from before the move', () => {
     // refusal names, at the tail and seq it names.
     const named = /tail ([0-9a-f]{64}-[0-9a-f]{32}) seq (\d+): agent\.enrolled/.exec(fixed.out);
     expect(named, fixed.out).not.toBeNull();
-    const [, tail, seq] = named as RegExpExecArray;
+    const [, tail = '', seq = ''] = named as RegExpExecArray;
     const together = join(sandbox, 'together');
     cpSync(shared(), together, { recursive: true });
     cpSync(join(oldTree(repo), 'tails'), join(together, 'tails'), { recursive: true });
