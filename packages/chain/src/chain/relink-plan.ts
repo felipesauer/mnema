@@ -26,7 +26,12 @@ import { type ChainLayout, tailFingerprint } from './layout.js';
 import { RELINK_NOT_A_MEMBER, recordName, recordOf } from './record-name.js';
 import { lastTailCheckpoint, listTails, readTail } from './store.js';
 import { namesOfTails } from './tail-names.js';
-import { type RelinkToWrite, relinksReadAt, verifyChain } from './verify.js';
+import {
+  identityRefusedOnlyTogether,
+  type RelinkToWrite,
+  relinksReadAt,
+  verifyChain,
+} from './verify.js';
 
 /** The identity facts a relinked tail may bring into the record it joins. */
 const IDENTITY_KINDS = [
@@ -71,7 +76,8 @@ export interface RelinkRefusal {
     | 'TAIL_DOES_NOT_VERIFY'
     | 'TAIL_HOSTS_A_RELINK'
     | 'TAIL_ALREADY_RELINKED'
-    | 'RELINK_WOULD_NOT_COUNT';
+    | 'RELINK_WOULD_NOT_COUNT'
+    | 'RELINK_WOULD_NOT_VERIFY';
   readonly message: string;
 }
 
@@ -332,6 +338,22 @@ export function relinksWouldCount(
         message: `The readers would not count the relink of tail ${oneLine(tail)}. Nothing was written.`,
       };
     }
+  }
+  // The relinks count; the record they leave must still verify where its tails did.
+  const together = identityRefusedOnlyTogether(layouts, upcasters, toWrite);
+  const first = together[0];
+  if (first !== undefined) {
+    return {
+      ok: false,
+      code: 'RELINK_WOULD_NOT_VERIFY',
+      message:
+        `The record would not verify with these relinks written: the readers' identity check ` +
+        `(T2/T4, the one \`mnema verify\` makes) would refuse ${together.length} event(s) it ` +
+        `refuses nowhere today, once these tails are read as one record, the first at tail ` +
+        `${oneLine(first.tail)} seq ${first.seq}: ${oneLine(first.detail)}. A relink does not ` +
+        'change what a tail holds: leave these tails where they are, where they verify. Nothing ' +
+        'was written.',
+    };
   }
   const joined = new Set(
     toWrite.flatMap((one) => (one.event.kind === 'tail.relinked' ? [one.event.payload.into] : [])),

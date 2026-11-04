@@ -31,13 +31,17 @@
  */
 
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   renameSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -55,6 +59,7 @@ import {
   serializeCheckpoint,
   sign,
   signCheckpoint,
+  verifyChain,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
@@ -81,7 +86,13 @@ const ENV = () => ({
 });
 
 function mnema(cwd: string, ...argv: string[]) {
-  const ran = spawnSync(process.execPath, [CLI, ...argv], { cwd, encoding: 'utf-8', env: ENV() });
+  return mnemaAs(undefined, cwd, ...argv);
+}
+
+/** The binary, signing with the agent key kept under `agent` where one is named. */
+function mnemaAs(agent: string | undefined, cwd: string, ...argv: string[]) {
+  const env = agent === undefined ? ENV() : { ...ENV(), MNEMA_AGENT_KEY: agent };
+  const ran = spawnSync(process.execPath, [CLI, ...argv], { cwd, encoding: 'utf-8', env });
   return { status: ran.status, out: `${ran.stdout}${ran.stderr}` };
 }
 
@@ -117,6 +128,29 @@ function writtenOutsideTheRepository(top: string, text: string): void {
 function writtenTheOldWay(top: string, text: string): void {
   writtenOutsideTheRepository(top, text);
   signedAsBeforeRecordsWereNamed(oldTree(top));
+}
+
+/** Every file under `dir` but git's objects, by path and bytes: what a refusal must leave as it was. */
+function everythingUnder(dir: string): string {
+  const files = readdirSync(dir, { recursive: true, encoding: 'utf-8' })
+    .filter((path) => !path.includes(join('.git', 'objects')))
+    .filter((path) => statSync(join(dir, path)).isFile())
+    .sort();
+  const hash = createHash('sha256');
+  for (const path of files) hash.update(path).update('\0').update(readFileSync(join(dir, path)));
+  return `${files.length} file(s), ${hash.digest('hex')}`;
+}
+
+/** What the second reader refused in the tree at `root`: each finding that failed, and where. */
+function secondRefusals(root: string): readonly string[] {
+  const ran = spawnSync('python3', ['-I', SECOND_READER, '--json', 'record', root], {
+    encoding: 'utf-8',
+  });
+  if (ran.stdout === '') throw new Error(`the second reader produced no verdict: ${ran.stderr}`);
+  const reading = JSON.parse(ran.stdout) as {
+    findings: readonly { level: string; what: string; where: string }[];
+  };
+  return reading.findings.filter((f) => f.level === 'FAIL').map((f) => `${f.what} (${f.where})`);
 }
 
 /** The second reader's verdict on the tree at `root`. */
@@ -364,6 +398,71 @@ describe('private trees from before the move', () => {
     expect(fixed.out).toContain('RELINK_WOULD_NOT_COUNT');
     expect(readdirSync(join(oldTree(repo), 'tails'))).toEqual([old]);
     expect(readdirSync(join(shared(), 'tails'))).toEqual(tails);
+  }, 180_000);
+
+  it('are refused, in the doctor and in the fix alike, where the record they would make together would not verify', () => {
+    // The same agent key enrolled by both trees: by the repository's, then by the tree written
+    // apart, where the agent writes too. Each tree verifies alone; read as one record, the second
+    // enrolment names a key already in an identity, which both readers refuse.
+    expect(mnema(repo, 'memory', '--scope', 'private', 'in the repository').status).toBe(0);
+    const anchor = readdirSync(join(repo, '.mnema'), { recursive: true, encoding: 'utf-8' })
+      .filter((path) => statSync(join(repo, '.mnema', path)).isFile())
+      .map((path) => readFileSync(join(repo, '.mnema', path), 'utf-8').match(/mnid:[0-9a-f]+/)?.[0])
+      .find((found) => found !== undefined) as string;
+    const asked = mnema(repo, 'key', 'request', '--agent', 'bot', '--anchor', anchor);
+    const request = asked.out.split('\n').find((line) => line.startsWith('mnema-agent-request'));
+    expect(request, asked.out).toBeDefined();
+    const here = mnema(repo, 'key', 'enroll', '--agent', request as string);
+    expect(here.status, here.out).toBe(0);
+    renameSync(join(repo, '.git'), join(repo, '.git.aside'));
+    try {
+      const apart = mnema(repo, 'key', 'enroll', '--agent', request as string);
+      expect(apart.status, apart.out).toBe(0);
+      const wrote = mnemaAs('bot', repo, 'memory', '--scope', 'private', 'the agent, apart');
+      expect(wrote.status, wrote.out).toBe(0);
+    } finally {
+      renameSync(join(repo, '.git.aside'), join(repo, '.git'));
+    }
+    expect(mnema(repo, 'verify').status).toBe(0);
+    const before = everythingUnder(sandbox);
+
+    // The doctor names why, and advises no fix that would leave the record failing verify.
+    const doctor = mnema(repo, 'doctor').out;
+    expect(doctor).toContain('the fix would refuse them: RELINK_WOULD_NOT_VERIFY');
+    expect(doctor).toContain('agent.enrolled names a key that is already in an identity');
+    expect(doctor).not.toContain('run `mnema doctor --fix private-tree`');
+
+    // The dry run refuses as the fix does, and neither writes a byte.
+    const dry = mnema(repo, 'doctor', '--fix', 'private-tree', '--dry-run');
+    expect(dry.status, dry.out).toBe(1);
+    expect(dry.out).not.toContain('would relink');
+    expect(dry.out).toContain('RELINK_WOULD_NOT_VERIFY');
+    const fixed = mnema(repo, 'doctor', '--fix', 'private-tree');
+    expect(fixed.status, fixed.out).toBe(1);
+    expect(fixed.out).toContain('RELINK_WOULD_NOT_VERIFY');
+    expect(fixed.out).toContain('nothing was written');
+    expect(everythingUnder(sandbox)).toBe(before);
+    expect(mnema(repo, 'verify').status).toBe(0);
+
+    // The refusal's premise, by both readers: the two trees read as one directory (the move by
+    // hand, without the relinks, which do not touch the fact refused) refuse the enrolment the
+    // refusal names, at the tail and seq it names.
+    const named = /tail ([0-9a-f]{64}-[0-9a-f]{32}) seq (\d+): agent\.enrolled/.exec(fixed.out);
+    expect(named, fixed.out).not.toBeNull();
+    const [, tail, seq] = named as RegExpExecArray;
+    const together = join(sandbox, 'together');
+    cpSync(shared(), together, { recursive: true });
+    cpSync(join(oldTree(repo), 'tails'), join(together, 'tails'), { recursive: true });
+    for (const file of readdirSync(join(oldTree(repo), 'keys')).filter((f) => f.endsWith('.pub'))) {
+      cpSync(join(oldTree(repo), 'keys', file), join(together, 'keys', file));
+    }
+    const product = verifyChain({ root: together }, catalogUpcasters()).issues;
+    expect(
+      product.filter((issue) => issue.detail.startsWith('agent.enrolled names a key')),
+    ).toMatchObject([{ tail, seq: Number(seq) }]);
+    const second = secondRefusals(together).filter((f) => f.startsWith('agent.enrolled'));
+    // The second reader names a tail by its first 20 characters.
+    expect(second).toEqual([expect.stringContaining(`(${tail.slice(0, 20)}... seq ${seq})`)]);
   }, 180_000);
 
   it('give the doctor nothing to say where there are none, and the fix nothing to move', () => {
