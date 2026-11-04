@@ -529,6 +529,7 @@ describe('a checkout the key left writes nothing, through every write of the sur
     signerFor: 'reads who would sign in a tree',
     signerHeldFor: 'reads who would sign in a tree, and makes no key',
     keysOnThisMachine: 'reads which keys this machine holds, and makes none',
+    wouldRelinkTails: 'asks whether a relink would count: opens no writer and writes nothing',
   };
 
   /**
