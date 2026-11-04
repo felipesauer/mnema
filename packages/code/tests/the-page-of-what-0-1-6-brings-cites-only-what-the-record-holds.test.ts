@@ -38,7 +38,8 @@ function itemsOf(markdown: string): string[] {
   const items: string[] = [];
   for (const line of markdown.split('\n')) {
     if (line.startsWith('- ')) items.push(line);
-    else if (line.startsWith('  ') && items.length > 0) items[items.length - 1] += ` ${line.trim()}`;
+    else if (line.startsWith('  ') && items.length > 0)
+      items[items.length - 1] += ` ${line.trim()}`;
   }
   return items;
 }
@@ -55,7 +56,9 @@ function promisesOrDates(markdown: string): string[] {
   if (/\bwill\b/i.test(prose)) found.push('will');
   if (/\b(19|20)\d\d\b/.test(prose)) found.push('a year');
   if (
-    /\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(prose.replace(/\bmay\b/g, ''))
+    /\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(
+      prose.replace(/\bmay\b/g, ''),
+    )
   ) {
     found.push('a month');
   }
@@ -89,9 +92,15 @@ describe('the page of what 0.1.6 is expected to bring', () => {
     const readme = readFileSync(join(ROOT, 'README.md'), 'utf-8');
     expect(readme).toContain(`(${PAGE})`);
     const docs = readme.slice(readme.indexOf('\n## Docs\n'), readme.indexOf('\n## License'));
-    expect(docs, 'the Docs list of the front page, which the site navigation is read from').toContain(`(${PAGE})`);
+    expect(
+      docs,
+      'the Docs list of the front page, which the site navigation is read from',
+    ).toContain(`(${PAGE})`);
     const changelog = readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf-8');
-    const unreleased = changelog.slice(changelog.indexOf('## [Unreleased]'), changelog.indexOf('\n## [0.'));
+    const unreleased = changelog.slice(
+      changelog.indexOf('## [Unreleased]'),
+      changelog.indexOf('\n## [0.'),
+    );
     expect(unreleased).toContain('docs/what-0-1-6-is-expected-to-bring.md');
   });
 });
@@ -108,12 +117,18 @@ describe('every decision the page cites is in the record committed at HEAD, publ
     mkdirSync(home);
     mkdirSync(tree);
     const tar = join(dir, 'record.tar');
-    const archived = spawnSync('git', ['archive', '--format=tar', '-o', tar, 'HEAD', '.mnema'], { cwd: ROOT, encoding: 'utf-8' });
-    if (archived.status !== 0) throw new Error(`the record at HEAD could not be taken out:\n${archived.stderr}`);
+    const archived = spawnSync('git', ['archive', '--format=tar', '-o', tar, 'HEAD', '.mnema'], {
+      cwd: ROOT,
+      encoding: 'utf-8',
+    });
+    if (archived.status !== 0)
+      throw new Error(`the record at HEAD could not be taken out:\n${archived.stderr}`);
     const unpacked = spawnSync('tar', ['-xf', tar, '-C', tree], { encoding: 'utf-8' });
-    if (unpacked.status !== 0) throw new Error(`the record at HEAD could not be unpacked:\n${unpacked.stderr}`);
+    if (unpacked.status !== 0)
+      throw new Error(`the record at HEAD could not be unpacked:\n${unpacked.stderr}`);
     const init = spawnSync('git', ['init', '-q', tree], { encoding: 'utf-8' });
-    if (init.status !== 0) throw new Error(`a directory for the record could not be made:\n${init.stderr}`);
+    if (init.status !== 0)
+      throw new Error(`a directory for the record could not be made:\n${init.stderr}`);
   });
 
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -142,7 +157,9 @@ describe('every decision the page cites is in the record committed at HEAD, publ
       expect(said.startsWith('decision '), `${label}: ${said.slice(0, 200)}`).toBe(true);
       expect(said.split('\n')[0], label).toContain('public');
       const title = said.split('\n')[1] ?? '';
-      expect(title.trimEnd(), `${label} is not accepted: ${title.slice(0, 120)}`).toMatch(/\(accepted\)$/);
+      expect(title.trimEnd(), `${label} is not accepted: ${title.slice(0, 120)}`).toMatch(
+        /\(accepted\)$/,
+      );
     });
   }
 });
