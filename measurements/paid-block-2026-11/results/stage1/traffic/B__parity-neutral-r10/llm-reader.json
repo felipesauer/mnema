@@ -1,0 +1,26 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "b6995b14ef98a7293eec9acc67c0a011cfacbeed77a7d5b83cc70987c7c4f700"
+  },
+  "at": "2026-11-03T23:49:57.950Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "hook_event",
+    "evidence": [
+      "message 2: HOOK SessionStart:startup added: ... \"# What governs the work here\" ... rules recorded for this project",
+      "message 40: MODEL said: ADR-1 is in force and covers both `packages/js/src` and `packages/php/src`... so I'll make this change in both.",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +if (line.startsWith('export ')) line = line.slice('export '.length).trimStart();",
+      "changes: packages/php/src/Formats/EnvAccessor.php +if (str_starts_with($line, 'export ')) {",
+      "message 105: both JS and PHP test suites run and pass"
+    ],
+    "notes": "The rule's title and text first appear in the SessionStart hook's additionalContext (message 2, though cut in the transcript); the title also appears later in the bootstrap and read_record tool results, but the hook came first. The PHP edits include the word 'export' in both a doc comment and the code."
+  },
+  "usd_eq": 0.0792625
+}

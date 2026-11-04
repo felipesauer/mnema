@@ -1,0 +1,635 @@
+[
+  {
+    "id": "B/parity-scoped-r01",
+    "arm": "B",
+    "task": "parity-scoped",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0848329
+  },
+  {
+    "id": "A/parity-scoped-r01",
+    "arm": "A",
+    "task": "parity-scoped",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0368945
+  },
+  {
+    "id": "A/parity-neutral-r01",
+    "arm": "A",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.035888500000000004
+  },
+  {
+    "id": "A-agentsmd/parity-neutral-r01",
+    "arm": "A-agentsmd",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "tool_result"
+    },
+    "disagreements": [
+      {
+        "field": "rule_arrival",
+        "code_says": "not_seen_in_stream",
+        "llm_says": "tool_result"
+      }
+    ],
+    "evidence": {
+      "code_repo": [
+        "M packages/js/src/accessors/formats/env-accessor.ts",
+        "M packages/js/tests/env-accessor.test.ts",
+        "M packages/php/src/Formats/EnvAccessor.php",
+        "M packages/php/tests/run.php"
+      ],
+      "reader_evidence": [
+        "message 16: ADR-1 applies: `packages/js/src` and `packages/php/src` expose the same API, so this change goes into both packages in this one change.",
+        "message 41: Edit on packages/js/src/accessors/formats/env-accessor.ts adding 'with or without a leading `export `'",
+        "changes: packages/php/src/Formats/EnvAccessor.php +            $line = preg_replace('/^export[ \\t]+/', '', trim($raw)) ?? '';",
+        "message 59: I made the change in both packages, because ADR-1 requires a behavior change in `packages/js/src` and `packages/php/src` to land in both in the same pull request."
+      ],
+      "reader_notes": "The rule text (ADR-1) appears to have come from a tool result in the cut portion of messages 7-15 (likely a Bash cat of a file such as AGENTS.md or an ADR), but the exact tool call is not visible in the shown transcript; AGENTS.md is in the tracked file list. The model references ADR-1 at message 16 without it appearing in the visible text, so the arrival is inferred as tool_result rather than directly quoted."
+    },
+    "reader_usd_eq": 0.0361285
+  },
+  {
+    "id": "B/parity-neutral-r01",
+    "arm": "B",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": false
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0821885
+  },
+  {
+    "id": "B/parity-scoped-r02",
+    "arm": "B",
+    "task": "parity-scoped",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0875605
+  },
+  {
+    "id": "A/parity-scoped-r02",
+    "arm": "A",
+    "task": "parity-scoped",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0346385
+  },
+  {
+    "id": "B/parity-neutral-r02",
+    "arm": "B",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.09344250000000001
+  },
+  {
+    "id": "A/parity-neutral-r02",
+    "arm": "A",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0350665
+  },
+  {
+    "id": "A-agentsmd/parity-neutral-r02",
+    "arm": "A-agentsmd",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.032780500000000004
+  },
+  {
+    "id": "A/parity-neutral-r03",
+    "arm": "A",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0498745
+  },
+  {
+    "id": "A-agentsmd/parity-neutral-r03",
+    "arm": "A-agentsmd",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.039926500000000004
+  },
+  {
+    "id": "B/parity-neutral-r03",
+    "arm": "B",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0790105
+  },
+  {
+    "id": "A-agentsmd/parity-neutral-r04",
+    "arm": "A-agentsmd",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.035736500000000004
+  },
+  {
+    "id": "B/parity-neutral-r04",
+    "arm": "B",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0872825
+  },
+  {
+    "id": "A/parity-neutral-r04",
+    "arm": "A",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0353425
+  },
+  {
+    "id": "B/parity-neutral-r05",
+    "arm": "B",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.07965850000000001
+  },
+  {
+    "id": "A/parity-neutral-r05",
+    "arm": "A",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0369245
+  },
+  {
+    "id": "A-agentsmd/parity-neutral-r05",
+    "arm": "A-agentsmd",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0422185
+  },
+  {
+    "id": "A/parity-neutral-r06",
+    "arm": "A",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0416425
+  },
+  {
+    "id": "A-agentsmd/parity-neutral-r06",
+    "arm": "A-agentsmd",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.044028500000000005
+  },
+  {
+    "id": "B/parity-neutral-r06",
+    "arm": "B",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0814925
+  },
+  {
+    "id": "A-agentsmd/parity-neutral-r07",
+    "arm": "A-agentsmd",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0396485
+  },
+  {
+    "id": "B/parity-neutral-r07",
+    "arm": "B",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.08562449999999999
+  },
+  {
+    "id": "A/parity-neutral-r07",
+    "arm": "A",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.041996500000000006
+  },
+  {
+    "id": "B/parity-neutral-r08",
+    "arm": "B",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.07850449999999999
+  },
+  {
+    "id": "A/parity-neutral-r08",
+    "arm": "A",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.037880500000000004
+  },
+  {
+    "id": "A-agentsmd/parity-neutral-r08",
+    "arm": "A-agentsmd",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.039682499999999996
+  },
+  {
+    "id": "A/parity-neutral-r09",
+    "arm": "A",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0356345
+  },
+  {
+    "id": "A-agentsmd/parity-neutral-r09",
+    "arm": "A-agentsmd",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0349385
+  },
+  {
+    "id": "B/parity-neutral-r09",
+    "arm": "B",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0819005
+  },
+  {
+    "id": "A-agentsmd/parity-neutral-r10",
+    "arm": "A-agentsmd",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.035222500000000004
+  },
+  {
+    "id": "B/parity-neutral-r10",
+    "arm": "B",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "hook_event",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "hook_event"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.0792625
+  },
+  {
+    "id": "A/parity-neutral-r10",
+    "arm": "A",
+    "task": "parity-neutral",
+    "code": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "arrival": "not_seen_in_stream",
+      "cites": true
+    },
+    "reader": {
+      "obeyed": "yes",
+      "outcome": "obeyed",
+      "rule_arrival": "not_seen_in_stream"
+    },
+    "disagreements": [],
+    "reader_usd_eq": 0.037280499999999994
+  }
+]

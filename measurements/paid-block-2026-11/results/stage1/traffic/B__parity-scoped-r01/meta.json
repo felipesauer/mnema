@@ -1,0 +1,52 @@
+{
+  "id": "B/parity-scoped-r01",
+  "kind": "counted",
+  "arm": "B",
+  "task": "parity-scoped",
+  "mode": "live",
+  "claude_code": "2.1.311",
+  "model": "claude-sonnet-5-5",
+  "api_key_source": "none",
+  "started_at": "2026-11-03T20:37:39.359Z",
+  "ended_at": "2026-11-03T20:39:01.160Z",
+  "status": "finished",
+  "ending": "exited",
+  "requests": 8,
+  "usd_eq": 0.2329,
+  "windows_before": {
+    "five_hour": {
+      "utilization": 0.01,
+      "resetsAt": 1793752200,
+      "status": "allowed"
+    },
+    "seven_day": {
+      "utilization": 0.26,
+      "resetsAt": 1794218400,
+      "status": "allowed"
+    },
+    "status": "allowed"
+  },
+  "windows_after": {
+    "five_hour": {
+      "utilization": 0.03,
+      "resetsAt": 1793752200,
+      "status": "allowed"
+    },
+    "seven_day": {
+      "utilization": 0.27,
+      "resetsAt": 1794218400,
+      "status": "allowed"
+    },
+    "status": "allowed"
+  },
+  "cut": null,
+  "subscription_proof": true,
+  "subscription_proof_reason": "subscription rate-limit event seen",
+  "arm_problems": [],
+  "credential_in_run_folder": false,
+  "account_check": "match",
+  "same_account_after": true,
+  "credentials_refreshed": false,
+  "credentials_copied_back": false,
+  "session_id": "65f65534-803d-40ff-b6ea-8366bae41890"
+}

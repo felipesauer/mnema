@@ -1,0 +1,81 @@
+{
+  "start": "358605ea169a5c44208ce312f2d3925a3c60d603",
+  "changed": [
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const trimmed = raw.trim();",
+        "      if (trimmed === '' || trimmed.startsWith('#')) continue;",
+        "      const line = trimmed.replace(/^export[ \\t]+/, '');"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim();",
+        "      if (line === '' || line.startsWith('#')) continue;"
+      ],
+      "sha256_end": "f0a53996cf858d18f17611810e9ac1ec2158cbac4d73837259b9c0b6135136dd"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "",
+        "test('accepts lines written as `export KEY=value`', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport   PORT=3000\\nexport\\tMODE=dev\\n');",
+        "  assert.deepEqual(env.all(), { HOST: 'localhost', PORT: '3000', MODE: 'dev' });",
+        "  assert.equal(env.has('export HOST'), false);",
+        "});",
+        "",
+        "test('an exported value is still unquoted', () => {",
+        "  const env = new EnvAccessor('export A=\"one two\"\\nexport B=\\'three\\'\\n');",
+        "  assert.equal(env.get('A'), 'one two');",
+        "  assert.equal(env.get('B'), 'three');",
+        "});",
+        "",
+        "test('only a leading `export ` is dropped', () => {",
+        "  const env = new EnvAccessor('export=1\\nexported=2\\n  export  PADDED=3\\n# export COMMENTED=4\\nA=export B=5\\n');",
+        "  assert.deepEqual(env.all(), { export: '1', exported: '2', PADDED: '3', A: 'export B=5' });",
+        "});"
+      ],
+      "removed": [],
+      "sha256_end": "4ca7fbfe9cb2914d0675e09c88bdf4472f0a56b9db0a053660b7e50c0d05b61e"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $trimmed = trim($raw);",
+        "            if ($trimmed === '' || str_starts_with($trimmed, '#')) {",
+        "            $line = preg_replace('/^export[ \\t]+/', '', $trimmed);"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $line = trim($raw);",
+        "            if ($line === '' || str_starts_with($line, '#')) {"
+      ],
+      "sha256_end": "8106f1a02d28a4710687ce8f299653e6f708d9a5e92c9016047efc6127c81401"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport   PORT=3000\\nexport\\tMODE=dev\\n\");",
+        "check('accepts lines written as `export KEY=value`', $env->all() === ['HOST' => 'localhost', 'PORT' => '3000', 'MODE' => 'dev'] && !$env->has('export HOST'));",
+        "",
+        "$env = new EnvAccessor(\"export A=\\\"one two\\\"\\nexport B='three'\\n\");",
+        "check('an exported value is still unquoted', $env->get('A') === 'one two' && $env->get('B') === 'three');",
+        "",
+        "$env = new EnvAccessor(\"export=1\\nexported=2\\n  export  PADDED=3\\n# export COMMENTED=4\\nA=export B=5\\n\");",
+        "check('only a leading `export ` is dropped', $env->all() === ['export' => '1', 'exported' => '2', 'PADDED' => '3', 'A' => 'export B=5']);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "a8c8534a70aecffb7ddb1c9da41fac51b63e5baa689c5b150f59ee1f061a8517"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

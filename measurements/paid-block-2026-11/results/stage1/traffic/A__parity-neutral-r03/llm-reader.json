@@ -1,0 +1,25 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "4b7a2103db2aaa5220d62405d940d3ffe21d708004c26f5cbe4eaa2ba03789cc"
+  },
+  "at": "2026-11-03T23:47:44.064Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: M packages/js/src/accessors/formats/env-accessor.ts (+ `const line = trimmed.startsWith('export ') ? ...`)",
+      "changes: M packages/php/src/Formats/EnvAccessor.php +`$line = str_starts_with($trimmed, 'export ') ? ltrim(substr($trimmed, strlen('export '))) : $trimmed;`",
+      "message 133: \"I made the same change in each, as ADR-1 requires.\"",
+      "message 132: git diff --stat lists packages/php/src/Formats/EnvAccessor.php | 7 +++---"
+    ],
+    "notes": "The rule's exact title never appears in the stream; the final message cites 'ADR-1', suggesting the agent saw the rule via a file loaded at start-up (CLAUDE.md/AGENTS.md) or in a cut-off tool output, but its text is not visible in the transcript, so rule_arrival is not_seen_in_stream."
+  },
+  "usd_eq": 0.0498745
+}

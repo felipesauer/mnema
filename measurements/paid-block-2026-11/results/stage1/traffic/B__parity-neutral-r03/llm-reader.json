@@ -1,0 +1,26 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "c3e6a951cfb2a3ff737d55a595d6090e943d3725091befaae0d445d6d7589983"
+  },
+  "at": "2026-11-03T23:47:55.221Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "hook_event",
+    "evidence": [
+      "message 2: HOOK SessionStart:startup added: ... \"1 of the rules below has an ADDRESS\" ... \"Decisions in force (1)\"",
+      "message 78: HOOK PreToolUse:Edit added: \"A behavior change in one package is made in the other in the same pull request\": governs packages/js/src",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export[ \\t]+(?=[^\\s=])/, '');",
+      "changes: packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+(?=[^\\s=])/', '', trim($raw));",
+      "message 145: \"now reads `export KEY=value` as `KEY=value`, in both the JS and PHP packages. Both test suites pass.\""
+    ],
+    "notes": "The rule text first appeared in the SessionStart hook output (message 2), before any tool result returned it (bootstrap, governing_rules, read_record at messages 13-17). The agent edited the PHP package in the same session, and the final changes confirm it."
+  },
+  "usd_eq": 0.0790105
+}

@@ -1,0 +1,25 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "4788b5abff1371d2a7d59a9970aaa9f8a051a313776dc0903e488e4ee26fea21"
+  },
+  "at": "2026-11-03T23:48:38.302Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: M packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export[ \\t]+/, '');",
+      "changes: M packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+/', '', trim($raw));",
+      "message 77: `EnvAccessor` now reads `export KEY=value` as key `KEY` in both the JS and the PHP package, per ADR-1.",
+      "message 76: PHP tests print 'ok   reads export KEY=value lines as KEY=value' with exit=0"
+    ],
+    "notes": "The rule's exact title text never appears in the visible transcript (some tool outputs are cut, and the agent's final message cites 'ADR-1' and 'parity-vectors.json', which suggests it learned of parity from a file such as CLAUDE.md/AGENTS.md loaded by the host or from cut-out content). The arrival is labelled not_seen_in_stream because the rule text itself is not visible."
+  },
+  "usd_eq": 0.0416425
+}
