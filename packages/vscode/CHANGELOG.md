@@ -3,7 +3,7 @@
 ## 0.1.5
 
 - The status bar tooltip says when the command line is on another version than the extension. It
-  compares what `mnema --version` prints with the extension's own version (major, minor and patch).
+  compares the version the command line reports with the extension's own version (major, minor and patch).
   If the command line is older, the tooltip says to update it, with a link to how, or to point
   `mnema.command` at a newer one; if it is newer, it says to update the extension. When the versions
   agree it says nothing. It is a line of the tooltip, never a notification, and it asks no network.
