@@ -67,3 +67,56 @@ export function acceptedByAnAgent(agent: string): string {
     'Whether agents may accept is a switch: `mnema switch off agent-accepts` stops it.'
   );
 }
+
+/** Who is told the state of a decision just recorded, which decides how the accept is spelled. */
+export type WhoIsTold = 'agent-tool' | 'agent-command' | 'person';
+
+/** What the switch `agent-accepts` is, as far as it could be told: on, off, or not readable. */
+export type AcceptState = 'on' | 'off' | 'unreadable';
+
+/**
+ * What a decision just recorded says about its own state and about when an agent accepts it: the
+ * one place the rule is worded for the replies of the tool and of the command. A decision is born
+ * `proposed`; where the person dictated it, or chose it among the options an agent offered (a
+ * recommended one included), the agent accepts it at once with a note quoting the answer; where
+ * the agent concluded it alone, it waits for the person. With the switch off only a person accepts.
+ *
+ * A SWITCH THAT COULD NOT BE READ is a third state and says so: it is not "switched off", which
+ * would be a fact nobody recorded. A person accepts, which no instruction can be set against.
+ * `command` is the decision's id and the declared agent, which the command-line wording prints.
+ */
+export function stateOfANewDecision(
+  state: AcceptState,
+  who: WhoIsTold,
+  command?: { readonly id: string; readonly agent: string },
+): string {
+  const born = '  Born proposed, so not yet in force.';
+  const review = '`mnema decision review`';
+  if (who === 'person') return `${born} A person accepts it with ${review}.`;
+  if (state === 'off') {
+    return `${born} Here only a person accepts it (${review}): \`agent-accepts\` is switched off.`;
+  }
+  if (state === 'unreadable') {
+    return `${born} The switch \`agent-accepts\` could not be read, so only a person accepts it here (${review}).`;
+  }
+  const how =
+    who === 'agent-tool' || command === undefined
+      ? '`decision_transition` (action `accept`)'
+      : `\`mnema decision move accept ${oneLine(command.id)} --which ${oneLine(command.agent)}\``;
+  return (
+    `${born} If the person dictated it, or chose it among options you offered ` +
+    `(a recommended one included), accept it now with ${how}, the note quoting their answer; ` +
+    `if you concluded it alone, it waits for the person (${review}).`
+  );
+}
+
+/** Whether an agent may accept here now, asked with no decision in hand: a source that cannot be read is `unreadable`. */
+export function acceptStateHere(sources: readonly ScopedCache[]): AcceptState {
+  try {
+    return agentMayAccept(sources, { action: ACCEPT, agent: 'an-agent' }) === undefined
+      ? 'on'
+      : 'off';
+  } catch {
+    return 'unreadable';
+  }
+}

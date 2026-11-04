@@ -19,7 +19,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { SETTLED_SENTENCE } from '../../src/commands/settled.js';
+import { settledSentence } from '../../src/commands/settled.js';
 import {
   aHostForEachCase,
   EVIDENCE_DIRECTORY,
@@ -116,7 +116,7 @@ describe('a settled choice reaches the model', () => {
     const sent = theAnswerAsSent(session);
     expect(sent).toContain('"Which store do we use?"="SQLite"');
     expect(sent).toContain(
-      `PostToolUse:AskUserQuestion hook additional context: ${SETTLED_SENTENCE}`,
+      `PostToolUse:AskUserQuestion hook additional context: ${settledSentence('on')}`,
     );
   }, 120_000);
 
@@ -130,6 +130,6 @@ describe('a settled choice reaches the model', () => {
     expect(JSON.parse(readFileSync(file, 'utf-8')).tool_name).toBe('AskUserQuestion');
     const sent = theAnswerAsSent(session);
     expect(sent).toContain('"Which store do we use?"="SQLite"');
-    expect(sent).not.toContain(SETTLED_SENTENCE);
+    expect(sent).not.toContain(settledSentence('on'));
   }, 120_000);
 });

@@ -45,7 +45,7 @@
 
 import { dirname } from 'node:path';
 import { channelIsOn } from '@mnema/context';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { type DiscoveryEnv, INITIAL_DECISION_STATE, resolveTrees } from '@mnema/core';
 import { readEventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js';
 import { SESSION_JOURNAL_CHANNEL, SESSION_TALLY_CHANNEL } from '../record-framing.js';
 import {
@@ -112,6 +112,16 @@ function tallyLine(input: {
       ? '.'
       : `, and ${counted(input.copied, 'note', 'notes')} of this host’s memory ${input.copied === 1 ? 'was' : 'were'} copied into this machine’s private tree.`)
   );
+}
+
+/**
+ * The second line, only when a decision recorded since the session opened is still `proposed`: how
+ * many, and the command a person rules on them with. It is a count and a door, as the first line
+ * is; a session that leaves nothing waiting gets no second line.
+ */
+function waitingLine(waiting: number): string {
+  if (waiting === 0) return '';
+  return `\n${counted(waiting, 'decision recorded since it opened still awaits', 'decisions recorded since it opened still await')} a person’s judgement: \`mnema decision review\`.`;
 }
 
 /** Answers the hook payload `input.payload`: the line, or `{}` when there is nothing to count. */
@@ -198,7 +208,10 @@ export function runSessionTally(
         'The transcript carries no instant, so no decision could be counted against it.',
       ]);
     }
-    const waiting = readEventsNotInGit({ cwd: ctx.cwd, env: ctx.env });
+    const events = readEventsNotInGit({ cwd: ctx.cwd, env: ctx.env });
+    const proposals = journal.decisions.filter(
+      (one) => one.state === INITIAL_DECISION_STATE,
+    ).length;
     const line = tallyLine({
       files: journal.filesEdited,
       decisions: journal.decisions.length,
@@ -207,7 +220,10 @@ export function runSessionTally(
     return {
       ok: true,
       reply: {
-        systemMessage: waiting === undefined ? line : `${line} ${saysEventsNotInGit(waiting)}`,
+        systemMessage:
+          events === undefined
+            ? `${line}${waitingLine(proposals)}`
+            : `${line} ${saysEventsNotInGit(events)}${waitingLine(proposals)}`,
       },
       notes: [],
     };
