@@ -10,7 +10,8 @@
  *     commit (never the working tree, never the private tree of whoever runs this), and the binary built here is
  *     asked to `show` each label. A label that is not there, one still proposed, or one superseded, fails by name.
  *   - NOTHING IS PROMISED: the page says "expected" and never "will", and it gives no date (no year, no month).
- *   - IT IS REACHED FROM THE FRONT PAGE'S "DOCS" and from the site's navigation, and the CHANGELOG says it was added.
+ *   - IT IS REACHED FROM THE FRONT PAGE'S "DOCS" (the list the site's navigation is read from, held by
+ *     `the-site-is-made-of-its-sources.test.ts`), and the CHANGELOG says it was added.
  *
  * WHAT IT DOES NOT CHECK: that a plan is carried out (nothing here asks the code), nor that a line says what its
  * decision says in the same words: a reader judges that.
@@ -21,7 +22,6 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { groupsOf, sidebarOf } from '../../../site/build/the-pages.mjs';
 import { ROOT } from './support/published-examples.js';
 
 const PAGE = 'docs/what-0-1-6-is-expected-to-bring.md';
@@ -85,16 +85,11 @@ describe('the page of what 0.1.6 is expected to bring', () => {
     expect(promisesOrDates(page)).toEqual([]);
   });
 
-  it('is in the front page Docs and in the site navigation, and the changelog says it', () => {
+  it('is in the front page Docs, and the changelog says it', () => {
     const readme = readFileSync(join(ROOT, 'README.md'), 'utf-8');
     expect(readme).toContain(`(${PAGE})`);
-    const groups = groupsOf(readme);
-    const links = groups.flatMap((g: { items: { target: string }[] }) => g.items.map((i) => i.target));
-    expect(links).toContain(PAGE);
-    const facts = { base: '/mnema', repoUrl: 'https://github.com/o/mnema', sha: 'abc' };
-    const docs = new Set(['what-0-1-6-is-expected-to-bring']);
-    const sidebar = sidebarOf({ readme, facts, docs, record: undefined }) as { items: { link: string }[] }[];
-    expect(sidebar.flatMap((g) => g.items.map((i) => i.link))).toContain('/docs/what-0-1-6-is-expected-to-bring/');
+    const docs = readme.slice(readme.indexOf('\n## Docs\n'), readme.indexOf('\n## License'));
+    expect(docs, 'the Docs list of the front page, which the site navigation is read from').toContain(`(${PAGE})`);
     const changelog = readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf-8');
     const unreleased = changelog.slice(changelog.indexOf('## [Unreleased]'), changelog.indexOf('\n## [0.'));
     expect(unreleased).toContain('docs/what-0-1-6-is-expected-to-bring.md');

@@ -1347,6 +1347,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-origin-travels-beside-the-label.test.ts': 17,
   'packages/code/tests/the-other-projects-are-read-from-their-index.test.ts': 16,
   'packages/code/tests/the-owner-relinks-a-tail.test.ts': 7,
+  'packages/code/tests/the-page-of-what-0-1-6-brings-cites-only-what-the-record-holds.test.ts': 6,
   'packages/code/tests/the-packed-install-runs-on-main-and-tags.test.ts': 4,
   'packages/code/tests/the-page-shows-its-seams.test.ts': 19,
   'packages/code/tests/the-panel.test.ts': 21,
