@@ -27,7 +27,11 @@
  *     relinked: the fix names the tail and the key, fails, and nothing is written or moved;
  *   - the doctor without --fix names both records and advises the fix only where it would
  *     relink: where it would refuse (no key here, or a key the record never took in), the finding
- *     says why and advises none, and the dry run says the same refusal the fix does.
+ *     says why and advises none, and the dry run says the same refusal the fix does;
+ *   - where both trees enrolled the same agent key, the relinks would count and the record they
+ *     made would fail `verify` (both readers refuse the second enrolment): the finding, the dry run
+ *     and the fix refuse `RELINK_WOULD_NOT_VERIFY` naming that event, nothing is written, and
+ *     `verify` stays green. The fix used to relink and move with exit 0, leaving `verify` failing.
  */
 
 import { spawnSync } from 'node:child_process';

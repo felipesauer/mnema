@@ -14,6 +14,10 @@
  * 2. {@link relinksWouldCount}: the readers' own rule (`relinkedNaming`, through
  *    `relinksReadAt`), over the directory as it would read with the relinks appended and covered.
  *    A relink the rule refuses is refused here by the rule's own words, and nothing is written.
+ *    Then their identity check over that same directory (`identityRefusedOnlyTogether`): a relink
+ *    the rule counts can still leave a record `verify` refuses, where each tree enrolled the same
+ *    agent key (found on the binary, `mnema doctor --fix private-tree` exiting 0 and `verify`
+ *    then failing), and that is refused too, `RELINK_WOULD_NOT_VERIFY`.
  *
  * The tails are read from `layouts`, in order: the tree the relinks are written in first, and for
  * the doctor the tree that moves into it, so the directory read is the one after the move.
@@ -294,7 +298,11 @@ export interface LeftBehind {
  * read together (`relinksReadAt`, the rule both readers apply): the records the directory would
  * still name beside the one joined, or the readers' refusal of the first relink they would not
  * count, in their own words. A relink whose host does not name the record it joins is read as
- * written in a new tail of its key (`newTailOf`), which is where its writer writes it.
+ * written in a new tail of its key (`newTailOf`), which is where its writer writes it. Where the
+ * relinks count, it also refuses `RELINK_WOULD_NOT_VERIFY` when the readers' identity check would
+ * refuse, over that directory, an event it refuses in none of `layouts` read alone
+ * (`identityRefusedOnlyTogether`, `verify.ts`; `relink-plan.test.ts`, `whether the record a relink
+ * leaves would verify`).
  */
 export function relinksWouldCount(
   layouts: readonly ChainLayout[],
