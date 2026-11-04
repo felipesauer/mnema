@@ -50,6 +50,9 @@ import { NAMED_TAILPROOF_SCHEME } from './tailproof.js';
 import { ensureTree } from './tree.js';
 import { AnotherRecordError, type ChainWriter } from './writer.js';
 
+/** The release that began naming records: the production text says it, as the past. */
+const NAMING_RELEASE_VERSION = '0.1.5';
+
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
 const FIXTURES = fileURLToPath(new URL('./__fixtures__/', import.meta.url));
 const OLD = 'written-by-an-earlier-binary';
@@ -194,7 +197,7 @@ describe('a new record', () => {
 });
 
 describe('a record written before records were named', () => {
-  it('is named after its genesis tail by its first 0.1.5 writer, the old tail said unnamed', () => {
+  it(`is named after its genesis tail by its first ${NAMING_RELEASE_VERSION} writer, the old tail said unnamed`, () => {
     const root = copyOf(OLD, 'old');
     const tail = write(root, 'carol', 'after the upgrade');
     const name = recordName(OLD_TAIL);

@@ -9,7 +9,7 @@
   agree it says nothing. It is a line of the tooltip, never a notification, and it asks no network.
 - Add from Index works in any folder, not only in a checkout of mnema. The setting
   `mnema.stackIndex` now defaults to empty, which means the index that comes with the installed
-  `mnema` (`mnema` 0.1.5 or later); set it to a folder to read that folder's `index.json` instead.
+  command line (0.1.5 or later); set it to a folder to read that folder's `index.json` instead.
 - A decision the record says is in divergence, for example an accept and a retirement of it that
   crossed, is no longer shown as governing a file, though its state reads `accepted`.
 - The extension's homepage in the stores is now the project's site.

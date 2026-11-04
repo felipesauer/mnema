@@ -368,7 +368,7 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   by a branch where a 0.1.5 writer named the record after it, does the same. Merged, either leaves a directory of two names
   that both readers refuse (`another-record`); `verify --since`, and so the Action, refuses the branch before the merge
   (FORMAT.md section 6.10, `docs/cli-reference.md`). After a merge, the way back is the relink ADR-134 settled (the owner
-  of each tail named the other way binds it to the record with their own signature), which `mnema tail relink` writes.
+  of each tail named the other way binds it to the record with their own signature), which this release writes.
 
 - **A decision one machine accepted and another rejected or superseded, out of the same state, is in force in no reading, and each
   reading says why.** Two clones that had not seen each other, once their tails meet, leave two signed moves out of `proposed`,

@@ -57,6 +57,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { run } from '../src/program.js';
 import { sourceFiles } from './support/reading-source.js';
 
+/** The release that began naming records: the production text says it, as the past. */
+const NAMING_RELEASE_VERSION = '0.1.5';
+
 /** `packages/code/src/wiring`: the layer that words a verb's own lines. */
 const WIRING = fileURLToPath(new URL('../src/wiring', import.meta.url));
 /** `packages/code/src`: for the reconciliation of what is deliberately NOT here. */
@@ -996,7 +999,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the revision as typed; the count is the product’s, collapsed with it',
     },
-  'verify.ts «{}: tail {} arrived since and names no record: written by a mnema before 0.1.5, or grafted from a record written then, which this record cannot tell from its own (born-unnamed)» #1':
+  [`verify.ts «{}: tail {} arrived since and names no record: written by a mnema before ${NAMING_RELEASE_VERSION}, or grafted from a record written then, which this record cannot tell from its own (born-unnamed)» #1`]:
     {
       verdict: 'collapsed',
       why: 'the revision as typed, and a tail id read off the disk: a directory name, chosen on disk',
@@ -1006,7 +1009,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the revision as typed, and tail ids and record names read off the disk',
     },
-  'verify.ts «{}: tail {} arrived since and names no record, and {}: the record has no name yet, so a tail grafted from another record written before 0.1.5 cannot be told from its own; a note, not a failure, until a mnema from 0.1.5 on writes here and names it (unnamed-record)» #1':
+  [`verify.ts «{}: tail {} arrived since and names no record, and {}: the record has no name yet, so a tail grafted from another record written before ${NAMING_RELEASE_VERSION} cannot be told from its own; a note, not a failure, until a mnema from ${NAMING_RELEASE_VERSION} on writes here and names it (unnamed-record)» #1`]:
     {
       verdict: 'collapsed',
       why: 'the revision as typed, a tail id read off the disk, and whether the base held a record: chosen on disk',
@@ -1454,13 +1457,13 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'needs a base commit and a segment cut or rewritten after it: the same file',
   'verify.ts «{}: the record only grew: {} file(s) it held are here, and every segment and checkpoint file begins with its bytes» #1':
     'needs a base commit and a record that grew after it: the same file',
-  'verify.ts «{}: tail {} arrived since and names no record: written by a mnema before 0.1.5, or grafted from a record written then, which this record cannot tell from its own (born-unnamed)» #1':
+  [`verify.ts «{}: tail {} arrived since and names no record: written by a mnema before ${NAMING_RELEASE_VERSION}, or grafted from a record written then, which this record cannot tell from its own (born-unnamed)» #1`]:
     'needs a base commit and a tail grafted after it from a record written before records were ' +
     'named; driven through the binary in `a-tail-that-arrives-is-held-to-the-base.test.ts`',
   'verify.ts «{}: {} arrived since and {} record {}..., and the record there is {}: a tail of another record (another-record)» #1':
     'needs a base commit and a tail of another record grafted after it; driven through the ' +
     'binary in `a-tail-that-arrives-is-held-to-the-base.test.ts`',
-  'verify.ts «{}: tail {} arrived since and names no record, and {}: the record has no name yet, so a tail grafted from another record written before 0.1.5 cannot be told from its own; a note, not a failure, until a mnema from 0.1.5 on writes here and names it (unnamed-record)» #1':
+  [`verify.ts «{}: tail {} arrived since and names no record, and {}: the record has no name yet, so a tail grafted from another record written before ${NAMING_RELEASE_VERSION} cannot be told from its own; a note, not a failure, until a mnema from ${NAMING_RELEASE_VERSION} on writes here and names it (unnamed-record)» #1`]:
     'needs a base commit with no named tail and a tail written before records were named ' +
     'grafted after it; driven through the binary in `a-tail-that-arrives-is-held-to-the-base.test.ts`',
   'verify.ts «{}: tail {} {}, record {}..., relinked into this record by its own key, {} event(s) from {} (relinked)» #1':
