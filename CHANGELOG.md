@@ -30,6 +30,12 @@ with its own changelog.
   stash. `mnema status` ("Kept aside by a pull") and `mnema doctor` now say so, in one sentence, whenever an autostash
   holds files of a tail or a tail file is in conflict in the index.
 
+- **A page says what 0.1.6 is expected to bring (ADR-152).** `docs/what-0-1-6-is-expected-to-bring.md`, on the site and in the README's
+  Docs list, groups the plans by theme (using mnema alone in a repository whose team has not adopted it, the guided backup, the grades of
+  the relations and the guided first recording, the record page, what moved from 0.1.5, and the next measurement block), each line
+  worded as expected and linked to the accepted decision that holds it (ADR-120, ADR-131, ADR-140, ADR-141, ADR-144, ADR-160, ADR-178,
+  ADR-179). They are plans and not promises, and no date is given. A guard holds that every decision it cites is in the committed
+  record, public and accepted, that a line carries a link, and that the page says neither "will" nor a date.
 - **Every surface says where a newer mnema wrote (ADR-140).** A line of a kind this mnema does not know is read past and
   left out of every reading, which until now no surface said: a line that moved a decision was invisible. `mnema status`
   prints one line when any exists (and `status --json` carries `newerLines`, the count and the kinds), `mnema brief`
