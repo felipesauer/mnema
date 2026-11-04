@@ -1,0 +1,9 @@
+# What install.sh rebuilds, what a run leaves behind, and everything secret: never committed.
+/installed/
+/mnema-pkg/
+/plugin-tag/
+/runs/
+/secrets/
+*.token
+*.key
+node_modules/

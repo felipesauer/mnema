@@ -1,0 +1,26 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "86eca663a26b2fac3459bd05289d9cdc20de5dd287e8cfdafd524deabc1aff5b"
+  },
+  "at": "2026-11-03T23:48:19.475Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "hook_event",
+    "evidence": [
+      "message 2: HOOK SessionStart:startup added: ... 'What governs the work here' ... 'Decisions in force (1)'",
+      "message 15: bootstrap returned decision title 'A behavior change in one package is made in the other in the same pull request'",
+      "message 40: MODEL said: 'ADR-1 is in force and covers both `packages/js/src` and `packages/php/src`. So the change goes into both packages'",
+      "changes: M packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export[ \\t]+/, '');",
+      "changes: M packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+/', '', trim($raw)) ?? '';"
+    ],
+    "notes": "The rule's exact title appears in the SessionStart hook output (message 2 is cut, but it describes the decisions in force and message 15 shows the title), and again in a PreToolUse hook at message 47. The rule's full text was also returned by the bootstrap and read_record tools. The first appearance in the stream is the SessionStart hook, so rule_arrival is hook_event. The PHP change was made and tested in the same session."
+  },
+  "usd_eq": 0.07965850000000001
+}

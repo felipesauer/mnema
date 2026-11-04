@@ -1,0 +1,25 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "7f2c493e323fcd7b3b3b938e573ff097eb5ddd78ca10c727c44e3829c4ef6bf6"
+  },
+  "at": "2026-11-03T23:49:21.127Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "message 53: Edit on packages/js/src/accessors/formats/env-accessor.ts adding 'with or without a leading `export `'",
+      "message 59: Edit on packages/php/src/Formats/EnvAccessor.php: preg_replace('/^export[ \\t]+/', '', trim($raw)) ?? ''",
+      "changes: packages/php/src/Formats/EnvAccessor.php +            $line = preg_replace('/^export[ \\t]+/', '', trim($raw)) ?? '';",
+      "message 86: 'I changed both packages because ADR-1 requires a behavior change in one to land in the other in the same PR.'"
+    ],
+    "notes": "The rule's exact title/text never appears in the visible transcript (tool outputs for AGENTS.md/CLAUDE.md were not shown, and the agent only refers to it as 'ADR-1'), so it probably arrived through a host-loaded file; per the definitions this is not_seen_in_stream. The transcript also has cut portions (messages 9-36, 40-52), so arrival via a tool result there cannot be excluded."
+  },
+  "usd_eq": 0.037880500000000004
+}

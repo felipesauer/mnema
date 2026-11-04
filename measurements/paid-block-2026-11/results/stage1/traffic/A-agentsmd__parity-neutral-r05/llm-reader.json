@@ -1,0 +1,25 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "a8642acd0d92052e5e0a68987c0ed098d65f3b45b8f89300e647e4c1eb374f5a"
+  },
+  "at": "2026-11-03T23:48:33.333Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: M packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export[ \\t]+(?!=)/, '');",
+      "changes: M packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+(?!=)/', '', $line) ?? $line;",
+      "message 77: `EnvAccessor` now reads `export KEY=value` as `KEY=value`, in both the JS and PHP packages, as ADR-1 requires.",
+      "message 69: PHP tests ok including 'reads export KEY=value lines as KEY=value'"
+    ],
+    "notes": "The rule's exact title text is not visible in the shown transcript. Part of the output of messages 7-9 is cut, and messages 10-37 are not shown. The final message cites 'ADR-1' and AGENTS.md is a tracked file, so the rule probably reached the agent through a file the host loads or one it read. That cannot be confirmed from the given text, so it is labeled not_seen_in_stream."
+  },
+  "usd_eq": 0.0422185
+}

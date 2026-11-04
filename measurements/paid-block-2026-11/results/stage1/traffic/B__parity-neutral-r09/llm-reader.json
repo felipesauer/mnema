@@ -1,0 +1,27 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "33b6afe8e10f19067f5aecfec30776a3bd4a36c135a18c5335eed528303a266e"
+  },
+  "at": "2026-11-03T23:49:46.017Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "hook_event",
+    "evidence": [
+      "message 2: HOOK SessionStart:startup added: ... \"Decisions in force (1)\" (brief of the mnema record)",
+      "message 15: bootstrap listed decision \"A behavior change in one package is made in the other in the same pull request\"",
+      "message 84: HOOK PreToolUse:Edit added: \"A behavior change in one package is made in the other in the same pull request\": governs packages/js/src",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export[ \\t]+/, '');",
+      "changes: packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+/', '', trim($raw)) ?? '';",
+      "message 157: \"ADR-1 says a behaviour change in one package is made in the other in the same change, so I changed both.\""
+    ],
+    "notes": "The SessionStart hook output is cut in the transcript, but it states that the project's rules are printed there and the rule title first appears in full in a hook (message 84) and in the bootstrap tool result (message 15). A hook delivered it first (message 2 brief, message 84 PreToolUse), so hook_event is used. Both test suites were reported passing."
+  },
+  "usd_eq": 0.0819005
+}

@@ -1,0 +1,26 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "64807be6191fc938f79b3e397cab7eb4ae85825b0757e3cb4a9e25ed129bd168"
+  },
+  "at": "2026-11-03T23:48:01.099Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const EXPORT_PREFIX = 'export ';",
+      "changes: packages/php/src/Formats/EnvAccessor.php +    private const EXPORT_PREFIX = 'export ';",
+      "message 41: Both suites pass at baseline. I'll make the same change in both packages.",
+      "message 78: I changed both packages because ADR-1 requires a behavior change in one to be made in the other in the same pull request.",
+      "message 9: cat of README.md and source files (AGENTS.md is tracked but its content is not shown in the visible output)"
+    ],
+    "notes": "The rule's exact title text does not appear in the visible transcript. The final message cites 'ADR-1' and the agent decided to edit both packages, so the rule likely reached it through a file loaded by the host or through output that was cut. Since the text is not visible, rule_arrival is recorded as not_seen_in_stream. Messages 12-38 are not shown."
+  },
+  "usd_eq": 0.035736500000000004
+}
