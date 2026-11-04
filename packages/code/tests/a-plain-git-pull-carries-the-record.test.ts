@@ -3,7 +3,7 @@
  *
  * The case: events of a tail are appended here and left uncommitted, a pull request carries them to the
  * branch this clone follows, and `git pull` refuses before any merge driver runs. The clone's own git
- * configuration makes it automatic, always three settings together: the tails' merge driver, `merge.autoStash`
+ * configuration makes it automatic, four settings, the driver first: the tails' merge driver and its name, `merge.autoStash`
  * and `rebase.autoStash` (`commands/doctor-merge-driver.ts`, written by `mnema doctor --fix merge-driver` and by
  * the answer to `mnema init`'s question). An autoStash without the driver is worse than none (git exits 0 and
  * leaves conflict markers in signed tails), so it is never written without it.
@@ -308,7 +308,7 @@ describe('the fix writes all of the settings or none', SLOW, () => {
     processEnv: env(),
   });
 
-  it('writes the driver, merge.autoStash and rebase.autoStash together, by absolute path, after --dry-run says them', () => {
+  it('writes the driver and its name, then merge.autoStash and rebase.autoStash, by absolute path, after --dry-run says them', () => {
     const { local } = world();
     const asked = mnema(local, 'doctor');
     expect(asked.out).toMatch(/to do · merge-driver: /);
@@ -330,7 +330,7 @@ describe('the fix writes all of the settings or none', SLOW, () => {
     expect(configured(local).join('\n')).not.toMatch(/driver=mnema /);
     expect(mnema(local, 'doctor').out).not.toMatch(/merge-driver/);
     expect(fixMergeDriver(here(local), { dryRun: false, driver: DRIVER }).lines).toEqual([
-      'nothing to change: git already holds the driver, merge.autoStash and rebase.autoStash here.',
+      'nothing to change: git already holds a driver that runs, merge.autoStash and rebase.autoStash here.',
     ]);
   });
 
@@ -365,29 +365,74 @@ describe('the fix writes all of the settings or none', SLOW, () => {
     expect(git(local, 'config', '--get', 'merge.mnema-tail.driver').out.trim()).toBe(DRIVER);
   });
 
-  it('keeps a driver an earlier mnema wrote by name, and writes the autoStash settings beside it', () => {
+  const EARLIER = 'mnema record merge-tail %O %A %B %P';
+
+  it('replaces an earlier driver that finds mnema by the PATH when there is none on it, and only then writes the autoStash settings', () => {
     const { local } = world();
-    expect(
-      git(
-        local,
-        'config',
-        'merge.mnema-tail.name',
-        'mnema: keep the longer side of a tail that only grows',
-      ).status,
-    ).toBe(0);
-    expect(
-      git(local, 'config', 'merge.mnema-tail.driver', 'mnema record merge-tail %O %A %B %P').status,
-    ).toBe(0);
+    expect(git(local, 'config', 'merge.mnema-tail.driver', EARLIER).status).toBe(0);
+    // The test's PATH holds git alone: the earlier form cannot run, and the doctor says so before any pull.
     const says = mergeDriverLines(here(local));
     expect(says).toHaveLength(1);
-    expect(says[0]).toMatch(/merge\.autoStash and rebase\.autoStash are not set/);
-    expect(fixMergeDriver(here(local), { dryRun: false, driver: DRIVER }).refused).toBe(false);
-    expect(git(local, 'config', '--get', 'merge.mnema-tail.driver').out.trim()).toBe(
-      'mnema record merge-tail %O %A %B %P',
-    );
+    expect(says[0]).toMatch(/cannot run here \(there is no mnema on the PATH git runs with\)/);
+    const fixed = fixMergeDriver(here(local), { dryRun: false, driver: DRIVER });
+    expect(fixed.refused).toBe(false);
+    expect(fixed.lines.join('\n')).toMatch(/it is replaced/);
+    expect(git(local, 'config', '--get', 'merge.mnema-tail.driver').out.trim()).toBe(DRIVER);
     expect(git(local, 'config', '--get', 'merge.autoStash').out.trim()).toBe('true');
     expect(git(local, 'config', '--get', 'rebase.autoStash').out.trim()).toBe('true');
     expect(mergeDriverLines(here(local))).toEqual([]);
+  });
+
+  it('keeps an earlier driver that finds mnema by the PATH when mnema is on it', () => {
+    const { local } = world();
+    mkdirSync(join(sandbox, 'bin-with-mnema'));
+    writeFileSync(join(sandbox, 'bin-with-mnema', 'mnema'), '#!/bin/sh\n', { mode: 0o755 });
+    const onThePath = {
+      ...here(local),
+      processEnv: { ...env(), PATH: join(sandbox, 'bin-with-mnema') },
+    };
+    expect(git(local, 'config', 'merge.mnema-tail.driver', EARLIER).status).toBe(0);
+    expect(fixMergeDriver(onThePath, { dryRun: false, driver: DRIVER }).refused).toBe(false);
+    expect(git(local, 'config', '--get', 'merge.mnema-tail.driver').out.trim()).toBe(EARLIER);
+    expect(git(local, 'config', '--get', 'merge.autoStash').out.trim()).toBe('true');
+    expect(mergeDriverLines(onThePath)).toEqual([]);
+  });
+
+  it('says a driver whose paths are gone cannot run, in doctor and status before any pull, and the fix rewrites it', () => {
+    const { local } = world();
+    const script = join(sandbox, 'moved-cli.js');
+    writeFileSync(script, '');
+    const moved = driverCommand(process.execPath, script);
+    expect(fixMergeDriver(here(local), { dryRun: false, driver: moved }).refused).toBe(false);
+    expect(mergeDriverLines(here(local))).toEqual([]);
+    expect(mnema(local, 'status').out).not.toMatch(/cannot run here/);
+
+    rmSync(script);
+    const asked = mnema(local, 'doctor').out.replace(/\s+/g, ' ');
+    expect(asked).toMatch(
+      /to do · merge-driver: the mnema-tail driver git holds in .* cannot run here \(.*moved-cli\.js is not a file\)/,
+    );
+    expect(asked).toMatch(/puts them aside in git's stash and exits 0/);
+    const status = mnema(local, 'status').out.replace(/\s+/g, ' ');
+    expect(status).toMatch(/Kept aside by a pull:/);
+    expect(status).toMatch(
+      /cannot run here \(.*moved-cli\.js is not a file\) and an autoStash is on/,
+    );
+
+    const fixed = fixMergeDriver(here(local), { dryRun: false, driver: DRIVER });
+    expect(fixed.refused).toBe(false);
+    expect(git(local, 'config', '--get', 'merge.mnema-tail.driver').out.trim()).toBe(DRIVER);
+    expect(mnema(local, 'doctor').out).not.toMatch(/merge-driver/);
+    expect(mnema(local, 'status').out).not.toMatch(/Kept aside by a pull/);
+  });
+
+  it('writes nothing when the driver this installation would write cannot run', () => {
+    const { local } = world();
+    const gone = driverCommand(process.execPath, join(sandbox, 'no-such-cli.js'));
+    const refused = fixMergeDriver(here(local), { dryRun: false, driver: gone });
+    expect(refused.refused).toBe(true);
+    expect(refused.lines.join('\n')).toMatch(/no autoStash is written while the driver cannot run/);
+    expect(configured(local)).toEqual([]);
   });
 
   it('warns of an autoStash that is on without the driver', () => {
@@ -423,7 +468,7 @@ describe('mnema init offers it', SLOW, () => {
     return checkout;
   }
 
-  it('takes yes as the default under --yes in a repository with a remote, and writes the three settings', () => {
+  it('takes yes as the default under --yes in a repository with a remote, and writes the four settings', () => {
     const checkout = clone('yes');
     const founded = mnema(checkout, 'init', '--yes', '--hosts', 'none');
     expect(founded.status).toBe(0);
@@ -475,10 +520,11 @@ describe('mnema init offers it', SLOW, () => {
     expect(configured(checkout)).toEqual(['merge.autostash=false']);
   });
 
-  it('shows the three settings in the plan under --dry-run, and writes nothing', () => {
+  it('shows the four settings in the plan under --dry-run, and writes nothing', () => {
     const checkout = clone('dry');
     const planned = mnema(checkout, 'init', '--yes', '--hosts', 'none', '--dry-run');
     expect(planned.status).toBe(0);
+    expect(planned.out).toMatch(/set\s+merge\.mnema-tail\.name/);
     expect(planned.out).toMatch(/set\s+merge\.mnema-tail\.driver/);
     expect(planned.out).toMatch(/set\s+merge\.autoStash/);
     expect(planned.out).toMatch(/set\s+rebase\.autoStash/);
@@ -555,13 +601,14 @@ describe('mnema init asks at a terminal', SLOW, () => {
     return 'asked';
   }
 
-  it('asks after the question about accepting, lists the three settings in the plan, and writes them on yes', async () => {
+  it('asks after the question about accepting, lists the four settings in the plan, and writes them on yes', async () => {
     const checkout = remoteClone('terminal-yes');
     const person = atATerminal(checkout, ['init']);
     await through(person, ENTER);
     person.types(ENTER);
     const drawn = await person.finished();
     const shown = withoutSequences(drawn).replace(/[\s│]+/g, ' ');
+    expect(shown).toMatch(/set merge\.mnema-tail\.name/);
     expect(shown).toMatch(/set merge\.mnema-tail\.driver/);
     expect(shown).toMatch(/set merge\.autoStash/);
     expect(shown).toMatch(/set rebase\.autoStash/);

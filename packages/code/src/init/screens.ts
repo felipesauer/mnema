@@ -418,7 +418,7 @@ export const PULL_OPTIONS: readonly CompletionWord[] = [
 
 /** What the question says: what is written, where, and what it reaches beyond the record. */
 const PULL_BODY =
-  'Events of the record that are not committed yet make `git pull` stop. This writes three settings into this clone’s .git/config so a plain `git pull` carries them: the mnema merge driver, merge.autoStash and rebase.autoStash. The two autoStash settings apply to every file of this clone, not only the record. `mnema doctor --fix merge-driver` writes them later, and `mnema record pull` pulls without any of it.';
+  'Events of the record that are not committed yet make `git pull` stop. This writes four settings into this clone’s .git/config so a plain `git pull` carries them: the name of the mnema merge driver and the driver, then merge.autoStash and rebase.autoStash (only while the driver can run). The two autoStash settings apply to every file of this clone, not only the record. `mnema doctor --fix merge-driver` writes them later, and `mnema record pull` pulls without any of it.';
 
 /** The question about a plain `git pull`, as rows. */
 export function pullPage(picked: string, width: number): readonly Line[] {
@@ -458,7 +458,7 @@ export function pullAnswered(answer: 'yes' | 'no', width: number): readonly Line
     ...paragraph(
       trail,
       answer === 'yes'
-        ? 'three settings in .git/config, shown in the plan'
+        ? 'four settings in .git/config, shown in the plan'
         : 'git’s configuration is left alone',
       width,
       '  ',

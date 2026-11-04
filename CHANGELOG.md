@@ -13,15 +13,18 @@ with its own changelog.
 ### Added
 
 - **A plain `git pull` carries the record's uncommitted events, in a clone set up for it (ADR-181, which amends
-  ADR-163).** `mnema doctor --fix merge-driver` now writes three settings into the clone's `.git/config`, always
-  together and all or none: the tails' merge driver, `merge.autoStash` and `rebase.autoStash` (an autoStash is never
-  written without the driver, since alone it leaves conflict markers inside signed tails). With them `git pull`,
+  ADR-163).** `mnema doctor --fix merge-driver` now writes four settings into the clone's `.git/config`, the driver
+  first and the autoStash ones after it: the driver's name, the tails' merge driver, `merge.autoStash` and
+  `rebase.autoStash` (an autoStash is never written without a driver that can run here, since alone it leaves conflict
+  markers inside signed tails; this is ordered, not a rollback). A driver of mnema's that cannot run (its paths gone, or
+  the earlier form with no `mnema` on the PATH) is said by `mnema doctor` and `mnema status` while an autoStash is on, and
+  the fix replaces it. With them `git pull`,
   `git pull --no-rebase`, `git pull --rebase` and a merge or a rebase beside an unrelated local commit succeed over
   local events that are the start of the branch's or longer than it, and the record verifies afterwards. The
   autostash applies to every file of the clone, and the fix, the doctor and the question say so; a setting of the same
   name you set otherwise (`merge.autoStash=false`) is left as it is and nothing is written. The driver is now named by
   the absolute paths of the installation that wrote it (it ran `mnema` by `PATH` before). `mnema init` asks the
-  question in a repository with a remote (default yes, shown in the plan as three `set` rows; `--git-pull yes|no`
+  question in a repository with a remote (default yes, shown in the plan as four `set` rows; `--git-pull yes|no`
   answers it, `--yes` takes the default, `--all-hosts` and a founding with nobody to ask write nothing without
   `--git-pull yes`). One case git does not stop on is a fork: the pull exits 0 and the local side stays only in the
   stash. `mnema status` ("Kept aside by a pull") and `mnema doctor` now say so, in one sentence, whenever an autostash

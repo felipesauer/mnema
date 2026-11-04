@@ -1336,7 +1336,8 @@ function recordInGitFindings(ctx: DoctorContext): Finding[] {
 /** What a pull left aside of the tails, in the sentence `mnema status` says too (`fork-kept-aside.ts`). */
 function forkKeptAsideFindings(ctx: DoctorContext): Finding[] {
   const found = readForkKeptAside({ cwd: ctx.cwd, env: ctx.env, processEnv: ctx.processEnv });
-  return found === undefined
+  // Only what a pull already left aside: a driver that cannot run is the merge-driver finding's, said once there.
+  return found === undefined || found.stashes + found.conflicted === 0
     ? []
     : [{ topic: 'fork-kept-aside', state: 'attention', line: saysForkKeptAside(found) }];
 }

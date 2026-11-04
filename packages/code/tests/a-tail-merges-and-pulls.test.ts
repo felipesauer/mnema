@@ -491,7 +491,7 @@ describe('the doctor', SLOW, () => {
     });
     expect(read).toHaveLength(1);
     expect(read[0]).toMatch(
-      /`mnema doctor --fix merge-driver` writes the driver, merge\.autoStash and rebase\.autoStash into this repository's git configuration/,
+      /`mnema doctor --fix merge-driver` writes the driver and its name, merge\.autoStash and rebase\.autoStash into this repository's git configuration/,
     );
     expect(mergeSettings(local)).toBe('');
 
@@ -515,7 +515,7 @@ describe('the doctor', SLOW, () => {
     expect(
       fixMergeDriver(doctorIn(local), { dryRun: false, driver: DRIVER_COMMAND }).lines,
     ).toEqual([
-      'nothing to change: git already holds the driver, merge.autoStash and rebase.autoStash here.',
+      'nothing to change: git already holds a driver that runs, merge.autoStash and rebase.autoStash here.',
     ]);
   });
 

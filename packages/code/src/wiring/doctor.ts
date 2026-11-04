@@ -28,7 +28,7 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--fix <what>',
-      'make the one change a finding asks for, and only that one: `vscode` lists the plugin in the chat.pluginLocations setting of VS Code’s settings.json, after keeping a copy of the file; `private-tree` moves the private notes a worktree still holds in .mnema/private/ into the repository’s git directory; `merge-driver` writes, into this repository’s git configuration, the merge driver the record’s tails name, merge.autoStash and rebase.autoStash, together, so a plain `git pull` carries the record',
+      'make the one change a finding asks for, and only that one: `vscode` lists the plugin in the chat.pluginLocations setting of VS Code’s settings.json, after keeping a copy of the file; `private-tree` moves the private notes a worktree still holds in .mnema/private/ into the repository’s git directory; `merge-driver` writes, into this repository’s git configuration, the merge driver the record’s tails name and then merge.autoStash and rebase.autoStash, so a plain `git pull` carries the record; it replaces a driver of mnema’s that cannot run here',
     )
     .option('--dry-run', 'with --fix: say what would change and write nothing')
     .addHelpText(
@@ -53,11 +53,12 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         'it, keeps the file’s comments, and refuses a file it cannot edit safely.',
         '`--fix private-tree` writes: it moves each tail, as it is, into the repository’s private',
         'tree, and leaves where it was anything whose name there holds other bytes.',
-        '`--fix merge-driver` writes: three settings in this repository’s .git/config, the only git',
-        'configuration mnema writes, always together (the tails’ merge driver, merge.autoStash and',
-        'rebase.autoStash, which apply to every file of the clone), so that a plain `git pull` carries',
-        'events of the record not yet committed; it leaves a setting of the same name it did not',
-        'write, and then writes none.',
+        '`--fix merge-driver` writes: four settings in this repository’s .git/config, the only git',
+        'configuration mnema writes: the tails’ merge driver’s name and the driver, then',
+        'merge.autoStash and rebase.autoStash (which apply to every file of the clone, and are not',
+        'written while the driver cannot run here), so that a plain `git pull` carries events of the',
+        'record not yet committed. It replaces a driver of mnema’s that cannot run, and leaves a',
+        'setting of the same name it did not write, and then writes none.',
       ].join('\n'),
     )
     .action(async (options: { fix?: string; dryRun?: boolean }) => {

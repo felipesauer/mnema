@@ -1514,7 +1514,7 @@ nothing would be lost.
 mnema record pull
 
 # Make a plain `git pull` carry the record in this clone: the tails' merge driver, merge.autoStash
-# and rebase.autoStash, always the three together (writes .git/config).
+# and rebase.autoStash, with the driver's name (four settings, written in that order, in .git/config).
 mnema doctor --fix merge-driver --dry-run
 mnema doctor --fix merge-driver
 ```
@@ -1542,8 +1542,8 @@ doctor` names a clone where it is missing.
 those before it merges, whatever the configuration says about merges. What makes it automatic is git's
 autostash, which stashes the events, pulls, and puts them back through the driver. `mnema doctor --fix
 merge-driver`, and the answer to the question `mnema init` asks in a repository with a remote (`--git-pull
-yes`, or `--yes`, which takes the default, yes), write three settings into this clone's `.git/config`,
-always together and all or none: the driver, `merge.autoStash` (read by a merge pull: `git pull`, `git pull
+yes`, or `--yes`, which takes the default, yes), write four settings into this clone's `.git/config`,
+the driver first, then the autoStash ones: the driver's name, the driver, `merge.autoStash` (read by a merge pull: `git pull`, `git pull
 --no-rebase`) and `rebase.autoStash` (read by `git pull --rebase`, which refuses without it). They are never
 written one without the driver: an autoStash alone leaves git exiting 0 over conflict markers inside signed
 tails, which `mnema verify` then refuses. Measured on git 2.55, with the clone's own configuration and no
@@ -1552,12 +1552,17 @@ an unrelated local commit all succeed over local events that are the start of th
 and the record verifies afterwards (`packages/code/tests/a-plain-git-pull-carries-the-record.test.ts`).
 **The autostash settings apply to every file of the clone**, not only the record: a pull stashes and restores
 any file with uncommitted changes, and the question, the plan and the fix say so. A setting of the same name
-that you set otherwise (`merge.autoStash=false`) is left where it is, and then none of the three is written.
+that you set otherwise (`merge.autoStash=false`) is left where it is, and then none of the four is written. This is not
+a rollback: if git fails to write one, the ones after it are not written and the ones before it stay, which is why the
+driver goes first. No autoStash is written while the driver cannot run here.
 The driver is named by the node and the script of the installation that ran the fix, by absolute path, so a
 git started by a program with no `mnema` on its `PATH` (an editor opened from a launcher) still finds it; an
-installation that moves (another node version, a reinstalled folder) leaves a driver git cannot start, and
-git then treats the file as conflicted. The fix does not rewrite a driver mnema wrote: `git config --unset
-merge.mnema-tail.driver` and the fix again write the new paths. `mnema doctor` says what is missing.
+installation that moves (another node
+version, a reinstalled folder) leaves a driver git cannot start, and with an autoStash on a plain pull then exits 0
+with the local events only in the stash. So `mnema doctor` and `mnema status` say when the driver cannot run (its node
+or script is gone, or, for the earlier form that ran `mnema` by the `PATH`, there is no `mnema` on it) while an autoStash
+is on, and `mnema doctor --fix merge-driver` replaces a driver of mnema's that cannot run with one that does, and only
+then writes the autoStash settings; it keeps a driver that runs. `mnema doctor` says what is missing.
 
 **A fork that git hides.** When both sides appended to the same tail, a plain `git pull` with these
 settings exits 0, says "Fast-forward", leaves the tail files in conflict, and keeps the local side only in
@@ -2124,9 +2129,9 @@ recorded. A second `init` in a founded project never asks it again: `mnema switc
 replaces the answer.
 
 In a git repository with a remote, `init` asks one more question, after that one: whether to make a plain `git
-pull` carry the record in this clone. Yes (the default) writes three settings into the clone's own `.git/config`
-after the founding: the tails' merge driver, `merge.autoStash` and `rebase.autoStash`, always together
-([the pull section](#pulling-a-record-that-grew-here)); they are shown in the plan as three `set` rows, with the note that the
+pull` carry the record in this clone. Yes (the default) writes four settings into the clone's own `.git/config`
+after the founding: the tails' merge driver's name and the driver, then `merge.autoStash` and `rebase.autoStash`
+([the pull section](#pulling-a-record-that-grew-here)); they are shown in the plan as four `set` rows, with the note that the
 autostash applies to every file of the clone, not only the record. Where the clone already holds one of those
 settings set otherwise (`merge.autoStash=false`), nothing is written and `init` says so. Outside a git repository the
 question is not asked and nothing is written; `mnema doctor --fix merge-driver` makes the same settings at any time.

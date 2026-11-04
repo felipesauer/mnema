@@ -32,7 +32,7 @@ export interface Answers {
   readonly agent?: string;
   /**
    * Whether the clone's own git configuration is set so a plain `git pull` carries the record
-   * (`doctor-merge-driver.ts`): `yes` writes the three settings, anything else writes none.
+   * (`doctor-merge-driver.ts`): `yes` writes the four settings, anything else writes none.
    */
   readonly pull?: Accepts;
 }
@@ -153,13 +153,19 @@ function decisionRows(answers: Answers): readonly PlanRow[] {
 }
 
 /**
- * The three settings of the clone's own git configuration, as rows, when the answer is yes. They go in the
+ * The four settings of the clone's own git configuration, as rows, when the answer is yes. They go in the
  * machine's section: `.git/config` is not committed, so it is on this clone alone, and the autoStash line says
  * what it reaches beyond the record.
  */
 function pullRows(answers: Answers): readonly PlanRow[] {
   if (answers.pull !== 'yes') return [];
   return [
+    {
+      section: 'machine',
+      verb: 'set',
+      what: 'merge.mnema-tail.name',
+      note: 'in .git/config: what the driver is',
+    },
     {
       section: 'machine',
       verb: 'set',

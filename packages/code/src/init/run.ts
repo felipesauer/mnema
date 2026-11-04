@@ -9,8 +9,8 @@
  * only declares verbs never reads a directory it was not asked to.
  *
  * A PLAIN `git pull` IS A QUESTION TOO (ADR-181): in a repository with a remote, a person is asked whether this
- * clone's own git configuration is set so that it carries the record (the driver, merge.autoStash and
- * rebase.autoStash, always together: `commands/doctor-merge-driver.ts`, the one function that writes them, which
+ * clone's own git configuration is set so that it carries the record (the driver's name and the driver, then merge.autoStash and
+ * rebase.autoStash: `commands/doctor-merge-driver.ts`, the one function that writes them, which
  * `mnema doctor --fix merge-driver` calls too). The default is yes, `--yes` takes it, and `--git-pull yes|no`
  * answers it. `--all-hosts` and a founding with nobody to ask write nothing to git's configuration unless
  * `--git-pull yes` says so: they never took a question's default before, and this one changes how every file of

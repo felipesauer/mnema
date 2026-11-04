@@ -192,7 +192,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
     .addOption(
       enumeratedOption(
         '--git-pull <answer>',
-        'answer whether to set this clone’s git configuration so a plain `git pull` carries the record (yes or no): the mnema merge driver, merge.autoStash and rebase.autoStash, always together, in .git/config; the two autoStash settings apply to every file of the clone. With --yes, the answer is yes in a repository with a remote',
+        'answer whether to set this clone’s git configuration so a plain `git pull` carries the record (yes or no): the name of the mnema merge driver and the driver, then merge.autoStash and rebase.autoStash, in .git/config; the two autoStash settings apply to every file of the clone. With --yes, the answer is yes in a repository with a remote',
         ACCEPTS_ANSWERS,
       ),
     )

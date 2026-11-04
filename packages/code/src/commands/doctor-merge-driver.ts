@@ -12,9 +12,10 @@
  * WRITTEN ONLY WHEN A PERSON ASKS (ADR-163, amended by ADR-181). A driver is a command git runs
  * inside every merge, the same class of thing as a hook, and `init` installs no hook either
  * (`commit-hook.ts`). So the record's `.gitattributes` is all `init` writes by itself; the person's
- * answer to `init`'s question, or `--fix merge-driver`, writes THREE settings into this repository's
- * own configuration (`git config --local`), with `--dry-run` saying them first: the driver,
- * `merge.autoStash` and `rebase.autoStash`, always together and all or none. A plain `git pull` over
+ * answer to `init`'s question, or `--fix merge-driver`, writes FOUR settings into this repository's
+ * own configuration (`git config --local`), with `--dry-run` saying them first: the driver's name
+ * and the driver, then `merge.autoStash` and `rebase.autoStash`, in that order, and the autoStash
+ * ones only while the driver can run here (`whyTheDriverCannotRun`). A plain `git pull` over
  * events not yet committed refuses before any driver runs, and `merge.autoStash` (a merge pull) or
  * `rebase.autoStash` (a rebase pull) is what makes git stash and restore them; the restore goes
  * through the driver, which is the reason neither autoStash is ever written without it: an autoStash
@@ -28,13 +29,19 @@
  * THE DRIVER IS NAMED BY THE PATHS OF THE RUNNING INSTALLATION (`driverCommand`: its node and its
  * script, absolute), written at fix time: a git started by a host that has no `mnema` on its PATH
  * (a GUI-launched editor) still finds it. The cost: an installation that moves (another node
- * version, a reinstalled folder) leaves a driver that cannot start, and git then treats the file as
- * conflicted. The fix does not rewrite a driver mnema wrote, so after a move `git config --unset
- * merge.mnema-tail.driver` and the fix again write the new paths. `mnema record pull` needs none of
- * this: it hands the driver to its one pull.
+ * version, a reinstalled folder) leaves a driver that cannot start, and with an autoStash on a plain
+ * pull then exits 0 with the local events only in the stash. So ONE FUNCTION says whether the
+ * configured driver can run here ({@link whyTheDriverCannotRun}: for the absolute form, the node an
+ * executable file and the script a file; for the earlier `mnema ...` form, a `mnema` on the PATH git
+ * runs with), and the doctor, `mnema status` (through `fork-kept-aside.ts`), `init` and the fix all
+ * ask it: the fix rewrites a driver mnema wrote that cannot run, and writes no autoStash while the
+ * driver cannot. It does not rewrite one that can. `mnema record pull` needs none of this: it hands
+ * the driver to its one pull.
  */
 
 import { spawnSync } from 'node:child_process';
+import { accessSync, constants, statSync } from 'node:fs';
+import { delimiter, join } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { MERGE_DRIVER } from './record-merge-tail.js';
@@ -52,6 +59,54 @@ const DRIVER_KEY = `merge.${MERGE_DRIVER}.driver`;
 /** What every driver mnema writes ends in, whichever way it names the program. */
 const DRIVER_TAIL = ' record merge-tail %O %A %B %P';
 
+/** The form an earlier mnema wrote: the program found by the PATH. */
+const PATH_FORM = `mnema${DRIVER_TAIL}`;
+
+/** The form `driverCommand` writes: two single-quoted absolute paths. */
+const QUOTED_FORM = /^'((?:[^']|'\\'')*)' '((?:[^']|'\\'')*)' record merge-tail %O %A %B %P$/;
+
+const unquoted = (word: string): string => word.replaceAll("'\\''", "'");
+
+function isAFile(path: string, executable: boolean): boolean {
+  try {
+    if (!statSync(path).isFile()) return false;
+    if (executable) accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function mnemaIsOnThePath(processEnv: NodeJS.ProcessEnv): boolean {
+  const names = process.platform === 'win32' ? ['mnema.cmd', 'mnema.exe', 'mnema'] : ['mnema'];
+  return (processEnv.PATH ?? '')
+    .split(delimiter)
+    .some((dir) => dir !== '' && names.some((name) => isAFile(join(dir, name), true)));
+}
+
+/**
+ * Why a driver command mnema wrote cannot run here, or undefined where it can (and where it is not
+ * one mnema wrote: a driver of somebody else's is not judged). THE ONE FUNCTION that answers it
+ * (`a-plain-git-pull-carries-the-record.test.ts`).
+ */
+export function whyTheDriverCannotRun(
+  processEnv: NodeJS.ProcessEnv,
+  value: string,
+): string | undefined {
+  const quoted = QUOTED_FORM.exec(value);
+  if (quoted !== null) {
+    const node = unquoted(quoted[1] as string);
+    const script = unquoted(quoted[2] as string);
+    if (!isAFile(node, true)) return `${oneLine(node)} is not an executable file`;
+    if (!isAFile(script, false)) return `${oneLine(script)} is not a file`;
+    return undefined;
+  }
+  if (value === PATH_FORM) {
+    return mnemaIsOnThePath(processEnv) ? undefined : 'there is no mnema on the PATH git runs with';
+  }
+  return undefined;
+}
+
 /** The two settings that make a pull stash and restore what is not committed. */
 const AUTOSTASH_KEYS = ['merge.autoStash', 'rebase.autoStash'] as const;
 
@@ -66,7 +121,7 @@ export function mergeSettings(driver: string): readonly (readonly [string, strin
 
 /** Whether a driver git holds is one mnema wrote, wherever it finds the program. */
 function isOurDriver(value: string): boolean {
-  return value.endsWith(DRIVER_TAIL);
+  return value === PATH_FORM || QUOTED_FORM.test(value);
 }
 
 /** The sentence about the autoStash, said wherever the settings are offered or written. */
@@ -118,20 +173,42 @@ function setting(ctx: MergeDriverContext, top: string, key: string): string | un
   return got?.status === 0 ? got.out : undefined;
 }
 
+/**
+ * Why the driver git holds for the tails cannot run here, while an autoStash is on: the state in which
+ * a plain pull exits 0 and leaves the local events only in the stash. Undefined in every other state.
+ * `mnema status` says it (`fork-kept-aside.ts`) beside the doctor's line, from this one function.
+ */
+export function theDriverThatCannotRunUnderAnAutoStash(
+  ctx: MergeDriverContext,
+): string | undefined {
+  const here = governed(ctx);
+  if (here === undefined) return undefined;
+  const driver = setting(ctx, here.top, DRIVER_KEY);
+  if (driver === undefined || !isOurDriver(driver)) return undefined;
+  if (!AUTOSTASH_KEYS.some((key) => setting(ctx, here.top, key) === 'true')) return undefined;
+  return whyTheDriverCannotRun(ctx.processEnv, driver);
+}
+
 /** The doctor's line, where the record names the driver and git does not hold all a plain pull takes. */
 export function mergeDriverLines(ctx: MergeDriverContext): string[] {
   const here = governed(ctx);
   if (here === undefined) return [];
   const driver = setting(ctx, here.top, DRIVER_KEY);
   const stash = AUTOSTASH_KEYS.map((key) => [key, setting(ctx, here.top, key)] as const);
+  const on = stash.filter(([, now]) => now === 'true').map(([key]) => key);
   if (driver === undefined) {
-    const on = stash.filter(([, now]) => now === 'true').map(([key]) => key);
     const without =
       on.length === 0
         ? ''
         : ` ${on.join(' and ')} ${on.length === 1 ? 'is' : 'are'} on without the driver: a pull over events not yet committed then leaves conflict markers inside signed tails.`;
     return [
-      `git merges this record's tails as text in ${oneLine(here.top)}, since its configuration does not say what the ${MERGE_DRIVER} driver the record names is: a merge of a branch that grew the same tail stops on a conflict, and a plain \`git pull\` over events not yet committed refuses.${without} \`mnema record pull\` pulls over them without it; ${FIX} writes the driver, merge.autoStash and rebase.autoStash into this repository's git configuration, together, so that a plain \`git pull\` carries them. ${AUTOSTASH_APPLIES_TO_EVERY_FILE}`,
+      `git merges this record's tails as text in ${oneLine(here.top)}, since its configuration does not say what the ${MERGE_DRIVER} driver the record names is: a merge of a branch that grew the same tail stops on a conflict, and a plain \`git pull\` over events not yet committed refuses.${without} \`mnema record pull\` pulls over them without it; ${FIX} writes the driver and its name, merge.autoStash and rebase.autoStash into this repository's git configuration, so that a plain \`git pull\` carries them. ${AUTOSTASH_APPLIES_TO_EVERY_FILE}`,
+    ];
+  }
+  const dead = isOurDriver(driver) ? whyTheDriverCannotRun(ctx.processEnv, driver) : undefined;
+  if (dead !== undefined) {
+    return [
+      `the ${MERGE_DRIVER} driver git holds in ${oneLine(here.top)} cannot run here (${dead}), so a merge of a tail stops on a conflict${on.length > 0 ? `, and with ${on.join(' and ')} on a plain \`git pull\` over events not yet committed puts them aside in git's stash and exits 0` : ''}. ${FIX} writes a driver that runs.`,
     ];
   }
   const chosen = stash.filter(([, now]) => now !== undefined && now !== 'true').map(([key]) => key);
@@ -143,7 +220,7 @@ export function mergeDriverLines(ctx: MergeDriverContext): string[] {
   const missing = stash.filter(([, now]) => now === undefined).map(([key]) => key);
   if (missing.length === 0) return [];
   return [
-    `${missing.join(' and ')} ${missing.length === 1 ? 'is' : 'are'} not set in ${oneLine(here.top)}, so a plain \`git pull\` over events not yet committed refuses before the merge driver runs (a rebase pull needs rebase.autoStash, a merge pull merge.autoStash). ${FIX} writes them with the driver. ${AUTOSTASH_APPLIES_TO_EVERY_FILE}`,
+    `${missing.join(' and ')} ${missing.length === 1 ? 'is' : 'are'} not set in ${oneLine(here.top)}, so a plain \`git pull\` over events not yet committed refuses before the merge driver runs (a rebase pull needs rebase.autoStash, a merge pull merge.autoStash). ${FIX} writes them after the driver. ${AUTOSTASH_APPLIES_TO_EVERY_FILE}`,
   ];
 }
 
@@ -154,8 +231,13 @@ export interface MergeDriverFixed {
 }
 
 /**
- * `mnema doctor --fix merge-driver`: writes the three settings, and only those, into `.git/config`,
- * all or none. `driver` is the command the driver setting gets (`driverCommand`).
+ * `mnema doctor --fix merge-driver`: writes the four settings, and only those, into `.git/config`:
+ * the driver's name and the driver, then the two autoStash ones. It is not a rollback: a write that
+ * fails stops there, and the ones after it are not written, which is why the driver comes first. A
+ * driver mnema wrote that cannot run here (its paths gone, or `mnema` not on the PATH) is replaced by
+ * `driver`; one that can run is kept; one of somebody else's is left, and then nothing is written.
+ * No autoStash is written while the driver cannot run, and `driver` is refused when it cannot.
+ * `driver` is the command the driver setting gets (`driverCommand`).
  */
 export function fixMergeDriver(
   ctx: MergeDriverContext,
@@ -170,12 +252,28 @@ export function fixMergeDriver(
       ],
     };
   }
+  const mine = whyTheDriverCannotRun(ctx.processEnv, options.driver);
+  if (mine !== undefined) {
+    return {
+      refused: true,
+      lines: [
+        `the driver this installation would write cannot run here (${mine}): nothing was written, and no autoStash is written while the driver cannot run.`,
+      ],
+    };
+  }
   const lines: string[] = [];
   let refused = false;
   const toWrite: (readonly [string, string])[] = [];
   for (const [key, value] of mergeSettings(options.driver)) {
     const now = setting(ctx, here.top, key);
-    if (now === value || (key === DRIVER_KEY && now !== undefined && isOurDriver(now))) continue;
+    if (now === value) continue;
+    if (key === DRIVER_KEY && now !== undefined && isOurDriver(now)) {
+      const dead = whyTheDriverCannotRun(ctx.processEnv, now);
+      if (dead === undefined) continue;
+      lines.push(`the driver git holds cannot run here (${dead}): it is replaced.`);
+      toWrite.push([key, value]);
+      continue;
+    }
     if (now !== undefined) {
       refused = true;
       lines.push(
@@ -190,7 +288,7 @@ export function fixMergeDriver(
     return {
       refused: false,
       lines: [
-        'nothing to change: git already holds the driver, merge.autoStash and rebase.autoStash here.',
+        'nothing to change: git already holds a driver that runs, merge.autoStash and rebase.autoStash here.',
       ],
     };
   }
@@ -205,7 +303,7 @@ export function fixMergeDriver(
         refused: true,
         lines: [
           ...lines,
-          `git did not write ${key}; the settings after it were not written, and none of them is an autoStash without the driver.`,
+          `git did not write ${key}; the settings after it were not written, and the ones before it stay (the driver goes first, so an autoStash is never left without it).`,
         ],
       };
     }

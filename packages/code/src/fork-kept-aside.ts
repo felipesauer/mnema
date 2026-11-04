@@ -27,6 +27,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { theDriverThatCannotRunUnderAnAutoStash } from './commands/doctor-merge-driver.js';
 
 /** The most stash entries read: the ones a pull leaves are the newest. */
 const STASHES_READ = 20;
@@ -45,6 +46,11 @@ export interface ForkKeptAside {
   readonly stashes: number;
   /** The tail files the index holds unmerged. */
   readonly conflicted: number;
+  /**
+   * Why the merge driver git holds for the tails cannot run here, while an autoStash is on (a second
+   * cause of the same state, and the one that puts events aside with no fork at all), or absent.
+   */
+  readonly deadDriver?: string;
 }
 
 /** One git in `cwd`, or undefined where git is absent, does not answer 0, or takes too long. */
@@ -97,8 +103,17 @@ export function readForkKeptAside(ctx: ForkKeptAsideContext): ForkKeptAside | un
     if (changed !== undefined && changed.trim() !== '') stashes += 1;
   }
 
-  if (stashes === 0 && unmerged.size === 0) return undefined;
-  return { stashes, conflicted: unmerged.size };
+  const deadDriver = theDriverThatCannotRunUnderAnAutoStash({
+    cwd: ctx.cwd,
+    env: ctx.env,
+    processEnv: ctx.processEnv ?? process.env,
+  });
+  if (stashes === 0 && unmerged.size === 0 && deadDriver === undefined) return undefined;
+  return {
+    stashes,
+    conflicted: unmerged.size,
+    ...(deadDriver !== undefined ? { deadDriver } : {}),
+  };
 }
 
 /**
@@ -106,6 +121,13 @@ export function readForkKeptAside(ctx: ForkKeptAsideContext): ForkKeptAside | un
  * what to keep. One line, a statement of fact with the commands named.
  */
 export function saysForkKeptAside(found: ForkKeptAside): string {
+  const driver =
+    found.deadDriver === undefined
+      ? ''
+      : ` The merge driver git holds for the tails cannot run here (${found.deadDriver}) and an autoStash is on, so a plain pull cannot put local events back through it: \`mnema doctor --fix merge-driver\` writes one that runs.`;
+  if (found.stashes === 0 && found.conflicted === 0) {
+    return `Nothing is kept aside yet, but a plain \`git pull\` over events not yet committed would put them in git's stash and exit 0.${driver}`;
+  }
   const where = [
     found.stashes > 0
       ? `${found.stashes === 1 ? 'an autostash entry' : `${found.stashes} autostash entries`} of git's stash holds files of the record's tails`
@@ -120,6 +142,7 @@ export function saysForkKeptAside(found: ForkKeptAside): string {
     `A pull left events of this record aside: ${where}. ` +
     "If both sides appended to one tail that is a fork, which git does not name: its pull said Fast-forward and exited 0, the working tree holds the branch's side, and the other side is only in the stash. " +
     'Do not drop the stash: it may hold the only copy of those events (`git stash show -p` shows them). ' +
-    '`mnema record pull`, run before a pull, names a fork of one tail and writes nothing.'
+    '`mnema record pull`, run before a pull, names a fork of one tail and writes nothing.' +
+    driver
   );
 }
