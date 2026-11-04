@@ -38,6 +38,7 @@ import {
   fixMergeDriver,
   mergeDriverLines,
   mergeSettings,
+  whyTheDriverCannotRun,
 } from '../src/commands/doctor-merge-driver.js';
 import { driverCommand } from '../src/commands/record-pull.js';
 import { readForkKeptAside, saysForkKeptAside } from '../src/fork-kept-aside.js';
@@ -638,5 +639,44 @@ describe('mnema init asks at a terminal', SLOW, () => {
     await leaving.finished();
     expect(existsSync(join(left, '.mnema'))).toBe(false);
     expect(configured(left)).toEqual([]);
+  });
+});
+
+describe('what a driver can run, and the sentence about what a pull left aside', () => {
+  const PATHED = { PATH: '' };
+  const EARLIER = 'mnema record merge-tail %O %A %B %P';
+
+  it('says why a driver mnema wrote cannot run, and judges no driver that is not its own', () => {
+    const here = mkdtempSync(join(sandbox, 'driver-'));
+    const script = join(here, "it's cli.js");
+    writeFileSync(script, '');
+    // An apostrophe in a path survives the quoting `driverCommand` does.
+    expect(whyTheDriverCannotRun(PATHED, driverCommand(process.execPath, script))).toBeUndefined();
+    expect(whyTheDriverCannotRun(PATHED, driverCommand(join(here, 'no-node'), script))).toMatch(
+      /no-node is not an executable file$/,
+    );
+    expect(
+      whyTheDriverCannotRun(PATHED, driverCommand(process.execPath, join(here, 'gone.js'))),
+    ).toMatch(/gone\.js is not a file$/);
+    expect(whyTheDriverCannotRun(PATHED, 'cat')).toBeUndefined();
+    expect(whyTheDriverCannotRun({ PATH: `:${here}` }, EARLIER)).toMatch(/no mnema on the PATH/);
+    expect(whyTheDriverCannotRun({}, EARLIER)).toMatch(/no mnema on the PATH/);
+  });
+
+  it('names a stash, a conflict, both, and a driver that cannot run, each in its own words', () => {
+    expect(saysForkKeptAside({ stashes: 1, conflicted: 0 })).toMatch(
+      /^A pull left events of this record aside: an autostash entry of git's stash holds files/,
+    );
+    expect(saysForkKeptAside({ stashes: 2, conflicted: 3 })).toMatch(
+      /2 autostash entries .*, and 3 tail files are in conflict in the index\./,
+    );
+    expect(saysForkKeptAside({ stashes: 0, conflicted: 1 })).toMatch(
+      /a tail file is in conflict in the index/,
+    );
+    const dead = saysForkKeptAside({ stashes: 1, conflicted: 0, deadDriver: 'x is not a file' });
+    expect(dead).toMatch(/cannot run here \(x is not a file\) and an autoStash is on/);
+    expect(saysForkKeptAside({ stashes: 0, conflicted: 0, deadDriver: 'x is not a file' })).toMatch(
+      /^Nothing is kept aside yet, but a plain `git pull` over events not yet committed would put them in git's stash and exit 0\. The merge driver/,
+    );
   });
 });

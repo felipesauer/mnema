@@ -78,10 +78,9 @@ function isAFile(path: string, executable: boolean): boolean {
 }
 
 function mnemaIsOnThePath(processEnv: NodeJS.ProcessEnv): boolean {
-  const names = process.platform === 'win32' ? ['mnema.cmd', 'mnema.exe', 'mnema'] : ['mnema'];
   return (processEnv.PATH ?? '')
     .split(delimiter)
-    .some((dir) => dir !== '' && names.some((name) => isAFile(join(dir, name), true)));
+    .some((dir) => dir !== '' && isAFile(join(dir, 'mnema'), true));
 }
 
 /**
