@@ -69,6 +69,7 @@ import {
 import { authorizingAnchor, recordedAnchorOf, signerFor } from '@mnema/core/write';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
 import { type EventsNotInGit, readEventsNotInGit } from '../events-not-in-git.js';
+import { type ForkKeptAside, readForkKeptAside } from '../fork-kept-aside.js';
 import {
   basesNeverImported,
   type DecisionsOutside,
@@ -156,6 +157,12 @@ export interface StatusDone {
    * carries it as `eventsNotInGit`, and only when something waits.
    */
   readonly notInGit: EventsNotInGit | undefined;
+  /**
+   * What a pull left aside of the tails (an autostash holding them, tail files in conflict), or
+   * undefined where it left nothing (`fork-kept-aside.ts`). Beside {@link StatusDone.status} for the
+   * same reason, and not in `--json`: it is a fact of this clone's git, said on the screen.
+   */
+  readonly forkKeptAside: ForkKeptAside | undefined;
 }
 
 /** There was no project here, or the actor named no identity in it. */
@@ -251,6 +258,7 @@ export function runStatus(
         env: ctx.env,
         now: Date.parse((ctx.clock ?? systemClock)()),
       }),
+      forkKeptAside: readForkKeptAside({ cwd: ctx.cwd, env: ctx.env, processEnv: process.env }),
       runsByTree: sources.flatMap((source) => {
         const { lastRun } = resume(caches([source]), {
           actor: anchor,

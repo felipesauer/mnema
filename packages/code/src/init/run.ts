@@ -8,6 +8,14 @@
  * `accepts.ts`. The wiring (`wiring/init.ts`) declares the verb and loads this on the action, so a program that
  * only declares verbs never reads a directory it was not asked to.
  *
+ * A PLAIN `git pull` IS A QUESTION TOO (ADR-181): in a repository with a remote, a person is asked whether this
+ * clone's own git configuration is set so that it carries the record (the driver's name and the driver, then merge.autoStash and
+ * rebase.autoStash: `commands/doctor-merge-driver.ts`, the one function that writes them, which
+ * `mnema doctor --fix merge-driver` calls too). The default is yes, `--yes` takes it, and `--git-pull yes|no`
+ * answers it. `--all-hosts` and a founding with nobody to ask write nothing to git's configuration unless
+ * `--git-pull yes` says so: they never took a question's default before, and this one changes how every file of
+ * the clone is pulled.
+ *
  * WHETHER THE ANSWERS COME FROM A SCREEN IS DECIDED BY THE TERMINAL AND NOTHING ELSE, and every answer is a flag as
  * well: `--hosts`, `--all-hosts`, `--accepts`, `--yes`. At a terminal (a person is here AND the keys and the page
  * are a terminal: `io.terminal`) the questions are put on the screen and the summary is the trail; without one
@@ -23,7 +31,9 @@
 import { basename, sep } from 'node:path';
 import { listPrivateKeyFingerprints } from '@mnema/chain';
 import { PROJECT_DIR, resolveTrees } from '@mnema/core';
+import { fixMergeDriver, type MergeDriverFixed } from '../commands/doctor-merge-driver.js';
 import { type InitContext, readInit, runInit } from '../commands/init.js';
+import { driverCommand } from '../commands/record-pull.js';
 import { fact } from '../presentation/detail.js';
 import { VERSION } from '../version.js';
 import { here } from '../wiring/context.js';
@@ -73,6 +83,20 @@ function everyMark(around: Pick<Around, 'detected' | 'files'>): ReadonlySet<stri
     HOST_ROWS.map((row) => row.id),
     false,
   );
+}
+
+/**
+ * The answer about a plain `git pull` a flag gives, before anybody is asked: `--git-pull`, or `no` for
+ * `--all-hosts` (which asks nothing and is not `--yes`: a default is not taken for it).
+ */
+function pullFlag(opts: InitOptions): 'yes' | 'no' | undefined {
+  if (opts.gitPull !== undefined) return opts.gitPull;
+  return opts.allHosts === true && opts.yes !== true ? 'no' : undefined;
+}
+
+/** The answer as the field of the answers it is, or nothing. */
+function pullAnswer(answer: 'yes' | 'no' | undefined): { readonly pull?: 'yes' | 'no' } {
+  return answer === undefined ? {} : { pull: answer };
 }
 
 /** Runs `mnema init`. */
@@ -127,6 +151,12 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
   const machine = machineOf(ctx, shown);
   const terminal = io.aPersonIsHere === true ? io.terminal : undefined;
   const agent = opts.which ?? ctx.agentKey;
+  // What the question about a plain `git pull` opens on: yes where there is a remote to pull from, and no
+  // question at all where there is none (a `--git-pull` flag still answers).
+  const pullDefault = around.git?.remote === true ? ('yes' as const) : undefined;
+  const pullGiven = around.git === undefined ? undefined : pullFlag(opts);
+  // Without a terminal and without `--yes` nobody answers, and nothing is written for the pull.
+  const pullUnasked = terminal === undefined && opts.yes !== true ? pullGiven : undefined;
 
   // THE HOSTS A FLAG ALREADY ANSWERED: undefined is a question to ask (at a terminal) or the four files (without one).
   let hostsGiven: ReadonlySet<string> | undefined;
@@ -141,6 +171,9 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
       marks,
       ...(opts.accepts !== undefined ? { accepts: opts.accepts } : {}),
       ...(opts.accepts !== undefined && agent !== undefined ? { agent } : {}),
+      ...pullAnswer(
+        terminal !== undefined || opts.yes === true ? (pullGiven ?? pullDefault) : pullUnasked,
+      ),
     };
     io.out(onOneLine`Would found ${basename(ctx.cwd)}/${PROJECT_DIR}. Nothing was written.`);
     printed(
@@ -175,6 +208,8 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
         ...(hostsGiven !== undefined ? { hostsGiven } : {}),
         ...(opts.accepts !== undefined ? { acceptsGiven: opts.accepts } : {}),
         ...(opts.accepts !== undefined && agent !== undefined ? { agent } : {}),
+        ...(pullGiven !== undefined ? { pullGiven } : {}),
+        ...(pullDefault !== undefined ? { pullDefault } : {}),
         yes: asksNothing,
       },
     );
@@ -185,6 +220,7 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
       marks: hostsGiven ?? everyMark(around),
       ...(opts.accepts !== undefined ? { accepts: opts.accepts } : {}),
       ...(opts.accepts !== undefined && agent !== undefined ? { agent } : {}),
+      ...pullAnswer(opts.yes === true ? (pullGiven ?? pullDefault) : pullUnasked),
     };
   }
 
@@ -213,14 +249,26 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
     else refusal = done;
   }
 
+  // The settings of a plain `git pull`, written by the function `mnema doctor --fix merge-driver` calls, after
+  // the record they name exists. A clone that already holds a setting of the same name otherwise (a person's
+  // `merge.autoStash=false`) is left as it is, nothing is written, and the founding says so.
+  const pulled: MergeDriverFixed | undefined =
+    answers.pull === 'yes'
+      ? fixMergeDriver(
+          { cwd: ctx.cwd, env: ctx.env, processEnv: process.env },
+          { dryRun: false, driver: driverCommand(process.execPath, process.argv[1] ?? '') },
+        )
+      : undefined;
+
   if (terminal === undefined) {
-    await sayClassic(io, render, result, recorded);
+    await sayClassic(io, render, result, recorded, pulled);
   } else {
     const founded = {
       cwd: ctx.cwd,
       result,
       answers,
       ...(recorded !== undefined ? { recorded } : {}),
+      ...(pulled !== undefined ? { pulled } : {}),
       shown,
     };
     const width = theWidthOf(render);

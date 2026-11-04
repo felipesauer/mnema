@@ -407,6 +407,67 @@ export function acceptsAnswered(answer: 'yes' | 'no', width: number): readonly L
 }
 
 // ---------------------------------------------------------------------------
+// A plain git pull
+// ---------------------------------------------------------------------------
+
+/** The two answers, in the order they are listed. */
+export const PULL_OPTIONS: readonly CompletionWord[] = [
+  { word: 'yes', description: 'Yes, set up this clone so a plain `git pull` carries the record' },
+  { word: 'no', description: 'No, leave git’s configuration alone' },
+];
+
+/** What the question says: what is written, where, and what it reaches beyond the record. */
+const PULL_BODY =
+  'Events of the record that are not committed yet make `git pull` stop. This writes four settings into this clone’s .git/config so a plain `git pull` carries them: the name of the mnema merge driver and the driver, then merge.autoStash and rebase.autoStash (only while the driver can run). The two autoStash settings apply to every file of this clone, not only the record. `mnema doctor --fix merge-driver` writes them later, and `mnema record pull` pulls without any of it.';
+
+/** The question about a plain `git pull`, as rows. */
+export function pullPage(picked: string, width: number): readonly Line[] {
+  const lines: Line[] = [
+    step(ASKED, 'Make a plain `git pull` carry the record in this clone?'),
+    theGuide,
+    ...sentences(PULL_BODY, width),
+    theGuide,
+  ];
+  for (const option of PULL_OPTIONS) {
+    lines.push(
+      ...noted(
+        trail,
+        [pointerCell(option.word === picked, 0), plain(option.description)],
+        option.word === 'yes' ? dim('(the default)') : undefined,
+        width,
+        4,
+      ),
+    );
+  }
+  lines.push(
+    theGuide,
+    ...hints(keysOf(`${UP_DOWN} move`, 'Enter confirms', 'Esc leaves, nothing founded'), width),
+  );
+  return lines;
+}
+
+/** The answer, collapsed. */
+export function pullAnswered(answer: 'yes' | 'no', width: number): readonly Line[] {
+  return [
+    heading(
+      DONE,
+      answer === 'yes'
+        ? 'A plain git pull carries the record: yes'
+        : 'A plain git pull carries the record: no',
+    ),
+    ...paragraph(
+      trail,
+      answer === 'yes'
+        ? 'four settings in .git/config, shown in the plan'
+        : 'git’s configuration is left alone',
+      width,
+      '  ',
+    ),
+    theGuide,
+  ];
+}
+
+// ---------------------------------------------------------------------------
 // The plan
 // ---------------------------------------------------------------------------
 

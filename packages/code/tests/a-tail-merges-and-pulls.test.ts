@@ -70,8 +70,11 @@ function mnema(cwd: string, ...args: string[]): { status: number; out: string } 
   return { status: ran.status ?? -1, out: `${ran.stdout}${ran.stderr}` };
 }
 
+/** The command of the driver, as `record pull` hands it and `--fix merge-driver` writes it. */
+const DRIVER_COMMAND = driverCommand(process.execPath, CLI);
+
 /** The driver as `record pull` hands it, for the merges a test runs by hand. */
-const DRIVER = `merge.mnema-tail.driver=${driverCommand(process.execPath, CLI)}`;
+const DRIVER = `merge.mnema-tail.driver=${DRIVER_COMMAND}`;
 
 /**
  * A remote, the checkout that writes (`local`) with a record founded and pushed, and a second
@@ -488,14 +491,14 @@ describe('the doctor', SLOW, () => {
     });
     expect(read).toHaveLength(1);
     expect(read[0]).toMatch(
-      /`mnema doctor --fix merge-driver` writes it into this repository's git configuration/,
+      /`mnema doctor --fix merge-driver` writes the driver and its name, merge\.autoStash and rebase\.autoStash into this repository's git configuration/,
     );
     expect(mergeSettings(local)).toBe('');
 
-    const dry = fixMergeDriver(doctorIn(local), { dryRun: true });
+    const dry = fixMergeDriver(doctorIn(local), { dryRun: true, driver: DRIVER_COMMAND });
     expect(dry.refused).toBe(false);
-    expect(dry.lines.join('\n')).toMatch(
-      /would set merge\.mnema-tail\.driver = mnema record merge-tail %O %A %B %P/,
+    expect(dry.lines.join('\n')).toContain(
+      `would set merge.mnema-tail.driver = ${DRIVER_COMMAND} in this repository's git configuration.`,
     );
     expect(mergeSettings(local)).toBe('');
 
@@ -504,19 +507,22 @@ describe('the doctor', SLOW, () => {
     expect(mergeSettings(local)).toBe(
       [
         'merge.mnema-tail.name mnema: keep the longer side of a tail that only grows',
-        'merge.mnema-tail.driver mnema record merge-tail %O %A %B %P',
+        `merge.mnema-tail.driver ${DRIVER_COMMAND}`,
+        'merge.autostash true',
       ].join('\n'),
     );
     expect(mnema(local, 'doctor').out).not.toMatch(/merge-driver/);
-    expect(fixMergeDriver(doctorIn(local), { dryRun: false }).lines).toEqual([
-      'nothing to change: git already knows the driver here.',
+    expect(
+      fixMergeDriver(doctorIn(local), { dryRun: false, driver: DRIVER_COMMAND }).lines,
+    ).toEqual([
+      'nothing to change: git already holds a driver that runs, merge.autoStash and rebase.autoStash here.',
     ]);
   });
 
   it('leaves a driver of the same name it did not write, and says so', () => {
     const { local } = world();
     expect(git(local, 'config', 'merge.mnema-tail.driver', 'cat').status).toBe(0);
-    const refused = fixMergeDriver(doctorIn(local), { dryRun: false });
+    const refused = fixMergeDriver(doctorIn(local), { dryRun: false, driver: DRIVER_COMMAND });
     expect(refused.refused).toBe(true);
     expect(refused.lines.join('\n')).toMatch(
       /merge\.mnema-tail\.driver is already set to cat, which mnema did not write/,
@@ -530,7 +536,7 @@ describe('the doctor outside a repository', () => {
     const bare = join(sandbox, 'no-git');
     mkdirSync(bare, { recursive: true });
     expect(mergeDriverLines(doctorIn(bare))).toEqual([]);
-    const refused = fixMergeDriver(doctorIn(bare), { dryRun: false });
+    const refused = fixMergeDriver(doctorIn(bare), { dryRun: false, driver: DRIVER_COMMAND });
     expect(refused.refused).toBe(true);
     expect(refused.lines[0]).toMatch(
       /^nothing changed: there is no record here inside a git repository/,

@@ -119,7 +119,10 @@ describe('what is found', () => {
     aShop();
     const around = detectAround(repo);
     expect(around.folder).toBe('shop');
-    expect(around.git).toEqual({ root: repo, atRoot: true, branch: 'main' });
+    expect(around.git).toEqual({ root: repo, atRoot: true, branch: 'main', remote: false });
+    // A remote is read off the repository's own configuration, with no process: it is what offers the pull question.
+    writeFileSync(join(repo, '.git', 'config'), '[remote "origin"]\n\turl = ../elsewhere\n');
+    expect(detectAround(repo).git?.remote).toBe(true);
 
     mkdirSync(join(repo, 'packages', 'web'), { recursive: true });
     const below = detectAround(join(repo, 'packages', 'web'));

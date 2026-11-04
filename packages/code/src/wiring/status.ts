@@ -79,6 +79,7 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
           result.runsByTree,
           result.asThisMachine,
           result.notInGit,
+          result.forkKeptAside,
         ),
       );
     });

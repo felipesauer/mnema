@@ -139,6 +139,7 @@ complete -c mnema -f -n '__mnema_at "init"' -l all-hosts
 complete -c mnema -f -n '__mnema_at "init"' -s y -l yes
 complete -c mnema -f -n '__mnema_at "init"' -l dry-run
 complete -c mnema -f -n '__mnema_at "init"' -l accepts -x -a 'yes no'
+complete -c mnema -f -n '__mnema_at "init"' -l git-pull -x -a 'yes no'
 complete -c mnema -f -n '__mnema_at "init"' -l which -r
 complete -c mnema -f -n '__mnema_at "init"' -s h -l help
 complete -c mnema -f -n '__mnema_at "init"' -s V -l version

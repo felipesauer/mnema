@@ -14,6 +14,7 @@
  */
 
 import type { Command } from 'commander';
+import type { MergeDriverFixed } from '../commands/doctor-merge-driver.js';
 import type { InitRefused, InitResult } from '../commands/init.js';
 import type { InstructionsFile } from '../commands/instructions.js';
 import type { PrettierIgnoreChange } from '../commands/the-record-page.js';
@@ -162,6 +163,7 @@ export interface InitOptions {
   readonly yes?: boolean | undefined;
   readonly dryRun?: boolean | undefined;
   readonly accepts?: (typeof ACCEPTS_ANSWERS)[number] | undefined;
+  readonly gitPull?: (typeof ACCEPTS_ANSWERS)[number] | undefined;
   readonly which?: string | undefined;
 }
 
@@ -187,6 +189,13 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         ACCEPTS_ANSWERS,
       ),
     )
+    .addOption(
+      enumeratedOption(
+        '--git-pull <answer>',
+        'answer whether to set this clone’s git configuration so a plain `git pull` carries the record (yes or no): the name of the mnema merge driver and the driver, then merge.autoStash and rebase.autoStash, in .git/config; the two autoStash settings apply to every file of the clone. With --yes, the answer is yes in a repository with a remote',
+        ACCEPTS_ANSWERS,
+      ),
+    )
     .option('--which <agent>', WHICH_ON_INIT, declaredAgent)
     .addHelpText(
       'after',
@@ -194,8 +203,9 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         '',
         'At a terminal, a new project is shown what init found around the folder and asked which agent hosts',
         'should read the mnema instructions (arrows and space to mark, Enter to confirm) and whether an agent',
-        'may accept what you choose, and then shown everything it will write, once, before it writes any of',
-        'it. Esc, Ctrl-C and Ctrl-D leave, and found nothing.',
+        'may accept what you choose, and, in a repository with a remote, whether to set up this clone so a plain',
+        '`git pull` carries the record (the settings are listed in the plan), and then shown everything it will',
+        'write, once, before it writes any of it. Esc, Ctrl-C and Ctrl-D leave, and found nothing.',
         'Without a terminal nothing is asked, and all four files are written unless --hosts says which.',
         '`mnema instructions --help` lists the files.',
       ].join('\n'),
@@ -210,6 +220,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         yes: opts.yes,
         dryRun: opts.dryRun,
         accepts: opts.accepts,
+        gitPull: opts.gitPull,
         which: opts.which,
       });
     });
@@ -406,6 +417,7 @@ export async function sayClassic(
   render: Render,
   result: InitResult,
   recorded: WhoMayAcceptRecorded | undefined,
+  pulled?: MergeDriverFixed,
 ): Promise<void> {
   io.out(onOneLine`Initialized mnema project at ${result.root}`);
   io.out(render(fact(`identity: ${result.anchor}`)));
@@ -423,6 +435,9 @@ export async function sayClassic(
         ),
       ),
     );
+  }
+  if (pulled !== undefined) {
+    for (const line of pulled.lines) io.out(render(fact(line)));
   }
   io.out('');
   const reaches =

@@ -1516,7 +1516,8 @@ nothing would be lost.
 # git pull over the record's uncommitted events, when the branch followed holds their start.
 mnema record pull
 
-# Teach this repository's git the tails' merge driver, for every merge (writes .git/config).
+# Make a plain `git pull` carry the record in this clone: the tails' merge driver, merge.autoStash
+# and rebase.autoStash, with the driver's name (four settings, written in that order, in .git/config).
 mnema doctor --fix merge-driver --dry-run
 mnema doctor --fix merge-driver
 ```
@@ -1538,11 +1539,41 @@ says it is a fork and where the sides part, and leaves the file conflicted. It n
 a file holding both sides is a fork, which both readers refuse. Git runs a driver only where its own
 configuration says what the name means, and a committed file cannot say it, so a clone merges the
 tails as text, as git merges any file, until a person runs `mnema doctor --fix merge-driver`; `mnema
-doctor` names a clone where it is missing. That setting names `mnema` as git finds it on its `PATH`:
-where git runs without it there, the merge stops on a conflict, as it does without the setting.
-**What it does not do.** No driver makes a plain `git pull` pass over uncommitted changes: git
-refuses those before it merges, which is why `record pull` exists. A `git pull --autostash`, or
-`merge.autoStash` set by you, puts the events back through the driver.
+doctor` names a clone where it is missing.
+
+**A plain `git pull`.** No driver makes a plain `git pull` pass over uncommitted changes: git refuses
+those before it merges, whatever the configuration says about merges. What makes it automatic is git's
+autostash, which stashes the events, pulls, and puts them back through the driver. `mnema doctor --fix
+merge-driver`, and the answer to the question `mnema init` asks in a repository with a remote (`--git-pull
+yes`, or `--yes`, which takes the default, yes), write four settings into this clone's `.git/config`,
+the driver first, then the autoStash ones: the driver's name, the driver, `merge.autoStash` (read by a merge pull: `git pull`, `git pull
+--no-rebase`) and `rebase.autoStash` (read by `git pull --rebase`, which refuses without it). They are never
+written one without the driver: an autoStash alone leaves git exiting 0 over conflict markers inside signed
+tails, which `mnema verify` then refuses. Measured on git 2.55, with the clone's own configuration and no
+`mnema` on the `PATH`, `git pull`, `git pull --no-rebase`, `git pull --rebase` and a merge or a rebase beside
+an unrelated local commit all succeed over local events that are the start of the branch's or longer than it,
+and the record verifies afterwards (`packages/code/tests/a-plain-git-pull-carries-the-record.test.ts`).
+**The autostash settings apply to every file of the clone**, not only the record: a pull stashes and restores
+any file with uncommitted changes, and the question, the plan and the fix say so. A setting of the same name
+that you set otherwise (`merge.autoStash=false`) is left where it is, and then none of the four is written. This is not
+a rollback: if git fails to write one, the ones after it are not written and the ones before it stay, which is why the
+driver goes first. No autoStash is written while the driver cannot run here.
+The driver is named by the node and the script of the installation that ran the fix, by absolute path, so a
+git started by a program with no `mnema` on its `PATH` (an editor opened from a launcher) still finds it; an
+installation that moves (another node
+version, a reinstalled folder) leaves a driver git cannot start, and with an autoStash on a plain pull then exits 0
+with the local events only in the stash. So `mnema doctor` and `mnema status` say when the driver cannot run (its node
+or script is gone, or, for the earlier form that ran `mnema` by the `PATH`, there is no `mnema` on it) while an autoStash
+is on, and `mnema doctor --fix merge-driver` replaces a driver of mnema's that cannot run with one that does, and only
+then writes the autoStash settings; it keeps a driver that runs. `mnema doctor` says what is missing.
+
+**A fork that git hides.** When both sides appended to the same tail, a plain `git pull` with these
+settings exits 0, says "Fast-forward", leaves the tail files in conflict, and keeps the local side only in
+git's stash, where git itself suggests a `git stash drop`. `mnema status` ("Kept aside by a pull") and `mnema
+doctor` say so, in one sentence, whenever the stash holds an autostash with tail files or a tail file is in
+conflict in the index: do not drop the stash, it may hold the only copy of those events (`git stash show -p`
+prints them). `mnema record pull`, run before the pull, names such a fork and writes nothing; once a plain
+pull has left it aside, `record pull` refuses until the conflict is settled, and does not look in the stash.
 
 ### A record that inherits another repository's decisions
 
@@ -2081,6 +2112,7 @@ written, the lines being the ones `init` has always printed. Every answer is als
 | `--yes`, `-y` | no question: the hosts found here (every host where none was), nothing asked about agents accepting, and the plan printed without a confirmation |
 | `--dry-run` | prints the plan and writes nothing, in a folder that has no project and in one that has |
 | `--accepts yes\|no` | answers whether an agent may accept what you choose, and records the answer (below); with `--which <agent>` the answer is that agent's proposal |
+| `--git-pull yes\|no` | answers whether to set this clone's git configuration so a plain `git pull` carries the record (below); with `--yes`, the answer is yes in a repository with a remote, and `--all-hosts` or a founding with nobody to ask write nothing without it |
 
 An invalid `--hosts` is refused with the names it takes (`HOSTS_NOT_UNDERSTOOD`), and nothing is written. The questions
 come before the founding, so leaving one leaves the project and the home as they were, and a second `init` asks nothing.
@@ -2100,6 +2132,14 @@ authority, so its answer is recorded as that agent's **proposal**, signed as the
 `no` records no switch). `--yes` never answers the question, and with no terminal and no `--accepts` nothing is asked or
 recorded. A second `init` in a founded project never asks it again: `mnema switch` changes the switch, and a new decision
 replaces the answer.
+
+In a git repository with a remote, `init` asks one more question, after that one: whether to make a plain `git
+pull` carry the record in this clone. Yes (the default) writes four settings into the clone's own `.git/config`
+after the founding: the tails' merge driver's name and the driver, then `merge.autoStash` and `rebase.autoStash`
+([the pull section](#pulling-a-record-that-grew-here)); they are shown in the plan as four `set` rows, with the note that the
+autostash applies to every file of the clone, not only the record. Where the clone already holds one of those
+settings set otherwise (`merge.autoStash=false`), nothing is written and `init` says so. Outside a git repository the
+question is not asked and nothing is written; `mnema doctor --fix merge-driver` makes the same settings at any time.
 
 The block says when to call the mnema tools
 (`bootstrap` at the opening, `governing_rules` before changing a file, `record_decision` when a choice
