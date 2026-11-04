@@ -124,7 +124,45 @@ function aNewTailOf(fingerprint: string): string {
  * are asked before the first append.
  */
 export function relinkTails(ctx: RelinkContext, input: RelinkInput): RelinkOk | RelinkError {
-  return relinkOrAsk(ctx, input, false) as RelinkOk | RelinkError;
+  const asked = askRelinks(ctx, input);
+  if (!asked.ok) return asked;
+  const { groups, relinked, at, build, replaced } = asked;
+
+  // The writers, opened (which reads, and keeps only an installation id) and asked which tail
+  // they hold: that one hosts the relinks where it names the record joined; else a new one does.
+  const writers = [...groups.values()].map((group) => ({
+    ...group,
+    writer: ctx.openWriter(group.key, group.into),
+  }));
+  const toWrite: RelinkToWrite[] = writers.flatMap(({ key, into, relinks, writer }) =>
+    relinks.map((relink) => ({
+      host: relinked.has(writer.tail) ? aNewTailOf(key.fingerprint) : writer.tail,
+      hostNames: into,
+      event: build(key, relink, at),
+    })),
+  );
+  const would = wouldCount(ctx, toWrite);
+  if (!would.ok) return would;
+
+  const written: RelinkWritten[] = [];
+  for (const { key, relinks, writer } of writers) {
+    const appended = writer.exclusively(() => {
+      const entries: { relink: PlannedRelink; host: string; seq: number }[] = [];
+      for (const relink of relinks) {
+        const one = appendEvent(writer, build(key, relink, (ctx.clock ?? systemClock)()));
+        if (!one.ok) return one;
+        entries.push({ relink, host: one.entry.link.tail, seq: one.entry.link.seq });
+      }
+      // Covered at once: a relink above its tail's last checkpoint counts for nothing.
+      writer.checkpoint();
+      return { ok: true as const, entries };
+    });
+    if (!appended.ok) return appended;
+    for (const { relink, host, seq } of appended.entries) {
+      written.push({ ...relink, host, seq, signedBy: key.fingerprint });
+    }
+  }
+  return { ok: true, relinks: written, leftBehind: would.leftBehind, ...screened(replaced) };
 }
 
 /** What {@link wouldRelinkTails} says when the relinks would be written and counted. */
@@ -134,30 +172,74 @@ export interface RelinkWouldCount {
 }
 
 /**
- * Asks everything {@link relinkTails} asks before its first append (the same function, run to
- * that point), and writes nothing: no writer is opened, so not even an installation id moves. The
- * doctor says what its fix would do from this answer, and the fix does it by `relinkTails`, so
+ * Asks everything {@link relinkTails} asks before it opens a writer (the same `askRelinks` and
+ * `wouldCount`), and writes nothing: no writer is opened, so not even an installation id moves.
+ * The doctor says what its fix would do from this answer, and the fix does it by `relinkTails`, so
  * what is said and what is done are one rule. Every relink is asked as written in a new tail of
  * its key, which is where a writer whose own tail does not name the record joined writes it; the
- * rule that counts it is the key's membership, which the host does not change.
+ * rule that counts it is the key's membership, which the host does not change
+ * (`relink-operations.test.ts`, `asking whether a relink would count`).
  */
 export function wouldRelinkTails(
   ctx: Omit<RelinkContext, 'openWriter'>,
   input: RelinkInput,
 ): RelinkWouldCount | RelinkError {
-  const opensNone = (): ChainWriter => {
-    throw new Error('asking whether a relink would count opens no writer');
-  };
-  return relinkOrAsk({ ...ctx, openWriter: opensNone }, input, true) as
-    | RelinkWouldCount
-    | RelinkError;
+  const asked = askRelinks(ctx, input);
+  if (!asked.ok) return asked;
+  const toWrite: RelinkToWrite[] = asked.planned.map((relink) => {
+    const key = ctx.keys.get(relink.tail.slice(0, relink.tail.indexOf('-'))) as KeyOnThisMachine;
+    return {
+      host: aNewTailOf(key.fingerprint),
+      hostNames: relink.into,
+      event: asked.build(key, relink, asked.at),
+    };
+  });
+  const would = wouldCount(ctx, toWrite);
+  if (!would.ok) return would;
+  return { ok: true, relinks: asked.planned };
 }
 
-function relinkOrAsk(
-  ctx: RelinkContext,
-  input: RelinkInput,
-  dry: boolean,
-): RelinkOk | RelinkWouldCount | RelinkError {
+/** The readers' rule over the relinks asked, and the refusal of the first event no write accepts. */
+function wouldCount(
+  ctx: Pick<RelinkContext, 'layouts' | 'upcasters'>,
+  toWrite: readonly RelinkToWrite[],
+):
+  | { readonly ok: true; readonly leftBehind: readonly LeftBehind[] }
+  | Exclude<RelinkError, { readonly code: 'NOT_THE_OWNER' }> {
+  const would = relinksWouldCount(ctx.layouts, ctx.upcasters, toWrite, aNewTailOf);
+  if (!would.ok) return { ok: false, code: would.code, message: would.message };
+  for (const one of toWrite) {
+    const refused = refusalOf(one.event);
+    if (refused !== undefined) return refused;
+  }
+  return would;
+}
+
+/** What is asked of a relink before any writer is opened. */
+type Asked =
+  | {
+      readonly ok: true;
+      readonly planned: readonly PlannedRelink[];
+      readonly groups: ReadonlyMap<
+        string,
+        { key: KeyOnThisMachine; into: string; relinks: PlannedRelink[] }
+      >;
+      readonly relinked: ReadonlySet<string>;
+      readonly at: string;
+      readonly build: (
+        key: KeyOnThisMachine,
+        relink: PlannedRelink,
+        when: string,
+      ) => ReturnType<typeof tailRelinked>;
+      readonly replaced: NonNullable<ScreenedWrite['replaced']>;
+    }
+  | RelinkError;
+
+/**
+ * The refusals of a relink that need no writer: its text, `planRelinks`, a key this machine does
+ * not hold, and the agent declared. What it hands back is what the write and the ask both go on.
+ */
+function askRelinks(ctx: Omit<RelinkContext, 'openWriter'>, input: RelinkInput): Asked {
   const text = screenContent({ reason: input.reason, run: input.run });
   if (!text.ok) return text;
   const planned = planRelinks(ctx.layouts, ctx.upcasters, {
@@ -235,64 +317,7 @@ function relinkOrAsk(
         reason: text.fields.reason,
       },
     );
-
-  if (dry) {
-    const asked: RelinkToWrite[] = planned.relinks.map((relink) => {
-      const key = ctx.keys.get(relink.tail.slice(0, relink.tail.indexOf('-'))) as KeyOnThisMachine;
-      return {
-        host: aNewTailOf(key.fingerprint),
-        hostNames: relink.into,
-        event: build(key, relink, at),
-      };
-    });
-    const would = relinksWouldCount(ctx.layouts, ctx.upcasters, asked, aNewTailOf);
-    if (!would.ok) return { ok: false, code: would.code, message: would.message };
-    for (const one of asked) {
-      const refused = refusalOf(one.event);
-      if (refused !== undefined) return refused;
-    }
-    return { ok: true, relinks: planned.relinks };
-  }
-
-  // The writers, opened (which reads, and keeps only an installation id) and asked which tail
-  // they hold: that one hosts the relinks where it names the record joined; else a new one does.
-  const writers = [...groups.values()].map((group) => ({
-    ...group,
-    writer: ctx.openWriter(group.key, group.into),
-  }));
-  const toWrite: RelinkToWrite[] = writers.flatMap(({ key, into, relinks, writer }) =>
-    relinks.map((relink) => ({
-      host: relinked.has(writer.tail) ? aNewTailOf(key.fingerprint) : writer.tail,
-      hostNames: into,
-      event: build(key, relink, at),
-    })),
-  );
-  const would = relinksWouldCount(ctx.layouts, ctx.upcasters, toWrite, aNewTailOf);
-  if (!would.ok) return { ok: false, code: would.code, message: would.message };
-  for (const one of toWrite) {
-    const refused = refusalOf(one.event);
-    if (refused !== undefined) return refused;
-  }
-
-  const written: RelinkWritten[] = [];
-  for (const { key, relinks, writer } of writers) {
-    const appended = writer.exclusively(() => {
-      const entries: { relink: PlannedRelink; host: string; seq: number }[] = [];
-      for (const relink of relinks) {
-        const one = appendEvent(writer, build(key, relink, (ctx.clock ?? systemClock)()));
-        if (!one.ok) return one;
-        entries.push({ relink, host: one.entry.link.tail, seq: one.entry.link.seq });
-      }
-      // Covered at once: a relink above its tail's last checkpoint counts for nothing.
-      writer.checkpoint();
-      return { ok: true as const, entries };
-    });
-    if (!appended.ok) return appended;
-    for (const { relink, host, seq } of appended.entries) {
-      written.push({ ...relink, host, seq, signedBy: key.fingerprint });
-    }
-  }
-  return { ok: true, relinks: written, leftBehind: would.leftBehind, ...screened(replaced) };
+  return { ok: true, planned: planned.relinks, groups, relinked, at, build, replaced };
 }
 
 /**
