@@ -6,15 +6,34 @@
  * held over the product's own writes in `@mnema/core` (`relink-operations.test.ts`).
  */
 
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { identityFounded, memoryCaptured, tailPruned, tailRelinked } from '../events/build.js';
+import {
+  agentEnrolled,
+  agentEnrollmentMessage,
+  identityFounded,
+  memoryCaptured,
+  tailPruned,
+  tailRelinked,
+} from '../events/build.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting } from './chain.js';
+import { publicKeyToPem, sign } from './keys.js';
+import { loadOrCreateKeyPair } from './keystore.js';
+import { publicKeyPath } from './layout.js';
 import { planRelinks, relinksWouldCount, tailsACutWouldUnrelink } from './relink-plan.js';
 import { namesOfTails, namesRelinkedAt } from './tail-names.js';
+import { verifyChain } from './verify.js';
 import { tailStanding } from './waiver.js';
 import { type ChainWriter, describeNewTail, type NewTail } from './writer.js';
 
@@ -223,6 +242,85 @@ describe('whether the readers would count a relink not written yet', () => {
     if (would.ok) return;
     expect(would.token).toBe('relink-not-a-member');
     expect(would.message).toContain('(ADR-157)');
+  });
+});
+
+/** The agent key `name` enrolled by the person writing at `w`, its public half in `root`. */
+function enrolledAgent(root: string, w: ChainWriter, name: string): void {
+  const agent = loadOrCreateKeyPair({ root: join(sandbox, name) });
+  mkdirSync(join(root, 'keys'), { recursive: true });
+  writeFileSync(publicKeyPath({ root }, agent.fingerprint), publicKeyToPem(agent.publicKey));
+  const consent = sign(agentEnrollmentMessage(w.anchor, agent.fingerprint, name), agent.privateKey);
+  w.append(
+    agentEnrolled(
+      { at: at(), who: w.anchor, signerFp: w.signerFingerprint, subject: w.anchor },
+      { agentFp: agent.fingerprint, name, reverseSig: Buffer.from(consent).toString('hex') },
+    ),
+  );
+  w.checkpoint();
+}
+
+describe('whether the record a relink leaves would verify', () => {
+  /** The tree that stays and the one that moves, both by the person, each naming its record. */
+  function twoTrees() {
+    const stays = join(sandbox, 'stays');
+    const moves = join(sandbox, 'moves');
+    const host = noted(stays, 'person', 'in the tree that stays');
+    const old = noted(moves, 'person', 'in the tree that moves');
+    return { stays, moves, host, old };
+  }
+
+  /** The relink of the moving tree's tail into the record the tree that stays names. */
+  function asked(stays: string, moves: string, host: ChainWriter, tail: string) {
+    const held = tailStanding({ root: moves }, tail, upcasters);
+    if (held === undefined) throw new Error('the tail holds nothing');
+    return relinksWouldCount(
+      [{ root: stays }, { root: moves }],
+      upcasters,
+      [
+        {
+          host: host.tail,
+          hostNames: namesOfTails({ root: stays }).get(host.tail) as string,
+          event: tailRelinked(
+            { at: at(), who: host.anchor, signerFp: host.signerFingerprint, subject: host.anchor },
+            {
+              tail,
+              from: namesOfTails({ root: moves }).get(tail) as string,
+              into: namesOfTails({ root: stays }).get(host.tail) as string,
+              throughHash: held.throughHash,
+              eventCount: held.eventCount,
+              reason: 'joined',
+            },
+          ),
+        },
+      ],
+      NEW_TAIL,
+    );
+  }
+
+  it('refuses, in the readers’ words, a relink where each tree enrolled the same agent key', () => {
+    const { stays, moves, host, old } = twoTrees();
+    enrolledAgent(stays, host, 'bot');
+    enrolledAgent(moves, old, 'bot');
+    expect(verifyChain({ root: stays }, upcasters).ok).toBe(true);
+    expect(verifyChain({ root: moves }, upcasters).ok).toBe(true);
+    const would = asked(stays, moves, host, old.tail);
+    expect(would.ok).toBe(false);
+    if (would.ok) return;
+    expect(would.code).toBe('RELINK_WOULD_NOT_VERIFY');
+    expect(would.message).toMatch(
+      /refuse 1 event\(s\) it refuses nowhere today, .* the first at tail [0-9a-f]{64}-[0-9a-f]{32} seq 2: agent\.enrolled names a key that is already in an identity/,
+    );
+  });
+
+  it('counts a relink where only a tree that stays refuses an event already: not the join’s doing', () => {
+    const { stays, moves, host, old } = twoTrees();
+    enrolledAgent(stays, host, 'bot');
+    enrolledAgent(stays, host, 'bot');
+    expect(verifyChain({ root: stays }, upcasters).issues.map((issue) => issue.detail)).toEqual([
+      'agent.enrolled names a key that is already in an identity, or holds a role, at this point',
+    ]);
+    expect(asked(stays, moves, host, old.tail)).toEqual({ ok: true, leftBehind: [] });
   });
 });
 

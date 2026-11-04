@@ -11,7 +11,9 @@
  * the readers' own rule instead (`relinksWouldCount`, `@mnema/chain`), over the directory as it
  * would read with the relinks written and covered, which asks more than the door does: the key
  * must hold a membership the record joined gave it at the relink's point. What the rule refuses,
- * this refuses in the rule's words, and nothing is written.
+ * this refuses in the rule's words, and nothing is written. The same question asks the readers'
+ * identity check over that directory too, so a relink the rule counts is still refused where the
+ * record it leaves would fail `verify` (`RELINK_WOULD_NOT_VERIFY`).
  *
  * WHICH KEY, AND WHICH TAIL. Each relink is signed by the key the relinked tail's id names, which
  * this machine must hold: the person's, or an agent's kept here. It is written in this
