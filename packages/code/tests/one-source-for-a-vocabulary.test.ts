@@ -212,7 +212,8 @@ describe('a declaration lists the set it takes', () => {
     // `check`, `export`, `enable` and `disable`, each taking a `--scope`; thirty-nine since
     // `beside-a-write` takes a `--host` set, read from `host-names.ts`.
     // 40 with `init --accepts`, which takes `yes` or `no`.
-    expect(DECLARED_SETS.length).toBe(40);
+    // 41 with `init --git-pull`, which takes `yes` or `no` too.
+    expect(DECLARED_SETS.length).toBe(41);
   });
 
   it('takes the set from the DOMAIN, at each of the levels that take one', () => {

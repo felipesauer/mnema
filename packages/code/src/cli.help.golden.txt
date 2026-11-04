@@ -143,31 +143,39 @@ $ mnema init --help
 | establish a mnema project in the current directory
 |
 | Options:
-|   --hosts <list>      which hosts get the mnema instructions, without asking:
-|                       claude, cursor, vscode, codex (several, separated by
-|                       commas), or one of all, detected, none
-|   --all-hosts         write the mnema instructions into AGENTS.md and the three
-|                       files of mnema’s own, and ask nothing at all (the same as
-|                       --yes --hosts all)
-|   -y, --yes           ask nothing: the hosts found here (every host where none
-|                       was), no question about agents accepting, and no
-|                       confirmation
-|   --dry-run           print what would be done, and write nothing
-|   --accepts <answer>  answer whether an agent may accept what you choose, and
-|                       record the answer as a decision (yes or no); with --which,
-|                       the answer is the agent’s proposal and waits for you
-|   --which <agent>     the agent that executed this, when an agent (a script, a
-|                       CI step) is driving mnema: with --accepts, its answer is
-|                       recorded as that agent’s proposal, and waits for you. Omit
-|                       it when you are acting directly. A value that names no
-|                       agent (an unset variable) is refused, never credited to
-|                       you.
-|   -h, --help          display help for command
+|   --hosts <list>       which hosts get the mnema instructions, without asking:
+|                        claude, cursor, vscode, codex (several, separated by
+|                        commas), or one of all, detected, none
+|   --all-hosts          write the mnema instructions into AGENTS.md and the three
+|                        files of mnema’s own, and ask nothing at all (the same as
+|                        --yes --hosts all)
+|   -y, --yes            ask nothing: the hosts found here (every host where none
+|                        was), no question about agents accepting, and no
+|                        confirmation
+|   --dry-run            print what would be done, and write nothing
+|   --accepts <answer>   answer whether an agent may accept what you choose, and
+|                        record the answer as a decision (yes or no); with
+|                        --which, the answer is the agent’s proposal and waits for
+|                        you
+|   --git-pull <answer>  answer whether to set this clone’s git configuration so a
+|                        plain `git pull` carries the record (yes or no): the
+|                        mnema merge driver, merge.autoStash and rebase.autoStash,
+|                        always together, in .git/config; the two autoStash
+|                        settings apply to every file of the clone. With --yes,
+|                        the answer is yes in a repository with a remote
+|   --which <agent>      the agent that executed this, when an agent (a script, a
+|                        CI step) is driving mnema: with --accepts, its answer is
+|                        recorded as that agent’s proposal, and waits for you.
+|                        Omit it when you are acting directly. A value that names
+|                        no agent (an unset variable) is refused, never credited
+|                        to you.
+|   -h, --help           display help for command
 |
 | At a terminal, a new project is shown what init found around the folder and asked which agent hosts
 | should read the mnema instructions (arrows and space to mark, Enter to confirm) and whether an agent
-| may accept what you choose, and then shown everything it will write, once, before it writes any of
-| it. Esc, Ctrl-C and Ctrl-D leave, and found nothing.
+| may accept what you choose, and, in a repository with a remote, whether to set up this clone so a plain
+| `git pull` carries the record (the settings are listed in the plan), and then shown everything it will
+| write, once, before it writes any of it. Esc, Ctrl-C and Ctrl-D leave, and found nothing.
 | Without a terminal nothing is asked, and all four files are written unless --hosts says which.
 | `mnema instructions --help` lists the files.
 
@@ -1284,8 +1292,10 @@ $ mnema doctor --help
 |                 VS Code’s settings.json, after keeping a copy of the file;
 |                 `private-tree` moves the private notes a worktree still holds in
 |                 .mnema/private/ into the repository’s git directory;
-|                 `merge-driver` tells this repository’s git configuration what
-|                 the merge driver the record’s tails name is
+|                 `merge-driver` writes, into this repository’s git configuration,
+|                 the merge driver the record’s tails name, merge.autoStash and
+|                 rebase.autoStash, together, so a plain `git pull` carries the
+|                 record
 |   --dry-run     with --fix: say what would change and write nothing
 |   -h, --help    display help for command
 |
@@ -1296,7 +1306,9 @@ $ mnema doctor --help
 |   named `mnema` installed where the PATH points: the registry is not asked; VS Code’s user
 |   settings.json, for whether its agent is told where the plugin is; and the projects of
 |   ~/.claude.json (the one in $CLAUDE_CONFIG_DIR, when it is set) that still declare the
-|   server; and, in a project inside a git repository,
+|   server; and, in a project inside a git repository, git’s stash and index, for an
+|   autostash that holds a tail’s files or a tail file left in conflict by a pull (the fork
+|   git hides, which `mnema status` says too), and
 |   each worktree’s .mnema/private/, where private notes lived before they moved into the
 |   repository’s git directory; and the agent keys this machine holds, against the record of
 |   each tree it reaches, with the `MNEMA_AGENT_KEY` of its own environment.
@@ -1305,8 +1317,11 @@ $ mnema doctor --help
 | it, keeps the file’s comments, and refuses a file it cannot edit safely.
 | `--fix private-tree` writes: it moves each tail, as it is, into the repository’s private
 | tree, and leaves where it was anything whose name there holds other bytes.
-| `--fix merge-driver` writes: two settings in this repository’s .git/config, the only git
-| configuration mnema writes, and leaves a setting of the same name it did not write.
+| `--fix merge-driver` writes: three settings in this repository’s .git/config, the only git
+| configuration mnema writes, always together (the tails’ merge driver, merge.autoStash and
+| rebase.autoStash, which apply to every file of the clone), so that a plain `git pull` carries
+| events of the record not yet committed; it leaves a setting of the same name it did not
+| write, and then writes none.
 
 ### mnema report --help
 $ mnema report --help

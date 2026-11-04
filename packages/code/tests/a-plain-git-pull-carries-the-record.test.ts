@@ -91,7 +91,7 @@ function git(cwd: string, ...args: string[]): { status: number; out: string } {
   const ran = spawnSync('git', ['-c', 'init.defaultBranch=main', ...args], {
     cwd,
     encoding: 'utf-8',
-    env: env(),
+    env: { ...env(), GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
   });
   return { status: ran.status ?? -1, out: `${ran.stdout}${ran.stderr}` };
 }
@@ -205,7 +205,7 @@ describe('a plain git pull over events not yet committed', SLOW, () => {
         expect(segment(local).equals(ends)).toBe(true);
         expect(mnema(local, 'verify').status).toBe(0);
         expect(git(local, 'stash', 'list').out.trim()).toBe('');
-        expect(git(local, 'ls-files', '-u').out.trim()).toBe('');
+        expect(git(local, 'diff', '--name-only', '--diff-filter=U').out.trim()).toBe('');
         expect(mnema(local, 'status').out).not.toMatch(/Kept aside by a pull/);
       });
     }
@@ -249,7 +249,7 @@ describe('a fork, the one case git does not stop on', SLOW, () => {
 
   it('leaves the local side in the stash, and status and doctor say it in the same sentence', () => {
     const { local } = fork();
-    const ours = segment(local).toString('utf-8');
+    const ours = segment(local).toString();
     expect(mnema(local, 'doctor', '--fix', 'merge-driver').status).toBe(0);
     expect(mnema(local, 'status').out).not.toMatch(/Kept aside by a pull/);
 

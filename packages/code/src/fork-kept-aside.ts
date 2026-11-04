@@ -14,8 +14,9 @@
  *
  * WHAT IT READS. In the repository the record lives in, only: an entry of `git stash list` named
  * autostash whose changes include a file under the record's `tails/`, and the tail files the index
- * holds unmerged. It reads, never writes, takes no optional lock and asks no network: three or four
- * local `git` calls, the stash capped at {@link STASHES_READ} entries.
+ * holds unmerged. It reads, never writes, takes no optional lock and asks no network: three local
+ * `git` calls (`rev-parse`, `ls-files`, `stash list`) and one `diff` for each autostash entry, capped at
+ * {@link STASHES_READ}.
  *
  * SILENT BY CONSTRUCTION. Outside a git repository, with no public tree, or with neither trace, the
  * answer is `undefined` and nothing is said.
@@ -48,6 +49,7 @@ export interface ForkKeptAside {
 
 /** One git in `cwd`, or undefined where git is absent, does not answer 0, or takes too long. */
 function ask(ctx: ForkKeptAsideContext, cwd: string, args: readonly string[]): string | undefined {
+  const processEnv = ctx.processEnv ?? process.env;
   const ran = spawnSync(
     'git',
     ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'core.quotepath=off', ...args],
@@ -55,7 +57,16 @@ function ask(ctx: ForkKeptAsideContext, cwd: string, args: readonly string[]): s
       cwd,
       encoding: 'utf-8',
       timeout: 5_000,
-      env: { ...(ctx.processEnv ?? process.env), GIT_OPTIONAL_LOCKS: '0', GIT_NO_LAZY_FETCH: '1' },
+      // The process's own HOME where it has one, and the one this run was handed where it has none, as
+      // the doctor's other reads of git do: git then never reaches a home that is not this run's.
+      env: {
+        ...processEnv,
+        ...(processEnv.HOME === undefined && ctx.env.home !== undefined
+          ? { HOME: ctx.env.home }
+          : {}),
+        GIT_OPTIONAL_LOCKS: '0',
+        GIT_NO_LAZY_FETCH: '1',
+      },
     },
   );
   if (ran.error !== undefined || ran.status !== 0) return undefined;
