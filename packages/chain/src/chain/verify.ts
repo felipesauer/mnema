@@ -1069,7 +1069,7 @@ export function identityRefusedOnlyTogether(
   const apart = new Set<string>();
   for (const { layout, keys, entries, covered } of each) {
     for (const issue of resolveIdentity(layout, entries, covered, keys).issues) {
-      apart.add(`${issue.tail}#${issue.seq}`);
+      apart.add(eventAt(issue));
     }
   }
   // Read together as the first layout's directory: a tail found in two layouts is the first's.
@@ -1096,8 +1096,13 @@ export function identityRefusedOnlyTogether(
   }
   const keys = eitherKeys(each.map((one) => one.keys));
   return resolveIdentity(layouts[0] as ChainLayout, entries, covered, keys)
-    .issues.filter((issue) => !apart.has(`${issue.tail}#${issue.seq}`))
+    .issues.filter((issue) => !apart.has(eventAt(issue)))
     .map(({ tail, seq, detail }) => ({ tail, seq, detail }));
+}
+
+/** Where an event sits, `<tail>#<seq>`: a key of a `Set`, never printed. */
+function eventAt(issue: { readonly tail: string; readonly seq: number }): string {
+  return `${issue.tail}#${issue.seq}`;
 }
 
 /** What the identity fold is handed of one layout: each tail's entries, and its coverage. */
