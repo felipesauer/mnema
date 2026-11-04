@@ -802,6 +802,7 @@ export const HANDED_OVER: Readonly<
   'docs/switches.md': { line: 20, name: 4 },
   'docs/verify-without-installing.md': { name: 1 },
   'docs/what-it-proves.md': { line: 7, name: 10 },
+  'docs/what-0-1-6-is-expected-to-bring.md': { name: 1 },
   'docs/where-it-fits.md': { line: 1, name: 2 },
   'examples/rules/README.md': { line: 1, name: 1 },
   'packages/action/README.md': { line: 14, name: 12 },
