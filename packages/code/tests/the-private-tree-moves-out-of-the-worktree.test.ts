@@ -141,7 +141,11 @@ function everythingUnder(dir: string): string {
     .filter((path) => statSync(join(dir, path)).isFile())
     .sort();
   const hash = createHash('sha256');
-  for (const path of files) hash.update(path).update('\0').update(readFileSync(join(dir, path)));
+  for (const path of files)
+    hash
+      .update(path)
+      .update('\0')
+      .update(readFileSync(join(dir, path)));
   return `${files.length} file(s), ${hash.digest('hex')}`;
 }
 
