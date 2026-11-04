@@ -1,0 +1,124 @@
+{
+  "start": "7c507b022659781aa9777421e5b21b7d28f1ad95",
+  "changed": [
+    {
+      "path": ".mnema/keys/c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51.pub",
+      "status": "A",
+      "added": [
+        "-----BEGIN PUBLIC KEY-----",
+        "MCowBQYDK2VwAyEAfdwqQ+FAm7vZ1ZiPtDihmDnebxv0cDj4sTISnIv9vF8=",
+        "-----END PUBLIC KEY-----"
+      ],
+      "removed": [],
+      "sha256_end": "d019c63a092faed374ba8dd701d6f8b4e2e31213401c5188bc5a1032f5a42a91",
+      "untracked": true
+    },
+    {
+      "path": ".mnema/tails/c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0/000001.jsonl",
+      "status": "A",
+      "added": [
+        "{\"event\":{\"after\":[\"c58b167d1aaf7568f944e8ddab657b4c2e957cb6d34e9d7cd3eae80e5d8b2bbf\"],\"at\":\"2026-11-03T20:38:18.715Z\",\"kind\":\"identity.founded\",\"payload\":{\"foundingFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\"},\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"subject\":\"mnid:dbb8e551b6522441955e43715aac98190881786f1ef4bfc443a27d99e4fdce44\",\"v\":1,\"who\":\"mnid:dbb8e551b6522441955e43715aac98190881786f1ef4bfc443a27d99e4fdce44\"},\"link\":{\"hash\":\"98f01f0c258ec324190e45b4c34ee61b5c10dc7a69fcc52f4b2c858ca2e975f1\",\"prev\":null,\"seq\":0,\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\"}}",
+        "{\"event\":{\"at\":\"2026-11-03T20:38:19.572Z\",\"kind\":\"run.started\",\"payload\":{\"agent\":\"claude-code\"},\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"subject\":\"01a1a322-5551-7000-a89f-3d9b6f8d2d87\",\"v\":1,\"which\":\"claude-code\",\"who\":\"mnid:dbb8e551b6522441955e43715aac98190881786f1ef4bfc443a27d99e4fdce44\"},\"link\":{\"hash\":\"8e01cffee5fab8c2bcd605cf5d8fa623be81484a78976769b1260b0a5e402dbb\",\"prev\":\"98f01f0c258ec324190e45b4c34ee61b5c10dc7a69fcc52f4b2c858ca2e975f1\",\"seq\":1,\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\"}}",
+        "{\"event\":{\"at\":\"2026-11-03T20:38:19.647Z\",\"kind\":\"channel.served\",\"payload\":{},\"run\":\"01a1a322-5551-7000-a89f-3d9b6f8d2d87\",\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"subject\":\"edit-rules-push\",\"v\":1,\"which\":\"claude-code\",\"who\":\"mnid:dbb8e551b6522441955e43715aac98190881786f1ef4bfc443a27d99e4fdce44\"},\"link\":{\"hash\":\"e6722db7f736ce444a3f6f02968df517cc25422901f33914aad16b497bae50e7\",\"prev\":\"8e01cffee5fab8c2bcd605cf5d8fa623be81484a78976769b1260b0a5e402dbb\",\"seq\":2,\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\"}}",
+        "{\"event\":{\"at\":\"2026-11-03T20:38:45.205Z\",\"kind\":\"decision.recorded\",\"payload\":{\"adr\":\"ADR-2\",\"alternatives\":\"Strip a bare `export ` prefix with startsWith/str_starts_with: rejected, it would turn `export =4` into a line starting with `=` and silently drop a key that used to parse, and it handles only one space. Use `\\\\s+` in the pattern: rejected, JS and PHP disagree on what `\\\\s` matches, so the two packages could read the same line differently. Strip `export` anywhere in the key: rejected, `exported=3` and `export_path=2` are ordinary keys.\",\"rationale\":\"Lines written `export KEY=value` (a shell habit) are read as `KEY=value`. The prefix is stripped with `^export[ \\\\t]+(?=[^ \\\\t=])` after the line is trimmed, in both the JS and the PHP EnvAccessor (ADR-1: a behavior change is made in both packages in the same pull request). The pattern is the same in both and spells out space and tab rather than `\\\\s`, because JS `\\\\s` matches Unicode whitespace and PCRE without /u does not, which would make the two packages disagree on exotic whitespace. The lookahead means `export` is a keyword only when a key follows it: `export=1`, `export_path=2`, `exported=3` and `export =4` still read as keys named `export`, `export_path`, `exported` and `export`, as they did before. `export HOST` with no `=` is skipped like any other line without one, and a commented-out `# export KEY=value` stays a comment.\",\"title\":\"EnvAccessor drops a leading `export` only when it is a keyword, not a key\"},\"run\":\"01a1a322-5551-7000-a89f-3d9b6f8d2d87\",\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"subject\":\"01a1a322-bccd-7000-bf64-74ddbd472123\",\"v\":1,\"which\":\"claude-code\",\"who\":\"mnid:dbb8e551b6522441955e43715aac98190881786f1ef4bfc443a27d99e4fdce44\"},\"link\":{\"hash\":\"a2eff29a6918aef47e4ce348ad01474ec2a46a22d7387f381dd06782816382e7\",\"prev\":\"e6722db7f736ce444a3f6f02968df517cc25422901f33914aad16b497bae50e7\",\"seq\":3,\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\"}}",
+        "{\"event\":{\"at\":\"2026-11-03T20:38:45.205Z\",\"kind\":\"decision.transitioned\",\"payload\":{\"action\":\"create\",\"from\":null,\"to\":\"proposed\"},\"run\":\"01a1a322-5551-7000-a89f-3d9b6f8d2d87\",\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"subject\":\"01a1a322-bccd-7000-bf64-74ddbd472123\",\"v\":1,\"which\":\"claude-code\",\"who\":\"mnid:dbb8e551b6522441955e43715aac98190881786f1ef4bfc443a27d99e4fdce44\"},\"link\":{\"hash\":\"58b5e8cb902d224ae8e6e4ffaa05b7163288ef95249382b3d347e8dadcd21b2c\",\"prev\":\"a2eff29a6918aef47e4ce348ad01474ec2a46a22d7387f381dd06782816382e7\",\"seq\":4,\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\"}}",
+        "{\"event\":{\"at\":\"2026-11-03T20:38:59.630Z\",\"kind\":\"run.ended\",\"payload\":{\"outcome\":\"1 decision recorded; 4 files edited, as of the session's last Stop.\"},\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"subject\":\"01a1a322-5551-7000-a89f-3d9b6f8d2d87\",\"v\":1,\"which\":\"claude-code\",\"who\":\"mnid:dbb8e551b6522441955e43715aac98190881786f1ef4bfc443a27d99e4fdce44\"},\"link\":{\"hash\":\"97277f4d46874b6628f3c6c5bab6db7877dd0ca640456ea56a4eb8509889d019\",\"prev\":\"58b5e8cb902d224ae8e6e4ffaa05b7163288ef95249382b3d347e8dadcd21b2c\",\"seq\":5,\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\"}}"
+      ],
+      "removed": [],
+      "sha256_end": "c7cfde669c0b8306b2f8ec5ea57aca7356cf0a252fa40ebbba70ab0401d7a15e",
+      "untracked": true
+    },
+    {
+      "path": ".mnema/tails/c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0/checkpoints.jsonl",
+      "status": "A",
+      "added": [
+        "{\"contentRoot\":\"8a312375655ffb367861f3b16f22a01cd1cf00728fcb448962ee903c5626a6bd\",\"fromSeq\":0,\"prev\":null,\"scheme\":\"mnema-checkpoint/1\",\"sig\":\"9503ffa37ee2e9bcdb56d1d741e4d07dd130e5f9c5102c554db033c4b999ba7df8735787ff18eab530b75a59ccd286b2449184c4f86cfe3db14359692128e40a\",\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\",\"toSeq\":1}",
+        "{\"contentRoot\":\"6170eacfcb257758787a20fbc3e1a11900aed77364363c4052b3d7f20f2b23df\",\"fromSeq\":2,\"prev\":\"b9e9ded1d7c60ed89969f5e661e5263229ac3cb97f1620bcff89689e3e4ab015\",\"scheme\":\"mnema-checkpoint/1\",\"sig\":\"88d6eafe739283658cd4f58793c248d6920ddcdad271d0185873ac5a2c539e185c1aa4610accc9d856214b849d785af0bb8d8cbf4e2765b2909ce3c23ef55e07\",\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\",\"toSeq\":2}",
+        "{\"contentRoot\":\"323c40247ac987ec83685b784398655c9738bb3ad6fd20f24aad31d45b3d04c2\",\"fromSeq\":3,\"prev\":\"07bb1d42136c5df4ce9e0db1625222ee6f746b302c9f4cfffdb8ecb2b02d0e7b\",\"scheme\":\"mnema-checkpoint/1\",\"sig\":\"eb689a9090e02bd0f31fa47d8bedc03b4de3cc021d5c2d18186ca3f99fda97a7cd5d5f6bfd9e327fe06e18360279890b4b316b7682fc3b99ef1507b397005c0c\",\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\",\"toSeq\":4}",
+        "{\"contentRoot\":\"df31148ddddc282930715accd0b8d6a373d139ca588ab5f59f06ce810d3f4687\",\"fromSeq\":5,\"prev\":\"2ef503e7915064b1316818ba676585b9409d8ccc65585ce70613ebaac7d0e28c\",\"scheme\":\"mnema-checkpoint/1\",\"sig\":\"08e566f2e2add6277bebdb83618271565b2dd94d22546f47bca1e2d3259f34e9f8a5c657b8f88848ca9c10728c76654999f1125a4f06b2b399cb6957dedc2008\",\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\",\"toSeq\":5}"
+      ],
+      "removed": [],
+      "sha256_end": "701d670ec4c1597487c3fa96240a9c717aec71db85de6f7e3cf0414aec427500",
+      "untracked": true
+    },
+    {
+      "path": ".mnema/tails/c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0/tailproof.json",
+      "status": "A",
+      "added": [
+        "{\"scheme\":\"mnema-tail/1\",\"sig\":\"05c497afa44e1b0572b99b3772e4c98036532bddfe1462cce8dfd71b3024088acc9b065d102f184767f0c60193951093e793141431f99349f7ef745d35839707\",\"signerFp\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51\",\"tail\":\"c11a6dad8b06aba8bff160cb0794d79949ab39d16c11c8136e2463ff09eade51-98b94cf4185289a7627956161377acf0\"}"
+      ],
+      "removed": [],
+      "sha256_end": "fdc557cc8594d2166e27c9e97f79fc26b5708ef9a3265135f8267a06906cf81d",
+      "untracked": true
+    },
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim().replace(/^export[ \\t]+(?=[^ \\t=])/, '');"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim();"
+      ],
+      "sha256_end": "749855e0f7bf6d0e63a1138870f28853179898ffbde210a3c297dedaeeac31fe"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads export KEY=value lines as KEY=value', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport  PORT=\"3000\"\\nexport\\tNAME=\\'x\\'\\nPLAIN=1\\n');",
+        "  assert.deepEqual(env.all(), { HOST: 'localhost', PORT: '3000', NAME: 'x', PLAIN: '1' });",
+        "  assert.equal(env.has('export HOST'), false);",
+        "});",
+        "",
+        "test('leaves a key that merely starts with export alone', () => {",
+        "  const env = new EnvAccessor('export=1\\nexport_path=2\\nexported=3\\nexport =4\\n');",
+        "  assert.deepEqual(env.all(), { export: '4', export_path: '2', exported: '3' });",
+        "});",
+        "",
+        "test('skips an export line with no value, and a commented-out export', () => {",
+        "  const env = new EnvAccessor('export HOST\\n# export KEY=value\\n  export KEY=value\\n');",
+        "  assert.deepEqual(env.all(), { KEY: 'value' });",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "697aad468273b102a683da1ae0be536b62e00e2b468b8be545c14a0e0ecee224"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $line = preg_replace('/^export[ \\t]+(?=[^ \\t=])/', '', trim($raw));"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $line = trim($raw);"
+      ],
+      "sha256_end": "3b87b3c1c03d762505c28493f3fbb0bd68354e98a684bc1e95d8dd830cd8ed14"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport  PORT=\\\"3000\\\"\\nexport\\tNAME='x'\\nPLAIN=1\\n\");",
+        "check('reads export KEY=value lines as KEY=value', $env->all() === ['HOST' => 'localhost', 'PORT' => '3000', 'NAME' => 'x', 'PLAIN' => '1'] && !$env->has('export HOST'));",
+        "",
+        "$env = new EnvAccessor(\"export=1\\nexport_path=2\\nexported=3\\nexport =4\\n\");",
+        "check('leaves a key that merely starts with export alone', $env->all() === ['export' => '4', 'export_path' => '2', 'exported' => '3']);",
+        "",
+        "$env = new EnvAccessor(\"export HOST\\n# export KEY=value\\n  export KEY=value\\n\");",
+        "check('skips an export line with no value, and a commented-out export', $env->all() === ['KEY' => 'value']);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "d2db56dd7a1a763bff8ca2d90bd77bf4ab913c4160a3461b182a27eaf7f5ed36"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

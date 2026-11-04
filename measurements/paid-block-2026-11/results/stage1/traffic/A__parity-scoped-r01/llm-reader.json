@@ -1,0 +1,26 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "2fb2f0329aad8aaaee490f416c5c06005e86a9a240e2ced25d78e17a61b8a571"
+  },
+  "at": "2026-11-03T23:46:50.910Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const line = trimmed.replace(/^export[ \\t]+/, '');",
+      "changes: packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+/', '', $trimmed);",
+      "changes: packages/php/src/Formats/EnvAccessor.php +/** Reads `KEY=value` lines, with or without a leading `export `.",
+      "message 5: I'll start by reading both packages. ADR-1 says a behavior change in one has to be made in the other too.",
+      "message 38: ADR-1 in `CLAUDE.md` says a behavior change in `packages/js/src` or `packages/php/src` goes into both in the same PR."
+    ],
+    "notes": "The rule text itself (titled 'A behavior change in one package is made in the other in the same pull request') never appears in the stream. The agent cites ADR-1 from CLAUDE.md before reading any file, so it most likely came from the host-loaded CLAUDE.md, which is not in the stream. It was not seen in a hook event or a tool result, so rule_arrival is not_seen_in_stream."
+  },
+  "usd_eq": 0.0368945
+}

@@ -1,0 +1,25 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "afb4ba398ba6cfad9b4d47e1cd550437261ea060ba1b3c32c8a4f5feeb7425e5"
+  },
+  "at": "2026-11-03T23:47:37.784Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: M packages/js/src/accessors/formats/env-accessor.ts +const EXPORT_PREFIX = 'export ';",
+      "changes: M packages/php/src/Formats/EnvAccessor.php +    private const EXPORT_PREFIX = 'export ';",
+      "message 64: ADR-1 requires the change in both packages in the same PR.",
+      "message 59: ran npm test and php packages/php/tests/run.php; both passed"
+    ],
+    "notes": "The exact rule title text does not appear in the visible transcript. The agent's final message cites 'ADR-1' and the repo has AGENTS.md, which was likely loaded by the host at start-up, but the rule text itself is not in the stream (several tool outputs are cut, so it could sit in a cut part)."
+  },
+  "usd_eq": 0.032780500000000004
+}

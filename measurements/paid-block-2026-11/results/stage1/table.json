@@ -1,0 +1,172 @@
+{
+  "stage": 1,
+  "cells": {
+    "B parity-scoped": {
+      "n": 2,
+      "finished": 2,
+      "usd_eq": 0.494,
+      "code": {
+        "obeyed": 2
+      },
+      "reader": {
+        "obeyed": 2
+      },
+      "arrival": {
+        "hook_event": 2
+      },
+      "requests_mean": 9,
+      "usd_eq_mean": 0.247,
+      "minutes_mean": 1.4
+    },
+    "A parity-scoped": {
+      "n": 2,
+      "finished": 2,
+      "usd_eq": 0.299,
+      "code": {
+        "obeyed": 2
+      },
+      "reader": {
+        "obeyed": 2
+      },
+      "arrival": {
+        "not_seen_in_stream": 2
+      },
+      "requests_mean": 7,
+      "usd_eq_mean": 0.15,
+      "minutes_mean": 0.9
+    },
+    "A parity-neutral": {
+      "n": 10,
+      "finished": 10,
+      "usd_eq": 1.652,
+      "code": {
+        "obeyed": 10
+      },
+      "reader": {
+        "obeyed": 10
+      },
+      "arrival": {
+        "not_seen_in_stream": 10
+      },
+      "requests_mean": 7.9,
+      "usd_eq_mean": 0.165,
+      "minutes_mean": 1
+    },
+    "A-agentsmd parity-neutral": {
+      "n": 10,
+      "finished": 10,
+      "usd_eq": 1.634,
+      "code": {
+        "obeyed": 10
+      },
+      "reader": {
+        "obeyed": 10
+      },
+      "arrival": {
+        "not_seen_in_stream": 10
+      },
+      "requests_mean": 7.4,
+      "usd_eq_mean": 0.163,
+      "minutes_mean": 1
+    },
+    "B parity-neutral": {
+      "n": 10,
+      "finished": 10,
+      "usd_eq": 2.308,
+      "code": {
+        "obeyed": 10
+      },
+      "reader": {
+        "obeyed": 10
+      },
+      "arrival": {
+        "hook_event": 10
+      },
+      "requests_mean": 8.2,
+      "usd_eq_mean": 0.231,
+      "minutes_mean": 1.2
+    }
+  },
+  "checks": {
+    "sessions": 34,
+    "account_check": [
+      "match"
+    ],
+    "same_account_after_all": true,
+    "subscription_proof_all": true,
+    "api_key_source": [
+      "none"
+    ],
+    "credentials_refreshed": 0,
+    "credentials_copied_back": 0,
+    "credential_found_in_a_run_folder": 0,
+    "endings": {
+      "exited": 34
+    },
+    "redone_after_a_cut": 0,
+    "interrupted_folders": 0,
+    "claude_code": [
+      "2.1.311"
+    ],
+    "model": [
+      "claude-sonnet-5-5"
+    ]
+  },
+  "windows": {
+    "five_hour": {
+      "sessions": 34,
+      "windows_seen": 1,
+      "usd_eq": 6.387,
+      "movement": 0.49,
+      "usd_eq_per_window_point": 13,
+      "range_by_two_decimals": [
+        12.8,
+        13.3
+      ],
+      "first_session_left_out": false
+    },
+    "seven_day": {
+      "sessions": 34,
+      "windows_seen": 1,
+      "usd_eq": 6.387,
+      "movement": 0.04,
+      "usd_eq_per_window_point": 159.7,
+      "range_by_two_decimals": [
+        127.8,
+        212.9
+      ],
+      "first_session_left_out": false
+    },
+    "first_before": {
+      "five_hour": {
+        "utilization": 0.01,
+        "resetsAt": 1793752200,
+        "status": "allowed"
+      },
+      "seven_day": {
+        "utilization": 0.26,
+        "resetsAt": 1794218400,
+        "status": "allowed"
+      },
+      "status": "allowed"
+    },
+    "last_after": {
+      "five_hour": {
+        "utilization": 0.5,
+        "resetsAt": 1793752200,
+        "status": "allowed"
+      },
+      "seven_day": {
+        "utilization": 0.3,
+        "resetsAt": 1794218400,
+        "status": "allowed"
+      },
+      "status": "allowed"
+    }
+  },
+  "redaction": {
+    "sessions_copied": 34,
+    "names_scan_hits": [],
+    "credential_strings_found_in_the_copies": 0
+  }
+}

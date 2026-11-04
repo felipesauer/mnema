@@ -1,0 +1,20 @@
+{
+  "comment": "What the 27 October runs measured (the stream-json of the medium and failure-modes kits' out/ folders, read on 3 November 2026 by counting distinct assistant message ids as requests, summing result.total_cost_usd, and differencing the unifiedWindows utilization of the rate_limit_events inside each session). The account of those runs was of an unknown tier and is not the account of this block.",
+  "sessions_read": 68,
+  "per_task": {
+    "d-cache": { "n": 6, "requests": [24, 28, 27, 26, 29, 28], "usd_eq": [1.11, 1.42, 1.13, 1.14, 1.22, 0.93], "minutes": [4.8, 6.8, 7.3, 6.4, 7.5, 4.9] },
+    "d-env": { "n": 6, "requests": [43, 48, 24, 35, 45, 60], "usd_eq": [2.31, 2.83, 1.43, 1.95, 1.96, 2.9], "minutes": [9, 11.7, 5.3, 7.6, 7.5, 15.1] },
+    "d-retry": { "n": 6, "requests": [24, 23, 25, 26, 36, 27], "usd_eq": [1.1, 0.9, 1.36, 1.3, 1.4, 0.96], "minutes": [3.9, 3.8, 5.8, 5, 5.3, 5] },
+    "q-codes": { "n": 6, "requests": [3, 3, 5, 3, 10, 7], "usd_eq": [0.12, 0.12, 0.16, 0.14, 0.18, 0.17], "minutes": [0.2, 0.2, 0.4, 0.3, 0.8, 0.7] },
+    "parity fresh (failure-modes inline-fresh)": { "n": 5, "requests": [15, 24, 24, 25, 10], "usd_eq": [0.33, 0.53, 0.52, 0.56, 0.36], "minutes": [2.7, 6.9, 3.3, 3.5, 2] }
+  },
+  "window_size": {
+    "sessions_used": 55,
+    "usd_eq_total": 133.07,
+    "sum_delta_five_hour_utilization": 2.71,
+    "sum_delta_seven_day_utilization": 0.48,
+    "usd_eq_per_five_hour_window": 49.1,
+    "usd_eq_per_seven_day_window": 277,
+    "caveat": "utilization has two decimals and other use of the account inside those windows would make these sizes too small; the tier of that account is not known, so the size of a Pro window is not read from them: plan/pro.mjs takes a fifth as an assumption until the smoke sessions measure it"
+  }
+}

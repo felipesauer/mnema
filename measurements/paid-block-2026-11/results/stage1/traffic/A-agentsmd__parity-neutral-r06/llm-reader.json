@@ -1,0 +1,25 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "22fa63738ac21e2191d25c0ce2a5bdf7a403174a7c6e5386ed8f9100f2f236a1"
+  },
+  "at": "2026-11-03T23:48:43.955Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +if (line.startsWith('export ')) line = line.slice('export '.length);",
+      "changes: packages/php/src/Formats/EnvAccessor.php +if (str_starts_with($line, 'export ')) {",
+      "message 86: I made the change in both because AGENTS.md (ADR-1) requires a behavior change in one package to land in the other in the same pull request.",
+      "message 6: git ls-files output lists AGENTS.md, but its content is never shown in the transcript"
+    ],
+    "notes": "The rule's exact title/text never appears in the visible stream; the agent's final message cites AGENTS.md (ADR-1), and AGENTS.md was likely loaded by the host at start-up, and some middle messages (19-39, 42-62) are not shown, so arrival is recorded as not_seen_in_stream."
+  },
+  "usd_eq": 0.044028500000000005
+}

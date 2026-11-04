@@ -1,0 +1,78 @@
+{
+  "start": "fae24d7cdc7037ad3e622d9e4219d4addfcfe166",
+  "changed": [
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim().replace(/^export[ \\t]+/, '');"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim();"
+      ],
+      "sha256_end": "a8c327516f79179443dd27b12fa0f23657c191a68440223963ca8c36a78b6191"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads export KEY=value lines as KEY=value', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport  PORT=3000\\nexport\\tMODE=\"a b\"\\n');",
+        "  assert.deepEqual(env.all(), { HOST: 'localhost', PORT: '3000', MODE: 'a b' });",
+        "  assert.equal(env.has('HOST'), true);",
+        "  assert.equal(env.has('export HOST'), false);",
+        "});",
+        "",
+        "test('treats the export prefix as absent before the other rules', () => {",
+        "  const env = new EnvAccessor('export # A=1\\nexport #B=2\\nexport =3\\nexport KEY\\n');",
+        "  assert.deepEqual(env.all(), {});",
+        "});",
+        "",
+        "test('keeps a key that merely starts with export', () => {",
+        "  const env = new EnvAccessor('export=1\\nexported=2\\nEXPORT_DIR=/tmp\\n');",
+        "  assert.deepEqual(env.all(), { export: '1', exported: '2', EXPORT_DIR: '/tmp' });",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "621ffa1011a1926681e01ab9d588848154d9e3303df719320b70b2ad7f8b70e3"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $line = preg_replace('/^export[ \\t]+/', '', trim($raw)) ?? '';"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $line = trim($raw);"
+      ],
+      "sha256_end": "e8b71a2dfa3fc10e33e70cb7416bdae107d3a7d6c0e24830dac6a4f16bcda306"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport  PORT=3000\\nexport\\tMODE=\\\"a b\\\"\\n\");",
+        "check(",
+        "    'reads export KEY=value lines as KEY=value',",
+        "    $env->all() === ['HOST' => 'localhost', 'PORT' => '3000', 'MODE' => 'a b'] && $env->has('HOST') && !$env->has('export HOST')",
+        ");",
+        "",
+        "$env = new EnvAccessor(\"export # A=1\\nexport #B=2\\nexport =3\\nexport KEY\\n\");",
+        "check('treats the export prefix as absent before the other rules', $env->all() === []);",
+        "",
+        "$env = new EnvAccessor(\"export=1\\nexported=2\\nEXPORT_DIR=/tmp\\n\");",
+        "check('keeps a key that merely starts with export', $env->all() === ['export' => '1', 'exported' => '2', 'EXPORT_DIR' => '/tmp']);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "f41fd3d26e1b1110187248d898daa027176c2083f1cd37cc788c31be392ae934"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

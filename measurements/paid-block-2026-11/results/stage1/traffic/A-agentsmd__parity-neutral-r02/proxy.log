@@ -1,0 +1,67 @@
+2026-11-03T20:47:17 ALLOW api.anthropic.com:443
+2026-11-03T20:47:18 ALLOW api.anthropic.com:443
+2026-11-03T20:47:18 ALLOW api.anthropic.com:443
+2026-11-03T20:47:18 ALLOW api.anthropic.com:443
+2026-11-03T20:47:18 ALLOW api.anthropic.com:443
+2026-11-03T20:47:18 ALLOW api.anthropic.com:443
+2026-11-03T20:47:18 ALLOW api.anthropic.com:443
+2026-11-03T20:47:18 CLOSE api.anthropic.com:443 up=10892 down=4849
+2026-11-03T20:47:18 CLOSE api.anthropic.com:443 up=2248 down=5218
+2026-11-03T20:47:18 CLOSE api.anthropic.com:443 up=2200 down=4848
+2026-11-03T20:47:18 CLOSE api.anthropic.com:443 up=2141 down=6454
+2026-11-03T20:47:18 CLOSE api.anthropic.com:443 up=2194 down=12208
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2142 down=5221
+2026-11-03T20:47:19 ALLOW mcp-proxy.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=1872 down=48843
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=1958 down=5023
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2182 down=4970
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=1946 down=5035
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=1905 down=45629
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=1913 down=44419
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2177 down=10659
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2178 down=9816
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2172 down=33832
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2169 down=5674
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2179 down=8316
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2178 down=15327
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2017 down=5530
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2181 down=8399
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=1906 down=17859
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2182 down=41274
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2168 down=26839
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2181 down=89441
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2169 down=169972
+2026-11-03T20:47:19 ALLOW api.anthropic.com:443
+2026-11-03T20:47:19 CLOSE api.anthropic.com:443 up=2178 down=87685
+2026-11-03T20:47:20 CLOSE api.anthropic.com:443 up=2169 down=181316
+2026-11-03T20:47:20 CLOSE api.anthropic.com:443 up=2169 down=163486
+2026-11-03T20:47:33 DENY http-intake.logs.us5.datadoghq.com:443
+2026-11-03T20:47:48 ALLOW api.anthropic.com:443
+2026-11-03T20:47:49 CLOSE api.anthropic.com:443 up=469944 down=4852
+2026-11-03T20:48:19 ALLOW api.anthropic.com:443
+2026-11-03T20:48:20 CLOSE api.anthropic.com:443 up=203506 down=4850
+2026-11-03T20:48:20 CLOSE mcp-proxy.anthropic.com:443 up=3680 down=15257
+2026-11-03T20:48:20 CLOSE api.anthropic.com:443 up=87869 down=39261
+2026-11-03T20:48:20 CLOSE api.anthropic.com:443 up=6634 down=27820

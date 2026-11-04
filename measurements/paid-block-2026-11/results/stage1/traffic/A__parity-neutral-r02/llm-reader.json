@@ -1,0 +1,25 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "fa2e735dcadd74feba9c64b685b56b79ae540871a05507bc23daf29d56b00f49"
+  },
+  "at": "2026-11-03T23:47:32.382Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: M packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export[ \\t]+(?!=)/, '');",
+      "changes: M packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+(?!=)/', '', trim($raw)) ?? '';",
+      "message 61: Parity (`ADR-1`): the change is in both packages with matching tests.",
+      "message 57: PHP checks all ok, JS 8 tests pass"
+    ],
+    "notes": "The rule title text does not appear in the visible transcript. The final message cites 'ADR-1', which suggests the agent saw the rule, probably through a file the host loaded (AGENTS.md/CLAUDE.md) or through the cut-off portions of tool outputs. Since the exact rule text is not visible in the stream, rule_arrival is labelled not_seen_in_stream."
+  },
+  "usd_eq": 0.0350665
+}

@@ -1,0 +1,25 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "8192984e08d68aec1dd4c8c6f0e9f01c3bc62d1b2dcdbd114c4152b69cf0a072"
+  },
+  "at": "2026-11-03T23:48:13.121Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: M packages/js/src/accessors/formats/env-accessor.ts +const key = line.slice(0, eq).trim().replace(/^export[ \\t]+/, '');",
+      "changes: M packages/php/src/Formats/EnvAccessor.php +$key = (string) preg_replace('/^export[ \\t]+/', '', trim(substr($line, 0, $eq)));",
+      "message 69: I changed both packages because ADR-1 requires it. A behavior change in `packages/js/src` goes in `packages/php/src` in the same pull request.",
+      "message 6: file list includes AGENTS.md and CLAUDE.md, but their contents are never shown in the visible transcript"
+    ],
+    "notes": "The rule's exact title text does not appear in the visible transcript (parts of tool outputs are cut). The final message cites 'ADR-1', which suggests the agent saw the rule, possibly in a cut portion of a tool result or in a host-loaded CLAUDE.md/AGENTS.md; this cannot be settled from what is shown, so rule_arrival is marked not_seen_in_stream."
+  },
+  "usd_eq": 0.0353425
+}

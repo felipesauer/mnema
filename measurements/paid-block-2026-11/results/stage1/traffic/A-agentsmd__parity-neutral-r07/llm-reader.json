@@ -1,0 +1,25 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "f3f40c38fcd4ec19914b45825bd07d2f7529d7f68a1c342fac2f21bd5642590f"
+  },
+  "at": "2026-11-03T23:48:55.999Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: M packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export[ \\t]+/, '');",
+      "changes: M packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+/', '', trim($raw)) ?? '';",
+      "message 61: AGENTS.md (ADR-1) requires a behavior change in one package to land in the other in the same pull request, so I changed both.",
+      "message 6: git ls-files output lists AGENTS.md, but the agent never read it in the stream; no tool result contains the rule text"
+    ],
+    "notes": "The rule's exact title never appears in the transcript. The agent's final message cites AGENTS.md (ADR-1), so it likely reached the model through the host-loaded AGENTS.md rather than any stream event; this is not visible in the stream, so rule_arrival is not_seen_in_stream."
+  },
+  "usd_eq": 0.0396485
+}

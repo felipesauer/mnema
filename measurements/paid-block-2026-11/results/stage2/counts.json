@@ -1,0 +1,268 @@
+{
+  "stage": 2,
+  "cells": {
+    "B d-cache": {
+      "n": 2,
+      "finished": 2,
+      "usd_eq": 1.692,
+      "code": {
+        "q2": 2
+      },
+      "reader": {},
+      "arrival": {},
+      "q2": {
+        "sessions": 2,
+        "recorded": 3,
+        "governs_links": 3,
+        "supersedes": 1,
+        "reply_offered_a_path": 2
+      },
+      "requests_mean": 25,
+      "usd_eq_mean": 0.846,
+      "minutes_mean": 9.8
+    },
+    "C d-cache": {
+      "n": 2,
+      "finished": 2,
+      "usd_eq": 3.113,
+      "code": {
+        "q2": 2
+      },
+      "reader": {},
+      "arrival": {},
+      "q2": {
+        "sessions": 2,
+        "recorded": 4,
+        "governs_links": 0,
+        "supersedes": 2,
+        "reply_offered_a_path": 1
+      },
+      "q3": {
+        "sessions": 2,
+        "recorded_at_all": 2,
+        "help_before_first_record": 2,
+        "help_read": 2,
+        "format_check_red_files": 1,
+        "format_check_red_on_unwritten": 1
+      },
+      "requests_mean": 28.5,
+      "usd_eq_mean": 1.556,
+      "minutes_mean": 7.7
+    },
+    "C d-env": {
+      "n": 2,
+      "finished": 2,
+      "usd_eq": 3.854,
+      "code": {
+        "q2": 2
+      },
+      "reader": {},
+      "arrival": {},
+      "q2": {
+        "sessions": 2,
+        "recorded": 4,
+        "governs_links": 0,
+        "supersedes": 1,
+        "reply_offered_a_path": 0
+      },
+      "q3": {
+        "sessions": 2,
+        "recorded_at_all": 2,
+        "help_before_first_record": 2,
+        "help_read": 2,
+        "format_check_red_files": 2,
+        "format_check_red_on_unwritten": 2
+      },
+      "requests_mean": 42,
+      "usd_eq_mean": 1.927,
+      "minutes_mean": 9.5
+    },
+    "B d-env": {
+      "n": 2,
+      "finished": 2,
+      "usd_eq": 3.259,
+      "code": {
+        "q2": 2
+      },
+      "reader": {},
+      "arrival": {},
+      "q2": {
+        "sessions": 2,
+        "recorded": 4,
+        "governs_links": 4,
+        "supersedes": 0,
+        "reply_offered_a_path": 2
+      },
+      "requests_mean": 29.5,
+      "usd_eq_mean": 1.629,
+      "minutes_mean": 7.2
+    },
+    "B d-retry": {
+      "n": 2,
+      "finished": 2,
+      "usd_eq": 2.446,
+      "code": {
+        "q2": 2
+      },
+      "reader": {},
+      "arrival": {},
+      "q2": {
+        "sessions": 2,
+        "recorded": 4,
+        "governs_links": 4,
+        "supersedes": 2,
+        "reply_offered_a_path": 2
+      },
+      "requests_mean": 25,
+      "usd_eq_mean": 1.223,
+      "minutes_mean": 4.8
+    },
+    "C d-retry": {
+      "n": 2,
+      "finished": 2,
+      "usd_eq": 2.472,
+      "code": {
+        "q2": 2
+      },
+      "reader": {},
+      "arrival": {},
+      "q2": {
+        "sessions": 2,
+        "recorded": 4,
+        "governs_links": 0,
+        "supersedes": 2,
+        "reply_offered_a_path": 0
+      },
+      "q3": {
+        "sessions": 2,
+        "recorded_at_all": 2,
+        "help_before_first_record": 2,
+        "help_read": 2,
+        "format_check_red_files": 2,
+        "format_check_red_on_unwritten": 2
+      },
+      "requests_mean": 29,
+      "usd_eq_mean": 1.236,
+      "minutes_mean": 5.3
+    },
+    "B q-codes": {
+      "n": 2,
+      "finished": 2,
+      "usd_eq": 0.27,
+      "code": {
+        "q1": 2
+      },
+      "reader": {},
+      "arrival": {},
+      "q1": {
+        "sessions": 2,
+        "names_current": 2,
+        "names_before": 2,
+        "names_because": 2,
+        "predecessor_named_in_what_mnema_returned": 2,
+        "consulted_mnema": 2
+      },
+      "requests_mean": 4.5,
+      "usd_eq_mean": 0.135,
+      "minutes_mean": 0.4
+    },
+    "C q-codes": {
+      "n": 1,
+      "finished": 1,
+      "usd_eq": 0.129,
+      "code": {
+        "q1": 1
+      },
+      "reader": {},
+      "arrival": {},
+      "q1": {
+        "sessions": 1,
+        "names_current": 1,
+        "names_before": 0,
+        "names_because": 1,
+        "predecessor_named_in_what_mnema_returned": 0,
+        "consulted_mnema": 1
+      },
+      "requests_mean": 6,
+      "usd_eq_mean": 0.129,
+      "minutes_mean": 0.5
+    }
+  },
+  "checks": {
+    "sessions": 15,
+    "account_check": [
+      "match"
+    ],
+    "same_account_after_all": true,
+    "subscription_proof_all": true,
+    "api_key_source": [
+      "none"
+    ],
+    "credentials_refreshed": 0,
+    "credentials_copied_back": 0,
+    "credential_found_in_a_run_folder": 0,
+    "endings": {
+      "exited": 15
+    },
+    "redone_after_a_cut": 0,
+    "interrupted_folders": 0,
+    "claude_code": [
+      "2.1.311"
+    ],
+    "model": [
+      "claude-sonnet-5-5"
+    ]
+  },
+  "windows": {
+    "five_hour": {
+      "sessions": 14,
+      "windows_seen": 2,
+      "usd_eq": 16.628,
+      "movement": 0.75,
+      "usd_eq_per_window_point": 22.2,
+      "range_by_two_decimals": [
+        21.6,
+        22.8
+      ],
+      "first_session_left_out": true
+    },
+    "seven_day": {
+      "sessions": 14,
+      "windows_seen": 1,
+      "usd_eq": 16.628,
+      "movement": 0.06,
+      "usd_eq_per_window_point": 277.1,
+      "range_by_two_decimals": [
+        237.5,
+        332.6
+      ],
+      "first_session_left_out": true
+    },
+    "first_before": {
+      "five_hour": {
+        "utilization": 0.5,
+        "resetsAt": 1793752200,
+        "status": "allowed"
+      },
+      "seven_day": {
+        "utilization": 0.3,
+        "resetsAt": 1794218400,
+        "status": "allowed"
+      },
+      "status": "allowed"
+    },
+    "last_after": {
+      "five_hour": {
+        "utilization": 0.68,
+        "resetsAt": 1793770200,
+        "status": "allowed"
+      },
+      "seven_day": {
+        "utilization": 0.38,
+        "resetsAt": 1794218400,
+        "status": "allowed"
+      },
+      "status": "allowed"
+    }
+  }
+}

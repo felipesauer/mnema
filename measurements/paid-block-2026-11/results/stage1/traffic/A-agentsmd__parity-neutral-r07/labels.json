@@ -1,0 +1,17 @@
+{
+  "governed_edit_made": true,
+  "companion_touched": true,
+  "companion_added_mentions_export": true,
+  "obeyed": "yes",
+  "source": "repository",
+  "outcome": "obeyed",
+  "final_cites_other_package": true,
+  "final_ends_in_question": false,
+  "asked_question_tool": false,
+  "violation": false,
+  "work_barred": "vacuous: the rule refuses no write",
+  "arrival": {
+    "where": "not_seen_in_stream"
+  },
+  "read": true
+}

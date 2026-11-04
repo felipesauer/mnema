@@ -1,0 +1,96 @@
+{
+  "start": "358605ea169a5c44208ce312f2d3925a3c60d603",
+  "changed": [
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const trimmed = raw.trim();",
+        "      if (trimmed === '' || trimmed.startsWith('#')) continue;",
+        "      const line = trimmed.startsWith('export ') ? trimmed.slice('export '.length).trimStart() : trimmed;"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim();",
+        "      if (line === '' || line.startsWith('#')) continue;"
+      ],
+      "sha256_end": "5c6322d6d5e40ef1fe818f99b7d623ae89423a52ab8dcc7eba85809e5d21520b"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads export KEY=value as KEY', () => {",
+        "  const env = new EnvAccessor('export KEY=value\\nPLAIN=1\\n');",
+        "  assert.deepEqual(env.all(), { KEY: 'value', PLAIN: '1' });",
+        "  assert.equal(env.has('export KEY'), false);",
+        "});",
+        "",
+        "test('ignores extra space around the export prefix', () => {",
+        "  const env = new EnvAccessor('  export   A=1\\r\\nexport B = 2\\n');",
+        "  assert.deepEqual(env.all(), { A: '1', B: '2' });",
+        "});",
+        "",
+        "test('strips quotes from an exported value', () => {",
+        "  const env = new EnvAccessor('export A=\"one two\"\\nexport B=\\'three\\'\\n');",
+        "  assert.deepEqual(env.all(), { A: 'one two', B: 'three' });",
+        "});",
+        "",
+        "test('does not treat a key that only starts with export as a prefix', () => {",
+        "  const env = new EnvAccessor('export=1\\nexporter=2\\nEXPORT KEY=3\\n');",
+        "  assert.deepEqual(env.all(), { export: '1', exporter: '2', 'EXPORT KEY': '3' });",
+        "});",
+        "",
+        "test('still skips an exported comment and an export without a key, and keeps an empty value', () => {",
+        "  const env = new EnvAccessor('# export A=1\\nexport B\\nexport\\nexport =3\\nexport C=\\n');",
+        "  assert.deepEqual(env.all(), { C: '' });",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "bdbf486a1e6cc8c2c60f7aab4479c6d77fcc29bd60338861fc86bc268e6c244f"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $trimmed = trim($raw);",
+        "            if ($trimmed === '' || str_starts_with($trimmed, '#')) {",
+        "            $line = str_starts_with($trimmed, 'export ') ? ltrim(substr($trimmed, strlen('export '))) : $trimmed;"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $line = trim($raw);",
+        "            if ($line === '' || str_starts_with($line, '#')) {"
+      ],
+      "sha256_end": "dfedc4255afb082dc08a0ba6db91c777d44a7183be0add88dfa79a8a60c23c86"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export KEY=value\\nPLAIN=1\\n\");",
+        "check('reads export KEY=value as KEY', $env->all() === ['KEY' => 'value', 'PLAIN' => '1'] && !$env->has('export KEY'));",
+        "",
+        "$env = new EnvAccessor(\"  export   A=1\\r\\nexport B = 2\\n\");",
+        "check('ignores extra space around the export prefix', $env->all() === ['A' => '1', 'B' => '2']);",
+        "",
+        "$env = new EnvAccessor(\"export A=\\\"one two\\\"\\nexport B='three'\\n\");",
+        "check('strips quotes from an exported value', $env->all() === ['A' => 'one two', 'B' => 'three']);",
+        "",
+        "$env = new EnvAccessor(\"export=1\\nexporter=2\\nEXPORT KEY=3\\n\");",
+        "check('does not treat a key that only starts with export as a prefix', $env->all() === ['export' => '1', 'exporter' => '2', 'EXPORT KEY' => '3']);",
+        "",
+        "$env = new EnvAccessor(\"# export A=1\\nexport B\\nexport\\nexport =3\\nexport C=\\n\");",
+        "check('still skips an exported comment and an export without a key, and keeps an empty value', $env->all() === ['C' => '']);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "1d838188d274d56af5479613bde4050482da45ca1e9efe90825b92ade2b8d11f"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}
