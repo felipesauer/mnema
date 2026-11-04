@@ -643,6 +643,47 @@ describe('mnema init asks at a terminal', SLOW, () => {
     ]);
   });
 
+  it('is left at its own question, takes the default under --yes, and asks again when the person changes the answers', async () => {
+    const leftAt = remoteClone('terminal-left-at-pull');
+    const leaving = atATerminal(leftAt, ['init']);
+    await leaving.sees('Which agent hosts should read the mnema instructions?');
+    leaving.types(ENTER);
+    await leaving.sees('May an agent accept the decisions you choose?');
+    leaving.types(ENTER);
+    await leaving.sees(QUESTION);
+    leaving.types(ESC);
+    await leaving.finished();
+    expect(existsSync(join(leftAt, '.mnema'))).toBe(false);
+
+    const yes = remoteClone('terminal-yes-flag');
+    await atATerminal(yes, ['init', '--yes', '--hosts', 'none']).finished();
+    expect(configured(yes)).toHaveLength(4);
+
+    const given = remoteClone('terminal-given');
+    const flagged = atATerminal(given, ['init', '--hosts', 'none', '--git-pull', 'no']);
+    await flagged.sees('May an agent accept the decisions you choose?');
+    flagged.types(ENTER);
+    await flagged.sees(CONFIRM);
+    flagged.types(ENTER);
+    await flagged.finished();
+    expect(configured(given)).toEqual([]);
+
+    const again = remoteClone('terminal-again');
+    const person = atATerminal(again, ['init']);
+    await through(person, ENTER);
+    person.types(`\u001b[C${ENTER}`);
+    await person.sees('Which agent hosts should read the mnema instructions?');
+    person.types(ENTER);
+    await person.sees('May an agent accept the decisions you choose?');
+    person.types(ENTER);
+    await person.sees(QUESTION);
+    person.types(`${DOWN}${ENTER}`);
+    await person.sees(CONFIRM);
+    person.types(ENTER);
+    await person.finished();
+    expect(configured(again)).toEqual([]);
+  });
+
   it('writes none on no, and none when the person leaves', async () => {
     const no = remoteClone('terminal-no');
     const person = atATerminal(no, ['init']);
