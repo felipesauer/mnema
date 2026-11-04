@@ -10,6 +10,8 @@ with its own changelog.
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-11-04
+
 ### Added
 
 - **A plain `git pull` carries the record's uncommitted events, in a clone set up for it (ADR-181, which amends
@@ -2729,6 +2731,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   committed tree (`packages/chain/FORMAT.md` §4.1).
 
 [Unreleased]: https://github.com/felipesauer/mnema/commits/main
+[0.1.5]: https://github.com/felipesauer/mnema/releases/tag/v0.1.5
 [0.1.4]: https://github.com/felipesauer/mnema/releases/tag/v0.1.4
 [0.1.3]: https://github.com/felipesauer/mnema/releases/tag/v0.1.3
 [0.1.2]: https://github.com/felipesauer/mnema/releases/tag/v0.1.2
