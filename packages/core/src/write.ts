@@ -289,6 +289,7 @@ export {
   type RelinkOk,
   type RelinkWritten,
   relinkTails,
+  wouldRelinkTails,
 } from './workflow/relink-operations.js';
 // A stack adopted into a tree, and removed from it: the two facts an installation records.
 export {

@@ -124,6 +124,40 @@ function aNewTailOf(fingerprint: string): string {
  * are asked before the first append.
  */
 export function relinkTails(ctx: RelinkContext, input: RelinkInput): RelinkOk | RelinkError {
+  return relinkOrAsk(ctx, input, false) as RelinkOk | RelinkError;
+}
+
+/** What {@link wouldRelinkTails} says when the relinks would be written and counted. */
+export interface RelinkWouldCount {
+  readonly ok: true;
+  readonly relinks: readonly PlannedRelink[];
+}
+
+/**
+ * Asks everything {@link relinkTails} asks before its first append (the same function, run to
+ * that point), and writes nothing: no writer is opened, so not even an installation id moves. The
+ * doctor says what its fix would do from this answer, and the fix does it by `relinkTails`, so
+ * what is said and what is done are one rule. Every relink is asked as written in a new tail of
+ * its key, which is where a writer whose own tail does not name the record joined writes it; the
+ * rule that counts it is the key's membership, which the host does not change.
+ */
+export function wouldRelinkTails(
+  ctx: Omit<RelinkContext, 'openWriter'>,
+  input: RelinkInput,
+): RelinkWouldCount | RelinkError {
+  const opensNone = (): ChainWriter => {
+    throw new Error('asking whether a relink would count opens no writer');
+  };
+  return relinkOrAsk({ ...ctx, openWriter: opensNone }, input, true) as
+    | RelinkWouldCount
+    | RelinkError;
+}
+
+function relinkOrAsk(
+  ctx: RelinkContext,
+  input: RelinkInput,
+  dry: boolean,
+): RelinkOk | RelinkWouldCount | RelinkError {
   const text = screenContent({ reason: input.reason, run: input.run });
   if (!text.ok) return text;
   const planned = planRelinks(ctx.layouts, ctx.upcasters, {
@@ -201,6 +235,24 @@ export function relinkTails(ctx: RelinkContext, input: RelinkInput): RelinkOk | 
         reason: text.fields.reason,
       },
     );
+
+  if (dry) {
+    const asked: RelinkToWrite[] = planned.relinks.map((relink) => {
+      const key = ctx.keys.get(relink.tail.slice(0, relink.tail.indexOf('-'))) as KeyOnThisMachine;
+      return {
+        host: aNewTailOf(key.fingerprint),
+        hostNames: relink.into,
+        event: build(key, relink, at),
+      };
+    });
+    const would = relinksWouldCount(ctx.layouts, ctx.upcasters, asked, aNewTailOf);
+    if (!would.ok) return { ok: false, code: would.code, message: would.message };
+    for (const one of asked) {
+      const refused = refusalOf(one.event);
+      if (refused !== undefined) return refused;
+    }
+    return { ok: true, relinks: planned.relinks };
+  }
 
   // The writers, opened (which reads, and keeps only an installation id) and asked which tail
   // they hold: that one hosts the relinks where it names the record joined; else a new one does.

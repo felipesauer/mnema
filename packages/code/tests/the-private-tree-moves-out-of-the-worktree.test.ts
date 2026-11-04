@@ -24,7 +24,10 @@
  *     tree, and private writes go on (ADR-155). It used to be refused, there being no way to join
  *     two records; the relink is that way;
  *   - where a tail of that old tree was signed by a key this machine does not hold, it is not
- *     relinked: the fix names the tail and the key, fails, and nothing is written or moved.
+ *     relinked: the fix names the tail and the key, fails, and nothing is written or moved;
+ *   - the doctor without --fix names both records and advises the fix only where it would
+ *     relink: where it would refuse (no key here, or a key the record never took in), the finding
+ *     says why and advises none, and the dry run says the same refusal the fix does.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -254,6 +257,14 @@ describe('private trees from before the move', () => {
     const [old] = readdirSync(join(oldTree(repo), 'tails'));
     expect(mnema(repo, 'verify').status).toBe(0);
 
+    // Without --fix, the doctor names both records and advises what the fix does: relink, then move.
+    const doctor = mnema(repo, 'doctor').out;
+    expect(doctor).toMatch(
+      /since its tails name record [0-9a-f]{12}\.\.\. and those of .* name record /,
+    );
+    expect(doctor).toContain('`mnema doctor --fix private-tree` to relink 1 of them into record ');
+    expect(doctor).toContain('each by its own key, and move them');
+
     const dry = mnema(repo, 'doctor', '--fix', 'private-tree', '--dry-run');
     expect(dry.out).toContain(`${oldTree(repo)}: would relink 1 tail(s) into record `);
     expect(readdirSync(join(oldTree(repo), 'tails'))).toEqual([old]);
@@ -292,6 +303,15 @@ describe('private trees from before the move', () => {
     const [old] = readdirSync(join(oldTree(repo), 'tails'));
     const tails = readdirSync(join(shared(), 'tails'));
 
+    // The doctor, without --fix, names both records and advises no fix that refuses.
+    const doctor = mnema(repo, 'doctor').out;
+    expect(doctor).toMatch(
+      /since its tails name record [0-9a-f]{12}\.\.\. and those of .* name record /,
+    );
+    expect(doctor).toContain(`this machine holds no key for ${old}`);
+    expect(doctor).toContain('the fix would refuse them');
+    expect(doctor).not.toContain('run `mnema doctor --fix private-tree`');
+
     // The dry run says the same refusal, and writes nothing either.
     const dry = mnema(repo, 'doctor', '--fix', 'private-tree', '--dry-run');
     expect(dry.status, dry.out).toBe(1);
@@ -308,6 +328,42 @@ describe('private trees from before the move', () => {
     expect(readdirSync(join(oldTree(repo), 'tails'))).toEqual([old]);
     expect(readdirSync(join(shared(), 'tails'))).toEqual(tails);
     expect(mnema(repo, 'verify').status).toBe(0);
+  }, 180_000);
+
+  it('are refused, in the doctor and in the fix alike, where this machine holds the key but the record never took it in', () => {
+    // The shared tree founded on another machine (another key); the old tree by this one's key,
+    // which holds no membership in the record the shared tree names (ADR-157).
+    const mine = home;
+    home = join(sandbox, 'another-machine');
+    mkdirSync(home);
+    try {
+      expect(mnema(repo, 'memory', '--scope', 'private', 'in the repository').status).toBe(0);
+    } finally {
+      home = mine;
+    }
+    writtenOutsideTheRepository(repo, 'founded apart');
+    const [old] = readdirSync(join(oldTree(repo), 'tails'));
+    const tails = readdirSync(join(shared(), 'tails'));
+
+    const doctor = mnema(repo, 'doctor').out;
+    expect(doctor).toMatch(
+      /since its tails name record [0-9a-f]{12}\.\.\. and those of .* name record /,
+    );
+    expect(doctor).toContain('the fix would refuse them: RELINK_WOULD_NOT_COUNT');
+    expect(doctor).toContain('relink-not-a-member');
+    expect(doctor).not.toContain('run `mnema doctor --fix private-tree`');
+
+    // The dry run no longer promises the relink the fix refuses.
+    const dry = mnema(repo, 'doctor', '--fix', 'private-tree', '--dry-run');
+    expect(dry.status, dry.out).toBe(1);
+    expect(dry.out).not.toContain('would relink');
+    expect(dry.out).toContain('RELINK_WOULD_NOT_COUNT');
+
+    const fixed = mnema(repo, 'doctor', '--fix', 'private-tree');
+    expect(fixed.status, fixed.out).toBe(1);
+    expect(fixed.out).toContain('RELINK_WOULD_NOT_COUNT');
+    expect(readdirSync(join(oldTree(repo), 'tails'))).toEqual([old]);
+    expect(readdirSync(join(shared(), 'tails'))).toEqual(tails);
   }, 180_000);
 
   it('give the doctor nothing to say where there are none, and the fix nothing to move', () => {
