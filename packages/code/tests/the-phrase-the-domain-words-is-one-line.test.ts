@@ -604,7 +604,7 @@ type Verdict = 'collapsed' | 'minted' | 'composed';
  * the part that rots (which values exist, and whether each is collapsed) is derived.
  */
 const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = {
-  "@mnema/chain chain/relink-plan.ts «(T2/T4, the one \\`mnema verify\\` makes) would refuse {} event(s) it » together.length #1":
+  '@mnema/chain chain/relink-plan.ts «(T2/T4, the one \\`mnema verify\\` makes) would refuse {} event(s) it » together.length #1':
     {
       verdict: 'minted',
       why: 'how many events the identity fold would refuse only once the trees are read together: a count',
@@ -618,11 +618,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the identity fold’s own finding over the tails on disk, which may quote what it read there',
     },
-  '@mnema/chain chain/relink-plan.ts «{} seq {}: {}. A relink does not » oneLine(first.tail) #1':
-    {
-      verdict: 'collapsed',
-      why: 'the tail an event the fold refused sits in, a tail id being a directory name',
-    },
+  '@mnema/chain chain/relink-plan.ts «{} seq {}: {}. A relink does not » oneLine(first.tail) #1': {
+    verdict: 'collapsed',
+    why: 'the tail an event the fold refused sits in, a tail id being a directory name',
+  },
   '@mnema/chain chain/relink-plan.ts «No tail here names record {} by its own artifacts, other than a tail a relink » oneLine(ask) #1':
     {
       verdict: 'collapsed',
