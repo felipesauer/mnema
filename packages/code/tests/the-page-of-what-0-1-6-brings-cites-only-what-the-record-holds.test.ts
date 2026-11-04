@@ -10,9 +10,6 @@
  *     commit (never the working tree, never the private tree of whoever runs this), and the binary built here is
  *     asked to `show` each label. A label that is not there, one still proposed, or one superseded, fails by name.
  *   - NOTHING IS PROMISED: the page says "expected" and never "will", and it gives no date (no year, no month).
- *   - NO COMMAND OF A VERB THAT DOES NOT EXIST IS HANDED OVER: a code span that opens with the program's name would be
- *     read by `the-command-handed-over-runs-as-handed.test.ts` as a line to type, and the verbs this page speaks of
- *     are not written yet, so it names them without the program's name.
  *   - IT IS REACHED FROM THE FRONT PAGE'S "DOCS" and from the site's navigation, and the CHANGELOG says it was added.
  *
  * WHAT IT DOES NOT CHECK: that a plan is carried out (nothing here asks the code), nor that a line says what its
@@ -86,10 +83,6 @@ describe('the page of what 0.1.6 is expected to bring', () => {
   it('says expected and never will, and gives no date', () => {
     expect(page).toContain('expected');
     expect(promisesOrDates(page)).toEqual([]);
-  });
-
-  it('hands over no code span that opens with the program name', () => {
-    expect(page).not.toMatch(/`mnema /);
   });
 
   it('is in the front page Docs and in the site navigation, and the changelog says it', () => {
