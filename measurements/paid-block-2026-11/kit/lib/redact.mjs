@@ -27,7 +27,7 @@ const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export function makeRedactor({ token, paths = [], user = userInfo().username, host = hostname(), uid = userInfo().uid, env = {} } = {}) {
   const literals = [];
   for (const t of [].concat(token ?? [])) for (const f of forms(t)) literals.push([f, MARKERS.token]);
-  // Claude Code names a project folder after the path with every character that is not a letter or a digit turned into a dash (`-tmp-claude-1000--home-...`):
+  // Claude Code names a project folder after the path with every character that is not a letter or a digit turned into a dash (`-tmp-claude-<uid>--home-<user>-...`):
   // the dashed form of every machine path, and of the home folder, is replaced too.
   const dashed = (p) => p.replace(/[^A-Za-z0-9]/g, '-');
   for (const p of [...paths].sort((a, b) => b.length - a.length)) if (p.length > 1) literals.push([p, MARKERS.path], [dashed(p), MARKERS.path]);

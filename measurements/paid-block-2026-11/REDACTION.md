@@ -17,12 +17,15 @@ The sessions of the paid block ran on the person's own machine, and what they re
 | R10 | a made-up home folder in a test (`/home/[FIXTURE]`) | 2 |
 | R11 | a made-up token of a test fixture, which a scanner would flag (`sk-ant-...-[FAKE]`) | 4 |
 | R12 | the import line of the instructions file in a script, which a scanner reads as an address (the dot of the file name in brackets) | 1 |
+| R13 | the project folder name of an example in a code comment, `-tmp-claude-<number>--home-` (a user id and a user name), written with the placeholders `<uid>` and `<user>` | 1 |
 | R8 | the scratch folder of the session that ran the work (`[PATH]`) | 0 |
 | R9 | the em dash (U+2014), which the model's own text carries, replaced by a hyphen-minus (this repository bans the character in anything it publishes) | 590 |
 
 Nothing else was changed: no line was dropped, no value edited and no number touched. The made-up fixtures of the kit's tests (R10, R11, R12) and the names inside the kit's own scanner (R1 to R5) are the reason some code lines read differently from the originals; a copy is therefore not runnable byte for byte, and the SHA-256 of the original is what the manifest holds (`prereg.json`, `kit.files_sha256`). The recorded streams also hold opaque base64 signatures of the model's thinking blocks, which are kept as recorded.
 
 Left out of this folder, with the reason: compiled caches; the manifest of the kit commit (`freeze/prereg.json` of the kit is the earlier freeze; the final one is `../prereg.json` here); and the files in `kit/WITHHELD.md`.
+
+Rule R13 was added after the first publication of this table, when an independent scan found the user id in one code comment of `kit/lib/redact.mjs`; that one file's published copy changed (the copy hash before the change was `96a1269c374ecc444740603c0be30fcf2e0325c7b923c92f7735fca0e898c622`, the hash of the copy now published is in the table).
 
 ## SHA-256 of every original and of every published copy
 
@@ -56,7 +59,7 @@ Left out of this folder, with the reason: compiled caches; the manifest of the k
 | kit/lib/login.test.mjs | 08f658d3d9c5e526dc0d1c16f071943e9ad557764761d5bebd57332511356f05 | 095fe801d5bb4b9535b06711f18409d78060e4b8c8eed33a7e24f5f8c5921d97 |
 | kit/lib/quota.mjs | 90194b991690109fc552ecd92bdb887ae94a09e0cd739813e0493873fa5ef712 | 90194b991690109fc552ecd92bdb887ae94a09e0cd739813e0493873fa5ef712 |
 | kit/lib/quota.test.mjs | 771b07746f36665feab10872bedb4f262741f8ff52887d0cbd52dee665a8a6fa | 771b07746f36665feab10872bedb4f262741f8ff52887d0cbd52dee665a8a6fa |
-| kit/lib/redact.mjs | 0ae7553ff5d492f820791ac9147c6fddc184eb8965228142b731968556b6ab8e | 96a1269c374ecc444740603c0be30fcf2e0325c7b923c92f7735fca0e898c622 |
+| kit/lib/redact.mjs | 0ae7553ff5d492f820791ac9147c6fddc184eb8965228142b731968556b6ab8e | 92122c368eb277694dcf15ff1dd14a17d4edb0f2c5dcc8bf3ca03411d8769442 |
 | kit/lib/subscription.mjs | d9ddb127e52682f59bc240145c6727ed59ba4e2cb46705e840e2dddcea7b018a | d9ddb127e52682f59bc240145c6727ed59ba4e2cb46705e840e2dddcea7b018a |
 | kit/lib/subscription.test.mjs | b51689dee4b730852bde7c4221bcf36d3d26e0bc4ac03be3f04a8b8a4042d1f2 | b51689dee4b730852bde7c4221bcf36d3d26e0bc4ac03be3f04a8b8a4042d1f2 |
 | kit/lib/token.mjs | 7b745bb62c105a38ae2a6c2aa6ecdeb932366460f1bdff7c052d3cf5ec193f41 | 7b745bb62c105a38ae2a6c2aa6ecdeb932366460f1bdff7c052d3cf5ec193f41 |
