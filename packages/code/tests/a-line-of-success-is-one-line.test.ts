@@ -754,6 +754,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'three positionals, none validated: a task and two agent NAMES',
   },
+  'init.ts «Recorded {}: agents {} accept what you choose, accepted as yours.» #1': {
+    verdict: 'minted',
+    why: 'an `ADR-<n>` label minted by the write that just landed, and one of two words of this verb',
+  },
+  'init.ts «Recorded {} as the agent’s proposal: it waits for you (\\`mnema decision review\\`).» #1':
+    {
+      verdict: 'minted',
+      why: 'an `ADR-<n>` label minted by the write that just landed',
+    },
   'init.ts «Initialized mnema project at {}» #1': {
     verdict: 'collapsed',
     why: 'the project root: a directory name is what this class was first measured on',
@@ -978,10 +987,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the revision as typed, and a PATH git listed: a file name, chosen on disk',
   },
-  'which-host-files.ts «"{}" is not on the list: {}.» #1': {
-    verdict: 'collapsed',
-    why: 'the answer as the person typed it, trimmed: any text, so every value goes through the tag',
-  },
   'verify.ts «{}: {} no longer begins with the bytes it held there» #1': {
     verdict: 'collapsed',
     why: 'the revision as typed, and a path git listed',
@@ -1134,7 +1139,10 @@ describe('every line this wiring words is classified', () => {
     // 174 with the line that names the files a pull left in conflict.
     // 175 with the line `verify --since` prints of a tail a relink moved into the record (relinked).
     // 185 with the ten lines `record commit` prints.
-    expect(FOUND.sites.length).toBe(185);
+    // 175 without the line `init` printed of an answer to which host files that was not on the list: the
+    // question is asked with arrows now, and an answer cannot be off the list.
+    // 186 with the two lines `init` prints of the answer it recorded about agents accepting, without a screen.
+    expect(FOUND.sites.length).toBe(186);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1154,9 +1162,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(104);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(81);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(104);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(103);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(83);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(103);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1333,9 +1341,6 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
         '`the-record-reaches-git-through-a-pull-request.test.ts`',
     ]),
   ),
-  'which-host-files.ts «"{}" is not on the list: {}.» #1':
-    'needs a person at a terminal who types an answer off the list; driven with a break in it in ' +
-    '`the-init-asks-which-host-files-to-write.test.ts`',
   'accountability.ts «{} {} ({} with {})» #1':
     'the name is the default the MCP server writes for a client that announced none, the only writer ' +
     'of a run.unannounced; the tag is the fence for one written by hand',

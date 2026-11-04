@@ -27,6 +27,8 @@
  */
 
 import {
+  accessSync,
+  constants,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -34,10 +36,12 @@ import {
   readlinkSync,
   realpathSync,
   rmdirSync,
+  statSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
+import { HOST_ROWS } from '../init/hosts.js';
 import {
   beginMarker,
   CHOOSABLE_INSTRUCTIONS,
@@ -260,15 +264,112 @@ export const EVERY_HOST_FILE: readonly string[] = CHOOSABLE_INSTRUCTIONS.map(
  * The targets this project has: the offered files that were chosen (`choice`, or else the ones the files
  * on disk show chosen, or else every one when nothing shows it), and the person's own files
  * (`CLAUDE.md` and its kin) where the file or a link is there.
+ *
+ * THE PERSON'S OWN FILES ARE A CHOICE TOO, where somebody was asked (`yours`): the ones listed, and
+ * only where they exist. Left out, as it is for every caller that asked nobody, every one that exists
+ * is a target, which is what a founding with nobody to ask has always written. It was the only rule,
+ * and an `init` that listed a `CLAUDE.md` it was going to write into, and could not leave it out,
+ * was asking a question whose answer was partly decided before it was asked
+ * (`the-init-offers-the-files-of-yours-as-marks.test.ts`).
  */
-function targetsOf(project: string, choice?: readonly string[]): readonly InstructionsTarget[] {
+function targetsOf(
+  project: string,
+  choice?: readonly string[],
+  yours?: readonly string[],
+): readonly InstructionsTarget[] {
   const onDisk = chosenOnDisk(project);
   const chosen = choice ?? (onDisk.length > 0 ? onDisk : EVERY_HOST_FILE);
-  return INSTRUCTIONS_TARGETS.filter((target) =>
-    target.when === 'always'
-      ? chosen.includes(target.path)
-      : existsAsALink(join(project, target.path)),
+  // WHERE NOBODY WAS ASKED AND NOTHING WAS GIVEN, THE DISK IS THE CHOICE (ADR-177): a file of the person's with
+  // no block, in a project where another file holds one, was left out and counts as not chosen.
+  const out = choice === undefined && yours === undefined ? leftOut(project) : [];
+  return INSTRUCTIONS_TARGETS.filter((target) => {
+    if (target.when === 'always') return chosen.includes(target.path);
+    if (yours !== undefined && !yours.includes(target.path)) return false;
+    if (out.includes(target.path)) return false;
+    return existsAsALink(join(project, target.path));
+  });
+}
+
+/**
+ * The person's own files that are there with no block while another instructions file holds one: the ones
+ * `mnema init` was told to leave out (ADR-177). Read from the disk, so nothing is recorded; a project where no
+ * file holds a block has left nothing out. `the-instructions-left-out-are-said.test.ts` holds it.
+ */
+export function leftOut(project: string): readonly string[] {
+  const peeks = peekInstructions(project);
+  const holdsOne = peeks.some((peek) =>
+    ['current', 'outdated', 'edited'].includes(peek.found.state),
   );
+  if (!holdsOne) return [];
+  return peeks
+    .filter((peek) => !peek.own && peek.exists && peek.found.state === 'missing')
+    .filter(
+      (peek) => INSTRUCTIONS_TARGETS.find((target) => target.path === peek.path)?.when === 'exists',
+    )
+    .map((peek) => peek.path);
+}
+
+/** The one line that says which files were left out, and the command that adds the block if it is wanted. */
+export function leftOutLine(paths: readonly string[]): string {
+  const forms = [...new Set(paths.map((path) => writeAgainFor(path)))].join('` or `');
+  return `${paths.join(', ')} ${paths.length === 1 ? 'was' : 'were'} left out: no block there while another file holds it counts as not chosen; \`${forms}\` adds it.`;
+}
+
+/** What one file of the instructions is before a write: the facts a person is shown before anything is written. */
+export interface InstructionsPeek {
+  /** The file's path from the project's root, with `/`. */
+  readonly path: string;
+  /** Whether the file (or a link) is there. */
+  readonly exists: boolean;
+  /** Whether the file is wholly mnema's own, and not the person's. */
+  readonly own: boolean;
+  /** What it holds of the block: the state a write is decided by. */
+  readonly found: InstructionsState;
+  /** Why a write would be refused (read-only, a directory in its place, no permission on its folder), when it would. */
+  readonly unwritable?: string;
+}
+
+/**
+ * Why a write of `relative` under `project` would fail, or nothing where it would not: the file is read-only, a
+ * directory stands in its place, or the folder it would be made in cannot be written. Asked of the file system
+ * and not guessed from the mode, so the plan of `mnema init` never promises a write that then fails
+ * (`the-init-leaves-what-it-cannot-write.test.ts`).
+ */
+function unwritableBecause(project: string, relative: string): string | undefined {
+  const path = join(project, relative);
+  try {
+    if (statSync(path).isDirectory()) return 'a directory is in its place';
+    accessSync(path, constants.W_OK);
+    return undefined;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return 'read-only';
+  }
+  let dir = dirname(path);
+  while (!existsSync(dir) && dir !== dirname(dir)) dir = dirname(dir);
+  try {
+    accessSync(dir, constants.W_OK);
+    return undefined;
+  } catch {
+    return 'no permission on its folder';
+  }
+}
+
+/**
+ * What every file the product writes the instructions into holds now, read and not written. It is
+ * asked of the very reading a write is decided by (`inspect`), so what `mnema init` says before it
+ * writes is what the write then does.
+ */
+export function peekInstructions(project: string): readonly InstructionsPeek[] {
+  return INSTRUCTIONS_TARGETS.map((target) => {
+    const unwritable = unwritableBecause(project, target.path);
+    return {
+      path: target.path,
+      exists: existsAsALink(join(project, target.path)),
+      own: target.own !== undefined,
+      found: inspect(project, target).found,
+      ...(unwritable !== undefined ? { unwritable } : {}),
+    };
+  });
 }
 
 /** What each instructions file of the project at `project` holds of the block. Reads only. */
@@ -289,7 +390,17 @@ function withTheBlock(left: string, eol: Eol): string {
   return `${left}${eol}${inEol(INSTRUCTIONS_BLOCK, eol)}`;
 }
 
-const WRITE_AGAIN = 'mnema instructions';
+/**
+ * The command a refused or failed write names to try again: the NARROW form, `--hosts` with the host the file belongs
+ * to (`init/hosts.ts`, one table). Plain `mnema instructions` leaves a file of the person's that holds no block alone
+ * where another one does (ADR-177), and `--all-hosts` would write every other offered file too, undoing what the
+ * person left unchecked. A file no host claims falls back to plain `mnema instructions`.
+ */
+function writeAgainFor(path: string): string {
+  const row = HOST_ROWS.find((each) => [...each.files, ...each.yours].includes(path));
+  return row === undefined ? 'mnema instructions' : `mnema instructions --hosts ${row.id}`;
+}
+
 const REMOVE_AGAIN = 'mnema instructions --remove';
 
 type Done = (did: InstructionsChange, extra?: Partial<InstructionsFile>) => InstructionsFile;
@@ -312,7 +423,7 @@ function attempt(
 }
 
 function writeOne(project: string, target: InstructionsTarget): InstructionsFile {
-  return attempt(project, target, WRITE_AGAIN, (done, text, path) => {
+  return attempt(project, target, writeAgainFor(target.path), (done, text, path) => {
     if (stateOf(target, text).state === 'current') return done('unchanged');
     const whole =
       target.own !== undefined ? (ownText(target.own, INSTRUCTIONS_VERSION) as string) : undefined;
@@ -351,8 +462,9 @@ function writeOne(project: string, target: InstructionsTarget): InstructionsFile
 export function writeInstructions(
   project: string,
   choice?: readonly string[],
+  yours?: readonly string[],
 ): readonly InstructionsFile[] {
-  return targetsOf(project, choice).map((target) => writeOne(project, target));
+  return targetsOf(project, choice, yours).map((target) => writeOne(project, target));
 }
 
 /** Removes the directories `from` and above it, up to `project`, while each is empty. */
@@ -441,7 +553,7 @@ export function stateLine(file: InstructionsFile): string {
 
 /** The sentence a write or a removal says about one file. */
 export function changeLine(file: InstructionsFile): string {
-  const again = file.again ?? WRITE_AGAIN;
+  const again = file.again ?? writeAgainFor(file.path);
   switch (file.did) {
     case 'created':
       return `Created ${file.path}, with the mnema instructions.`;

@@ -143,6 +143,18 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
 };
 
 /**
+ * What a renderer puts BEFORE a part of this role when it is not the first on its line.
+ *
+ * Read, and not retyped, by the one caller that builds a row whose parts have to land on exact
+ * columns (`init/screens.ts`): it takes the separator out of the padding it hands the part before,
+ * so the text a reader sees is the text the row was composed as, in a renderer that paints and in one
+ * that does not.
+ */
+export function separatorBefore(role: Role): string {
+  return PRECEDED_BY[role];
+}
+
+/**
  * A renderer: one line as the bytes a stream receives (its depth, then its parts in
  * order, each after the separator its role takes, and each first handed to `paint`).
  *

@@ -143,13 +143,32 @@ $ mnema init --help
 | establish a mnema project in the current directory
 |
 | Options:
-|   --all-hosts  write the mnema instructions into AGENTS.md and the three files
-|                of mnema’s own, without asking which
-|   -h, --help   display help for command
+|   --hosts <list>      which hosts get the mnema instructions, without asking:
+|                       claude, cursor, vscode, codex (several, separated by
+|                       commas), or one of all, detected, none
+|   --all-hosts         write the mnema instructions into AGENTS.md and the three
+|                       files of mnema’s own, and ask nothing at all (the same as
+|                       --yes --hosts all)
+|   -y, --yes           ask nothing: the hosts found here (every host where none
+|                       was), no question about agents accepting, and no
+|                       confirmation
+|   --dry-run           print what would be done, and write nothing
+|   --accepts <answer>  answer whether an agent may accept what you choose, and
+|                       record the answer as a decision (yes or no); with --which,
+|                       the answer is the agent’s proposal and waits for you
+|   --which <agent>     the agent that executed this, when an agent (a script, a
+|                       CI step) is driving mnema: with --accepts, its answer is
+|                       recorded as that agent’s proposal, and waits for you. Omit
+|                       it when you are acting directly. A value that names no
+|                       agent (an unset variable) is refused, never credited to
+|                       you.
+|   -h, --help          display help for command
 |
-| At a terminal, a new project is first asked which of four files the mnema instructions go
-| into: AGENTS.md and the three of mnema’s own (Enter for all four, Ctrl-C to found nothing).
-| Without a terminal, or with --all-hosts, nothing is asked and all four are written.
+| At a terminal, a new project is shown what init found around the folder and asked which agent hosts
+| should read the mnema instructions (arrows and space to mark, Enter to confirm) and whether an agent
+| may accept what you choose, and then shown everything it will write, once, before it writes any of
+| it. Esc, Ctrl-C and Ctrl-D leave, and found nothing.
+| Without a terminal nothing is asked, and all four files are written unless --hosts says which.
 | `mnema instructions --help` lists the files.
 
 ### mnema decision --help
@@ -667,11 +686,15 @@ $ mnema instructions --help
 | its kin), check them, or remove them
 |
 | Options:
-|   --check      say what each file holds of the instructions, and write nothing
-|   --remove     take the instructions out of each file
-|   --all-hosts  write AGENTS.md and the three files of mnema’s own, asking
-|                nothing and whichever are there
-|   -h, --help   display help for command
+|   --check         say what each file holds of the instructions, and write
+|                   nothing
+|   --remove        take the instructions out of each file
+|   --hosts <list>  which hosts get the mnema instructions, without asking:
+|                   claude, cursor, vscode, codex (several, separated by commas),
+|                   or one of all, detected, none
+|   --all-hosts     write AGENTS.md and the three files of mnema’s own, asking
+|                   nothing and whichever are there
+|   -h, --help      display help for command
 |
 | The files:
 |   AGENTS.md, created where there is none; CLAUDE.md, .claude/CLAUDE.md and GEMINI.md where
@@ -688,8 +711,11 @@ $ mnema instructions --help
 |
 | The files on disk are the choice: where some of AGENTS.md and the three files of mnema’s own
 | hold the instructions, those are written, checked and removed, and the others are not
-| expected; where none does, a terminal is asked which of the four (Enter for all), and
-| without one all four are written. --all-hosts writes all four, whichever are there.
+| expected; where none does, a terminal is asked which hosts (arrows and space to mark, Enter
+| to confirm; a CLAUDE.md or GEMINI.md that exists is a mark of its own), and without one all
+| four are written. --all-hosts writes all four, whichever are there. --hosts writes only the hosts
+| it names (claude, cursor, vscode, codex; a person’s CLAUDE.md or GEMINI.md under the host that
+| is named), which is how to add the block to one file without writing the others.
 
 ### mnema switch --help
 $ mnema switch --help
