@@ -53,12 +53,16 @@ export {
   type Entry,
   type EntryLink,
   EntryParseError,
+  groupUnreadLines,
   isRead,
   parseEntry,
   readEntries,
   sealEntry,
   serializeEntry,
   type UnreadEntry,
+  type UnreadGroup,
+  type UnreadLine,
+  unreadLinesOf,
 } from './chain/entry.js';
 export { type ChainExtent, chainExtent } from './chain/freshness.js';
 export {

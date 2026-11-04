@@ -124,10 +124,12 @@ import {
   type ChainEntry,
   describeLinkBreak,
   type Entry,
+  groupUnreadLines,
   isRead,
   linkBreakAt,
   readEntries,
   sealEntry,
+  unreadLinesOf,
 } from './entry.js';
 import { contentRoot, entryHash } from './hash.js';
 import {
@@ -2637,29 +2639,21 @@ function tailsWord(count: number): string {
 
 /**
  * One {@link UnreadKindNote} per kind this binary does not know, in the order the kinds are first
- * met across `tails`. The second reader words the same sentence (`_say_unread_kinds` in
- * `mnemaverify/record.py`).
+ * met across `tails`. The lines come from {@link unreadLinesOf} and the grouping is
+ * {@link groupUnreadLines}, the ones every surface that names them takes. The second reader words
+ * the same sentence (`_say_unread_kinds` in `mnemaverify/record.py`).
  */
 function unreadKinds(
   tails: readonly string[],
   entriesByTail: ReadonlyMap<string, readonly ChainEntry[]>,
 ): UnreadKindNote[] {
-  const byKind = new Map<string, { lines: number; tails: string[] }>();
-  for (const tail of tails) {
-    for (const entry of entriesByTail.get(tail) ?? []) {
-      if (isRead(entry)) continue;
-      const seen = byKind.get(entry.event.kind) ?? { lines: 0, tails: [] };
-      seen.lines += 1;
-      if (!seen.tails.includes(tail)) seen.tails.push(tail);
-      byKind.set(entry.event.kind, seen);
-    }
-  }
-  return [...byKind].map(([eventKind, { lines, tails: where }]) => ({
+  const lines = tails.flatMap((tail) => unreadLinesOf(tail, entriesByTail.get(tail) ?? []));
+  return groupUnreadLines(lines).map(({ kind, lines: count, tails: where }) => ({
     kind: 'unread-kind',
-    eventKind,
-    lines,
+    eventKind: kind,
+    lines: count,
     tails: where,
-    detail: unreadKindSentence(eventKind, lines, where),
+    detail: unreadKindSentence(kind, count, where),
   }));
 }
 

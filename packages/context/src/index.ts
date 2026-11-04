@@ -94,6 +94,13 @@ export {
   resume,
 } from './context/focus.js';
 export {
+  type NewerKind,
+  type NewerLines,
+  newerLinesAbout,
+  newerLinesFrom,
+  newerLinesOf,
+} from './context/newer-lines.js';
+export {
   type NextAction,
   nextActions,
   nextActionsForTask,

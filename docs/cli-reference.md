@@ -485,7 +485,15 @@ carries it as the census note `unread-kind`. The same line with one byte of its 
 a broken hash, and signed by a key no identity enrolled it is refused, as any line. A version of a
 kind ahead of the one this binary reads is still refused by name, exit 1, and a binary before 0.1.5
 refuses an unknown kind the same way (`FORMAT.md` section 7.1). The other commands serve the record
-without the line, saying nothing of it yet.
+without the line, and say so when it exists: `mnema status` prints one line under its heading (and
+`status --json` carries `newerLines`: the count and the kinds, absent when there are none), `mnema brief`
+prints it on the error stream, never in the document, and the copy a hook hands a session counts it among
+what has to fit; `mnema show <id>` and the agent's `read_record` say it for the record a line names as its
+subject, since a reading of that record may be out of date by it; the agent's `bootstrap` carries it beside
+its payload; and `mnema doctor` lists it as a finding. The line counts the lines and names at most three
+kinds, says that this binary reads and applies none of them, and says what to do: update mnema, and not
+guess what they say. It cannot say which mnema wrote them, because nothing in the record says. It is absent
+for a record no newer mnema wrote into.
 
 **A record in which no tail holds anything is refused.** No `tails/` directory, no tail
 directory in it, or only tails that hold nothing: such a record asserts no fact, and `verify`

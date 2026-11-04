@@ -77,6 +77,7 @@
  */
 
 import type { RecordGroup } from '@mnema/chain';
+import type { NewerLines } from '@mnema/context';
 import {
   acceptedAgainstRetired,
   type DivergentMove,
@@ -248,6 +249,10 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'verified at the commit pointed at: a break there is the answer `unverified`, which the ' +
     'brief’s section says in words and prints no decision under, so a notice about this ' +
     'project’s chain has nothing to attach to',
+  'commands/doctor.ts':
+    'it reads the tails only to count the lines a newer mnema wrote that this one reads past, and ' +
+    'serves no record content: its one finding about the record is that count, in a checklist ' +
+    'about the machine, and whether the chain chains is `mnema verify`’s to say',
   'commands/decision.ts':
     'a decision is a write, answered by the write; the one thing it reads afterwards is the ' +
     'decisions the new one cites, to name the command that would replace each, and it serves no ' +
@@ -421,4 +426,59 @@ export function severalRecordsSentence(groups: readonly RecordGroup[]): string {
       `${oneLine(group.name.slice(0, 12))} (${group.tails.length === 1 ? 'tail' : 'tails'} ${group.tails.map(oneLine).join(', ')})`,
   );
   return `This directory holds tails of ${groups.length} records: ${each.join('; ')}. \`mnema verify\` refuses it (another-record), and nothing in it governs here until it holds one record.`;
+}
+
+/** How many kinds a sentence about lines a newer mnema wrote names before it counts the rest. */
+const KINDS_NAMED = 3;
+/**
+ * A kind's name is what a newer writer chose, of any length. Up to this many characters it is
+ * quoted whole; past it, its first and last {@link KIND_ENDS} characters are, with the cut marked
+ * between, so kinds that share a long prefix (`vendor.area.thing.v2.created`, `...updated`) still
+ * read differently.
+ */
+const KIND_QUOTED = 64;
+const KIND_ENDS = 30;
+
+function linesWord(count: number): string {
+  return `${count} ${count === 1 ? 'line' : 'lines'}`;
+}
+
+/** The kinds, each with its count, as one clause: the first few, then how many more. */
+function kindsClause(newer: NewerLines): string {
+  const named = newer.kinds.slice(0, KINDS_NAMED).map((one) => {
+    const kind = oneLine(one.kind);
+    const quoted =
+      kind.length > KIND_QUOTED
+        ? `${kind.slice(0, KIND_ENDS)}...${kind.slice(kind.length - KIND_ENDS)}`
+        : kind;
+    return `${one.lines} of ${JSON.stringify(quoted)}`;
+  });
+  const more = newer.kinds.length - named.length;
+  return more > 0 ? `${named.join(', ')}, and ${more} more kinds` : named.join(', ');
+}
+
+/**
+ * What every surface says when a newer mnema wrote lines this one reads past: how many, of which
+ * kinds, that this binary applies none of them, and the one thing to do (ADR-140). The lines were
+ * checked by `verify` and what they say was not read, so the sentence says no more of them than
+ * their kinds, and it tells nobody to act on them: updating mnema is what reads them, and a reader
+ * who cannot read a line does not guess what it says.
+ *
+ * ONE SENTENCE FOR THE OPENING READS (status, its `--json` and the brief carry the structure,
+ * `bootstrap` and the brief this text) and one for a single record ({@link newerLinesAboutSentence}),
+ * and both are held by `code/tests/a-record-says-where-a-newer-mnema-wrote.test.ts`.
+ */
+export function newerLinesSentence(newer: NewerLines): string {
+  return (
+    `A newer mnema wrote ${linesWord(newer.lines)} into this record (${kindsClause(newer)}) that this one ` +
+    'does not read or apply, so what it serves from this record may be out of date. Update mnema to read them, and do not guess what they say.'
+  );
+}
+
+/** {@link newerLinesSentence} for the lines whose subject is the one record a reading serves. */
+export function newerLinesAboutSentence(newer: NewerLines): string {
+  return (
+    `A newer mnema wrote ${linesWord(newer.lines)} about this record (${kindsClause(newer)}) that this one ` +
+    'does not read or apply, so what it shows of this record may be out of date. Update mnema to read them, and do not guess what they say.'
+  );
 }

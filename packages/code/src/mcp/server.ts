@@ -164,6 +164,7 @@ import {
   governingRulesMovedApart,
   governingRulesOfSeveralRecords,
   movedApartNotes,
+  newerLinesNotes,
   runAccountabilityTool,
   runAntipatternsTool,
   runBootstrap,
@@ -1563,6 +1564,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       return withRunState(active, context, [
         ...movedApartBlock(active),
         ...bootstrapOfSeveralRecords(active),
+        ...newerLinesNotes(active),
         whereThisSessionIs(active),
         ...switchedOffBlock(active),
       ]);
@@ -1874,7 +1876,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return served(active, result.value, movedApartBlock(active, id));
+      return served(active, result.value, [
+        ...movedApartBlock(active, id),
+        ...newerLinesNotes(active, id),
+      ]);
     },
   );
 

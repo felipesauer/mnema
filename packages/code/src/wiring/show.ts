@@ -24,7 +24,9 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
     .argument('<id>', 'the record id (from `mnema search`)')
     .option('--json', 'emit the faithful record as JSON')
     .action(async (id: string, opts: { json?: boolean }) => {
-      const { divergenceNotice, linkBreakNotice } = await import('./integrity.js');
+      const { divergenceNotice, linkBreakNotice, newerLinesNotice } = await import(
+        './integrity.js'
+      );
       const { runShow } = await import('../commands/show.js');
       const { recordReport } = await import('../presentation/record.js');
       const named = await idOrRefuse(wiring, id);
@@ -40,6 +42,8 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
       // The same stream and the same place, for a fact about the record the answer hides:
       // the projection below keeps the last move, and this says there was another.
       for (const line of divergenceNotice(result.divergent)) io.err(render(line));
+      // And the lines a newer mnema wrote about this record, which this one does not apply.
+      for (const line of newerLinesNotice(result.newerLines, 'one record')) io.err(render(line));
       if (opts.json === true) {
         io.out(JSON.stringify(result.record, null, 2));
         return;

@@ -58,8 +58,12 @@ import {
   listAppleDoubleKeyFiles,
   listPrivateKeyFingerprints,
   namesOfTails,
+  readTailEntries,
   recordNamedIn,
+  tailsReadAt,
+  unreadLinesOf,
 } from '@mnema/chain';
+import { newerLinesFrom } from '@mnema/context';
 import {
   AGENT_NAME,
   type AgentStanding,
@@ -82,6 +86,7 @@ import { readEventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js'
 import { HOOK_HOSTS, HOSTS } from '../host-names.js';
 import { declaredRange, floorRefusal } from '../node-floor.js';
 import { oneLine } from '../one-line.js';
+import { newerLinesSentence } from '../record-integrity.js';
 import {
   personsKeyInTheClear,
   THE_AGENT_KEY_SEPARATES_NOTHING,
@@ -127,6 +132,7 @@ export interface Finding {
     | 'instructions'
     | 'agent-key'
     | 'merge-driver'
+    | 'newer-mnema'
     | 'record-in-git';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
@@ -1286,6 +1292,33 @@ function twoRecords(from: string, to: string): string | undefined {
   );
 }
 
+/**
+ * A finding only when a newer mnema wrote lines into the record that this one reads past (ADR-140):
+ * which kinds, and what to do, in the words every surface says it in (`newerLinesSentence`). Silent
+ * when there are none, which is every record this version wrote, and silent when the record cannot
+ * be read at all: that is `mnema verify`'s to say, and a check that fails the checklist over what
+ * it is not for is no check.
+ */
+function newerMnemaFindings(ctx: DoctorContext): Finding[] {
+  try {
+    // The tails themselves, and not a projection cache: `doctor` writes nothing, and a cache opened
+    // over a record leaves its file under the record's own folder. The lines are the ones
+    // `unreadLinesOf` takes from an entry list, as the cache takes them for every other surface.
+    const upcasters = catalogUpcasters();
+    const lines = reachableTrees(resolveTrees(ctx.cwd, ctx.env)).flatMap(({ chainRoot }) =>
+      tailsReadAt({ root: chainRoot }).read.flatMap((tail) =>
+        unreadLinesOf(tail, readTailEntries({ root: chainRoot }, tail, upcasters)),
+      ),
+    );
+    const newer = newerLinesFrom(lines);
+    return newer === undefined
+      ? []
+      : [{ topic: 'newer-mnema', state: 'attention', line: newerLinesSentence(newer) }];
+  } catch {
+    return [];
+  }
+}
+
 /** The events of the record that no git commit holds yet: one finding, and none where nothing waits. */
 function recordInGitFindings(ctx: DoctorContext): Finding[] {
   const found = readEventsNotInGit({
@@ -1321,6 +1354,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
       ...instructionsFindings(ctx),
       ...stackFindings(ctx),
       ...agentKeyFindings(ctx),
+      ...newerMnemaFindings(ctx),
     ],
   };
 }

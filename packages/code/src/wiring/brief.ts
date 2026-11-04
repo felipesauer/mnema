@@ -219,7 +219,7 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
     .action(async (opts: { hook?: boolean; host?: string }) => {
       const host = hookHostOf(wiring, opts.hook === true, opts.host);
       if (host === false) return;
-      const { linkBreakNotice } = await import('./integrity.js');
+      const { linkBreakNotice, newerLinesNotice } = await import('./integrity.js');
       const { runBrief, stacksReaderFor } = await import('../commands/brief.js');
       const { briefDocument, briefWithin } = await import('../presentation/brief.js');
       const { hookCeilingOf, roomBeside } = await import('../presentation/within-a-hook.js');
@@ -239,8 +239,14 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
       // ON `err`, AND THEREFORE NOT IN THE DOCUMENT. `mnema brief > AGENTS.md` writes the
       // whole of a file and `mnema brief | diff - AGENTS.md` compares it; a notice on
       // stdout would be committed into that file and would outlive the repair. See
-      // `commands/brief.ts` for what that leaves and which door covers it.
-      const notice = linkBreakNotice(result.linkBreaks);
+      // `commands/brief.ts` for what that leaves and which door covers it. THE LINE ABOUT WHAT A
+      // NEWER MNEMA WROTE is in the same place for the same reason, and one more: it is a fact
+      // about THIS BINARY's reading, and a file committed with it would keep saying it after
+      // mnema was updated.
+      const notice = [
+        ...linkBreakNotice(result.linkBreaks),
+        ...newerLinesNotice(result.brief.newerLines, 'the record'),
+      ];
       for (const line of notice) io.err(render(line));
       // WITH THE FLAG, THE NOTICE ABOVE IS PART OF WHAT HAS TO FIT: the handler appends it to
       // the document and the host measures the two as one string.

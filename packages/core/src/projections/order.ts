@@ -74,7 +74,9 @@ import {
   type TailBoundary,
   tailsReadAt,
   type UnreadEvent,
+  type UnreadLine,
   type UpcasterRegistry,
+  unreadLinesOf,
 } from '@mnema/chain';
 
 /**
@@ -124,6 +126,8 @@ interface TailStream {
   readonly boundary?: TailBoundary;
   /** Where this tail stopped chaining, if it did: carried with the reading of it. */
   readonly linkBreak?: LinkBreak;
+  /** The lines of this tail of a kind this binary does not know: what the reading read past. */
+  readonly unread: readonly UnreadLine[];
 }
 
 /**
@@ -242,6 +246,12 @@ export interface ChainReplay {
    */
   readonly linkBreaks: readonly LinkBreak[];
   /**
+   * The lines of a kind this binary does not know, which the merge left out of `events` (ADR-113):
+   * what a newer mnema wrote and this reading read past. It rides on the replay for the reason the
+   * breaks do, and is empty for every record this version wrote.
+   */
+  readonly unread: readonly UnreadLine[];
+  /**
    * The records the directory holds tails of, where it holds two or more (`tailsReadAt`): then
    * nothing was read. Empty for a directory of one record. It rides on the replay so a surface
    * that says why nothing governs asks no second reading of the tails.
@@ -281,6 +291,7 @@ export function chainReplay(layout: ChainLayout, upcasters: UpcasterRegistry): C
     events,
     frontier: { tails, events: events.length, unresolved },
     linkBreaks,
+    unread: streams.flatMap((stream) => stream.unread),
     several: reading.several,
   };
 }
@@ -294,6 +305,8 @@ export type ChainArrivals =
       readonly events: readonly CatalogEvent[];
       /** How far the chain reaches now: the frontier a caller records after using these. */
       readonly frontier: ChainFrontier;
+      /** The arrivals of a kind this binary does not know, which `events` leaves out. */
+      readonly unread: readonly UnreadLine[];
       /** As {@link ChainReplay.several}: empty, since a directory of two records reads no tail. */
       readonly several: readonly RecordGroup[];
     }
@@ -524,6 +537,7 @@ export function chainArrivals(
       tail,
       lastSeq,
       lastHash,
+      unread: unreadLinesOf(tail, entries),
     });
   }
 
@@ -556,6 +570,7 @@ export function chainArrivals(
       events: frontier.events + events.length,
       unresolved: frontier.unresolved,
     },
+    unread: streams.flatMap((stream) => stream.unread),
     several: reading.several,
   };
 }
@@ -711,6 +726,7 @@ function streamsOf(
       lastHash: entries.length === 0 ? null : (entries[entries.length - 1] as ChainEntry).link.hash,
       ...(read.boundary !== undefined ? { boundary: read.boundary } : {}),
       ...(read.linkBreak !== undefined ? { linkBreak: read.linkBreak } : {}),
+      unread: unreadLinesOf(tail, entries),
     };
   });
 }

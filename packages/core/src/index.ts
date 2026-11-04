@@ -32,14 +32,18 @@ export type { RecordGroup } from '@mnema/chain';
 //
 // `isUnannounced` is here for the same reason as the labels: which facts carry an agent name no
 // MCP client announced (FORMAT.md section 6.9) is a reading the context package's opening
-// document asks of an acceptance, and that package may not name the chain.
+// document asks of an acceptance, and that package may not name the chain. `groupUnreadLines` is
+// the grouping `verify` names the lines of a kind it does not know by (ADR-113): the context
+// package asks it of what the caches carried, so the count a surface says is the one `verify` says.
 export {
   ADDRESS_RELATIONS,
   ASKS_FOR_A_PERSON_RELATION,
   DERIVED_FROM_RELATION,
   GOVERNS_RELATION,
+  groupUnreadLines,
   isUnannounced,
   REFUSES_A_WRITE_RELATION,
+  type UnreadLine,
 } from '@mnema/chain';
 export {
   type BridgeFormat,

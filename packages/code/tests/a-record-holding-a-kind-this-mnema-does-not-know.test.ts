@@ -13,46 +13,23 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import {
-  type CanonicalValue,
-  canonicalStringify,
-  catalogUpcasters,
-  checkpointHash,
-  entryHash,
-  listTails,
-  loadOrCreateKeyPair,
-  readTailCheckpoints,
-  readTailEntries,
-  serializeCheckpoint,
-  signCheckpoint,
-  writtenAsStored,
-} from '@mnema/chain';
+import { type CanonicalValue, catalogUpcasters, listTails, readTailEntries } from '@mnema/chain';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
+import { FUTURE, aNewerMnemaWrites as writeFuture } from './support/a-newer-mnema-writes.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 const SECOND_READER = fileURLToPath(
   new URL('../../chain/verifier/mnema_verify.py', import.meta.url),
 );
-
-/** The kind no version declares (`x.from-the-future`, reserved by `FORMAT.md` section 7.1). */
-const FUTURE = 'x.from-the-future';
 
 let sandbox: string;
 let home: string;
@@ -80,58 +57,9 @@ function mnema(...argv: string[]) {
 
 const record = () => join(repo, '.mnema');
 
-/**
- * Appends one line of `FUTURE` to the record's one tail, as a newer mnema on this machine writes
- * it: chained after the tail's last line, covered by a checkpoint its key signs under the scheme
- * and record name the tail's last checkpoint carries, and its head kept where the writer keeps it.
- */
-function aNewerMnemaWrites(payload: Readonly<Record<string, CanonicalValue>>): string {
-  const [tail, ...others] = listTails({ root: record() });
-  if (tail === undefined || others.length > 0) throw new Error('setup: not one tail');
-  const entries = readTailEntries({ root: record() }, tail, catalogUpcasters());
-  const last = entries.at(-1);
-  if (last === undefined) throw new Error('setup: an empty tail');
-  const keyPair = loadOrCreateKeyPair({ root: join(home, '.mnema', 'identity') });
-  const event = {
-    v: 1,
-    kind: FUTURE,
-    at: new Date(Date.parse(last.event.at) + 1000).toISOString(),
-    who: last.event.who,
-    signerFp: keyPair.fingerprint,
-    subject: 'something-new',
-    payload,
-  };
-  const seq = last.link.seq + 1;
-  const hash = entryHash({ event: writtenAsStored(event), tail, seq, prev: last.link.hash });
-  const segment = join(record(), 'tails', tail, '000001.jsonl');
-  appendFileSync(
-    segment,
-    `${canonicalStringify({ event, link: { tail, seq, prev: last.link.hash, hash } })}\n`,
-  );
-  const checkpoints = readTailCheckpoints({ root: record() }, tail);
-  const previous = checkpoints.at(-1);
-  if (previous === undefined || previous.toSeq !== last.link.seq) {
-    throw new Error('setup: the tail is not covered to its end');
-  }
-  const signed = signCheckpoint({
-    tail,
-    fromSeq: seq,
-    events: [writtenAsStored(event)],
-    prev: checkpointHash(previous),
-    keyPair,
-    ...(previous.record !== undefined ? { record: previous.record } : {}),
-  });
-  appendFileSync(
-    join(record(), 'tails', tail, 'checkpoints.jsonl'),
-    `${serializeCheckpoint(signed)}\n`,
-  );
-  // The note of the last entry this installation wrote (`kept-head.ts`): a newer writer keeps it
-  // as this one does, so the next write here continues this tail rather than starting another.
-  const head = join(record(), 'locks', `${tail}.head`);
-  if (!existsSync(head)) throw new Error(`setup: no kept head at ${head}`);
-  writeFileSync(head, `${seq} ${hash}\n`);
-  return tail;
-}
+/** One line of `FUTURE` appended as a newer mnema writes it (`support/a-newer-mnema-writes.ts`). */
+const aNewerMnemaWrites = (payload: Readonly<Record<string, CanonicalValue>>): string =>
+  writeFuture({ record: record(), home }, payload);
 
 function secondReading(): { verdict: string; findings: { section: string; what: string }[] } {
   const ran = spawnSync('python3', ['-I', SECOND_READER, '--json', 'record', record()], {
@@ -228,9 +156,12 @@ describe('a record a newer mnema added a kind to', { timeout: 120_000 }, () => {
 
     const status = mnema('status');
     expect(status.status, status.err).toBe(0);
-    // The line is an event, and where no commit holds it yet the screen counts it under its own
-    // heading (`events-not-in-git.ts`); the reading above that heading is what must not move.
-    const reading = (screen: string) => screen.split('\nNot in git yet:')[0];
+    // The line that names what a newer mnema wrote is the one thing status adds above the
+    // heading the line is counted under (`a-record-says-where-a-newer-mnema-wrote.test.ts`), and
+    // the line is an event no commit holds yet, counted under its own heading
+    // (`events-not-in-git.ts`); the reading beneath is what must not move.
+    const reading = (screen: string) =>
+      (screen.split('\nNot in git yet:')[0] as string).replace(/^A newer mnema wrote .*\n/m, '');
     expect(reading(status.out)).toBe(reading(before.status));
     const show = mnema('show', id as string);
     expect(show.status, show.err).toBe(0);
@@ -262,7 +193,17 @@ describe('a record a newer mnema added a kind to', { timeout: 120_000 }, () => {
     const before = await theTools(id);
     expect(JSON.stringify(before.search)).toContain('Use Postgres');
     aNewerMnemaWrites({ title: 'Use MongoDB', supersedes: id });
-    expect(await theTools(id)).toEqual(before);
+    const after = await theTools(id);
+    expect(after.search).toEqual(before.search);
+    expect(after.governing_rules).toEqual(before.governing_rules);
+    // The payload of bootstrap and read_record is the one it was; what a newer mnema wrote is
+    // named beside it, in blocks of their own (`a-record-says-where-a-newer-mnema-wrote.test.ts`).
+    const without = (blocks: string[] | undefined) => {
+      const { newerLines: _named, ...payload } = JSON.parse((blocks as string[])[0] as string);
+      return payload;
+    };
+    expect(without(after.bootstrap)).toEqual(without(before.bootstrap));
+    expect(after.read_record?.[0]).toBe(before.read_record?.[0]);
   });
 
   it('arrives in a commit that verify --since holds to the base, and passes', () => {

@@ -68,6 +68,7 @@ import type { AwaitingJudgement, Bootstrap, ReportedRun, TaskStanding } from '@m
 import { type EventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js';
 import { oneLine } from '../one-line.js';
 import type { DecisionsOutside, UnimportedBase } from '../outside-the-record.js';
+import { newerLinesSentence } from '../record-integrity.js';
 import { fact } from './detail.js';
 import { asId, column, itemLine } from './items.js';
 import type { Render } from './render.js';
@@ -114,6 +115,7 @@ export function statusReport(
     ...(asThisMachine
       ? [render(fact('The identity this machine writes as in this project.'))]
       : []),
+    ...newerLinesLine(render, status),
     ...sessionLines(render, status, runsByTree),
     '',
     ...workLines(render, status),
@@ -128,6 +130,17 @@ export function statusReport(
     ...neverImportedLines(neverImported),
     ...(notInGit === undefined ? [] : ['', 'Not in git yet:', `  ${saysEventsNotInGit(notInGit)}`]),
   ];
+}
+
+/**
+ * The one line saying a newer mnema wrote lines into the record that this one reads past
+ * (ADR-140, `newerLinesSentence`), under the heading and before the lists it qualifies. Nothing
+ * at all when the derivation carries none, which is every record this version wrote.
+ */
+function newerLinesLine(render: Render, status: Bootstrap): string[] {
+  return status.newerLines === undefined
+    ? []
+    : [render(fact(newerLinesSentence(status.newerLines), 0))];
 }
 
 /**

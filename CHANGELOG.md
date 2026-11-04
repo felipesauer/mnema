@@ -12,6 +12,15 @@ with its own changelog.
 
 ### Added
 
+- **Every surface says where a newer mnema wrote (ADR-140).** A line of a kind this mnema does not know is read past and
+  left out of every reading, which until now no surface said: a line that moved a decision was invisible. `mnema status`
+  prints one line when any exists (and `status --json` carries `newerLines`, the count and the kinds), `mnema brief`
+  prints it on the error stream and the copy a hook hands a session counts it among what has to fit, `mnema show <id>`
+  and `read_record` say it for the record a line names as its subject, `bootstrap` carries it beside its payload, and
+  `mnema doctor` lists it. It counts the lines, names at most three kinds, says this binary applies none of them, and
+  says to update mnema and not to guess what they say; it does not name the mnema that wrote them, because nothing in the
+  record says which. Nothing is said, and no output changes, over a record no newer mnema wrote into. The projection
+  cache keeps the lines it read past beside its frontier, so saying it costs no second reading.
 - **`mnema init` asks on a screen, and shows everything it will write before it writes any of it (ADR-174, ADR-173).**
   At a terminal it prints what it found around the folder (the repository and its branch, the files and folders of the
   agent hosts in use, the decision files the record has never read, a declared formatter), then asks which agent hosts
