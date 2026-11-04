@@ -13,6 +13,7 @@
 
 import { neutralized } from '../one-line.js';
 import { PAINTING } from '../presentation/styled.js';
+import type { Leaving } from '../repl/leaving.js';
 
 /** Every sequence the painted renderer writes, as one pattern: built from its constants. */
 const OUR_PAINT = new RegExp(
@@ -48,6 +49,20 @@ export interface CliIo {
    * answer treats absence as a refusal.
    */
   readonly ask?: (question: string) => Promise<string>;
+  /**
+   * Where a question can be DRAWN: the keys come from `input` and the page goes to `output`, both a
+   * terminal. Absent where there is none (the in-process harness, a pipe, a redirected output), and a
+   * verb that has a question for a person then asks nothing, which is the same rule `aPersonIsHere` is.
+   * It is the bare name's own condition (`program.ts`, `Entry.interactive`): the arrows come from standard
+   * input and the page goes to standard output, so an invocation with either one redirected is one
+   * whose caller cannot see what they are answering.
+   */
+  readonly terminal?: {
+    readonly input: NodeJS.ReadStream;
+    readonly output: NodeJS.WriteStream;
+    /** Every way this process can stop, so the terminal is given back in all of them: absent is the process's own. */
+    readonly leaving?: Leaving;
+  };
 }
 
 /**
@@ -104,6 +119,9 @@ export const processIo: CliIo = {
     process.exitCode = code ?? 1;
   },
   aPersonIsHere: process.stdin.isTTY === true && process.stderr.isTTY === true,
+  ...(process.stdin.isTTY === true && process.stdout.isTTY === true
+    ? { terminal: { input: process.stdin, output: process.stdout } }
+    : {}),
   ask: async (question) => {
     const { createInterface } = await import('node:readline/promises');
     // The menu the bare name draws (`choice/asked.ts`) leaves standard input unreferenced when it

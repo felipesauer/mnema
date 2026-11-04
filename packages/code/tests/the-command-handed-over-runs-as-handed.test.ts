@@ -767,6 +767,11 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * `mnema doctor --fix vscode`; the same words, in the host table that generates it, are the 1 line of
  * `host-names.ts`.
  *
+ * THE TRAIL `init` DRAWS names the verbs it hands over in its own files (`init/`): the commands of the host
+ * plugins and of the decision import, the review and the switch, each looked at; and the question of host
+ * files by number, whose help named `mnema instructions --help` in `wiring/instructions.ts`, is asked with
+ * arrows now.
+ *
  * THE INSTALL PAGE'S LINE ROW WAS 3: its install blocks are the npm install and its
  * home-prefix variant, and the tarball URLs it gave before are gone.
  */
@@ -776,7 +781,7 @@ export const HANDED_OVER: Readonly<
   '.claude/rules/mnema-instructions.md': { line: 2 },
   '.github/instructions/mnema-instructions.instructions.md': { line: 2 },
   'AGENTS.md': { line: 2, name: 1 },
-  'CHANGELOG.md': { line: 84, name: 176, flag: 4 },
+  'CHANGELOG.md': { line: 86, name: 181, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
@@ -784,7 +789,7 @@ export const HANDED_OVER: Readonly<
   'docs/convergence.md': { line: 4, name: 4 },
   'docs/evidence.md': { line: 1, flag: 1 },
   'docs/features.md': { line: 10, name: 16 },
-  'docs/first-record.md': { line: 7, name: 7 },
+  'docs/first-record.md': { line: 9, name: 8 },
   'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 2 },
   'docs/hosts.md': { line: 2, name: 4 },
@@ -806,7 +811,7 @@ export const HANDED_OVER: Readonly<
   'packages/chain/src/chain/relink-plan.ts': { name: 4 },
   'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 4 },
-  'docs/cli-reference.md': { line: 132, name: 169, flag: 2 },
+  'docs/cli-reference.md': { line: 136, name: 172, flag: 2 },
   'packages/code/README.md': { line: 8, name: 14 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 5, name: 1 },
@@ -817,7 +822,7 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/commands/doctor-merge-driver.ts': { line: 2, name: 2 },
   'packages/code/src/commands/doctor.ts': { line: 8, name: 13 },
   'packages/code/src/commands/handback.ts': { line: 1 },
-  'packages/code/src/commands/instructions.ts': { line: 1, name: 5 },
+  'packages/code/src/commands/instructions.ts': { line: 2, name: 5 },
   'packages/code/src/commands/key-enroll.ts': { line: 3 },
   'packages/code/src/commands/key-request.ts': { line: 2 },
   'packages/code/src/commands/record-commit.ts': { name: 1 },
@@ -834,6 +839,10 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/host-names.ts': { line: 1 },
   'packages/code/src/host-rules-file.ts': { line: 1 },
   'packages/code/src/inherited-record.ts': { name: 1 },
+  'packages/code/src/init/accepts.ts': { line: 4, name: 5 },
+  'packages/code/src/init/run.ts': { name: 1 },
+  'packages/code/src/init/screens.ts': { name: 2 },
+  'packages/code/src/init/summary.ts': { line: 4, name: 5 },
   'packages/code/src/instructions-block.ts': { line: 9 },
   'packages/code/src/mcp/context.ts': { name: 1, flag: 2 },
   'packages/code/src/mcp/instructions.ts': { name: 1 },
@@ -867,8 +876,8 @@ export const HANDED_OVER: Readonly<
   'packages/code/src/wiring/doctor.ts': { name: 1 },
   'packages/code/src/wiring/handback.ts': { line: 1 },
   'packages/code/src/wiring/inherit.ts': { line: 1, name: 3 },
-  'packages/code/src/wiring/init.ts': { line: 5, name: 5 },
-  'packages/code/src/wiring/instructions.ts': { line: 1, name: 1 },
+  'packages/code/src/wiring/init.ts': { line: 4, name: 6 },
+  'packages/code/src/wiring/instructions.ts': { name: 1 },
   'packages/code/src/wiring/key.ts': { line: 17, name: 15 },
   'packages/code/src/wiring/mcp.ts': { line: 2 },
   'packages/code/src/wiring/options.ts': { name: 1 },

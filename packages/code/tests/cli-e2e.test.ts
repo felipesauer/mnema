@@ -2947,6 +2947,9 @@ describe('mnema CLI: a --which that names nobody', () => {
         'skill create',
         'task create',
         'task handoff',
+        // `init` declares it for one thing: whose `--accepts` it is, an agent's proposal and not the person's
+        // decision (`init/accepts.ts`); the founding itself is the person's and never reads it.
+        'init',
         'memory',
         'observe',
         'link',

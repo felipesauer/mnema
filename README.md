@@ -95,7 +95,8 @@ claude plugin install mnema@mnema
 
 Every other host is in [Hosts](docs/hosts.md). `mnema init` also writes the mnema
 instructions into `AGENTS.md` and the other files agent hosts read, naming each; at a
-terminal it first asks which of them, and `mnema instructions --remove` takes them out. The first record, step by step, is
+terminal it first asks which hosts, and shows everything it will write before it writes it, and
+`mnema instructions --remove` takes them out. The first record, step by step, is
 [Your first record](docs/first-record.md).
 
 ## How it works
