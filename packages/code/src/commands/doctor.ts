@@ -83,6 +83,7 @@ import {
 import { keysOnThisMachine, openTreeForWriting, relinkTails } from '@mnema/core/write';
 import { agentKeyFromEnvironment } from '../env.js';
 import { readEventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js';
+import { readForkKeptAside, saysForkKeptAside } from '../fork-kept-aside.js';
 import { HOOK_HOSTS, HOSTS } from '../host-names.js';
 import { declaredRange, floorRefusal } from '../node-floor.js';
 import { oneLine } from '../one-line.js';
@@ -133,7 +134,8 @@ export interface Finding {
     | 'agent-key'
     | 'merge-driver'
     | 'newer-mnema'
-    | 'record-in-git';
+    | 'record-in-git'
+    | 'fork-kept-aside';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
   readonly line: string;
@@ -1331,6 +1333,14 @@ function recordInGitFindings(ctx: DoctorContext): Finding[] {
     : [{ topic: 'record-in-git', state: 'attention', line: saysEventsNotInGit(found) }];
 }
 
+/** What a pull left aside of the tails, in the sentence `mnema status` says too (`fork-kept-aside.ts`). */
+function forkKeptAsideFindings(ctx: DoctorContext): Finding[] {
+  const found = readForkKeptAside({ cwd: ctx.cwd, env: ctx.env, processEnv: ctx.processEnv });
+  return found === undefined
+    ? []
+    : [{ topic: 'fork-kept-aside', state: 'attention', line: saysForkKeptAside(found) }];
+}
+
 /** Reads the machine and answers, in the order the questions are asked above. */
 export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Finding[] } {
   const plugins = installedPlugins(ctx);
@@ -1349,6 +1359,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
         state: 'attention' as const,
         line,
       })),
+      ...forkKeptAsideFindings(ctx),
       ...recordInGitFindings(ctx),
       ...keyMetadataFindings(ctx),
       ...instructionsFindings(ctx),

@@ -47,7 +47,10 @@ import {
   hostsPage,
   leftLine,
   PLAN_OPTIONS,
+  PULL_OPTIONS,
   planPage,
+  pullAnswered,
+  pullPage,
   theFirstScreen,
 } from './screens.js';
 
@@ -259,6 +262,18 @@ async function askWhoMayAccept(asking: Asking, opening: Accepts): Promise<Asked<
   return asked.kind === 'left' ? asked : { kind: 'answered', answer: asked.answer as Accepts };
 }
 
+/** The question of a plain `git pull`: `yes` or `no`, or that the person left. */
+async function askAboutThePull(asking: Asking, opening: Accepts): Promise<Asked<Accepts>> {
+  const asked = await putTheQuestion<string, string>(asking, {
+    initial: opening,
+    page: pullPage,
+    on: (picked, stroke) => onTheOptions(PULL_OPTIONS, picked, stroke),
+    answered: (answer, width) => pullAnswered(answer as Accepts, width),
+    left: [leftLine()],
+  });
+  return asked.kind === 'left' ? asked : { kind: 'answered', answer: asked.answer as Accepts };
+}
+
 /** The one confirmation: `found`, `change` or `leave`. */
 async function askToGoAhead(asking: Asking): Promise<Asked<string>> {
   return await putTheQuestion(asking, {
@@ -288,6 +303,13 @@ export interface InitAsk {
   readonly acceptsGiven?: Accepts;
   /** The agent `--which` declared: its answer is its proposal. */
   readonly agent?: string;
+  /** The answer `--git-pull` already gave: that question is not asked. */
+  readonly pullGiven?: Accepts;
+  /**
+   * What the question about a plain `git pull` opens on, or nothing where it is not asked at all (outside a
+   * git repository): yes in a repository with a remote, no in one without.
+   */
+  readonly pullDefault?: Accepts;
   /** `--yes`: nothing is asked, and the plan is printed and not confirmed. */
   readonly yes: boolean;
 }
@@ -307,7 +329,11 @@ export async function askInit(asking: Asking, request: InitAsk): Promise<Outcome
   const hostsAreAsked = request.hostsGiven === undefined && !request.yes;
   const acceptsIsAsked = request.acceptsGiven === undefined && !request.yes;
   let marks = request.hostsGiven ?? defaultMarks(request.around);
+  const pullIsAsked =
+    request.pullDefault !== undefined && request.pullGiven === undefined && !request.yes;
   let accepts: Accepts | undefined = request.acceptsGiven;
+  // Where it is offered and nobody answered it, the default is what the question opens on: `--yes` takes it, as the plan says.
+  let pull: Accepts | undefined = request.pullGiven ?? request.pullDefault;
   for (;;) {
     if (hostsAreAsked) {
       const picked = await askTheHosts(asking, request.around, marks);
@@ -319,9 +345,15 @@ export async function askInit(asking: Asking, request: InitAsk): Promise<Outcome
       if (picked.kind === 'left') return { kind: 'left' };
       accepts = picked.answer;
     }
+    if (pullIsAsked) {
+      const picked = await askAboutThePull(asking, pull ?? request.pullDefault ?? 'yes');
+      if (picked.kind === 'left') return { kind: 'left' };
+      pull = picked.answer;
+    }
     const answers: Answers = {
       marks,
       ...(accepts !== undefined ? { accepts } : {}),
+      ...(pull !== undefined ? { pull } : {}),
       ...(request.agent !== undefined ? { agent: request.agent } : {}),
     };
     say(asking, planPage(planOf(request.cwd, request.around, answers, request.machine), width));
@@ -332,7 +364,7 @@ export async function askInit(asking: Asking, request: InitAsk): Promise<Outcome
       const confirmed = await askToGoAhead(asking);
       if (confirmed.kind === 'left' || confirmed.answer === 'leave') return { kind: 'left' };
       if (confirmed.answer === 'found') return { kind: 'go', answers };
-      if (hostsAreAsked || acceptsIsAsked) break;
+      if (hostsAreAsked || acceptsIsAsked || pullIsAsked) break;
     }
   }
 }

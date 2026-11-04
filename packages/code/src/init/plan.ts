@@ -30,6 +30,11 @@ export interface Answers {
   readonly accepts?: Accepts;
   /** The agent that gave the answer through `--which`: the answer is then its proposal, and not the person's. */
   readonly agent?: string;
+  /**
+   * Whether the clone's own git configuration is set so a plain `git pull` carries the record
+   * (`doctor-merge-driver.ts`): `yes` writes the three settings, anything else writes none.
+   */
+  readonly pull?: Accepts;
 }
 
 /** What the plan says about this machine. */
@@ -41,7 +46,7 @@ export interface Machine {
 }
 
 /** The verbs a row can have. */
-export type Verb = 'create' | 'add to' | 'replace' | 'keep' | 'leave' | 'record' | 'use';
+export type Verb = 'create' | 'add to' | 'replace' | 'keep' | 'leave' | 'record' | 'use' | 'set';
 
 /** One thing the founding will do. */
 export interface PlanRow {
@@ -57,7 +62,7 @@ export interface PlanRow {
 }
 
 /** The order the verbs are listed in: what is made first, then what is added to, then what is left. */
-const ORDER: readonly Verb[] = ['create', 'add to', 'replace', 'keep', 'leave', 'record', 'use'];
+const ORDER: readonly Verb[] = ['create', 'add to', 'replace', 'keep', 'leave', 'record', 'use', 'set'];
 
 /** What a file of the instructions gets, said as a row. */
 function rowForAFile(peek: InstructionsPeek): PlanRow {
@@ -139,6 +144,36 @@ function decisionRows(answers: Answers): readonly PlanRow[] {
 }
 
 /**
+ * The three settings of the clone's own git configuration, as rows, when the answer is yes. They go in the
+ * machine's section: `.git/config` is not committed, so it is on this clone alone, and the autoStash line says
+ * what it reaches beyond the record.
+ */
+function pullRows(answers: Answers): readonly PlanRow[] {
+  if (answers.pull !== 'yes') return [];
+  return [
+    {
+      section: 'machine',
+      verb: 'set',
+      what: 'merge.mnema-tail.driver',
+      note: 'in .git/config: mnema, by its full path here',
+    },
+    {
+      section: 'machine',
+      verb: 'set',
+      what: 'merge.autoStash',
+      note: 'in .git/config: true',
+    },
+    {
+      section: 'machine',
+      verb: 'set',
+      what: 'rebase.autoStash',
+      note: 'in .git/config: true',
+      more: ['(a pull then stashes any file with uncommitted changes, not only the record)'],
+    },
+  ];
+}
+
+/**
  * The rows for the files of the instructions the marks ask for: what is made first, then what is added to,
  * then what is left. Read by the plan, and by the line that stays under the hosts once they are answered, so
  * the two cannot count different files.
@@ -204,6 +239,6 @@ export function planOf(
         what: machine.where,
         note: 'the key this machine already has signs this record',
       };
-  rows.push(identity);
+  rows.push(identity, ...pullRows(answers));
   return rows;
 }

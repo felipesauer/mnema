@@ -51,13 +51,17 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         'it, keeps the file’s comments, and refuses a file it cannot edit safely.',
         '`--fix private-tree` writes: it moves each tail, as it is, into the repository’s private',
         'tree, and leaves where it was anything whose name there holds other bytes.',
-        '`--fix merge-driver` writes: two settings in this repository’s .git/config, the only git',
-        'configuration mnema writes, and leaves a setting of the same name it did not write.',
+        '`--fix merge-driver` writes: three settings in this repository’s .git/config, the only git',
+        'configuration mnema writes, always together (the tails’ merge driver, merge.autoStash and',
+        'rebase.autoStash, which apply to every file of the clone), so that a plain `git pull` carries',
+        'events of the record not yet committed; it leaves a setting of the same name it did not',
+        'write, and then writes none.',
       ].join('\n'),
     )
     .action(async (options: { fix?: string; dryRun?: boolean }) => {
       const { fixPrivateTree, fixVscode, runDoctor } = await import('../commands/doctor.js');
       const { fixMergeDriver } = await import('../commands/doctor-merge-driver.js');
+      const { driverCommand } = await import('../commands/record-pull.js');
       const ctx = {
         ...here(),
         env: discoveryEnv(),
@@ -86,7 +90,10 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
             ? fixVscode(ctx, { dryRun })
             : options.fix === 'private-tree'
               ? fixPrivateTree(ctx, { dryRun })
-              : fixMergeDriver(ctx, { dryRun });
+              : fixMergeDriver(ctx, {
+                  dryRun,
+                  driver: driverCommand(process.execPath, process.argv[1] ?? ''),
+                });
         for (const line of fixed.lines) io.out(line);
         if (fixed.refused) io.fail();
         return;

@@ -66,6 +66,7 @@
 
 import type { AwaitingJudgement, Bootstrap, ReportedRun, TaskStanding } from '@mnema/context';
 import { type EventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js';
+import { type ForkKeptAside, saysForkKeptAside } from '../fork-kept-aside.js';
 import { oneLine } from '../one-line.js';
 import type { DecisionsOutside, UnimportedBase } from '../outside-the-record.js';
 import { newerLinesSentence } from '../record-integrity.js';
@@ -109,6 +110,7 @@ export function statusReport(
   runsByTree: readonly { readonly tree: string; readonly run: ReportedRun }[],
   asThisMachine = false,
   notInGit?: EventsNotInGit,
+  forkKeptAside?: ForkKeptAside,
 ): string[] {
   return [
     `${actor}, where things stand.`,
@@ -129,6 +131,9 @@ export function statusReport(
     ...outsideLines(outside),
     ...neverImportedLines(neverImported),
     ...(notInGit === undefined ? [] : ['', 'Not in git yet:', `  ${saysEventsNotInGit(notInGit)}`]),
+    ...(forkKeptAside === undefined
+      ? []
+      : ['', 'Kept aside by a pull:', `  ${saysForkKeptAside(forkKeptAside)}`]),
   ];
 }
 

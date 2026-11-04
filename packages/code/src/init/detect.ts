@@ -45,6 +45,8 @@ export interface Around {
     readonly atRoot: boolean;
     /** The branch the head names, when it names one. */
     readonly branch?: string;
+    /** Whether the repository's own configuration names a remote (the file is read; no process runs). */
+    readonly remote: boolean;
   };
   /** What was found around the folder, in the order the screen says it. */
   readonly found: readonly Found[];
@@ -60,19 +62,48 @@ export interface Around {
   readonly formatter: boolean;
 }
 
+/** The folder a repository keeps its own files in, or nothing where its `.git` cannot be read. */
+function repositoryFolder(root: string): string | undefined {
+  try {
+    const dot = join(root, '.git');
+    if (!statSync(dot).isFile()) return dot;
+    const pointer = /^gitdir: (.+)$/m.exec(readFileSync(dot, 'utf-8'))?.[1];
+    if (pointer === undefined) return undefined;
+    return isAbsolute(pointer) ? pointer : resolve(root, pointer.trim());
+  } catch {
+    return undefined;
+  }
+}
+
 /** The branch a repository's head names, or nothing: a detached head, a head that cannot be read. */
 function branchAt(root: string): string | undefined {
   try {
-    let gitDir = join(root, '.git');
-    if (statSync(gitDir).isFile()) {
-      const pointer = /^gitdir: (.+)$/m.exec(readFileSync(gitDir, 'utf-8'))?.[1];
-      if (pointer === undefined) return undefined;
-      gitDir = isAbsolute(pointer) ? pointer : resolve(root, pointer.trim());
-    }
-    const head = readFileSync(join(gitDir, 'HEAD'), 'utf-8').trim();
+    const folder = repositoryFolder(root);
+    if (folder === undefined) return undefined;
+    const head = readFileSync(join(folder, 'HEAD'), 'utf-8').trim();
     return /^ref: refs\/heads\/(.+)$/.exec(head)?.[1];
   } catch {
     return undefined;
+  }
+}
+
+/**
+ * Whether the repository's own configuration names a remote. A linked worktree keeps its settings in the
+ * common folder, which its `commondir` file points at; a configuration that cannot be read says no.
+ */
+function hasARemote(root: string): boolean {
+  try {
+    const folder = repositoryFolder(root);
+    if (folder === undefined) return false;
+    let common = folder;
+    try {
+      common = resolve(folder, readFileSync(join(folder, 'commondir'), 'utf-8').trim());
+    } catch {
+      // not a linked worktree: its own folder holds the configuration
+    }
+    return /^\[remote "/m.test(readFileSync(join(common, 'config'), 'utf-8'));
+  } catch {
+    return false;
   }
 }
 
@@ -157,6 +188,7 @@ export function detectAround(cwd: string): Around {
             root: gitRoot,
             atRoot: gitRoot === cwd,
             ...(branch !== undefined ? { branch } : {}),
+            remote: hasARemote(gitRoot),
           },
         }
       : {}),

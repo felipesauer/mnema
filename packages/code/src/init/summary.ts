@@ -19,6 +19,7 @@
  */
 
 import { basename, dirname } from 'node:path';
+import type { MergeDriverFixed } from '../commands/doctor-merge-driver.js';
 import type { InitResult } from '../commands/init.js';
 import { changeLine, type InstructionsFile } from '../commands/instructions.js';
 import { HOSTS } from '../host-names.js';
@@ -41,6 +42,8 @@ export interface Founded {
   readonly answers: Answers;
   /** What recording the answer about agents accepting came to, when it was recorded. */
   readonly recorded?: WhoMayAcceptRecorded;
+  /** What setting up a plain `git pull` came to, when it was asked for (`doctor-merge-driver.ts`). */
+  readonly pulled?: MergeDriverFixed;
   /** A path as a person is told it: the home as `~`. */
   readonly shown: (path: string) => string;
 }
@@ -81,7 +84,7 @@ const DID_ORDER: readonly (InstructionsFile['did'] | undefined)[] = [
 
 /** The list of what the founding did, once it has done it. */
 export function foundingPage(founded: Founded, width: number): readonly Line[] {
-  const { result, recorded } = founded;
+  const { result, recorded, pulled } = founded;
   const around = result.around;
   const rows: Line[] = [
     heading(DONE, 'Founding'),
@@ -114,6 +117,18 @@ export function foundingPage(founded: Founded, width: number): readonly Line[] {
       ),
     );
     if (recorded.switchedOff) rows.push(trail(plain('  done   the switch agent-accepts, off')));
+  }
+  if (pulled !== undefined) {
+    rows.push(
+      ...paragraph(
+        trail,
+        pulled.refused
+          ? `git’s configuration was left as it is: ${pulled.lines.join(' ')}`
+          : 'the merge driver, merge.autoStash and rebase.autoStash are in .git/config: a plain `git pull` carries the record',
+        width,
+        pulled.refused ? '  ' : '  done   ',
+      ),
+    );
   }
   if (files.some((file) => ['created', 'added', 'replaced'].includes(file.did as string))) {
     rows.push(
