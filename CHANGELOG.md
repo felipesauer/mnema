@@ -10,6 +10,8 @@ with its own changelog.
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-11-04
+
 ### Added
 
 - **A plain `git pull` carries the record's uncommitted events, in a clone set up for it (ADR-181, which amends
@@ -177,6 +179,25 @@ with its own changelog.
   that arrived is still `another-record`, and `verify` refuses the directory. The Action's comment gets a section with
   those lines, on a pass too, beside the one for a directory of two records (`docs/cli-reference.md`,
   `packages/action/README.md`; `packages/code/tests/a-relinked-tail-passes-since.test.ts`).
+
+- **The plugin has an icon for Anthropic's directory and the stores**: a 512 by 512 PNG,
+  `.claude-plugin/icon.png` in `plugin/` and in `plugin-server-only/`, named by `icon` in each manifest (a field the
+  directory reads and Claude Code ignores). It is the mark the VS Code extension already has (the M of the console's
+  wordmark, on the banner's page, in the accent), drawn by the same `icon.mjs` at 512 pixels instead of 128 with
+  `node:zlib` alone, so no raster tool and no binary is needed, here or on a runner. `node
+  .github/the-plugin-icon/make.mjs` writes both files after `pnpm build`, and `--check` says which is not what the
+  drawing makes (`the-plugin-icon-is-the-mark-it-names.test.ts`). The 128 pixel icon is the bytes it was.
+
+- **The release lists the server in the official MCP Registry, as `io.github.felipesauer/mnema`.** `@mnema/code` now
+  carries `mcpName` (the field the registry reads in the version already on npm, which is why 0.1.4 cannot be listed), and
+  `server.json` at the root is made by `pnpm release:prepare` from the one version number (schema 2025-12-11; description
+  and title inside its 100 characters; the package `@mnema/code`, stdio, started as `mnema mcp`).
+  `the-registry-entry-is-what-the-package-says` holds that the file is what the generator returns for the root version,
+  that its name is the package's `mcpName`, and the shape of the new `publish-registry` job of `release.yml`: it runs
+  after the tag and the release (so after npm), asks for the `npm` environment (a person approves it), holds
+  `id-token: write` and no secret, installs and builds nothing, and runs a registry publisher pinned by tag and by
+  SHA-256 with `login github-oidc`. It is the third job of the workflow that can ask for the OIDC token. Nothing has run
+  against the registry: the first listing is the first release that carries `mcpName`.
 
 ### Changed
 
@@ -347,7 +368,7 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   by a branch where a 0.1.5 writer named the record after it, does the same. Merged, either leaves a directory of two names
   that both readers refuse (`another-record`); `verify --since`, and so the Action, refuses the branch before the merge
   (FORMAT.md section 6.10, `docs/cli-reference.md`). After a merge, the way back is the relink ADR-134 settled (the owner
-  of each tail named the other way binds it to the record with their own signature), which is still to come.
+  of each tail named the other way binds it to the record with their own signature), which this release writes.
 
 - **A decision one machine accepted and another rejected or superseded, out of the same state, is in force in no reading, and each
   reading says why.** Two clones that had not seen each other, once their tails meet, leave two signed moves out of `proposed`,
@@ -362,16 +383,6 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   level and the exit are what they were. The fold is unchanged, so `show` still prints the state of the last move and a record
   reads as it did before; what changes is what "in force" means for these decisions. Two accepts, or two retirements, are a
   divergence and are still in or out of force by their state (FORMAT.md section 6.7; `docs/convergence.md`).
-
-### Added
-
-- **The plugin has an icon for Anthropic's directory and the stores**: a 512 by 512 PNG,
-  `.claude-plugin/icon.png` in `plugin/` and in `plugin-server-only/`, named by `icon` in each manifest (a field the
-  directory reads and Claude Code ignores). It is the mark the VS Code extension already has (the M of the console's
-  wordmark, on the banner's page, in the accent), drawn by the same `icon.mjs` at 512 pixels instead of 128 with
-  `node:zlib` alone, so no raster tool and no binary is needed, here or on a runner. `node
-  .github/the-plugin-icon/make.mjs` writes both files after `pnpm build`, and `--check` says which is not what the
-  drawing makes (`the-plugin-icon-is-the-mark-it-names.test.ts`). The 128 pixel icon is the bytes it was.
 
 ### Fixed
 
@@ -405,21 +416,6 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   follow the same entry`, and `a fork in the sequence` under section 3. No byte of the format changes (`FORMAT.md` section 3).
 - `mnema verify --against-sigstore` and the signature line of a stack being added no longer print `1970-01-01` as the time a Rekor v2 entry was logged. A v2 entry carries no `integratedTime`, so the time now comes from the timestamp authority the Sigstore library verified, and says so; a bundle with no verified time says "time not carried", never a date made up. In `verify --json`, `sigstore.findings[].reading.loggedAt` can now be absent (it always came, even as 1970) and `loggedAtBy` (`"rekor"` or `"timestamp-authority"`) is new; the text line reads `logged in Rekor, timestamped by the timestamp authority at <time>` for a timestamp authority's time.
 - **`minimatch` is lifted to 11 in the release job's tool folder, closing GHSA-g3hv-75wg-m249 there as well.** The workspace lockfile already resolved it to 11.0.3; `.github/release-tools` still held 10.2.6, reached through `@vscode/vsce`. An override to `^11.0.1` moves it to 11.0.4 (ADR-153); the extension packs the same fourteen files with the tool folder's own `vsce`.
-
-### Added
-
-- **The release lists the server in the official MCP Registry, as `io.github.felipesauer/mnema`.** `@mnema/code` now
-  carries `mcpName` (the field the registry reads in the version already on npm, which is why 0.1.4 cannot be listed), and
-  `server.json` at the root is made by `pnpm release:prepare` from the one version number (schema 2025-12-11; description
-  and title inside its 100 characters; the package `@mnema/code`, stdio, started as `mnema mcp`).
-  `the-registry-entry-is-what-the-package-says` holds that the file is what the generator returns for the root version,
-  that its name is the package's `mcpName`, and the shape of the new `publish-registry` job of `release.yml`: it runs
-  after the tag and the release (so after npm), asks for the `npm` environment (a person approves it), holds
-  `id-token: write` and no secret, installs and builds nothing, and runs a registry publisher pinned by tag and by
-  SHA-256 with `login github-oidc`. It is the third job of the workflow that can ask for the OIDC token. Nothing has run
-  against the registry: the first listing is the first release that carries `mcpName`.
-
-### Fixed
 
 - **`mnema stack index` and the extension's Add from Index work in a folder that is not a mnema checkout (ADR-169).** In
   0.1.4 they read a `stack-index/` folder relative to the working folder, which only this repository has, and refused
@@ -2735,6 +2731,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   committed tree (`packages/chain/FORMAT.md` §4.1).
 
 [Unreleased]: https://github.com/felipesauer/mnema/commits/main
+[0.1.5]: https://github.com/felipesauer/mnema/releases/tag/v0.1.5
 [0.1.4]: https://github.com/felipesauer/mnema/releases/tag/v0.1.4
 [0.1.3]: https://github.com/felipesauer/mnema/releases/tag/v0.1.3
 [0.1.2]: https://github.com/felipesauer/mnema/releases/tag/v0.1.2

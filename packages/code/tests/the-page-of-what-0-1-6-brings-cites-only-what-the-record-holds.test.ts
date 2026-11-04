@@ -97,9 +97,12 @@ describe('the page of what 0.1.6 is expected to bring', () => {
       'the Docs list of the front page, which the site navigation is read from',
     ).toContain(`(${PAGE})`);
     const changelog = readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf-8');
+    // The entry sits under Unreleased until the release that carries the page cuts that section,
+    // and under the newest released section after it: either says it.
+    const firstReleased = changelog.indexOf('\n## [0.');
     const unreleased = changelog.slice(
       changelog.indexOf('## [Unreleased]'),
-      changelog.indexOf('\n## [0.'),
+      changelog.indexOf('\n## [0.', firstReleased + 1),
     );
     expect(unreleased).toContain('docs/what-0-1-6-is-expected-to-bring.md');
   });

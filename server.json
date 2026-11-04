@@ -8,13 +8,13 @@
     "source": "github",
     "subfolder": "packages/code"
   },
-  "version": "0.1.4",
+  "version": "0.1.5",
   "websiteUrl": "https://felipesauer.github.io/mnema/",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@mnema/code",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "transport": {
         "type": "stdio"
       },

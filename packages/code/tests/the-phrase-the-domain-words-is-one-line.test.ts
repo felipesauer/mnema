@@ -66,6 +66,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { run } from '../src/program.js';
 import { sourceFiles } from './support/reading-source.js';
 
+/** The release that began naming records: the production text says it, as the past. */
+const NAMING_RELEASE_VERSION = '0.1.5';
+
 /** The two packages that word a sentence before the surface ever sees it. */
 const LAYERS: readonly { readonly name: string; readonly src: string }[] = [
   { name: '@mnema/chain', src: fileURLToPath(new URL('../../chain/src', import.meta.url)) },
@@ -2798,7 +2801,7 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} agent name(s) no MCP client announced in a handshake (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
-  '@mnema/chain chain/verify.ts «{} tail(s) that name no record, written before 0.1.5 (see census: informational, not a break)» count':
+  [`@mnema/chain chain/verify.ts «{} tail(s) that name no record, written before ${NAMING_RELEASE_VERSION} (see census: informational, not a break)» count`]:
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} tail(s) relinked into this record by their own key (see census: informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',

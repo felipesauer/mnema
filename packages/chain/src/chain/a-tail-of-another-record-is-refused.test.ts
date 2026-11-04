@@ -23,6 +23,9 @@ import { catalogUpcasters } from '../events/registry.js';
 import { verify } from './chain.js';
 import { genesisTail, recordName } from './record-name.js';
 
+/** The release that began naming records: the production text says it, as the past. */
+const NAMING_RELEASE_VERSION = '0.1.5';
+
 const VERIFIER_DIR = fileURLToPath(new URL('../../verifier/', import.meta.url));
 const VERIFIER = join(VERIFIER_DIR, 'mnema_verify.py');
 const MUTATE = join(VERIFIER_DIR, 'mutate.py');
@@ -139,7 +142,7 @@ describe('a tail that names no record beside tails that name one', () => {
     const notes = here.census.filter((note) => note.kind === 'unnamed-tail');
     expect(notes).toHaveLength(1);
     expect(here.summary).toContain(
-      '1 tail(s) that name no record, written before 0.1.5 (see census: informational, not a break)',
+      `1 tail(s) that name no record, written before ${NAMING_RELEASE_VERSION} (see census: informational, not a break)`,
     );
     const there = secondSaid(record);
     expect(there.verdict).toBe('VERIFIED');
@@ -150,8 +153,7 @@ describe('a tail that names no record beside tails that name one', () => {
 });
 
 /** What both readers say of a record none of whose tails names one, word for word. */
-const UNNAMED_SAID =
-  "record: unnamed (written before 0.1.5): a tail of another record could not be told from this record's own";
+const UNNAMED_SAID = `record: unnamed (written before ${NAMING_RELEASE_VERSION}): a tail of another record could not be told from this record's own`;
 
 describe('a record written before records were named, to both readers', () => {
   it.each(['witnessed-record', 'witnessed-then-written', 'written-by-an-earlier-binary'])(

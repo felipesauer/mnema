@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.5
+
+- The status bar tooltip says when the command line is on another version than the extension. It
+  compares the version the command line reports with the extension's own version (major, minor and patch).
+  If the command line is older, the tooltip says to update it, with a link to how, or to point
+  `mnema.command` at a newer one; if it is newer, it says to update the extension. When the versions
+  agree it says nothing. It is a line of the tooltip, never a notification, and it asks no network.
+- Add from Index works in any folder, not only in a checkout of mnema. The setting
+  `mnema.stackIndex` now defaults to empty, which means the index that comes with the installed
+  command line (0.1.5 or later); set it to a folder to read that folder's `index.json` instead.
+- A decision the record says is in divergence, for example an accept and a retirement of it that
+  crossed, is no longer shown as governing a file, though its state reads `accepted`.
+- The extension's homepage in the stores is now the project's site.
+- It still needs the `mnema` command line (`@mnema/code`) where the editor can start it, and it
+  adds no verifier of its own: what it shows is what `mnema` printed.
+
 ## 0.1.4
 
 - A side bar of its own. The two views, Awaiting Judgment and Stacks, left the Explorer for an
