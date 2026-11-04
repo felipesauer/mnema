@@ -92,7 +92,9 @@ const SOURCES: readonly string[] = execFileSync(
     (where) =>
       /\.(ts|mts|cts|js|mjs|cjs)$/.test(where) &&
       // The kit that ran the free block's measurement is published as it ran, and its own tests run under `node --test` in the kit, never here.
-      !where.startsWith('measurements/free-block-2026-10/kit/'),
+      !where.startsWith('measurements/free-block-2026-10/kit/') &&
+      // The kit of the paid block is published the same way, and its tests run under `node --test` in the kit.
+      !where.startsWith('measurements/paid-block-2026-11/kit/'),
   );
 
 /** One call to `mkdtempSync`, with whatever follows it on its line. */

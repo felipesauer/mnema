@@ -1,0 +1,25 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "479e7947ea403b516159b24953a7bef76522b28e58209b33ce454c2e562b2087"
+  },
+  "at": "2026-11-03T23:49:33.581Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "not_seen_in_stream",
+    "evidence": [
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export[ \\t]+/, '');",
+      "changes: packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+/', '', trim($raw));",
+      "message 56: ADR-1 requires a behavior change to go into both packages in the same PR, so I changed both",
+      "message 54: php exit 0 and JS 'ℹ pass 8 ℹ fail 0'"
+    ],
+    "notes": "The rule's exact title text ('A behavior change in one package is made in the other in the same pull request') does not appear in the visible transcript; the final message cites 'ADR-1', so the agent saw it somewhere, probably in the CLAUDE.md/AGENTS.md or in a cut-off tool output (messages 8 and 10-35 were truncated or not shown). Labeled not_seen_in_stream because the rule text is not visible in the given stream."
+  },
+  "usd_eq": 0.0356345
+}

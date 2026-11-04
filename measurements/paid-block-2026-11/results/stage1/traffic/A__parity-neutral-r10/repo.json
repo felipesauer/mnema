@@ -1,0 +1,81 @@
+{
+  "start": "358605ea169a5c44208ce312f2d3925a3c60d603",
+  "changed": [
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, or `export KEY=value` lines (the key is `KEY` either way). Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim().replace(/^export[ \\t]+/, '');"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim();"
+      ],
+      "sha256_end": "ae11b2854cef49f64ea34acfd3deb3a38c2667b1160d2c0163e5d47da7bf5f60"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads an export line under the key without the prefix', () => {",
+        "  const env = new EnvAccessor('export KEY=value\\nPLAIN=other\\n');",
+        "  assert.deepEqual(env.all(), { KEY: 'value', PLAIN: 'other' });",
+        "  assert.equal(env.has('export KEY'), false);",
+        "});",
+        "",
+        "test('treats an export line like the same line without the prefix', () => {",
+        "  const env = new EnvAccessor('export A=\"one two\"\\nexport   B=three\\nexport\\tC=four\\n  export D=five\\nexport E=\\n');",
+        "  assert.deepEqual(env.all(), { A: 'one two', B: 'three', C: 'four', D: 'five', E: '' });",
+        "});",
+        "",
+        "test('skips an export line that has no key or no assignment', () => {",
+        "  const env = new EnvAccessor('export\\nexport KEY\\nexport =value\\n# export COMMENTED=1\\n');",
+        "  assert.deepEqual(env.all(), {});",
+        "});",
+        "",
+        "test('keeps a key that only starts with export', () => {",
+        "  const env = new EnvAccessor('exportKEY=one\\nexport=two\\n');",
+        "  assert.deepEqual(env.all(), { exportKEY: 'one', export: 'two' });",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "04b6790322d19f89db409a1d72833cb3a936b1360f1806f37de08d8f623fa887"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, or `export KEY=value` lines (the key is `KEY` either way). Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $line = preg_replace('/^export[ \\t]+/', '', $line) ?? $line;"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */"
+      ],
+      "sha256_end": "639181e374438ecf736489feb2f939bb5dca8b4bc87fa899e1a078148015cfe0"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export KEY=value\\nPLAIN=other\\n\");",
+        "check('reads an export line under the key without the prefix', $env->all() === ['KEY' => 'value', 'PLAIN' => 'other'] && !$env->has('export KEY'));",
+        "",
+        "$env = new EnvAccessor(\"export A=\\\"one two\\\"\\nexport   B=three\\nexport\\tC=four\\n  export D=five\\nexport E=\\n\");",
+        "check('treats an export line like the same line without the prefix', $env->all() === ['A' => 'one two', 'B' => 'three', 'C' => 'four', 'D' => 'five', 'E' => '']);",
+        "",
+        "$env = new EnvAccessor(\"export\\nexport KEY\\nexport =value\\n# export COMMENTED=1\\n\");",
+        "check('skips an export line that has no key or no assignment', $env->all() === []);",
+        "",
+        "$env = new EnvAccessor(\"exportKEY=one\\nexport=two\\n\");",
+        "check('keeps a key that only starts with export', $env->all() === ['exportKEY' => 'one', 'export' => 'two']);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "83649cdca846c5122de4225cbb064736836e882cd6b0878c628922dfa3e1f43e"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

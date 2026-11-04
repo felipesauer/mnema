@@ -1,0 +1,85 @@
+{
+  "start": "fae24d7cdc7037ad3e622d9e4219d4addfcfe166",
+  "changed": [
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      let line = raw.trim();",
+        "      if (line.startsWith('export ')) line = line.slice('export '.length).trimStart();"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim();"
+      ],
+      "sha256_end": "17e44ab7b9540b4b4fa211ace5869e9d732d5a57e46d9cd722b94d43e80ad925"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads `export KEY=value` as KEY=value', () => {",
+        "  const env = new EnvAccessor('export KEY=value\\n');",
+        "  assert.deepEqual(env.all(), { KEY: 'value' });",
+        "  assert.equal(env.get('KEY'), 'value');",
+        "  assert.equal(env.has('export KEY'), false);",
+        "});",
+        "",
+        "test('export lines mix with plain lines, extra spaces and quotes', () => {",
+        "  const env = new EnvAccessor('HOST=localhost\\nexport   PORT=3000\\n  export NAME=\"two words\"\\n');",
+        "  assert.deepEqual(env.all(), { HOST: 'localhost', PORT: '3000', NAME: 'two words' });",
+        "});",
+        "",
+        "test('export is only a prefix when followed by a space', () => {",
+        "  const env = new EnvAccessor('export=1\\nexport_dir=/tmp\\nexported=yes\\n');",
+        "  assert.deepEqual(env.all(), { export: '1', export_dir: '/tmp', exported: 'yes' });",
+        "});",
+        "",
+        "test('skips a commented export line and an export line without a key', () => {",
+        "  const env = new EnvAccessor('# export A=1\\nexport B\\nexport =2\\nexport C=3\\n');",
+        "  assert.deepEqual(env.all(), { C: '3' });",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "653a608c84e7501d4257e1cc05782653e9b9120c8d12b6ca4c3b7ff6c36cb053"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            if (str_starts_with($line, 'export ')) {",
+        "                $line = ltrim(substr($line, strlen('export ')));",
+        "            }"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */"
+      ],
+      "sha256_end": "0f66de4aa2dc66dd282d81fd3006cb8f78f65dfe190c3d5493896c7efafb7f3b"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export KEY=value\\n\");",
+        "check('reads `export KEY=value` as KEY=value', $env->all() === ['KEY' => 'value'] && $env->get('KEY') === 'value' && !$env->has('export KEY'));",
+        "",
+        "$env = new EnvAccessor(\"HOST=localhost\\nexport   PORT=3000\\n  export NAME=\\\"two words\\\"\\n\");",
+        "check('export lines mix with plain lines, extra spaces and quotes', $env->all() === ['HOST' => 'localhost', 'PORT' => '3000', 'NAME' => 'two words']);",
+        "",
+        "$env = new EnvAccessor(\"export=1\\nexport_dir=/tmp\\nexported=yes\\n\");",
+        "check('export is only a prefix when followed by a space', $env->all() === ['export' => '1', 'export_dir' => '/tmp', 'exported' => 'yes']);",
+        "",
+        "$env = new EnvAccessor(\"# export A=1\\nexport B\\nexport =2\\nexport C=3\\n\");",
+        "check('skips a commented export line and an export line without a key', $env->all() === ['C' => '3']);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "61faedbbd230bae3f9a3639b55cc251c4c6b2f6bb98639967f4bb486eae552a3"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

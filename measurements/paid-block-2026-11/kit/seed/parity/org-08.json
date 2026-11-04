@@ -1,0 +1,13 @@
+{
+  "id": "org-08",
+  "source": "organization",
+  "state": "accepted",
+  "title": "A behavior change in one package is made in the other in the same pull request",
+  "why": "The JS and the PHP package expose the same API and a user may move between them, so a behavior change in `packages/js/src` or\n`packages/php/src` is made in both in the same pull request, with the shared vectors updated where the repository has them (`parity-vectors.json` in [PROJECT]), and the parity tests pass in both. A parity\ntest is never edited to make it pass: the divergent behavior is fixed.\n\nApplies to: [PROJECT] family\nChecked by: `npm run test:parity` and `composer test:parity`, both in CI.",
+  "alternatives": "Port in a later pull request: rejected, the gap is the defect. Let the packages diverge: rejected, it is the one promise the pair makes.",
+  "addresses": [
+    "packages/js/src",
+    "packages/php/src",
+    "parity-vectors.json"
+  ]
+}

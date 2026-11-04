@@ -80,7 +80,12 @@ import {
   type Scope,
   withAgentKey,
 } from '@mnema/core';
-import { keysOnThisMachine, openTreeForWriting, relinkTails } from '@mnema/core/write';
+import {
+  keysOnThisMachine,
+  openTreeForWriting,
+  relinkTails,
+  wouldRelinkTails,
+} from '@mnema/core/write';
 import { agentKeyFromEnvironment } from '../env.js';
 import { readEventsNotInGit, saysEventsNotInGit } from '../events-not-in-git.js';
 import { readForkKeptAside, saysForkKeptAside } from '../fork-kept-aside.js';
@@ -813,11 +818,27 @@ function leftBehind(ctx: DoctorContext): PrivateTreesLeftBehind | undefined {
 function privateTreeFindings(ctx: DoctorContext): Finding[] {
   const found = leftBehind(ctx);
   if (found === undefined) return [];
-  return found.left.map((left) => ({
-    topic: 'private-tree' as const,
-    state: 'attention' as const,
-    line: `${oneLine(left.tree)} holds ${left.tails} tail(s) of private notes from before this project's private tree moved to ${oneLine(found.to)}: nothing reads them where they are, and removing that worktree deletes them; run ${FIX_PRIVATE} to move them.`,
-  }));
+  return found.left.map((left) => {
+    const held = `${oneLine(left.tree)} holds ${left.tails} tail(s) of private notes from before this project's private tree moved to ${oneLine(found.to)}`;
+    const apart = twoRecords(left.tree, found.to);
+    if (apart === undefined) {
+      return {
+        topic: 'private-tree' as const,
+        state: 'attention' as const,
+        line: `${held}: nothing reads them where they are, and removing that worktree deletes them; run ${FIX_PRIVATE} to move them.`,
+      };
+    }
+    // Two records: the fix relinks, then moves, when the same question it asks says it can
+    // (`askRelinkLeftBehind`); else it refuses, and the finding says why and what to do instead.
+    const asked = askRelinkLeftBehind(ctx, left.tree, found.to);
+    return {
+      topic: 'private-tree' as const,
+      state: 'attention' as const,
+      line: asked.ok
+        ? `${held}, ${apart}; nothing reads them where they are, and removing that worktree deletes them; run ${FIX_PRIVATE} to relink ${asked.tails.length} of them into record ${asked.into.name.slice(0, 12)}..., each by its own key, and move them.`
+        : `${held}, ${apart}; nothing reads them where they are, and removing that worktree deletes them, and the fix would refuse them: ${asked.why}.`,
+    };
+  });
 }
 
 /**
@@ -1201,17 +1222,26 @@ export function fixPrivateTree(
 const RELINKED_BY_THE_DOCTOR =
   "The project's private tree from before its repository joins the private tree the repository keeps (mnema doctor --fix private-tree).";
 
+/** What the relink of an old tree into the one that stays comes to, asked and not yet written. */
+type RelinkAsked =
+  | {
+      readonly ok: true;
+      readonly into: { readonly name: string };
+      readonly tails: ReadonlyArray<readonly [string, string | undefined]>;
+      readonly keys: ReturnType<typeof keysOnThisMachine>;
+      readonly trees: ReturnType<typeof resolveTrees>;
+    }
+  | { readonly ok: false; readonly why: string };
+
 /**
- * Relinks every tail of the old tree at `from` that names another record than the tree at `to`
- * into that one, each by its own key, written in `to` (`relinkTails`); with `dryRun`, says what
- * it would relink and writes nothing. What it said, or why it relinks none of them.
+ * Asks whether the tails of the old tree at `from` that name another record than the tree at `to`
+ * can be relinked into it: the tree that stays names one record, this machine holds the key each
+ * tail's id names, and the readers would count every relink (`wouldRelinkTails`, the rule
+ * `relinkTails` asks again before it writes). The fix asks it before it relinks, and the finding
+ * asks it before it advises the fix: one question, so the advice cannot promise what the fix
+ * refuses (`code/tests/the-private-tree-moves-out-of-the-worktree.test.ts`).
  */
-function relinkLeftBehind(
-  ctx: DoctorContext,
-  from: string,
-  to: string,
-  dryRun: boolean,
-): { readonly ok: true; readonly said: string } | { readonly ok: false; readonly why: string } {
+function askRelinkLeftBehind(ctx: DoctorContext, from: string, to: string): RelinkAsked {
   const into = recordNamedIn([to]);
   if (into.state !== 'named') {
     return { ok: false, why: 'the tree that stays names no one record to relink them into' };
@@ -1227,6 +1257,33 @@ function relinkLeftBehind(
       why: `only the key that signed a tail may relink it, and this machine holds no key for ${missing.map(oneLine).join(', ')} (${[...new Set(missing.map(tailFingerprintOf))].join(', ')}): those tails are relinked on the machine that holds their key, or cut (\`mnema tail prune\`)`,
     };
   }
+  const would = wouldRelinkTails(
+    { layouts: [{ root: to }, { root: from }], upcasters: catalogUpcasters(), keys },
+    {
+      tails: tails.map(([tail]) => tail),
+      into: into.name,
+      reason: RELINKED_BY_THE_DOCTOR,
+    },
+  );
+  if (!would.ok) return { ok: false, why: `${would.code}: ${oneLine(would.message)}` };
+  return { ok: true, into, tails, keys, trees };
+}
+
+/**
+ * Relinks every tail of the old tree at `from` that names another record than the tree at `to`
+ * into that one, each by its own key, written in `to` (`relinkTails`); with `dryRun`, says what
+ * it would relink, once the rule `relinkTails` asks says it would count, and writes nothing. What
+ * it said, or why it relinks none of them.
+ */
+function relinkLeftBehind(
+  ctx: DoctorContext,
+  from: string,
+  to: string,
+  dryRun: boolean,
+): { readonly ok: true; readonly said: string } | { readonly ok: false; readonly why: string } {
+  const asked = askRelinkLeftBehind(ctx, from, to);
+  if (!asked.ok) return asked;
+  const { into, tails, keys, trees } = asked;
   const record = `record ${into.name.slice(0, 12)}...`;
   if (dryRun) {
     return {

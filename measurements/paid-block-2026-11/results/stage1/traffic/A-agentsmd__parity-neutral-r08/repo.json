@@ -1,0 +1,84 @@
+{
+  "start": "fae24d7cdc7037ad3e622d9e4219d4addfcfe166",
+  "changed": [
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const assignment = line.replace(/^export[ \\t]+/, '');",
+        "      const eq = assignment.indexOf('=');",
+        "      const key = assignment.slice(0, eq).trim();",
+        "      let value = assignment.slice(eq + 1).trim();"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const eq = line.indexOf('=');",
+        "      const key = line.slice(0, eq).trim();",
+        "      let value = line.slice(eq + 1).trim();"
+      ],
+      "sha256_end": "04b334edf7e57cf3944b049b56e46d9b43ba8cd60c6a5a08542afa8719792270"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads export KEY=value as KEY', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport PORT=3000\\n');",
+        "  assert.deepEqual(env.all(), { HOST: 'localhost', PORT: '3000' });",
+        "  assert.equal(env.has('export HOST'), false);",
+        "});",
+        "",
+        "test('export takes any run of spaces or tabs, and keeps the quote rule', () => {",
+        "  const env = new EnvAccessor('  export   A=\"one two\"\\nexport\\tB=\\'three\\'\\n');",
+        "  assert.deepEqual(env.all(), { A: 'one two', B: 'three' });",
+        "});",
+        "",
+        "test('export is only a prefix when a blank follows it', () => {",
+        "  const env = new EnvAccessor('export=1\\nexportKEY=2\\nexport KEY\\nexport =3\\n# export SKIPPED=4\\n');",
+        "  assert.deepEqual(env.all(), { export: '1', exportKEY: '2' });",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "9f8c1d3e3695cc4cfe1eb4751ca3dedb44dc40626e1b1ee71bbc03d3cc93c71c"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $assignment = preg_replace('/^export[ \\t]+/', '', $line) ?? $line;",
+        "            $eq = strpos($assignment, '=');",
+        "            $key = trim(substr($assignment, 0, $eq));",
+        "            $value = trim(substr($assignment, $eq + 1));"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $eq = strpos($line, '=');",
+        "            $key = trim(substr($line, 0, $eq));",
+        "            $value = trim(substr($line, $eq + 1));"
+      ],
+      "sha256_end": "fcf510760e4e8762fbaecdc8fa8f0a68b24055fe172506350aa3637ab5168400"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport PORT=3000\\n\");",
+        "check('reads export KEY=value as KEY', $env->all() === ['HOST' => 'localhost', 'PORT' => '3000'] && !$env->has('export HOST'));",
+        "",
+        "$env = new EnvAccessor(\"  export   A=\\\"one two\\\"\\nexport\\tB='three'\\n\");",
+        "check('export takes any run of spaces or tabs, and keeps the quote rule', $env->all() === ['A' => 'one two', 'B' => 'three']);",
+        "",
+        "$env = new EnvAccessor(\"export=1\\nexportKEY=2\\nexport KEY\\nexport =3\\n# export SKIPPED=4\\n\");",
+        "check('export is only a prefix when a blank follows it', $env->all() === ['export' => '1', 'exportKEY' => '2']);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "8229dc8a1e693a8f310f01f3b312d49a756c31aec8d99f3ae0baab9ac3677ad1"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

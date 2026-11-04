@@ -387,6 +387,7 @@ describe('the fix writes all of the settings or none', SLOW, () => {
     const { local } = world();
     mkdirSync(join(sandbox, 'bin-with-mnema'));
     writeFileSync(join(sandbox, 'bin-with-mnema', 'mnema'), '#!/bin/sh\n', { mode: 0o755 });
+    symlinkSync(join(sandbox, 'bin', 'git'), join(sandbox, 'bin-with-mnema', 'git'));
     const onThePath = {
       ...here(local),
       processEnv: { ...env(), PATH: join(sandbox, 'bin-with-mnema') },

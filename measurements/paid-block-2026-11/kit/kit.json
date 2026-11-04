@@ -1,0 +1,30 @@
+{
+  "comment": "The pins of the paid block of the comparison after 0.1.4 (block 2.1 of ADR-119). Nothing here is a secret: the token is read from the file named below at the start of a session, and nothing else about an account is written anywhere.",
+  "claude_code": {
+    "package": "@anthropic-ai/claude-code",
+    "version": "2.1.311",
+    "bin": "installed/claude/node_modules/@anthropic-ai/claude-code-linux-x64/claude",
+    "why": "the stable dist-tag on 3 November 2026 and the version the 27 October kits ran",
+    "binary_sha256": "86dc1fcc69498159eaf15f446613e847010f9036bfbbdffd4c49350be8489ada",
+    "note": "the platform package of the npm release (linux-x64); its postinstall is not run, the binary is used where npm put it"
+  },
+  "model": {
+    "id": "claude-sonnet-5-5",
+    "effort": "xhigh"
+  },
+  "mnema": {
+    "package": "@mnema/code",
+    "version": "0.1.4",
+    "tag": "v0.1.4",
+    "never": "origin/main"
+  },
+  "expected_account_file": "secrets/expected-account.json",
+  "api_base": "https://api.anthropic.com",
+  "allow_list": [
+    "api.anthropic.com",
+    "registry.npmjs.org"
+  ],
+  "size": "S+Q4",
+  "login_dir": "secrets/login",
+  "credential": "the login folder (claude auth login of the personal Pro account); the setup-token path is dropped and secrets/claude-oauth.token is never read"
+}

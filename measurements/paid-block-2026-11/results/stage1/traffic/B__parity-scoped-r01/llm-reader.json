@@ -1,0 +1,27 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "f251c6941c6e5b0f2cb7cf108c9161dd5d652740f578db5b6f1af39541bd00b9"
+  },
+  "at": "2026-11-03T23:46:44.189Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "hook_event",
+    "evidence": [
+      "message 2: HOOK SessionStart:startup added: ... \"## Decisions in force (1)\" (brief of the project's mnema record, loaded at start-up)",
+      "message 15: bootstrap returned decision ADR-1 \"A behavior change in one package is made in the other in the same pull request\"",
+      "message 70: HOOK PreToolUse:Edit added: \"Addressed at packages/js/src/accessors/formats/env-accessor.ts: “A behavior change in one package is made in the other in the same pull request”\"",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export[ \\t]+(?=[^ \\t=])/, '');",
+      "changes: packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+(?=[^ \\t=])/', '', trim($raw));",
+      "message 132: \"I made the same change in the PHP package, which you didn't ask for.\""
+    ],
+    "notes": "The SessionStart hook output is cut in the transcript, so the rule's title is not visible in that message. The first complete appearance of the exact title is in message 15, a tool result from bootstrap. The SessionStart hook message plainly carried the project's rule brief, and the title is stated in the PreToolUse hook at message 70 as well. Hook_event is chosen because the hook was the first source to carry the rule, though the earliest visible full title came in message 15."
+  },
+  "usd_eq": 0.0848329
+}

@@ -369,6 +369,13 @@ exits 1. The tails written before 0.1.5 stay unnamed for
 
 ### Fixed
 
+- **`mnema doctor` no longer advises `--fix private-tree` where the fix would refuse, and its dry run no longer promises a relink the fix refuses.**
+  Where an old private tree names another record than the one the repository keeps, the finding now names both records
+  and asks the question the fix asks (`wouldRelinkTails`, the rule `relinkTails` asks again before it writes): where the
+  fix would relink and move, the finding says so; where it would refuse (this machine holds no key for a tail, or holds
+  one the record never took in, ADR-157), the finding says why and what to do instead (relink on the machine that holds
+  the key, or cut the tail) and advises no fix. `--dry-run` says the same refusal the real run does and exits 1
+  (`packages/code/tests/the-private-tree-moves-out-of-the-worktree.test.ts`).
 - **A tail is not forked by a branch switch, and a fork that still happens is called one.** One checkout written on two
   branches, or a checkout whose installation id was copied from another, wrote one tail on two lines of history with exit 0:
   git then conflicted on the segment and on the checkpoints, and a merge that kept both sides was refused by both readers as a

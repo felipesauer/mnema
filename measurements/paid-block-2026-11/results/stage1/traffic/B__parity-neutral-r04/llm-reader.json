@@ -1,0 +1,26 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "4386b54e797507328fb0535ead61be88001d25c8287da68f410f4702c2c11e6e"
+  },
+  "at": "2026-11-03T23:48:07.394Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "hook_event",
+    "evidence": [
+      "message 2: HOOK SessionStart:startup added: ... \"Decisions in force (1)\" (the SessionStart brief from `mnema brief`, with the rule titled in the decisions list)",
+      "message 76: HOOK PreToolUse:Edit added: \"A behavior change in one package is made in the other in the same pull request\": governs packages/js/src",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export\\s+/, '');",
+      "changes: packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export\\s+/', '', trim($raw));",
+      "message 152: I changed both packages because ADR-1 requires a behavior change in one to be made in the other in the same change."
+    ],
+    "notes": "The rule text first appeared in the transcript via the SessionStart hook (message 2, the brief is cut in the transcript but lists the decision and its address). The agent also fetched it through bootstrap/read_record, but the hook came first. The agent made the change in both packages and added tests in both. Both test suites passed."
+  },
+  "usd_eq": 0.0872825
+}

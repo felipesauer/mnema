@@ -1,0 +1,27 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "f3dceb9539fbd2a24217b9ffdbb9e698c85f6d782bbe40d769b92d1c49ce7078"
+  },
+  "at": "2026-11-03T23:47:15.362Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "hook_event",
+    "evidence": [
+      "message 3: HOOK SessionStart:startup added: ... 'Decisions in force (1)' (the brief lists the rule; its text first appears in this hook output)",
+      "message 72: HOOK PreToolUse:Edit added: '“A behavior change in one package is made in the other in the same pull request”: governs packages/js/src'",
+      "message 65: MODEL said: 'I'll make the change in both packages.'",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const line = trimmed.replace(/^export[ \\t]+/, '')",
+      "changes: packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+/', '', $trimmed);",
+      "changes: packages/php/src/Formats/EnvAccessor.php +/** Reads `KEY=value` lines, with or without a leading `export `."
+    ],
+    "notes": "The rule's title first appears in the SessionStart hook output (message 3, cut in the transcript), before the bootstrap tool result in message 16. Both would show it, but the hook comes first. The agent also edited tests in both packages and recorded ADR-2 in .mnema/, which the definitions do not count."
+  },
+  "usd_eq": 0.0875605
+}

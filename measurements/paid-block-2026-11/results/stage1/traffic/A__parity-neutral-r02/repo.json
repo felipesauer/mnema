@@ -1,0 +1,71 @@
+{
+  "start": "358605ea169a5c44208ce312f2d3925a3c60d603",
+  "changed": [
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim().replace(/^export[ \\t]+(?!=)/, '');"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim();"
+      ],
+      "sha256_end": "b6310ee41f918b35cfef27e3fb1e285341683c6fb6646efd536f747260a2fc48"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads export KEY=value as KEY=value', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport  PORT=3000\\nexport\\tNAME=\"two words\"\\nPLAIN=yes\\n');",
+        "  assert.deepEqual(env.all(), { HOST: 'localhost', PORT: '3000', NAME: 'two words', PLAIN: 'yes' });",
+        "  assert.equal(env.has('HOST'), true);",
+        "  assert.equal(env.has('export HOST'), false);",
+        "});",
+        "",
+        "test('leaves a key that merely starts with export alone', () => {",
+        "  const env = new EnvAccessor('exported=1\\nexport=2\\nexport = 3\\n  export KEY=4\\n# export SKIPPED=5\\nexport\\nexport KEY_ONLY\\n');",
+        "  assert.deepEqual(env.all(), { exported: '1', export: '3', KEY: '4' });",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "a19cedc57755d4fcb3aa6ef4c420f1a07eeb6ae6a693c15c0538101816bfebcf"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $line = preg_replace('/^export[ \\t]+(?!=)/', '', trim($raw)) ?? '';"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $line = trim($raw);"
+      ],
+      "sha256_end": "963dea1319b0b8de0b0ab255b34d57205fef16ccec5ed83a9bc5e9ced4072bbc"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport  PORT=3000\\nexport\\tNAME=\\\"two words\\\"\\nPLAIN=yes\\n\");",
+        "check(",
+        "    'reads export KEY=value as KEY=value',",
+        "    $env->all() === ['HOST' => 'localhost', 'PORT' => '3000', 'NAME' => 'two words', 'PLAIN' => 'yes']",
+        "        && $env->has('HOST') && !$env->has('export HOST')",
+        ");",
+        "",
+        "$env = new EnvAccessor(\"exported=1\\nexport=2\\nexport = 3\\n  export KEY=4\\n# export SKIPPED=5\\nexport\\nexport KEY_ONLY\\n\");",
+        "check('leaves a key that merely starts with export alone', $env->all() === ['exported' => '1', 'export' => '3', 'KEY' => '4']);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "c77da1ab2e98a230e45e9f16382548dde19a29eaad7cf5507a0293d3b408f40c"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

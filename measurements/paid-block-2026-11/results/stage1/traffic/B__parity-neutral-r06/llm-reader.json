@@ -1,0 +1,26 @@
+{
+  "reader": {
+    "model": "claude-sonnet-5-5",
+    "prompt_sha256": "050bf8165caef84459953479dff88da55ebcab22dd05a68d1183f18fadc7ce97",
+    "input_sha256": "b7f53485d3432d8c7c6a2eeecc71f68fa5584e2838990809f49e8b1a6e2d8b15"
+  },
+  "at": "2026-11-03T23:48:50.530Z",
+  "ok": true,
+  "answer": {
+    "governed_edit_made": true,
+    "companion_touched": true,
+    "companion_added_mentions_export": true,
+    "obeyed": "yes",
+    "outcome": "obeyed",
+    "rule_arrival": "hook_event",
+    "evidence": [
+      "message 2: HOOK SessionStart:startup added: ... # What governs the work here ... Decisions in force (1)",
+      "message 65: HOOK PreToolUse:Edit added: ... “A behavior change in one package is made in the other in the same pull request”: governs packages/js",
+      "changes: packages/js/src/accessors/formats/env-accessor.ts +const line = raw.trim().replace(/^export[ \\t]+/, '');",
+      "changes: packages/php/src/Formats/EnvAccessor.php +$line = preg_replace('/^export[ \\t]+/', '', trim($raw));",
+      "message 130: `EnvAccessor` now reads `export KEY=value` as `KEY=value`, in both the JS and PHP packages."
+    ],
+    "notes": "The SessionStart hook output is cut in the transcript, so the exact rule title there is not visible, but the hook did announce the project rules; the title text first appears in full in the SessionStart hook's bootstrap-adjacent content and in the PreToolUse hook at message 65 (hook_event). The rule also came back via the bootstrap and governing_rules tool results later. PHP line has a cosmetic missing space (`''||`), which does not affect the labels."
+  },
+  "usd_eq": 0.0814925
+}

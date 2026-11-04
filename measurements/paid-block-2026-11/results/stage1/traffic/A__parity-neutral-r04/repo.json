@@ -1,0 +1,66 @@
+{
+  "start": "358605ea169a5c44208ce312f2d3925a3c60d603",
+  "changed": [
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const key = line.slice(0, eq).trim().replace(/^export[ \\t]+/, '');"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const key = line.slice(0, eq).trim();"
+      ],
+      "sha256_end": "8f642061e946027a85b44a57d61add92f7b6c09da1c27c3c1244c0a9b55a3de3"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads export KEY=value lines as KEY', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport A=\"one two\"\\nexport  \\tB=2\\nC=3\\n');",
+        "  assert.deepEqual(env.all(), { HOST: 'localhost', A: 'one two', B: '2', C: '3' });",
+        "  assert.equal(env.has('export HOST'), false);",
+        "});",
+        "",
+        "test('only strips export as a prefix followed by blanks', () => {",
+        "  const env = new EnvAccessor('exported=1\\nexport=2\\nexport = 3\\nexport KEY\\nexport\\n');",
+        "  assert.deepEqual(env.all(), { exported: '1', export: '3' });",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "bf0fc506c098cd7c0bf7f05e8c55e6c2d0adf869f3d6d4fd7343f857b3f99fd8"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $key = (string) preg_replace('/^export[ \\t]+/', '', trim(substr($line, 0, $eq)));"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $key = trim(substr($line, 0, $eq));"
+      ],
+      "sha256_end": "20d742e9653358757d871fe36e324196d3ad97900bdb40898106dc90b3b67bd4"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport A=\\\"one two\\\"\\nexport  \\tB=2\\nC=3\\n\");",
+        "check('reads export KEY=value lines as KEY', $env->all() === ['HOST' => 'localhost', 'A' => 'one two', 'B' => '2', 'C' => '3'] && !$env->has('export HOST'));",
+        "",
+        "$env = new EnvAccessor(\"exported=1\\nexport=2\\nexport = 3\\nexport KEY\\nexport\\n\");",
+        "check('only strips export as a prefix followed by blanks', $env->all() === ['exported' => '1', 'export' => '3']);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "a6647eb54e30a94996362e468901629a9c52c8e458ed0680b965e08b5eafc14e"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

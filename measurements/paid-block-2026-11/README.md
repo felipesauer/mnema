@@ -15,5 +15,9 @@ Three earlier freezes of revision 1 preceded this one, each before any counted s
 names their SHA-256 values and what changed. Three uncounted smoke sessions ran on the subscription before the last
 freeze; they proved the account check, the subscription and the redaction, and are not part of the result.
 
-The result, the kit and the redacted traffic will be published here when the block ends, as the free block's were
-(`../free-block-2026-10/`).
+The result is `RESULT.md`: stage 1 whole, and of stage 2 only the counts, the method and the deviations. `results/stage1/` holds
+its tables and the redacted traffic of the 34 sessions; `results/stage2/counts.json` the counts. The traffic of stage 2 is
+not published: those sessions ran in two of the person's own repositories and carry excerpts of their code (ADR-182).
+`kit/` is the kit as the manifest's kit commit holds it, redacted, with `kit/run/` added afterwards and `kit/WITHHELD.md`
+naming what is not published; `REDACTION.md` lists every rule and the SHA-256 of every original and copy. The free block's
+were published the same way (`../free-block-2026-10/`).

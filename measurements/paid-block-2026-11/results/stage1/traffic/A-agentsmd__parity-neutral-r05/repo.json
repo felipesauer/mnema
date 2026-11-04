@@ -1,0 +1,84 @@
+{
+  "start": "fae24d7cdc7037ad3e622d9e4219d4addfcfe166",
+  "changed": [
+    {
+      "path": "packages/js/src/accessors/formats/env-accessor.ts",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim().replace(/^export[ \\t]+(?!=)/, '');"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "      const line = raw.trim();"
+      ],
+      "sha256_end": "b6310ee41f918b35cfef27e3fb1e285341683c6fb6646efd536f747260a2fc48"
+    },
+    {
+      "path": "packages/js/tests/env-accessor.test.ts",
+      "status": "M",
+      "added": [
+        "test('reads export KEY=value lines as KEY=value', () => {",
+        "  const env = new EnvAccessor('export HOST=localhost\\nexport  PORT=3000\\nexport\\tNAME=\"two words\"\\n');",
+        "  assert.deepEqual(env.all(), { HOST: 'localhost', PORT: '3000', NAME: 'two words' });",
+        "  assert.equal(env.has('export HOST'), false);",
+        "});",
+        "",
+        "test('mixes export lines with plain lines', () => {",
+        "  const env = new EnvAccessor('A=1\\n  export B=2\\nC=3\\n');",
+        "  assert.deepEqual(env.all(), { A: '1', B: '2', C: '3' });",
+        "});",
+        "",
+        "test('keeps a key that merely starts with export', () => {",
+        "  const env = new EnvAccessor('exporter=1\\nexport=2\\nexport = 3\\n');",
+        "  assert.deepEqual(env.all(), { exporter: '1', export: '3' });",
+        "});",
+        "",
+        "test('still skips a commented export line and an export with no assignment', () => {",
+        "  const env = new EnvAccessor('# export KEY=value\\nexport KEY\\nexport\\n');",
+        "  assert.deepEqual(env.all(), {});",
+        "});",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "cb10e0f7944b20978a397312f7b09370b8e9e0f94c5b3ca256241c498aaf371f"
+    },
+    {
+      "path": "packages/php/src/Formats/EnvAccessor.php",
+      "status": "M",
+      "added": [
+        "/** Reads `KEY=value` lines, with or without a leading `export `. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */",
+        "            $line = preg_replace('/^export[ \\t]+(?!=)/', '', $line) ?? $line;"
+      ],
+      "removed": [
+        "/** Reads `KEY=value` lines. Blank lines and lines that start with `#` are skipped; a value may be wrapped in one pair of matching quotes. */"
+      ],
+      "sha256_end": "b908f6709ff42d3e634388c5ad4bc5525386aa99ab4c63cfb0e927d5b05a970c"
+    },
+    {
+      "path": "packages/php/tests/run.php",
+      "status": "M",
+      "added": [
+        "$env = new EnvAccessor(\"export HOST=localhost\\nexport  PORT=3000\\nexport\\tNAME=\\\"two words\\\"\\n\");",
+        "check(",
+        "    'reads export KEY=value lines as KEY=value',",
+        "    $env->all() === ['HOST' => 'localhost', 'PORT' => '3000', 'NAME' => 'two words'] && !$env->has('export HOST')",
+        ");",
+        "",
+        "$env = new EnvAccessor(\"A=1\\n  export B=2\\nC=3\\n\");",
+        "check('mixes export lines with plain lines', $env->all() === ['A' => '1', 'B' => '2', 'C' => '3']);",
+        "",
+        "$env = new EnvAccessor(\"exporter=1\\nexport=2\\nexport = 3\\n\");",
+        "check('keeps a key that merely starts with export', $env->all() === ['exporter' => '1', 'export' => '3']);",
+        "",
+        "$env = new EnvAccessor(\"# export KEY=value\\nexport KEY\\nexport\\n\");",
+        "check('still skips a commented export line and an export with no assignment', $env->all() === []);",
+        ""
+      ],
+      "removed": [],
+      "sha256_end": "e6019af4f0952390708cb762018362908a8f7289036aa3aca499b526c6defb19"
+    }
+  ],
+  "left_out_unchanged_kit_files": 0,
+  "left_out_host_owned": []
+}

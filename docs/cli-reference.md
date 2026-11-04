@@ -1723,7 +1723,8 @@ the key its id names (yours, or an agent's kept on this machine), written in the
 and checkpointed before the move, as `mnema tail relink` does (below), so that tree never holds
 two names no relink joins; then the tails move, and the fix says both. Where a tail's key is not on
 this machine, or the readers would not count its relink, nothing of that tree is relinked or
-moved: the fix names the tails and the keys, writes nothing, and exits 1. Otherwise the exit status
+moved: the fix, its `--dry-run` included, names the tails and the keys, writes nothing, and exits 1,
+and `mnema doctor` without `--fix` says the same reason and advises no fix. Otherwise the exit status
 is 0 whatever it found: a script that wants to act on a finding reads the line.
 
 ### Skills and agents a project adopts: stacks

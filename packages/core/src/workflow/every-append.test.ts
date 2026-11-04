@@ -815,6 +815,7 @@ describe('every write refuses what no read could accept', () => {
     encodeAgentRequest: 'serializes one',
     encodeKeyRequest: 'serializes one',
     keysOnThisMachine: 'reads which keys this machine holds; appends nothing',
+    wouldRelinkTails: 'asks whether a relink would count; opens no writer and appends nothing',
     onTheRecordAsItStands: 'holds the lock around a judgement; the write is the caller’s',
     openTreeForWriting: 'opens a writer; the write is the caller’s',
     recordedAnchorOf: 'asks whether the recorded identity still counts the key; appends nothing',

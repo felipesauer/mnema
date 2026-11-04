@@ -36,6 +36,7 @@ import {
   keysOnThisMachine,
   type RelinkInput,
   relinkTails,
+  wouldRelinkTails,
 } from './relink-operations.js';
 
 const upcasters = catalogUpcasters();
@@ -328,6 +329,37 @@ describe('a relink refused writes nothing, and names what it found', () => {
   it('a reason that says nothing', () => {
     const { key, y, tail } = twoInits();
     expect(refused(y, [key], { tails: [tail], reason: '***' }).code).toBe('NOT_A_REASON');
+  });
+});
+
+describe('asking whether a relink would count', () => {
+  const ask = (root: string, keys: readonly KeyOnThisMachine[], input: RelinkInput) =>
+    wouldRelinkTails(
+      { layouts: [{ root }], upcasters, keys: new Map(keys.map((key) => [key.fingerprint, key])) },
+      input,
+    );
+
+  it('says yes where the relink counts, opens no writer and writes nothing', () => {
+    const { key, y, tail } = twoInits();
+    const before = bytesOf(y);
+    const files = readdirSync(y, { recursive: true }).sort();
+    const done = ask(y, [key], { tails: [tail], reason: REASON });
+    expect(done.ok).toBe(true);
+    if (done.ok) expect(done.relinks.map((one) => one.tail)).toEqual([tail]);
+    expect(bytesOf(y)).toEqual(before);
+    expect(readdirSync(y, { recursive: true }).sort()).toEqual(files);
+  });
+
+  it('refuses in the words the relink refuses in, a key the record never took in (ADR-157)', () => {
+    const second = aKey('second');
+    const { key, y, tail } = twoInits(second);
+    const asked = ask(y, [key, second], { tails: [tail], reason: REASON });
+    const done = relink(y, [key, second], { tails: [tail], reason: REASON });
+    expect(done.ok).toBe(false);
+    if (!done.ok) {
+      expect(done.code).toBe('RELINK_WOULD_NOT_COUNT');
+      expect(asked).toEqual({ ok: false, code: done.code, message: done.message });
+    }
   });
 });
 
