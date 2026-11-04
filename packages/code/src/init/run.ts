@@ -171,7 +171,9 @@ export async function runTheFounding(wiring: Wiring, opts: InitOptions): Promise
       marks,
       ...(opts.accepts !== undefined ? { accepts: opts.accepts } : {}),
       ...(opts.accepts !== undefined && agent !== undefined ? { agent } : {}),
-      ...pullAnswer(terminal !== undefined || opts.yes === true ? (pullGiven ?? pullDefault) : pullUnasked),
+      ...pullAnswer(
+        terminal !== undefined || opts.yes === true ? (pullGiven ?? pullDefault) : pullUnasked,
+      ),
     };
     io.out(onOneLine`Would found ${basename(ctx.cwd)}/${PROJECT_DIR}. Nothing was written.`);
     printed(

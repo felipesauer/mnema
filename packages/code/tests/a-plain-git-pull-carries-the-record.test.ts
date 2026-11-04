@@ -34,9 +34,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { fixMergeDriver, mergeDriverLines, mergeSettings } from '../src/commands/doctor-merge-driver.js';
+import {
+  fixMergeDriver,
+  mergeDriverLines,
+  mergeSettings,
+} from '../src/commands/doctor-merge-driver.js';
 import { driverCommand } from '../src/commands/record-pull.js';
 import { readForkKeptAside, saysForkKeptAside } from '../src/fork-kept-aside.js';
+import { withoutSequences } from '../src/presentation/width.js';
 import { type CliIo, run } from '../src/program.js';
 import { fakeTerminal, hooksNothing, until } from './support/console.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
@@ -178,7 +183,11 @@ const SHAPES = {
 const SLOW = { timeout: 90_000 };
 
 describe('a plain git pull over events not yet committed', SLOW, () => {
-  const PULLS: readonly (readonly string[])[] = [['pull'], ['pull', '--no-rebase'], ['pull', '--rebase']];
+  const PULLS: readonly (readonly string[])[] = [
+    ['pull'],
+    ['pull', '--no-rebase'],
+    ['pull', '--rebase'],
+  ];
 
   for (const [shape, build] of Object.entries(SHAPES)) {
     for (const args of PULLS) {
@@ -251,12 +260,20 @@ describe('a fork, the one case git does not stop on', SLOW, () => {
     const lastLocal = ours.trim().split('\n').at(-1) as string;
     expect(git(local, 'stash', 'show', '-p', 'stash@{0}').out).toContain(lastLocal);
 
-    const found = readForkKeptAside({ cwd: local, env: { home: join(sandbox, 'home') }, processEnv: env() });
+    const found = readForkKeptAside({
+      cwd: local,
+      env: { home: join(sandbox, 'home') },
+      processEnv: env(),
+    });
     expect(found?.stashes).toBe(1);
     expect(found?.conflicted).toBeGreaterThan(0);
     const sentence = saysForkKeptAside(found as NonNullable<typeof found>);
     expect(sentence).toMatch(/Do not drop the stash/);
     expect(sentence).toMatch(/`mnema record pull`/);
+
+    // Once a plain pull has left it aside, `record pull` does not look in the stash: it stops on the open conflict.
+    expect(mnema(local, 'record', 'pull').status).not.toBe(0);
+    expect(mnema(local, 'record', 'pull').out).not.toMatch(/fork/);
 
     const status = mnema(local, 'status').out;
     expect(status).toMatch(/Kept aside by a pull:/);
@@ -268,7 +285,9 @@ describe('a fork, the one case git does not stop on', SLOW, () => {
 
   it('says nothing while nothing is kept aside', () => {
     const { local } = fork();
-    expect(readForkKeptAside({ cwd: local, env: { home: join(sandbox, 'home') }, processEnv: env() })).toBeUndefined();
+    expect(
+      readForkKeptAside({ cwd: local, env: { home: join(sandbox, 'home') }, processEnv: env() }),
+    ).toBeUndefined();
     expect(mnema(local, 'doctor').out).not.toMatch(/fork-kept-aside/);
   });
 
@@ -348,8 +367,17 @@ describe('the fix writes all of the settings or none', SLOW, () => {
 
   it('keeps a driver an earlier mnema wrote by name, and writes the autoStash settings beside it', () => {
     const { local } = world();
-    expect(git(local, 'config', 'merge.mnema-tail.name', 'mnema: keep the longer side of a tail that only grows').status).toBe(0);
-    expect(git(local, 'config', 'merge.mnema-tail.driver', 'mnema record merge-tail %O %A %B %P').status).toBe(0);
+    expect(
+      git(
+        local,
+        'config',
+        'merge.mnema-tail.name',
+        'mnema: keep the longer side of a tail that only grows',
+      ).status,
+    ).toBe(0);
+    expect(
+      git(local, 'config', 'merge.mnema-tail.driver', 'mnema record merge-tail %O %A %B %P').status,
+    ).toBe(0);
     const says = mergeDriverLines(here(local));
     expect(says).toHaveLength(1);
     expect(says[0]).toMatch(/merge\.autoStash and rebase\.autoStash are not set/);
@@ -375,7 +403,9 @@ describe('the fix writes all of the settings or none', SLOW, () => {
     expect(fixMergeDriver(here(local), { dryRun: false, driver: DRIVER }).refused).toBe(false);
     expect(git(local, 'config', 'merge.autoStash', 'false').status).toBe(0);
     const says = mergeDriverLines(here(local));
-    expect(says.join('\n')).toMatch(/merge\.autoStash is not on in .*mnema leaves a setting you chose where it is/);
+    expect(says.join('\n')).toMatch(
+      /merge\.autoStash is not on in .*mnema leaves a setting you chose where it is/,
+    );
   });
 });
 
@@ -455,7 +485,16 @@ describe('mnema init offers it', SLOW, () => {
     expect(planned.out.replace(/[\s│]+/g, ' ')).toMatch(/not only the record/);
     expect(existsSync(join(checkout, '.mnema'))).toBe(false);
     expect(configured(checkout)).toEqual([]);
-    const none = mnema(checkout, 'init', '--yes', '--hosts', 'none', '--git-pull', 'no', '--dry-run');
+    const none = mnema(
+      checkout,
+      'init',
+      '--yes',
+      '--hosts',
+      'none',
+      '--git-pull',
+      'no',
+      '--dry-run',
+    );
     expect(none.out).not.toMatch(/merge\.autoStash/);
   });
 });
@@ -522,7 +561,7 @@ describe('mnema init asks at a terminal', SLOW, () => {
     await through(person, ENTER);
     person.types(ENTER);
     const drawn = await person.finished();
-    const shown = drawn.replace(/\u001b\[[0-9;?]*[A-Za-z]/g, '').replace(/[\s│]+/g, ' ');
+    const shown = withoutSequences(drawn).replace(/[\s│]+/g, ' ');
     expect(shown).toMatch(/set merge\.mnema-tail\.driver/);
     expect(shown).toMatch(/set merge\.autoStash/);
     expect(shown).toMatch(/set rebase\.autoStash/);
@@ -540,7 +579,7 @@ describe('mnema init asks at a terminal', SLOW, () => {
     await through(person, `${DOWN}${ENTER}`);
     person.types(ENTER);
     const drawn = await person.finished();
-    expect(drawn.replace(/\u001b\[[0-9;?]*[A-Za-z]/g, '')).not.toMatch(/set\s+merge\.autoStash/);
+    expect(withoutSequences(drawn)).not.toMatch(/set\s+merge\.autoStash/);
     expect(existsSync(join(no, '.mnema'))).toBe(true);
     expect(configured(no)).toEqual([]);
 

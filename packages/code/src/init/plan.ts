@@ -62,7 +62,16 @@ export interface PlanRow {
 }
 
 /** The order the verbs are listed in: what is made first, then what is added to, then what is left. */
-const ORDER: readonly Verb[] = ['create', 'add to', 'replace', 'keep', 'leave', 'record', 'use', 'set'];
+const ORDER: readonly Verb[] = [
+  'create',
+  'add to',
+  'replace',
+  'keep',
+  'leave',
+  'record',
+  'use',
+  'set',
+];
 
 /** What a file of the instructions gets, said as a row. */
 function rowForAFile(peek: InstructionsPeek): PlanRow {

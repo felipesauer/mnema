@@ -451,7 +451,9 @@ export function pullAnswered(answer: 'yes' | 'no', width: number): readonly Line
   return [
     heading(
       DONE,
-      answer === 'yes' ? 'A plain git pull carries the record: yes' : 'A plain git pull carries the record: no',
+      answer === 'yes'
+        ? 'A plain git pull carries the record: yes'
+        : 'A plain git pull carries the record: no',
     ),
     ...paragraph(
       trail,

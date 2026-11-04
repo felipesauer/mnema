@@ -28,7 +28,7 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--fix <what>',
-      'make the one change a finding asks for, and only that one: `vscode` lists the plugin in the chat.pluginLocations setting of VS Code’s settings.json, after keeping a copy of the file; `private-tree` moves the private notes a worktree still holds in .mnema/private/ into the repository’s git directory; `merge-driver` tells this repository’s git configuration what the merge driver the record’s tails name is',
+      'make the one change a finding asks for, and only that one: `vscode` lists the plugin in the chat.pluginLocations setting of VS Code’s settings.json, after keeping a copy of the file; `private-tree` moves the private notes a worktree still holds in .mnema/private/ into the repository’s git directory; `merge-driver` writes, into this repository’s git configuration, the merge driver the record’s tails name, merge.autoStash and rebase.autoStash, together, so a plain `git pull` carries the record',
     )
     .option('--dry-run', 'with --fix: say what would change and write nothing')
     .addHelpText(
@@ -42,7 +42,9 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         '  named `mnema` installed where the PATH points: the registry is not asked; VS Code’s user',
         '  settings.json, for whether its agent is told where the plugin is; and the projects of',
         '  ~/.claude.json (the one in $CLAUDE_CONFIG_DIR, when it is set) that still declare the',
-        '  server; and, in a project inside a git repository,',
+        '  server; and, in a project inside a git repository, git’s stash and index, for an',
+        '  autostash that holds a tail’s files or a tail file left in conflict by a pull (the fork',
+        '  git hides, which `mnema status` says too), and',
         '  each worktree’s .mnema/private/, where private notes lived before they moved into the',
         '  repository’s git directory; and the agent keys this machine holds, against the record of',
         '  each tree it reaches, with the `MNEMA_AGENT_KEY` of its own environment.',

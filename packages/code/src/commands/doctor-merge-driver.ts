@@ -203,7 +203,10 @@ export function fixMergeDriver(
     if (wrote?.status !== 0) {
       return {
         refused: true,
-        lines: [...lines, `git did not write ${key}; the settings after it were not written, and none of them is an autoStash without the driver.`],
+        lines: [
+          ...lines,
+          `git did not write ${key}; the settings after it were not written, and none of them is an autoStash without the driver.`,
+        ],
       };
     }
     lines.push(`set ${key} = ${value} in this repository's git configuration.`);
