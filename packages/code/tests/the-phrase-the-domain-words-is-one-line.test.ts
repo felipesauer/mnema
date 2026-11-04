@@ -604,6 +604,24 @@ type Verdict = 'collapsed' | 'minted' | 'composed';
  * the part that rots (which values exist, and whether each is collapsed) is derived.
  */
 const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = {
+  '@mnema/chain chain/relink-plan.ts «(T2/T4, the one \\`mnema verify\\` makes) would refuse {} event(s) it » together.length #1':
+    {
+      verdict: 'minted',
+      why: 'how many events the identity fold would refuse only once the trees are read together: a count',
+    },
+  '@mnema/chain chain/relink-plan.ts «{} seq {}: {}. A relink does not » first.seq #1': {
+    verdict: 'minted',
+    why: 'the `seq` of an event the fold refused, a whole number the catalog requires',
+  },
+  '@mnema/chain chain/relink-plan.ts «{} seq {}: {}. A relink does not » oneLine(first.detail) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity fold’s own finding over the tails on disk, which may quote what it read there',
+    },
+  '@mnema/chain chain/relink-plan.ts «{} seq {}: {}. A relink does not » oneLine(first.tail) #1': {
+    verdict: 'collapsed',
+    why: 'the tail an event the fold refused sits in, a tail id being a directory name',
+  },
   '@mnema/chain chain/relink-plan.ts «No tail here names record {} by its own artifacts, other than a tail a relink » oneLine(ask) #1':
     {
       verdict: 'collapsed',
@@ -2716,6 +2734,10 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'half of where a relink sits, `<host>#<seq>`, a key of a `Map` that a refusal quotes through `oneLine`',
   '@mnema/chain chain/relink-plan.ts «{}#{}» host':
     'the other half of the same `Map` key, a tail id the disk named',
+  '@mnema/chain chain/verify.ts «{}#{}» issue.seq':
+    'half of where an event the identity fold refused sits, `<tail>#<seq>`, a key of a `Set` that is never printed',
+  '@mnema/chain chain/verify.ts «{}#{}» issue.tail':
+    'the other half of the same `Set` key, a tail id the disk named',
   '@mnema/core identity/membership.ts «{}... ({})» group.name.slice(0, 12)':
     'one group of the records a directory holds, joined into the list the refusal collapses whole',
   "@mnema/core identity/membership.ts «{}... ({})» group.tails.join(', ')":
@@ -2826,8 +2848,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(438);
-    expect(FOUND[0]?.sites.length).toBe(224);
+    expect(SITES.length).toBe(442);
+    expect(FOUND[0]?.sites.length).toBe(228);
     expect(FOUND[1]?.sites.length).toBe(214);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2878,11 +2900,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(300);
-    expect(count('minted')).toBe(106);
+    expect(count('collapsed')).toBe(302);
+    expect(count('minted')).toBe(108);
     expect(count('composed')).toBe(32);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      300,
+      302,
     );
   });
 

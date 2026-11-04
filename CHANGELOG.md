@@ -382,6 +382,15 @@ exits 1. The tails written before 0.1.5 stay unnamed for
   one the record never took in, ADR-157), the finding says why and what to do instead (relink on the machine that holds
   the key, or cut the tail) and advises no fix. `--dry-run` says the same refusal the real run does and exits 1
   (`packages/code/tests/the-private-tree-moves-out-of-the-worktree.test.ts`).
+- **A relink no longer leaves a record that fails `verify`.** Where both private trees had enrolled the same agent key,
+  `mnema doctor --fix private-tree` relinked and moved them with exit 0, and `mnema verify` then refused the record
+  (`agent.enrolled names a key that is already in an identity`): each tree verified alone, and the two read as one did not.
+  Before it writes, a relink (`mnema tail relink`, and the doctor's fix, its `--dry-run` and its finding) now also asks the
+  readers' identity check (T2/T4) over the directory as it would read, and refuses `RELINK_WOULD_NOT_VERIFY` where it would
+  refuse an event that no tree refuses today, naming the tail, the seq and the readers' reason, and writes nothing; an issue a
+  tree holds already does not refuse a relink. The doctor then advises no fix, and says why
+  (`packages/code/tests/the-private-tree-moves-out-of-the-worktree.test.ts`,
+  `packages/chain/src/chain/relink-plan.test.ts`).
 - **A tail is not forked by a branch switch, and a fork that still happens is called one.** One checkout written on two
   branches, or a checkout whose installation id was copied from another, wrote one tail on two lines of history with exit 0:
   git then conflicted on the segment and on the checkpoints, and a merge that kept both sides was refused by both readers as a

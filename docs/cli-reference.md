@@ -1187,7 +1187,10 @@ An admission of another person's tail by a member of the record does not exist i
 
 Nothing is written where the readers would not count a relink: the command asks their rule first,
 over the directory as it would read, and refuses by its words (`RELINK_WOULD_NOT_COUNT`, naming
-`relink-not-a-member` and the rest). It refuses too, each naming what it found, a tail that is not
+`relink-not-a-member` and the rest). It asks their identity check (T2/T4) over that directory too,
+and refuses `RELINK_WOULD_NOT_VERIFY`, naming the tail, the seq and their reason, where it would
+refuse an event no tree refuses today: a relink does not change what a tail holds, so the record
+would fail `verify`. It refuses too, each naming what it found, a tail that is not
 here, whose key this machine does not hold (`NOT_THE_OWNER`), that names no record, that already
 names the record it would join (`ALREADY_IN_THAT_RECORD`), that does not verify, that holds a
 relink, or that a relink names already. It says, and does not refuse, what each tail brings into
@@ -1722,8 +1725,9 @@ of its tails that names its own record is relinked into the repository's private
 the key its id names (yours, or an agent's kept on this machine), written in the repository's tree
 and checkpointed before the move, as `mnema tail relink` does (below), so that tree never holds
 two names no relink joins; then the tails move, and the fix says both. Where a tail's key is not on
-this machine, or the readers would not count its relink, nothing of that tree is relinked or
-moved: the fix, its `--dry-run` included, names the tails and the keys, writes nothing, and exits 1,
+this machine, the readers would not count its relink, or the record the two trees would make would
+not verify where each verifies alone (`RELINK_WOULD_NOT_VERIFY`: both trees enrolled the same agent
+key, for one), nothing of that tree is relinked or moved, and its tails stay where they verify: the fix, its `--dry-run` included, names the tails and the keys, writes nothing, and exits 1,
 and `mnema doctor` without `--fix` says the same reason and advises no fix. Otherwise the exit status
 is 0 whatever it found: a script that wants to act on a finding reads the line.
 

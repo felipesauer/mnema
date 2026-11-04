@@ -1236,8 +1236,9 @@ type RelinkAsked =
 /**
  * Asks whether the tails of the old tree at `from` that name another record than the tree at `to`
  * can be relinked into it: the tree that stays names one record, this machine holds the key each
- * tail's id names, and the readers would count every relink (`wouldRelinkTails`, the rule
- * `relinkTails` asks again before it writes). The fix asks it before it relinks, and the finding
+ * tail's id names, the readers would count every relink, and the record the two trees make would
+ * verify where each did (`wouldRelinkTails`, the question `relinkTails` asks again before it
+ * writes). The fix asks it before it relinks, and the finding
  * asks it before it advises the fix: one question, so the advice cannot promise what the fix
  * refuses (`code/tests/the-private-tree-moves-out-of-the-worktree.test.ts`).
  */

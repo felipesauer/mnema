@@ -1025,6 +1025,118 @@ export function relinksReadAt(
   });
 }
 
+/** An event the identity fold refuses, by the tail and seq it is at, in the fold's words. */
+export interface IdentityRefusedAt {
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * WHAT A JOIN WOULD BREAK THAT THE RELINK RULE DOES NOT ASK: the events `verify`'s identity fold
+ * (`resolveIdentity`, T2/T4, over every tail of the directory in one order) would refuse in the
+ * tails of `layouts` read together as one directory, with `toWrite` appended to their hosts and
+ * covered, and that it refuses in none of `layouts` read alone. Asked by a writer of a relink
+ * before it writes (`relinksWouldCount`, `relink-plan.ts`), so a relink, and the doctor's move of
+ * one private tree into another, never leave a record failing `verify` where each tree verified.
+ *
+ * WHY THE FOLD, AND NOTHING ELSE OF A VERIFICATION. Every other check `verify` refuses on reads one
+ * tail, or one key file, alone (its lines, hash chain, checkpoints, signer, birth proof and the
+ * record its artifacts name), and a join changes none of them; the record's agreement and the
+ * relinks themselves are the relink rule's (`relinksReadAt`), which the writer asks first. What a
+ * join can break besides is a fact of one tail that the facts of another refuse once both are
+ * folded together: an agent key the two trees each enrolled is the case that was found
+ * (`code/tests/the-private-tree-moves-out-of-the-worktree.test.ts`, where both readers refuse the
+ * directory the move would make at the event this names).
+ *
+ * WHY ONLY WHAT THE TREES DO NOT REFUSE ALREADY. A directory that holds two records fails `verify`
+ * before its relink, and may hold a third record the relink leaves beside it: a check of the
+ * whole verdict would refuse every relink there is. An issue a tree holds already is not the
+ * join's doing, and a relink is not refused for it. Each tail is read as `verify` reads it: a tail
+ * with a line that does not read folds no event, and a tail's coverage is its verified
+ * checkpoints'. Nothing is written: the relinks are sealed in memory, as `relinksReadAt` seals
+ * them.
+ */
+export function identityRefusedOnlyTogether(
+  layouts: readonly ChainLayout[],
+  upcasters: UpcasterRegistry,
+  toWrite: readonly RelinkToWrite[],
+): readonly IdentityRefusedAt[] {
+  const each = layouts.map((layout) => {
+    const keys = committedKeys(layout);
+    return { layout, keys, ...readForTheFold(layout, upcasters, keys) };
+  });
+  const apart = new Set<string>();
+  for (const { layout, keys, entries, covered } of each) {
+    for (const issue of resolveIdentity(layout, entries, covered, keys).issues) {
+      apart.add(eventAt(issue));
+    }
+  }
+  // Read together as the first layout's directory: a tail found in two layouts is the first's.
+  const entries = new Map<string, readonly ChainEntry[]>();
+  const covered = new Map<string, number>();
+  for (const one of each) {
+    for (const [tail, held] of one.entries) {
+      if (entries.has(tail)) continue;
+      entries.set(tail, held);
+      covered.set(tail, one.covered.get(tail) ?? -1);
+    }
+  }
+  for (const { host, event } of toWrite) {
+    const held = entries.get(host) ?? [];
+    const last = held.at(-1);
+    const entry = sealEntry({
+      event,
+      tail: host,
+      seq: (last?.link.seq ?? -1) + 1,
+      prev: last?.link.hash ?? null,
+    });
+    entries.set(host, [...held, entry]);
+    covered.set(host, entry.link.seq);
+  }
+  const keys = eitherKeys(each.map((one) => one.keys));
+  return resolveIdentity(layouts[0] as ChainLayout, entries, covered, keys)
+    .issues.filter((issue) => !apart.has(eventAt(issue)))
+    .map(({ tail, seq, detail }) => ({ tail, seq, detail }));
+}
+
+/** Where an event sits, `<tail>#<seq>`: a key of a `Set`, never printed. */
+function eventAt(issue: { readonly tail: string; readonly seq: number }): string {
+  return `${issue.tail}#${issue.seq}`;
+}
+
+/** What the identity fold is handed of one layout: each tail's entries, and its coverage. */
+interface ReadForTheFold {
+  readonly entries: ReadonlyMap<string, readonly ChainEntry[]>;
+  readonly covered: ReadonlyMap<string, number>;
+}
+
+/** The tails of `layout` as `verify` hands them to the identity fold. */
+function readForTheFold(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+  keys: CommittedKeys,
+): ReadForTheFold {
+  const entries = new Map<string, readonly ChainEntry[]>();
+  const covered = new Map<string, number>();
+  for (const tail of listTails(layout)) {
+    const refused: TailIssue[] = [];
+    const read = readTail(layout, tail, upcasters, refusedLine(layout, tail, refused));
+    const checkpoints = readTailCheckpoints(layout, tail, refusedLine(layout, tail, refused));
+    if (refused.length > 0) {
+      entries.set(tail, []);
+      continue;
+    }
+    entries.set(tail, read.entries);
+    if (read.entries.length === 0) continue;
+    covered.set(
+      tail,
+      verifyCheckpoints(keys, tail, read.entries, checkpoints, [], 'the-chain').covered,
+    );
+  }
+  return { entries, covered };
+}
+
 /** The committed keys of several layouts, asked in order: the first that holds a key answers. */
 function eitherKeys(each: readonly CommittedKeys[]): CommittedKeys {
   const keys = (fingerprint: string) => {

@@ -411,8 +411,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in prose, as the cut the new refusal of a host tail is about; the reference hands the whole line over',
   },
   'CHANGELOG.md: mnema tail relink': {
-    times: 2,
-    why: 'the new verb named in prose, in its entry and in the sentence of the refusal that points at it; the reference hands the whole line over',
+    times: 3,
+    why: 'the new verb named in prose, in its entry, in the sentence of the refusal that points at it, and in the fix that refuses a relink the record would not verify with; the reference hands the whole line over',
   },
   'docs/cli-reference.md: mnema tail relink': {
     times: 2,
@@ -781,7 +781,7 @@ export const HANDED_OVER: Readonly<
   '.claude/rules/mnema-instructions.md': { line: 2 },
   '.github/instructions/mnema-instructions.instructions.md': { line: 2 },
   'AGENTS.md': { line: 2, name: 1 },
-  'CHANGELOG.md': { line: 88, name: 190, flag: 4 },
+  'CHANGELOG.md': { line: 89, name: 192, flag: 4 },
   'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
@@ -809,7 +809,7 @@ export const HANDED_OVER: Readonly<
   'packages/action/src/comment.ts': { name: 1 },
   'packages/chain/FORMAT.md': { line: 5, name: 3 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
-  'packages/chain/src/chain/relink-plan.ts': { name: 4 },
+  'packages/chain/src/chain/relink-plan.ts': { name: 5 },
   'packages/chain/src/chain/tree.ts': { name: 1 },
   'packages/chain/src/chain/writer.ts': { name: 4 },
   'docs/cli-reference.md': { line: 140, name: 183, flag: 2 },
