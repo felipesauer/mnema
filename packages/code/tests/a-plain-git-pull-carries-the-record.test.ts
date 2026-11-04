@@ -545,6 +545,27 @@ describe('mnema init offers it', SLOW, () => {
     );
     expect(none.out).not.toMatch(/merge\.autoStash/);
   });
+
+  it('plans the settings only where an answer gives them: by flag, with --yes, never for --all-hosts or nobody', () => {
+    const bare = join(sandbox, 'plan-bare.git');
+    const checkout = join(sandbox, 'plan');
+    expect(git(sandbox, 'init', '-q', '--bare', bare).status).toBe(0);
+    expect(git(sandbox, 'clone', '-q', bare, checkout).status).toBe(0);
+    const rows = (...args: string[]) => mnema(checkout, 'init', '--dry-run', ...args).out;
+    expect(rows()).not.toMatch(/autoStash/);
+    expect(rows('--all-hosts')).not.toMatch(/autoStash/);
+    expect(rows('--all-hosts', '--git-pull', 'yes')).toMatch(/set\s+merge\.autoStash/);
+    expect(rows('--git-pull', 'yes', '--hosts', 'none')).toMatch(/set\s+rebase\.autoStash/);
+    expect(rows('--yes', '--hosts', 'none')).toMatch(/set\s+rebase\.autoStash/);
+    const agent = rows('--yes', '--hosts', 'none', '--which', 'claude-code', '--accepts', 'yes');
+    expect(agent).toMatch(/set\s+merge\.autoStash/);
+    expect(agent).toMatch(/record\s+1 decision, proposed by the agent/);
+    const plain = join(sandbox, 'plan-plain');
+    mkdirSync(plain);
+    expect(
+      mnema(plain, 'init', '--dry-run', '--yes', '--hosts', 'none', '--git-pull', 'yes').out,
+    ).not.toMatch(/autoStash/);
+  });
 });
 
 describe('mnema init asks at a terminal', SLOW, () => {

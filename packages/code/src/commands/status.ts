@@ -258,7 +258,7 @@ export function runStatus(
         env: ctx.env,
         now: Date.parse((ctx.clock ?? systemClock)()),
       }),
-      forkKeptAside: readForkKeptAside({ cwd: ctx.cwd, env: ctx.env }),
+      forkKeptAside: readForkKeptAside({ cwd: ctx.cwd, env: ctx.env, processEnv: process.env }),
       runsByTree: sources.flatMap((source) => {
         const { lastRun } = resume(caches([source]), {
           actor: anchor,

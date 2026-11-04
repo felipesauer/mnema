@@ -36,8 +36,8 @@ const STASHES_READ = 20;
 export interface ForkKeptAsideContext {
   readonly cwd: string;
   readonly env: DiscoveryEnv;
-  /** The environment git runs with; this process's by default. */
-  readonly processEnv?: NodeJS.ProcessEnv;
+  /** The environment git runs with. */
+  readonly processEnv: NodeJS.ProcessEnv;
 }
 
 /** What a pull left aside of the tails. */
@@ -55,7 +55,7 @@ export interface ForkKeptAside {
 
 /** One git in `cwd`, or undefined where git is absent, does not answer 0, or takes too long. */
 function ask(ctx: ForkKeptAsideContext, cwd: string, args: readonly string[]): string | undefined {
-  const processEnv = ctx.processEnv ?? process.env;
+  const { processEnv } = ctx;
   const ran = spawnSync(
     'git',
     ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'core.quotepath=off', ...args],
@@ -106,7 +106,7 @@ export function readForkKeptAside(ctx: ForkKeptAsideContext): ForkKeptAside | un
   const deadDriver = theDriverThatCannotRunUnderAnAutoStash({
     cwd: ctx.cwd,
     env: ctx.env,
-    processEnv: ctx.processEnv ?? process.env,
+    processEnv: ctx.processEnv,
   });
   if (stashes === 0 && unmerged.size === 0 && deadDriver === undefined) return undefined;
   return {
