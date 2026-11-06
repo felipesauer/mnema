@@ -342,6 +342,23 @@ export function exitCodeOf(result) {
 }
 
 /**
+ * The runs one runtime got: the labels of a runtime share the part before `-shard`, and the
+ * smallest total over runtimes is the N the page quotes.
+ *
+ * @param {Tally} result
+ * @returns {number}
+ */
+export function runsPerRuntime(result) {
+  /** @type {Map<string, number>} */
+  const byRuntime = new Map();
+  for (const { label, count } of result.labels) {
+    const runtime = label.split('-shard')[0] ?? label;
+    byRuntime.set(runtime, (byRuntime.get(runtime) ?? 0) + count);
+  }
+  return Math.min(...byRuntime.values());
+}
+
+/**
  * The page. A broken ruler prints its inventory and NO rate table: a partial table beside the
  * word "broken" is exactly the thing somebody quotes later without the word.
  *
@@ -395,9 +412,10 @@ export function render(result) {
   out.push('');
 
   if (result.verdict === 'CLEAN') {
-    out.push('A green night is **not** evidence that there is no flake. At 30 runs this misses a');
+    const n = runsPerRuntime(result);
+    const misses = (/** @type {number} */ p) => Math.round((1 - p) ** n * 100);
     out.push(
-      'one-in-twenty flake 21% of the time and a one-in-a-hundred flake 74% of the time. The',
+      `A green night is **not** evidence that there is no flake. At ${n} runs per runtime this misses a one-in-twenty flake ${misses(1 / 20)}% of the time and a one-in-a-hundred flake ${misses(1 / 100)}% of the time. The`,
     );
     out.push('detection is in the accumulation across nights, never in any one of them.');
   } else {

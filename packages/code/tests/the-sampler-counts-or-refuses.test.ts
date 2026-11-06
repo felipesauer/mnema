@@ -685,3 +685,38 @@ describe('a broken night is told to somebody', () => {
     expect(tell).toContain('needs: [sample, summarise]');
   });
 });
+
+describe('the page quotes the N the night had, not a constant', () => {
+  const clean = (perLabel: number, shards: number) => {
+    const plan: Record<string, ReadonlyArray<keyof typeof CAPTURE>> = {};
+    for (const node of ['node24', 'node26']) {
+      for (let shard = 1; shard <= shards; shard++) {
+        plan[shards === 1 ? node : `${node}-shard${shard}`] = all('passed', perLabel);
+      }
+    }
+    return render(
+      tally({
+        dir: night(plan),
+        root: RUNNER_ROOT,
+        expect: perLabel * shards * 2,
+        perLabel,
+      }),
+    );
+  };
+
+  it('says 46% and 86% at 15 runs per runtime', () => {
+    const page = clean(5, 3);
+
+    expect(page).toContain('At 15 runs per runtime');
+    expect(page).toContain('one-in-twenty flake 46% of the time');
+    expect(page).toContain('one-in-a-hundred flake 86% of the time');
+  });
+
+  it('says 95% and 99% at 1 run per runtime', () => {
+    const page = clean(1, 1);
+
+    expect(page).toContain('At 1 runs per runtime');
+    expect(page).toContain('one-in-twenty flake 95% of the time');
+    expect(page).toContain('one-in-a-hundred flake 99% of the time');
+  });
+});
