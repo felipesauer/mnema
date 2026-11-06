@@ -69,13 +69,14 @@ version, so this checks the same package a global install of that version fetche
 <!-- not-on-the-site -->
 ## In the MCP Registry
 
-From the release after 0.1.4, the release workflow lists the server in the
-[official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.felipesauer/mnema`,
-after npm has the version and behind the same approval. The registry only holds the entry
-([`server.json`](../server.json), made from the version number by `pnpm release:prepare`); the
-package is still the one on npm, and a client that reads the registry starts it as `mnema mcp`, over
-stdio. The registry lists a package only if the version on npm carries `mcpName` equal to the entry's
-name, which `@mnema/code` has from that release, so 0.1.4 is not listed. Nothing here is a run of the
+From 0.1.5 the release workflow lists the server in the
+[official MCP Registry](https://registry.modelcontextprotocol.io), and from the first release after the repository moved
+to the organization `mnema-work` it does so as `io.github.mnema-work/mnema`; the entry 0.1.5 made keeps the name it was
+made under. The release lists the entry after npm has the version and behind the same approval. The registry only holds
+the entry ([`server.json`](../server.json), made from the version number by `pnpm release:prepare`); the package is still
+the one on npm, and a client that reads the registry starts it as `mnema mcp`, over stdio. The registry lists a package
+only if the version on npm carries `mcpName` equal to the entry's name, which `@mnema/code` has from that release.
+Nothing here is a run of the
 registry's: it is held by the file's own test (`the-registry-entry-is-what-the-package-says`), not by a
 listing.
 <!-- /not-on-the-site -->
@@ -90,11 +91,11 @@ person ([how each cell is known](evidence.md#each-hosts-rung)).
 
 | Host | Rung | Install |
 | :--- | :---: | :--- |
-| [Claude Code](hosts.md#claude-code) | **(d)** | `claude plugin marketplace add felipesauer/mnema`, then `claude plugin install mnema@mnema` |
+| [Claude Code](hosts.md#claude-code) | **(d)** | `claude plugin marketplace add mnema-work/mnema`, then `claude plugin install mnema@mnema` |
 | [VS Code](hosts.md#vs-code-and-cursor) | **(d)** | The Claude Code plugin, then `mnema doctor --fix vscode` |
 | [Cursor CLI](hosts.md#vs-code-and-cursor) | **(c)** | The Claude Code plugin, installed on the same machine |
-| [Codex](hosts.md#codex) | **(c)** | `codex plugin marketplace add felipesauer/mnema`, then `codex plugin add mnema@mnema` |
-| [Copilot CLI](hosts.md#github-copilot-cli) | **(d)** | `copilot plugin marketplace add felipesauer/mnema`, then `copilot plugin install mnema@mnema` |
+| [Codex](hosts.md#codex) | **(c)** | `codex plugin marketplace add mnema-work/mnema`, then `codex plugin add mnema@mnema` |
+| [Copilot CLI](hosts.md#github-copilot-cli) | **(d)** | `copilot plugin marketplace add mnema-work/mnema`, then `copilot plugin install mnema@mnema` |
 | [OpenCode](hosts.md#opencode) | **(c)** | One file copied into `.opencode/plugins/`, and the server declared in `opencode.json` |
 | [Gemini CLI](hosts.md#gemini-cli) | **(c)** | `gemini extensions install /path/to/mnema/plugin/gemini` |
 | [Qwen Code](hosts.md#qwen-code) | **(c)** | `qwen extensions install /path/to/mnema/plugin` |

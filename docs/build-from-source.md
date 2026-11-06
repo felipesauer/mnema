@@ -9,7 +9,7 @@ It needs Node `^24.15.0 || >=26.0.0`; the pnpm version comes from the repository
 corepack. `@mnema/code` depends on the other four packages, so the five tarballs go in one command:
 
 ```sh
-git clone https://github.com/felipesauer/mnema.git && cd mnema
+git clone https://github.com/mnema-work/mnema.git && cd mnema
 mkdir -p "$HOME/.local/bin" && export PATH="$HOME/.local/bin:$PATH"   # add the export to your shell's startup file
 corepack enable --install-directory ~/.local/bin && pnpm install --frozen-lockfile && pnpm build
 dest="$(mktemp -d)"

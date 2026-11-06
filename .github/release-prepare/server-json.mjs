@@ -12,7 +12,7 @@
 
 export const SCHEMA =
   'https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json';
-export const NAME = 'io.github.felipesauer/mnema';
+export const NAME = 'io.github.mnema-work/mnema';
 export const PACKAGE = '@mnema/code';
 
 /**
@@ -27,12 +27,12 @@ export function serverJson(version) {
     description:
       'Signed, append-only decision records for AI coding agents, over MCP. Verify them offline.',
     repository: {
-      url: 'https://github.com/felipesauer/mnema',
+      url: 'https://github.com/mnema-work/mnema',
       source: 'github',
       subfolder: 'packages/code',
     },
     version,
-    websiteUrl: 'https://felipesauer.github.io/mnema/',
+    websiteUrl: 'https://mnema.work/',
     packages: [
       {
         registryType: 'npm',

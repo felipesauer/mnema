@@ -87,7 +87,7 @@ first line says whether it does.
 ## 4. Hand it to an agent
 
 ```sh
-claude plugin marketplace add felipesauer/mnema
+claude plugin marketplace add mnema-work/mnema
 claude plugin install mnema@mnema
 ```
 

@@ -28,7 +28,7 @@ describe('what is not an email address is left alone', () => {
   const UNTOUCHED: Record<string, string> = {
     'a URL with a user': 'clone https://user@host.example.com/repo.git first',
     'a URL with a user and a password': 'at postgres://svc:pw1234@db.internal:5432/app',
-    'an scp-style git remote': 'remote is git@github.com:felipesauer/mnema.git',
+    'an scp-style git remote': 'remote is git@github.com:mnema-work/mnema.git',
     'a pinned package': 'pin react@18.2.0 and lodash@latest and @scope/pkg',
     'a version tag': 'use typescript@5.6.3',
     'a mnid': `mnid:${'ab12'.repeat(16)}`,

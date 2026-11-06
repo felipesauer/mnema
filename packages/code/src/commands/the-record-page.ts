@@ -73,7 +73,7 @@ export const RECORD_README = [
   '- Private keys are never here: the `.gitignore` in this folder keeps them out of git.',
   '',
   'To check it, run `mnema verify` in the project. Without installing anything, clone',
-  'https://github.com/felipesauer/mnema and run',
+  'https://github.com/mnema-work/mnema and run',
   '`python3 packages/chain/verifier/mnema_verify.py record <this folder>`.',
   '',
 ].join('\n');

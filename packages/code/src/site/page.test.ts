@@ -11,7 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { FakePage } from '../../tests/support/a-page-in-a-vm.js';
 import { A_PERSON } from '../one-line.js';
-import { contrastOf as ours } from './colour.js';
+import { contrastOf as ours, textAccent } from './colour.js';
 import type { DecisionMove, PageDecision, PageNote, TimelineEntry } from './model.js';
 import {
   type Colours,
@@ -432,10 +432,7 @@ describe('the colours', () => {
     focus: FOCUS_FLOOR,
   };
 
-  it('reads at AA, in both themes, on the page and on a card: every colour of the palette, enumerated from it', async () => {
-    const theirs = await source<{ contrastOf(a: string, b: string): number }>(
-      'site/build/the-pages.mjs',
-    );
+  it('reads at AA, in both themes, on the page and on a card: every colour of the palette, enumerated from it', () => {
     let pairs = 0;
     for (const theme of ['dark', 'light'] as const) {
       for (const name of Object.keys(PALETTE[theme]) as (keyof Colours)[]) {
@@ -443,9 +440,8 @@ describe('the colours', () => {
         const floor = HELD_TO[name];
         if (floor === null) continue;
         for (const ground of ['bg', 'surface'] as const) {
-          const ratio = theirs.contrastOf(PALETTE[theme][name], PALETTE[theme][ground]);
+          const ratio = ours(PALETTE[theme][name], PALETTE[theme][ground]);
           expect(ratio, `${theme}.${name} on ${ground}`).toBeGreaterThanOrEqual(floor);
-          expect(ours(PALETTE[theme][name], PALETTE[theme][ground])).toBe(ratio);
           pairs++;
         }
       }
@@ -453,16 +449,13 @@ describe('the colours', () => {
     expect(pairs).toBe(2 * 7 * 2);
   });
 
-  it("is the banner's: the accent and the ground are the front page's, and the accent as text is what the site's rule gives", async () => {
+  it("is the banner's: the accent and the ground are the front page's, and the accent as text is what the page's own rule gives", async () => {
     const { ACCENT } = await source<{ ACCENT: Record<'dark' | 'light', string> }>(
       '.github/the-front-page/accent.mjs',
     );
     const { PAGE } = await source<{ PAGE: Record<'dark' | 'light', string> }>(
       '.github/the-front-page/draw.mjs',
     );
-    const { textAccent } = await source<{
-      textAccent(o: { ink: string; toward: string; grounds: string[]; floor: number }): string;
-    }>('site/build/the-pages.mjs');
     for (const theme of ['dark', 'light'] as const) {
       const other = theme === 'dark' ? 'light' : 'dark';
       expect(PALETTE[theme].accent).toBe(ACCENT[theme]);

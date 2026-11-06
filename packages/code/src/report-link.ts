@@ -20,7 +20,7 @@
  */
 
 /** The repository a report goes to. Fixed in the binary. */
-export const ISSUE_REPO = 'felipesauer/mnema';
+export const ISSUE_REPO = 'mnema-work/mnema';
 
 /** The form of `.github/ISSUE_TEMPLATE/` the link opens. */
 export const ISSUE_TEMPLATE = 'internal_error.yml';

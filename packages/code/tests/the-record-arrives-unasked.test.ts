@@ -1217,7 +1217,7 @@ describe('the record arrives unasked', () => {
         `The mnema plugin is ${pluginVersion()} and the mnema it runs is 0.0.1, which is older than the plugin: ` +
           'what the plugin asks of it may not be understood and this session can open without the record. ' +
           `Update it with \`npm i -g @mnema/code@${pluginVersion()}\` ` +
-          '(https://github.com/felipesauer/mnema/blob/main/docs/install.md); nothing is blocked meanwhile.',
+          '(https://github.com/mnema-work/mnema/blob/main/docs/install.md); nothing is blocked meanwhile.',
       );
     });
 

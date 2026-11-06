@@ -118,7 +118,7 @@ describe('the link', () => {
     expect(link).toBeDefined();
     const url = new URL(link as string);
     expect(`${url.origin}${url.pathname}`).toBe(`https://github.com/${ISSUE_REPO}/issues/new`);
-    expect(ISSUE_REPO).toBe('felipesauer/mnema');
+    expect(ISSUE_REPO).toBe('mnema-work/mnema');
     expect([...url.searchParams.keys()]).toEqual(['template', 'title', REPORT_FIELD]);
     expect(url.searchParams.get('template')).toBe(ISSUE_TEMPLATE);
     expect(url.searchParams.get('title')).toBe(rendered.title);

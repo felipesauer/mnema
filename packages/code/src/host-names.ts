@@ -259,7 +259,7 @@ export const HOSTS = {
     install: {
       at: 'claude-code',
       commands: [
-        'claude plugin marketplace add felipesauer/mnema',
+        'claude plugin marketplace add mnema-work/mnema',
         'claude plugin install mnema@mnema',
       ],
     },
@@ -338,7 +338,7 @@ export const HOSTS = {
     title: 'Codex',
     install: {
       at: 'codex',
-      commands: ['codex plugin marketplace add felipesauer/mnema', 'codex plugin add mnema@mnema'],
+      commands: ['codex plugin marketplace add mnema-work/mnema', 'codex plugin add mnema@mnema'],
     },
     door: 'command',
     // Codex reads the plugin through a manifest of its own (`.codex-plugin/plugin.json`) that
@@ -413,7 +413,7 @@ export const HOSTS = {
     install: {
       at: 'github-copilot-cli',
       commands: [
-        'copilot plugin marketplace add felipesauer/mnema',
+        'copilot plugin marketplace add mnema-work/mnema',
         'copilot plugin install mnema@mnema',
       ],
     },

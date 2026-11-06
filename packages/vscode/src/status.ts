@@ -103,7 +103,7 @@ export function readCli(result: {
 }
 
 /** The page that says how to install or update the command line. */
-export const INSTALL_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
+export const INSTALL_PAGE = 'https://github.com/mnema-work/mnema/blob/main/docs/install.md';
 
 /**
  * The one sentence for a command line and an extension on different versions, or nothing when they
@@ -143,7 +143,7 @@ export const TOOLTIP_COMMANDS: readonly string[] = [
 ];
 
 /** The page that says what each channel carries. */
-export const SWITCHES_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/switches.md';
+export const SWITCHES_PAGE = 'https://github.com/mnema-work/mnema/blob/main/docs/switches.md';
 
 /** What is said of the decisions awaiting a judgment, for the badge, the tooltip and the screen reader. */
 export const awaitingPhrase = (total: number): string =>

@@ -287,22 +287,6 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     "The context package's barrel. This one DOES exist under packages/, and is unresolvable for the other reason entirely: the coverage gate excludes a package's src/index.ts from what it measures, PRODUCTION implements that exclusion, and so the barrel is in no corpus for a specifier to land in.",
   'packages/core/src/index.test.ts -> ./index.js':
     "The core package's barrel, named by the case that sits next to it. Excluded by the same glob as the context package barrel, and worth its own row because the two are reached differently: this one is imported from inside src/, where a test file lives beside the source it names.",
-  'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-build.mjs':
-    'The steps of the site build that touch the disk: the pages of docs/ and the landing it writes under site/, the pictures and the favicon it copies or draws from their owners. The case imports it to run it over this tree into a directory of its own, and it sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
-  'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-pages.mjs':
-    'The readings the site is made of, plain functions over text: the title that moves to the frontmatter, the link that lands, the sections of the README and the groups of its Docs. The case runs them over a fixture and over the real tree, and the specifier is the proof of the site and not a dependency the scanner could follow.',
-  'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts -> ../../../site/build/the-pages.mjs':
-    'Two things of the readings the built-site case needs: the address /record/ links back to, so that the case that compares /record/ with what `mnema site --back-link` writes asks for the same address the build used, and the path of the recording the proof shows, so that the case that looks for it in the built page reads it from where the build does. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
-  'packages/code/tests/the-site-is-made-of-its-sources.test.ts -> ../../../site/build/the-record.mjs':
-    'The step that writes the verifier page of the record by running the binary of this commit, and stops when the record does not verify. The case runs it over this repository and over a copy with one byte changed, so the specifier is the proof that a record that fails never becomes a page of the site.',
-  'packages/code/tests/every-page-of-the-site-says-what-it-is.test.ts -> ../../../site/build/the-build.mjs':
-    'The facts the site is built from, read now from the packages and the commit: the case holds the structured data and the canonical addresses of the built pages to them, and so asks for the same function the build asks. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
-  'packages/code/tests/every-page-of-the-site-says-what-it-is.test.ts -> ../../../site/build/the-pages.mjs':
-    'The readings of what a page says of itself: the description read from the first sentence of a page of docs/ or from its own description line, the structured data, the head handed to `mnema site --head` for /record/ and its sitemap line. The case runs them over fixtures and holds the built pages to them, and the specifier is the proof of the site and not a dependency the scanner could follow.',
-  'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts -> ../../../site/build/the-build.mjs':
-    'The facts of the build, for the case that compares /record/ with what `mnema site --back-link --head` writes: the build hands the command a head read from the same facts. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
-  'packages/code/tests/the-sentence-reaches-every-door.test.ts -> ../../../site/build/the-build.mjs':
-    'The address of the site, from the same facts the site is built from, so that the case that holds every manifest a stranger reads to the site asks for the address the build serves it at, and no copy of it is typed in a test. It sits under site/, a tree with its own lockfile that no walk of packages/ can reach.',
 };
 
 // ---------------------------------------------------------------------------
@@ -984,7 +968,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/site/browser/entry.test.ts': 3,
   'packages/code/src/site/browser/filters.test.ts': 6,
   'packages/code/src/site/browser/fs.test.ts': 4,
-  'packages/code/src/site/colour.test.ts': 4,
+  'packages/code/src/site/colour.test.ts': 2,
   'packages/code/src/site/model.test.ts': 4,
   'packages/code/src/site/page.test.ts': 9,
   'packages/code/src/site/the-lists-are-checked-in-the-browser.test.ts': 22,
@@ -1110,7 +1094,6 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-link-a-page-carries-lands.test.ts': 6,
   'packages/code/tests/every-option-feeds-something.test.ts': 8,
   'packages/code/tests/every-page-of-the-cli-is-pinned.test.ts': 7,
-  'packages/code/tests/every-page-of-the-site-says-what-it-is.test.ts': 6,
   'packages/code/tests/every-public-value-has-a-caller.test.ts': 6,
   'packages/code/tests/every-readme-says-what-it-does-not.test.ts': 5,
   'packages/code/tests/every-sandbox-is-removed-where-it-was-made.test.ts': 6,
@@ -1227,7 +1210,6 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/support/published-examples.ts': 3,
   'packages/code/tests/support/reading-a-shell-line.ts': 2,
   'packages/code/tests/support/reading-source.ts': 2,
-  'packages/code/tests/support/reading-the-site.ts': 4,
   'packages/code/tests/support/screen.ts': 3,
   'packages/code/tests/support/the-cache-is-not-the-record.ts': 1,
   'packages/code/tests/support/the-host-files.ts': 8,
@@ -1255,7 +1237,6 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-broken-link-reaches-every-reader.test.ts': 5,
   'packages/code/tests/the-built-binary-runs-from-a-symlink.test.ts': 7,
   'packages/code/tests/the-built-in-index-is-the-repositorys.test.ts': 7,
-  'packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts': 11,
   'packages/code/tests/the-busy-tail-is-a-refusal.test.ts': 11,
   'packages/code/tests/the-cache-dir-reaches-every-door.test.ts': 9,
   'packages/code/tests/the-cache-is-not-said-to-change-no-answer.test.ts': 5,
@@ -1394,6 +1375,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-release-prepare-writes-every-number.test.ts': 7,
   'packages/code/tests/the-release-workflow-publishes-without-a-token.test.ts': 4,
   'packages/code/tests/the-replaced-decision-is-named-where-it-is-read.test.ts': 17,
+  'packages/code/tests/the-repository-says-where-it-lives.test.ts': 5,
   'packages/code/tests/the-rule-has-an-address.test.ts': 11,
   'packages/code/tests/the-rule-reaches-the-writing.test.ts': 15,
   'packages/code/tests/the-rulers-are-read-by-the-rules.test.ts': 6,
@@ -1405,7 +1387,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-screen-is-ours.test.ts': 15,
   'packages/code/tests/the-screen-says-what-it-was-drawn-at.test.ts': 10,
   'packages/code/tests/the-secret-classes-page-is-generated.test.ts': 4,
-  'packages/code/tests/the-sentence-reaches-every-door.test.ts': 8,
+  'packages/code/tests/the-sentence-reaches-every-door.test.ts': 7,
   'packages/code/tests/the-server-keeps-its-own-projects-cache.test.ts': 11,
   'packages/code/tests/the-server-only-plugin-runs-no-hook.test.ts': 4,
   'packages/code/tests/the-session-journal-keeps-the-shape-not-the-words.test.ts': 16,
@@ -1414,8 +1396,6 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-session-the-manual-shows-is-the-one-printed.test.ts': 8,
   'packages/code/tests/the-shell-a-page-publishes-is-the-shell-that-runs.test.ts': 5,
   'packages/code/tests/the-shell-knows-the-verbs.test.ts': 17,
-  'packages/code/tests/the-site-build-sends-no-telemetry.test.ts': 4,
-  'packages/code/tests/the-site-is-made-of-its-sources.test.ts': 11,
   'packages/code/tests/the-strict-gate-catches-the-forgery.test.ts': 7,
   'packages/code/tests/the-switch-is-a-fact.test.ts': 28,
   'packages/code/tests/the-switch-pages-are-generated.test.ts': 5,
@@ -2282,8 +2262,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows; a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(27);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(27);
+    expect(unresolved.length).toBe(19);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(19);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);

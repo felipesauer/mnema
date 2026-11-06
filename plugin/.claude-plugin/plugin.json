@@ -7,8 +7,8 @@
     "name": "Felipe Sauer",
     "url": "https://github.com/felipesauer"
   },
-  "homepage": "https://felipesauer.github.io/mnema/",
-  "repository": "https://github.com/felipesauer/mnema",
+  "homepage": "https://mnema.work/",
+  "repository": "https://github.com/mnema-work/mnema",
   "license": "Apache-2.0",
   "icon": "./.claude-plugin/icon.png",
   "keywords": ["audit-trail", "append-only", "accountability", "adr", "local-first"],

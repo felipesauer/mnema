@@ -782,7 +782,6 @@ export const HANDED_OVER: Readonly<
   '.github/instructions/mnema-instructions.instructions.md': { line: 2 },
   'AGENTS.md': { line: 2, name: 1 },
   'CHANGELOG.md': { line: 89, name: 192, flag: 4 },
-  'CONTRIBUTING.md': { name: 2 },
   'README.md': { line: 4, name: 8 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },

@@ -498,8 +498,8 @@ describe('the sampler reads exactly the names its workflow writes', () => {
  * (so the next night finds the issue and adds to it) and a body that carries this night's rate.
  */
 describe('the sampler names one issue per case that failed', () => {
-  const RUN = 'https://github.com/felipesauer/mnema/actions/runs/1';
-  const RUN_LATER = 'https://github.com/felipesauer/mnema/actions/runs/2';
+  const RUN = 'https://github.com/mnema-work/mnema/actions/runs/1';
+  const RUN_LATER = 'https://github.com/mnema-work/mnema/actions/runs/2';
 
   const sampled = (labels: Record<string, ReadonlyArray<keyof typeof CAPTURE>>) =>
     tally({ dir: night(labels), root: RUNNER_ROOT, expect: 10, perLabel: 5 });

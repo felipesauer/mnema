@@ -8,7 +8,7 @@ For the Claude Code plugin (the opening context, the notes beside it and the per
 rules), add this repository as a marketplace and install from it:
 
 ```sh
-claude plugin marketplace add felipesauer/mnema
+claude plugin marketplace add mnema-work/mnema
 claude plugin install mnema@mnema
 ```
 
@@ -51,7 +51,7 @@ that reaches VS Code as well) are in the [plugin's page](../plugin/README.md#in-
 
 VS Code's agent loads the plugin only from a folder listed in its `chat.pluginLocations` setting,
 which VS Code marks as experimental. In order: install the plugin in Claude Code
-(`claude plugin marketplace add felipesauer/mnema`, then `claude plugin install mnema@mnema`), run
+(`claude plugin marketplace add mnema-work/mnema`, then `claude plugin install mnema@mnema`), run
 `mnema doctor` and read its `vscode` line, and if it asks for it, run `mnema doctor --fix vscode`
 (`--dry-run` shows the change first). That verb is the one thing `doctor` writes: it runs only when
 you type it, copies your `settings.json` aside first, keeps its comments, and lists the plugin's
@@ -63,7 +63,7 @@ In Codex, the plugin comes from the same marketplace, and Codex reads a manifest
 in it (`.codex-plugin/plugin.json`):
 
 ```bash
-codex plugin marketplace add felipesauer/mnema
+codex plugin marketplace add mnema-work/mnema
 codex plugin add mnema@mnema
 ```
 
@@ -82,7 +82,7 @@ JavaScript module, copied into the project, and the server is declared in the pr
 
 ```bash
 mkdir -p .opencode/plugins
-curl -fsSL https://raw.githubusercontent.com/felipesauer/mnema/main/plugin/opencode/mnema.js \
+curl -fsSL https://raw.githubusercontent.com/mnema-work/mnema/main/plugin/opencode/mnema.js \
   -o .opencode/plugins/mnema.js
 ```
 
@@ -110,7 +110,7 @@ In GitHub Copilot CLI, the plugin comes from the same marketplace, which the com
 as it is:
 
 ```bash
-copilot plugin marketplace add felipesauer/mnema
+copilot plugin marketplace add mnema-work/mnema
 copilot plugin install mnema@mnema
 ```
 

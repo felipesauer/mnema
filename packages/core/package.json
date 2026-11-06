@@ -29,14 +29,14 @@
     "!dist/**/*.map",
     "NOTICE"
   ],
-  "homepage": "https://felipesauer.github.io/mnema/",
+  "homepage": "https://mnema.work/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/felipesauer/mnema.git",
+    "url": "git+https://github.com/mnema-work/mnema.git",
     "directory": "packages/core"
   },
   "bugs": {
-    "url": "https://github.com/felipesauer/mnema/issues"
+    "url": "https://github.com/mnema-work/mnema/issues"
   },
   "engines": {
     "node": "^24.15.0 || >=26.0.0"

@@ -32,7 +32,7 @@ const INSTALL_PAGE = 'docs/install.md';
 const PINNED = /^(npm i (?:-g|--ignore-scripts) @mnema\/code@)\d+\.\d+\.\d+( *)$/gm;
 const SERVER_JSON = 'server.json';
 const CHANGELOG = 'CHANGELOG.md';
-const RELEASES = 'https://github.com/felipesauer/mnema/releases/tag/';
+const RELEASES = 'https://github.com/mnema-work/mnema/releases/tag/';
 const RETIRED = ', a pre-release withdrawn, from before this line';
 const SEMVER = /^\d+\.\d+\.\d+$/;
 

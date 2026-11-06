@@ -2,19 +2,19 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/context/assets/context-dark.svg">
-  <img src="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/context/assets/context-light.svg" alt="The mnema context layer: read-only derivations that turn the proven record into the context that guides an agent. Depends on @mnema/core." width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mnema-work/mnema/main/packages/context/assets/context-dark.svg">
+  <img src="https://raw.githubusercontent.com/mnema-work/mnema/main/packages/context/assets/context-light.svg" alt="The mnema context layer: read-only derivations that turn the proven record into the context that guides an agent. Depends on @mnema/core." width="720">
 </picture>
 </p>
 
 <p align="center">
-<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
+<a href="https://github.com/mnema-work/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/mnema-work/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
 <a href="https://www.npmjs.com/package/@mnema/context"><img alt="npm: @mnema/context" src="https://img.shields.io/npm/v/@mnema/context?style=flat-square&amp;label=npm&amp;color=997dbf"></a>
-<a href="https://github.com/felipesauer/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
+<a href="https://github.com/mnema-work/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
 <img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square">
 </p>
 
-The layer of [mnema](https://github.com/felipesauer/mnema) that guides an agent
+The layer of [mnema](https://github.com/mnema-work/mnema) that guides an agent
 by reading the proof: read-only derivations that turn the recorded work into the
 context an agent needs: where a person left off, what they may do next, whether
 a move is allowed.
@@ -159,7 +159,7 @@ layer makes no proof of its own; being clear about that is the point.
 npm i @mnema/context
 ```
 
-It is on npm; `@mnema/code`, the package most people want, installs it for you ([install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md)).
+It is on npm; `@mnema/code`, the package most people want, installs it for you ([install page](https://github.com/mnema-work/mnema/blob/main/docs/install.md)).
 
 **It is released because `@mnema/code` depends on it, not because you should install
 it.** This section used to say it was internal and never published; what falsified that

@@ -28,7 +28,7 @@ const PAGE = 'docs/what-0-1-6-is-expected-to-bring.md';
 const page = readFileSync(join(ROOT, PAGE), 'utf-8');
 
 /** The record page's address of a decision, the one every link of the page must have. */
-const RECORD_PAGE = 'https://felipesauer.github.io/mnema/record/';
+const RECORD_PAGE = 'https://mnema.work/record/';
 
 /** `[ADR-n](target)`, wherever it stands. */
 const CITATION = /\[(ADR-\d+)\]\(([^)\s]+)\)/g;

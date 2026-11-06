@@ -92,8 +92,7 @@ jobs:
           echo "${OSV_SCANNER_SHA256}  osv-scanner" | sha256sum --check --strict
           chmod +x osv-scanner
 
-      # The workspace's lockfile and the site's, which lives in a tree of its own (`site/`) and is never
-      # published. No Python requirements file: the verifier in `packages/chain/verifier` imports the
-      # standard library alone.
-      - name: Read the lockfiles
-        run: ./osv-scanner scan source --lockfile pnpm-lock.yaml --lockfile site/package-lock.json
+      # The workspace's lockfile. No Python requirements file: the verifier in `packages/chain/verifier` imports the
+      # standard library alone. The site's lockfile is no longer scanned here: the site has its own repository, which has Dependabot.
+      - name: Read the lockfile
+        run: ./osv-scanner scan source --lockfile pnpm-lock.yaml

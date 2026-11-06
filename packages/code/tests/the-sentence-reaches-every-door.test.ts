@@ -48,7 +48,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { theFacts } from '../../../site/build/the-build.mjs';
 import { buildProgram } from '../src/program.js';
 import { PRODUCT_PROMISE, PRODUCT_PROMISE_CAVEAT } from '../src/promise.js';
 
@@ -473,7 +472,7 @@ describe('no keyword promises what the sentence does not', () => {
  * IT WAS ONE DESTINATION, THE REPOSITORY, AND THE SITE FALSIFIED THAT. The premise "every manifest names the
  * repository" held while the site was dead; the site is back, and a package page, a store page and a plugin
  * listing are where a search engine and a reader first meet the product, so a manifest a stranger reads names
- * the site (`homeUrl` of `site/build/the-pages.mjs`, from the facts the site is built from). A manifest that is
+ * the site (https://mnema.work/, built in the repository mnema-work/mnema.work). A manifest that is
  * private and is not the extension (the root, the action and the SDK) stays on the repository.
  *
  * THE LIST IS READ OFF THE DISK, NEVER TYPED HERE. A list typed here is a list that stays
@@ -534,9 +533,8 @@ describe('every manifest points home at the same place', () => {
     ).repository.url
       .replace(/^git\+/, '')
       .replace(/\.git$/, '');
-    expect(repository).toBe('https://github.com/felipesauer/mnema');
-    const site = theFacts().homeUrl;
-    expect(site).toBe('https://felipesauer.github.io/mnema/');
+    expect(repository).toBe('https://github.com/mnema-work/mnema');
+    const site = 'https://mnema.work/';
     const toTheRepository = new Set<string>();
     const toTheSite = new Set<string>();
     for (const { file, homepage } of homes()) {

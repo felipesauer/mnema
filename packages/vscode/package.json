@@ -27,13 +27,13 @@
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
   "type": "module",
-  "homepage": "https://felipesauer.github.io/mnema/",
+  "homepage": "https://mnema.work/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/felipesauer/mnema.git"
+    "url": "git+https://github.com/mnema-work/mnema.git"
   },
   "bugs": {
-    "url": "https://github.com/felipesauer/mnema/issues"
+    "url": "https://github.com/mnema-work/mnema/issues"
   },
   "engines": {
     "node": "^24.15.0 || >=26.0.0",
@@ -119,12 +119,12 @@
     "viewsWelcome": [
       {
         "view": "mnema.proposed",
-        "contents": "This folder holds no .mnema record, so there is nothing to list. Run mnema init in a [terminal](command:workbench.action.terminal.new) here to start one; [what a first record looks like](https://github.com/felipesauer/mnema/blob/main/docs/first-record.md).",
+        "contents": "This folder holds no .mnema record, so there is nothing to list. Run mnema init in a [terminal](command:workbench.action.terminal.new) here to start one; [what a first record looks like](https://github.com/mnema-work/mnema/blob/main/docs/first-record.md).",
         "when": "!mnema.hasRecord"
       },
       {
         "view": "mnema.proposed",
-        "contents": "The mnema command could not be used, so nothing is listed, which is not the same as nothing pending. Install it with npm i -g @mnema/code ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with the mnema.command setting ([open it](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)); then [refresh](command:mnema.refresh).",
+        "contents": "The mnema command could not be used, so nothing is listed, which is not the same as nothing pending. Install it with npm i -g @mnema/code ([how](https://github.com/mnema-work/mnema/blob/main/docs/install.md)), or point the extension at the executable with the mnema.command setting ([open it](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)); then [refresh](command:mnema.refresh).",
         "when": "mnema.hasRecord && mnema.cliMissing"
       },
       {
@@ -139,12 +139,12 @@
       },
       {
         "view": "mnema.stacks",
-        "contents": "This folder holds no .mnema record, so no stack is adopted. Run mnema init in a [terminal](command:workbench.action.terminal.new) here to start one; [what a first record looks like](https://github.com/felipesauer/mnema/blob/main/docs/first-record.md).",
+        "contents": "This folder holds no .mnema record, so no stack is adopted. Run mnema init in a [terminal](command:workbench.action.terminal.new) here to start one; [what a first record looks like](https://github.com/mnema-work/mnema/blob/main/docs/first-record.md).",
         "when": "!mnema.hasRecord"
       },
       {
         "view": "mnema.stacks",
-        "contents": "The mnema command could not be used, so nothing is listed, which is not the same as nothing pending. Install it with npm i -g @mnema/code ([how](https://github.com/felipesauer/mnema/blob/main/docs/install.md)), or point the extension at the executable with the mnema.command setting ([open it](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)); then [refresh](command:mnema.refresh).",
+        "contents": "The mnema command could not be used, so nothing is listed, which is not the same as nothing pending. Install it with npm i -g @mnema/code ([how](https://github.com/mnema-work/mnema/blob/main/docs/install.md)), or point the extension at the executable with the mnema.command setting ([open it](command:workbench.action.openSettings?%5B%22mnema.command%22%5D)); then [refresh](command:mnema.refresh).",
         "when": "mnema.hasRecord && mnema.cliMissing"
       },
       {

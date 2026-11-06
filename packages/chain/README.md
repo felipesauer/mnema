@@ -2,19 +2,19 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/chain/assets/chain-dark.svg">
-  <img src="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/chain/assets/chain-light.svg" alt="The mnema proof engine: typed event catalog, per-tail hash chain, Ed25519 checkpoints, and verification. Zero runtime dependencies." width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mnema-work/mnema/main/packages/chain/assets/chain-dark.svg">
+  <img src="https://raw.githubusercontent.com/mnema-work/mnema/main/packages/chain/assets/chain-light.svg" alt="The mnema proof engine: typed event catalog, per-tail hash chain, Ed25519 checkpoints, and verification. Zero runtime dependencies." width="720">
 </picture>
 </p>
 
 <p align="center">
-<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
+<a href="https://github.com/mnema-work/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/mnema-work/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
 <a href="https://www.npmjs.com/package/@mnema/chain"><img alt="npm: @mnema/chain" src="https://img.shields.io/npm/v/@mnema/chain?style=flat-square&amp;label=npm&amp;color=997dbf"></a>
-<a href="https://github.com/felipesauer/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
+<a href="https://github.com/mnema-work/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
 <img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square">
 </p>
 
-The proof engine at the core of [mnema](https://github.com/felipesauer/mnema): a
+The proof engine at the core of [mnema](https://github.com/mnema-work/mnema): a
 signed, append-only event log for the work of AI agents. It records what happened
 as typed, self-contained events and chains them, so that what is still in the log
 has not changed since it was signed (tamper-evident, not tamper-proof) and a
@@ -148,7 +148,7 @@ witnesses do different halves of that, and neither does the other's:
 npm i @mnema/chain
 ```
 
-It is on npm; `@mnema/code`, the package most people want, installs it for you ([install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md)).
+It is on npm; `@mnema/code`, the package most people want, installs it for you ([install page](https://github.com/mnema-work/mnema/blob/main/docs/install.md)).
 
 **This package is released on its own, and that is the point of it.** This section
 used to say it was internal and never published, and the channel it named (the
@@ -274,7 +274,7 @@ reading `hash.ts` and `verify.ts` is the place to start.
 
 ## The format, written down
 
-[`FORMAT.md`](https://github.com/felipesauer/mnema/blob/main/packages/chain/FORMAT.md) specifies the bytes: canonicalization, the framed
+[`FORMAT.md`](https://github.com/mnema-work/mnema/blob/main/packages/chain/FORMAT.md) specifies the bytes: canonicalization, the framed
 hashing, the entry hash, the stored line, the content root, and the signed
 checkpoint; and the rules by which a reader decides what it applies: which key may
 sign (enrolment), who may take a note back, which moves of a workflow stand, and what
@@ -291,7 +291,7 @@ required field and an optional one that happens to be present look identical. It
 not a description of the reader: it is the reader's own table, serialized, and a
 guard holds the two byte for byte.
 
-[`verifier/`](https://github.com/felipesauer/mnema/tree/main/packages/chain/verifier) is the other half of the same idea, and it is what stops
+[`verifier/`](https://github.com/mnema-work/mnema/tree/main/packages/chain/verifier) is the other half of the same idea, and it is what stops
 the paragraph above from being a claim about a document nobody ever implemented: a
 verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
 It reproduces the 41 vectors, the four aggregate digests and the five signed messages, checks T1, T2/T4 and T3
@@ -322,7 +322,7 @@ and not in the **social** one (same author, same repository).
 
 This is for someone who keeps a record across upgrades of the tool. It lives on this page
 because it is a statement about the format, and the format travels with this package. It
-promises what [`FORMAT.md`](https://github.com/felipesauer/mnema/blob/main/packages/chain/FORMAT.md) and its tests already hold, and nothing more.
+promises what [`FORMAT.md`](https://github.com/mnema-work/mnema/blob/main/packages/chain/FORMAT.md) and its tests already hold, and nothing more.
 
 **What can change.** A new kind of event can be added to the catalog, and a kind can gain a
 second version. A reader picks the contract for a line by its `kind` and `v` together, so
