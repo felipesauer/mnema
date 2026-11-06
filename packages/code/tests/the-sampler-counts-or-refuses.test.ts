@@ -636,8 +636,8 @@ describe('the steps that sample and that count are held to one repetition count'
   });
 
   it('runs five a night, one on a pull request, and lets a typed number win', () => {
-    expect(counts[0]).toBe(
-      "${{ github.event.inputs.repetitions || (github.event_name == 'pull_request' && 1 || 5) }}",
+    expect(counts[0]).toMatch(
+      /^\$\{\{ github\.event\.inputs\.repetitions \|\| \(github\.event_name == 'pull_request' && 1 \|\| 5\) \}\}$/,
     );
     expect(WORKFLOW).toMatch(/default: '5'/);
     expect(WORKFLOW).not.toMatch(/\|\| 10\b/);
