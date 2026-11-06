@@ -746,7 +746,17 @@ describe('the verdict the landing shows is the one of the committed tree', () =>
       command: 'mnema verify',
     }) as string;
     expect(said).toMatch(/^public: /);
-    expect(said.trimEnd().split('\n')).toHaveLength(1);
+    // The first line is the verdict of the public tree; any further line is an indented census line of that tree
+    // (a tail that names no record adds one), and the private tree is never in it.
+    // The first line is the verdict of the public tree; any further line is an indented census line of that tree
+    // (a tail that names no record adds one), and the private tree is never in it.
+    const [, ...rest] = said.trimEnd().split('\n');
+    for (const line of rest) {
+      expect(line, 'a line after the verdict is a census line of the public tree').toMatch(
+        /^\s+census \[[a-z-]+\] public /,
+      );
+    }
+    expect(said.split('\n').some((l) => l.startsWith('private:'))).toBe(false);
   }, 60_000);
 
   it('stops, and says so, when the committed record does not verify', () => {
