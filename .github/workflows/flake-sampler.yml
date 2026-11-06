@@ -17,13 +17,16 @@ name: Flake sampler
 # once". Twice in two days, that turned out not to be the same question as "does it pass".
 #
 # AND IT IS A CONTINUOUS INSTRUMENT, NOT A ONE-OFF TEST. With p the rate of a flake, N runs find it
-# with probability 1-(1-p)^N. N=30 is 96% for one in ten and 79% for one in twenty, but only 26%
-# for one in a hundred. Seven nights are 210 runs, and one in a hundred is 88% there. NOBODY MAY
-# READ ONE GREEN NIGHT AS "THERE IS NO FLAKE". The page the summary prints says so on its face.
+# with probability 1-(1-p)^N. A night is N=15 per runtime (five runs in each of three shards): 79%
+# for one in ten, 54% for one in twenty and 14% for one in a hundred. Seven nights are 105 runs,
+# and one in a hundred is 65% there. NOBODY MAY READ ONE GREEN NIGHT AS "THERE IS NO FLAKE". The
+# page the summary prints says so on its face.
 #
-# IT COSTS NO MONEY AND IT COSTS NO MERGE. Standard runners on a public repository are free and
-# unmetered; the whole cost is wall clock on machines nobody is waiting for, which is why there is
-# no reason here to economise on sample size.
+# IT COSTS NO MERGE, AND IT IS SIZED TO ITS TIME LIMIT. One run of the suite takes about 13.6
+# minutes on a runner (757 test files, measured on 2026-11-06), so five runs are about 70 minutes
+# against the 90 of the limit. Ten were about 136 minutes, and every scheduled night from
+# 2026-10-21 was cancelled by the limit. The runners are shared by the organization that owns this
+# repository, so a night holds nine of them for about 70 minutes.
 
 on:
   # WHEN IT ACTUALLY FIRES. This comment first said both triggers were dormant until the file
@@ -45,9 +48,9 @@ on:
   workflow_dispatch:
     inputs:
       repetitions:
-        description: 'Runs of the suite per shard (3 shards per node; 10 gives N=30 per node)'
+        description: 'Runs of the suite per shard (3 shards per node; 5 gives N=15 per node, and 90 minutes is the limit of a job)'
         required: false
-        default: '10'
+        default: '5'
   # A CHANGE TO THE SAMPLER RUNS THE SAMPLER: an instrument whose only exercise is the night it is
   # needed is an instrument nobody has checked. (This comment named `docs.yml` as keeping its own
   # path in its trigger for the same reason; that workflow does not exist in this repository, so it
@@ -67,7 +70,7 @@ permissions:
   contents: read
 
 concurrency:
-  # NOT `cancel-in-progress`. A night is twenty-odd minutes of sampling, and cancelling it to start
+  # NOT `cancel-in-progress`. A night is about 70 minutes of sampling, and cancelling it to start
   # another leaves neither, and the sampler refuses on a short count rather than publishing one,
   # so a cancelled night costs a night AND prints RULER BROKEN.
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -76,16 +79,16 @@ concurrency:
 jobs:
   sample:
     name: sample (node ${{ matrix.node }}, shard ${{ matrix.shard }})
-    # THREE SHARDS PER NODE, TEN RUNS EACH, RATHER THAN ONE JOB OF THIRTY. Same N, and the reason
-    # is measured rather than guessed. Thirty repetitions in one job sample ONE virtual machine,
+    # THREE SHARDS PER NODE, FIVE RUNS EACH, RATHER THAN ONE JOB OF FIFTEEN. Same N, and the reason
+    # is measured rather than guessed. Fifteen repetitions in one job sample ONE virtual machine,
     # which covers what both known flakes were (timing between files running in parallel) and
     # cannot see variation between machines at all. Three jobs sample three. The cost of the split
     # is the setup paid twice more, and on the run this was sized from (`32553298605`) checkout,
     # pnpm, node, install and build together took 21 s on node 22 and 15 s on node 24, because the
     # pnpm cache hits and install lands in 2-5 s. So the extra machines cost about forty seconds of
     # runner time in total, not the minutes it looks like they should, and they cost nothing at all
-    # in wall clock because the shards run at the same time. Thirty sequential runs would take
-    # around sixty-five minutes; ten take around twenty-two.
+    # in wall clock because the shards run at the same time. Fifteen sequential runs would take
+    # around 200 minutes, past the limit of a job; five take about 70.
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
@@ -130,7 +133,11 @@ jobs:
       # producing an empty loop and a zero-report night.
       - name: Run the suite N times
         env:
-          REPETITIONS: ${{ github.event.inputs.repetitions || 10 }}
+          # ONE EXPRESSION, WRITTEN IN BOTH STEPS (this one and the summariser's below): the count
+          # the summariser expects must be the count that ran. A typed dispatch input wins; a
+          # pull request that touches the sampler runs it once per job, which proves it counts
+          # and opens no issue; a night runs five.
+          REPETITIONS: ${{ github.event.inputs.repetitions || (github.event_name == 'pull_request' && 1 || 5) }}
           LABEL: node${{ matrix.node }}-shard${{ matrix.shard }}
           # OUTSIDE THE WORKSPACE, ON PURPOSE. The reports carry case titles, and a report left in
           # the checkout is an untracked file that is not ignored, which is exactly what the guards
@@ -201,7 +208,7 @@ jobs:
       # refusal, never a wrong rate.
       - name: Count, or say the ruler broke
         env:
-          REPETITIONS: ${{ github.event.inputs.repetitions || 10 }}
+          REPETITIONS: ${{ github.event.inputs.repetitions || (github.event_name == 'pull_request' && 1 || 5) }}
           LABELS: '9'
           RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
@@ -217,6 +224,7 @@ jobs:
             --summary "$GITHUB_STEP_SUMMARY" \
             --json tally.json \
             --issues issues.json \
+            --ruler-issue ruler-issue.json \
             --run "$RUN"
 
       - name: Upload the tally
@@ -227,6 +235,7 @@ jobs:
           path: |
             tally.json
             issues.json
+            ruler-issue.json
           retention-days: 90
           if-no-files-found: warn
 
@@ -240,12 +249,17 @@ jobs:
   # it counts, and that proof must not open an issue; nor may a hand-asked night with a custom
   # `repetitions`, whose rate is not the nightly one.
   #
-  # IT SPEAKS ONLY FROM A TALLY THE SUMMARISER PUBLISHED. `issues.json` is empty on a clean night
-  # and on a broken ruler (which has no rate to quote), and a night whose artifact never arrived
-  # has no file at all and says nothing rather than failing a second time.
+  # IT SPEAKS ONLY FROM A TALLY THE SUMMARISER PUBLISHED, with one exception: a broken night.
+  # `issues.json` is empty on a clean night and on a broken ruler (which has no rate to quote), so
+  # the summariser writes a second file, `ruler-issue.json`, that holds one issue when the ruler
+  # broke (a shard that did not report, a short count) and none otherwise. The title of that issue
+  # is the same on every broken night, so the next one comments instead of opening a second. A
+  # night whose tally never arrived (the summarise job was cancelled or died before it wrote one)
+  # gets the same issue, written here from what `needs` knows, because a night that says nothing
+  # is how every night since 2026-10-21 passed unread.
   tell-somebody:
     name: open an issue
-    needs: summarise
+    needs: [sample, summarise]
     if: ${{ always() && github.event_name == 'schedule' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -262,23 +276,38 @@ jobs:
       - name: Open the issue, or add to the one that is open
         env:
           GH_TOKEN: ${{ github.token }}
+          SAMPLE_RESULT: ${{ needs.sample.result }}
+          SUMMARISE_RESULT: ${{ needs.summarise.result }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
-          if [ ! -f tally/issues.json ]; then echo "no issues.json: nothing to say"; exit 0; fi
-          COUNT=$(jq 'length' tally/issues.json)
-          echo "$COUNT case(s) to tell somebody about"
-          for INDEX in $(seq 0 $((COUNT - 1))); do
-            TITLE=$(jq -r ".[$INDEX].title" tally/issues.json)
-            BODY=$(jq -r ".[$INDEX].body" tally/issues.json)
-            # The stable token the summariser puts at the end of every title. The intent is that a
-            # search by it finds the open issue, where a search by the whole title would break on a
-            # quote in a case name. This loop has not yet run against GitHub: that the search matches
-            # a token with a hyphen in it is unproven until the first real night.
-            TOKEN=$(printf '%s' "$TITLE" | grep -o 'sampler-[0-9a-f]*' | tail -n 1)
-            OPEN=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$TOKEN\"" --json number --jq '.[0].number // empty')
-            if [ -n "$OPEN" ]; then
-              gh issue comment "$OPEN" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          # The stable token ends every title. A search by it finds the open issue, where a search
+          # by the whole title would break on a quote in a case name. The case tokens are a hash
+          # (`sampler-` and hex) and the broken-ruler one is `sampler-ruler-broken`. This loop has
+          # not yet run against GitHub: that the search matches a token with a hyphen in it is
+          # unproven until the first real night.
+          tell() {
+            local title="$1" body="$2" token open
+            token=$(printf '%s' "$title" | grep -o 'sampler-[0-9a-z-]*' | tail -n 1)
+            open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$token\"" --json number --jq '.[0].number // empty')
+            if [ -n "$open" ]; then
+              gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "$body"
             else
-              gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY"
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
             fi
+          }
+          told=0
+          for file in tally/issues.json tally/ruler-issue.json; do
+            [ -f "$file" ] || continue
+            count=$(jq 'length' "$file")
+            echo "$count issue(s) in $file"
+            for index in $(seq 0 $((count - 1))); do
+              tell "$(jq -r ".[$index].title" "$file")" "$(jq -r ".[$index].body" "$file")"
+              told=$((told + 1))
+            done
           done
+          if [ ! -f tally/ruler-issue.json ] && [ ! -f tally/issues.json ]; then
+            tell "Flake sampler: the night produced no tally [sampler-ruler-broken]" "The flake sampler produced no tally on this night, so no rate was published. The sample job ended as ${SAMPLE_RESULT} and the summarise job as ${SUMMARISE_RESULT}. Night: ${RUN}"
+            told=$((told + 1))
+          fi
+          echo "$told issue(s) told"
