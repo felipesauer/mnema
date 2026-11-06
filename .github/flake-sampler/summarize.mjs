@@ -13,9 +13,9 @@
  * cases in two days say that is not the same sentence.
  *
  * THE ARITHMETIC THIS EXISTS TO BUY. With p the rate of a flake, N runs detect it with
- * probability 1-(1-p)^N. At N=30: 100% for one-in-six, 96% for one-in-ten, 79% for one-in-twenty,
- * 26% for one-in-a-hundred. THE VALUE IS THE ACCUMULATION, not the night: seven nights are 210
- * runs, and one-in-a-hundred is 88% there. A single green night is not evidence that there is no
+ * probability 1-(1-p)^N. At N=15, a night: 79% for one-in-ten, 54% for one-in-twenty, 14% for
+ * one-in-a-hundred. THE VALUE IS THE ACCUMULATION, not the night: seven nights are 105 runs, and
+ * one-in-a-hundred is 65% there. A single green night is not evidence that there is no
  * flake, and anybody reading one as such is reading it wrong.
  *
  * WHAT IT REFUSES, AND WHY THAT IS THE FIRST THING IN THE FILE. A counter that returns ZERO when
@@ -342,6 +342,23 @@ export function exitCodeOf(result) {
 }
 
 /**
+ * The runs one runtime got: the labels of a runtime share the part before `-shard`, and the
+ * smallest total over runtimes is the N the page quotes.
+ *
+ * @param {Tally} result
+ * @returns {number}
+ */
+export function runsPerRuntime(result) {
+  /** @type {Map<string, number>} */
+  const byRuntime = new Map();
+  for (const { label, count } of result.labels) {
+    const runtime = label.split('-shard')[0] ?? label;
+    byRuntime.set(runtime, (byRuntime.get(runtime) ?? 0) + count);
+  }
+  return Math.min(...byRuntime.values());
+}
+
+/**
  * The page. A broken ruler prints its inventory and NO rate table: a partial table beside the
  * word "broken" is exactly the thing somebody quotes later without the word.
  *
@@ -395,9 +412,10 @@ export function render(result) {
   out.push('');
 
   if (result.verdict === 'CLEAN') {
-    out.push('A green night is **not** evidence that there is no flake. At 30 runs this misses a');
+    const n = runsPerRuntime(result);
+    const misses = (/** @type {number} */ p) => Math.round((1 - p) ** n * 100);
     out.push(
-      'one-in-twenty flake 21% of the time and a one-in-a-hundred flake 74% of the time. The',
+      `A green night is **not** evidence that there is no flake. At ${n} runs per runtime this misses a one-in-twenty flake ${misses(1 / 20)}% of the time and a one-in-a-hundred flake ${misses(1 / 100)}% of the time. The`,
     );
     out.push('detection is in the accumulation across nights, never in any one of them.');
   } else {
@@ -469,6 +487,30 @@ export function issuesFor(result, run) {
 }
 
 /**
+ * THE ISSUE A BROKEN NIGHT OPENS. `issuesFor` is empty on a broken ruler, because there is no rate
+ * to quote; the night that broke is the one nobody reads, so it gets an issue of its own, with no
+ * rate in it, only what was short. The title is the same on every broken night (the token is a
+ * constant), so the next one comments on the open issue instead of opening a second.
+ *
+ * @param {Tally} result
+ * @param {string} run  The URL of the run that produced the tally.
+ * @returns {{ title: string, body: string }[]}
+ */
+export function rulerIssueFor(result, run) {
+  if (result.verdict !== 'RULER BROKEN') return [];
+  const body = [
+    `The flake sampler could not count this night, so it published no rate: it read **${result.read}** reports of the **${result.expect}** it asked for.`,
+    '',
+    ...result.broken.map((why) => `- ${why}`),
+    '',
+    `- Night: ${run}`,
+    '',
+    'A shard that did not report is usually a job cut by its time limit or a runner that died; the log of that job says which. The sampler is a signal and not a gate: this issue blocks no merge and is closed by whoever fixes the ruler.',
+  ].join('\n');
+  return [{ title: 'Flake sampler: the ruler broke [sampler-ruler-broken]', body }];
+}
+
+/**
  * @param {readonly string[]} argv
  * @returns {{
  *   dir: string,
@@ -478,6 +520,7 @@ export function issuesFor(result, run) {
  *   summary: string,
  *   json: string,
  *   issues: string,
+ *   rulerIssue: string,
  *   run: string,
  * }}
  */
@@ -490,6 +533,7 @@ function readArgs(argv) {
     summary: '',
     json: '',
     issues: '',
+    rulerIssue: '',
     run: '',
   };
   /** @type {Record<string, keyof typeof args>} */
@@ -501,6 +545,7 @@ function readArgs(argv) {
     '--summary': 'summary',
     '--json': 'json',
     '--issues': 'issues',
+    '--ruler-issue': 'rulerIssue',
     '--run': 'run',
   };
   for (let index = 0; index < argv.length; index += 2) {
@@ -524,6 +569,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (args.json !== '') writeFileSync(args.json, `${JSON.stringify(result, null, 2)}\n`);
   if (args.issues !== '') {
     writeFileSync(args.issues, `${JSON.stringify(issuesFor(result, args.run), null, 2)}\n`);
+  }
+  if (args.rulerIssue !== '') {
+    writeFileSync(args.rulerIssue, `${JSON.stringify(rulerIssueFor(result, args.run), null, 2)}\n`);
   }
   process.exitCode = exitCodeOf(result);
 }

@@ -49,6 +49,7 @@ import {
   exitCodeOf,
   issuesFor,
   render,
+  rulerIssueFor,
   THE_FILE_ITSELF,
   THE_RUN_ITSELF,
   tally,
@@ -417,7 +418,7 @@ describe('the page a broken ruler prints is not the page a clean night prints', 
  * report becomes a file the counter cannot name: a loud refusal rather than a wrong rate, which
  * is the good failure, but a night lost to it is a night lost.
  *
- * The same holds for the number of labels: the summarise job passes `LABELS: '6'` because a job
+ * The same holds for the number of labels: the summarise job passes `LABELS: '9'` because a job
  * cannot read the size of another job's matrix. The refusal catches a stale six, and this catches
  * it before a night is spent on it.
  *
@@ -615,5 +616,107 @@ describe('only the telling job may write issues, and only on a night', () => {
   it('reads the issues the summariser wrote, and the summariser is asked to write them', () => {
     expect(WORKFLOW).toMatch(/--issues\s+issues\.json/);
     expect(tell).toContain('issues.json');
+  });
+});
+
+/**
+ * THE COUNT THAT RAN IS THE COUNT THE SUMMARISER EXPECTS. It is one rule written in two steps of
+ * the workflow (the loop that samples and the step that counts), and a night where the two
+ * disagree is a night lost to RULER BROKEN, the same night that nobody reads. So the two are read
+ * off the workflow and held to the same expression, and the expression is held to the number the
+ * time limit allows: five a night, one on a pull request.
+ */
+describe('the steps that sample and that count are held to one repetition count', () => {
+  const WORKFLOW = readFileSync(join(ROOT, '.github/workflows/flake-sampler.yml'), 'utf-8');
+  const counts = [...WORKFLOW.matchAll(/^\s*REPETITIONS: (.+)$/gm)].map((found) => found[1]);
+
+  it('has exactly two places that say it, and they say the same thing', () => {
+    expect(counts).toHaveLength(2);
+    expect(counts[0]).toBe(counts[1]);
+  });
+
+  it('runs five a night, one on a pull request, and lets a typed number win', () => {
+    expect(counts[0]).toMatch(
+      /^\$\{\{ github\.event\.inputs\.repetitions \|\| \(github\.event_name == 'pull_request' && 1 \|\| 5\) \}\}$/,
+    );
+    expect(WORKFLOW).toMatch(/default: '5'/);
+    expect(WORKFLOW).not.toMatch(/\|\| 10\b/);
+  });
+});
+
+describe('a broken night is told to somebody', () => {
+  const RUN_URL = 'https://github.com/mnema-work/mnema/actions/runs/1';
+  const sampled = (labels: Record<string, ReadonlyArray<keyof typeof CAPTURE>>) =>
+    tally({ dir: night(labels), root: RUNNER_ROOT, expect: 10, perLabel: 5 });
+
+  it('opens one issue naming what was short, with a title that is the same every broken night', () => {
+    const broken = sampled({ node22: all('passed', 5), node24: all('passed', 3) });
+
+    const [issue] = rulerIssueFor(broken, RUN_URL);
+    const [again] = rulerIssueFor(
+      sampled({ node22: all('passed', 2), node24: all('passed', 5) }),
+      'https://github.com/mnema-work/mnema/actions/runs/2',
+    );
+
+    expect(broken.verdict).toBe('RULER BROKEN');
+    expect(issue?.title).toContain('[sampler-ruler-broken]');
+    expect(issue?.title).toBe(again?.title);
+    expect(issue?.body).toContain(RUN_URL);
+    expect(issue?.body).toContain('read **8** reports of the **10**');
+    expect(issue?.body).toContain('node24');
+  });
+
+  it('says nothing on a clean night or a flaky one, which issuesFor already tells', () => {
+    expect(
+      rulerIssueFor(sampled({ node22: all('passed', 5), node24: all('passed', 5) }), RUN_URL),
+    ).toEqual([]);
+    expect(
+      rulerIssueFor(sampled({ node22: all('failed', 5), node24: all('passed', 5) }), RUN_URL),
+    ).toEqual([]);
+  });
+
+  it('is asked of the summariser and read by the telling job, and for a night with no tally too', () => {
+    const workflow = readFileSync(join(ROOT, '.github/workflows/flake-sampler.yml'), 'utf-8');
+    const tell = workflow.slice(workflow.indexOf('\n  tell-somebody:'));
+
+    expect(workflow).toMatch(/--ruler-issue\s+ruler-issue\.json/);
+    expect(tell).toContain('tally/ruler-issue.json');
+    expect(tell).toContain('the night produced no tally [sampler-ruler-broken]');
+    expect(tell).toContain('needs: [sample, summarise]');
+  });
+});
+
+describe('the page quotes the N the night had, not a constant', () => {
+  const clean = (perLabel: number, shards: number) => {
+    const plan: Record<string, ReadonlyArray<keyof typeof CAPTURE>> = {};
+    for (const node of ['node24', 'node26']) {
+      for (let shard = 1; shard <= shards; shard++) {
+        plan[shards === 1 ? node : `${node}-shard${shard}`] = all('passed', perLabel);
+      }
+    }
+    return render(
+      tally({
+        dir: night(plan),
+        root: RUNNER_ROOT,
+        expect: perLabel * shards * 2,
+        perLabel,
+      }),
+    );
+  };
+
+  it('says 46% and 86% at 15 runs per runtime', () => {
+    const page = clean(5, 3);
+
+    expect(page).toContain('At 15 runs per runtime');
+    expect(page).toContain('one-in-twenty flake 46% of the time');
+    expect(page).toContain('one-in-a-hundred flake 86% of the time');
+  });
+
+  it('says 95% and 99% at 1 run per runtime', () => {
+    const page = clean(1, 1);
+
+    expect(page).toContain('At 1 runs per runtime');
+    expect(page).toContain('one-in-twenty flake 95% of the time');
+    expect(page).toContain('one-in-a-hundred flake 99% of the time');
   });
 });
