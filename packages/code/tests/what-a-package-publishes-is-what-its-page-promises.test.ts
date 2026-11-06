@@ -284,7 +284,7 @@ describe('nothing travels that is a fact about this machine', () => {
     const shown = PUBLISHABLE.flatMap((m) =>
       [
         ...readFileSync(join(m.dir, 'README.md'), 'utf-8').matchAll(
-          /https:\/\/raw\.githubusercontent\.com\/felipesauer\/mnema\/main\/([^"\s)]+)/g,
+          /https:\/\/raw\.githubusercontent\.com\/mnema-work\/mnema\/main\/([^"\s)]+)/g,
         ),
       ].map((u) => ({ name: m.name, path: u[1] as string })),
     );

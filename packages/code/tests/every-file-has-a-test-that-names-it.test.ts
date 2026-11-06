@@ -968,7 +968,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/site/browser/entry.test.ts': 3,
   'packages/code/src/site/browser/filters.test.ts': 6,
   'packages/code/src/site/browser/fs.test.ts': 4,
-  'packages/code/src/site/colour.test.ts': 4,
+  'packages/code/src/site/colour.test.ts': 2,
   'packages/code/src/site/model.test.ts': 4,
   'packages/code/src/site/page.test.ts': 9,
   'packages/code/src/site/the-lists-are-checked-in-the-browser.test.ts': 22,
