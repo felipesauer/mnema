@@ -748,8 +748,6 @@ describe('the verdict the landing shows is the one of the committed tree', () =>
     expect(said).toMatch(/^public: /);
     // The first line is the verdict of the public tree; any further line is an indented census line of that tree
     // (a tail that names no record adds one), and the private tree is never in it.
-    // The first line is the verdict of the public tree; any further line is an indented census line of that tree
-    // (a tail that names no record adds one), and the private tree is never in it.
     const [, ...rest] = said.trimEnd().split('\n');
     for (const line of rest) {
       expect(line, 'a line after the verdict is a census line of the public tree').toMatch(
