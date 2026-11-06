@@ -93,6 +93,6 @@ jobs:
           chmod +x osv-scanner
 
       # The workspace's lockfile. No Python requirements file: the verifier in `packages/chain/verifier` imports the
-      # standard library alone. The site has its own repository and scans its own lockfile there.
+      # standard library alone. The site's lockfile is no longer scanned here: the site has its own repository, which has Dependabot.
       - name: Read the lockfile
         run: ./osv-scanner scan source --lockfile pnpm-lock.yaml
