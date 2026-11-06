@@ -10,6 +10,19 @@ with its own changelog.
 
 ## [Unreleased]
 
+### Changed
+
+- **mnema lives in the organization `mnema-work` now.** The repository is `github.com/mnema-work/mnema` (the old address
+  redirects), and the install line for the plugins is `mnema-work/mnema` (`claude plugin marketplace add mnema-work/mnema`,
+  and the same for Codex and Copilot CLI); the plugin is still `mnema@mnema`, the extension id and the package names do not
+  change. The pages, the packages' manifests, the plugins and what the commands print point to the new repository and to
+  https://mnema.work. `SECURITY.md` names security@mnema.work beside GitHub's private vulnerability reporting.
+- **From the next release the MCP Registry entry is `io.github.mnema-work/mnema`.** `@mnema/code` carries that `mcpName`
+  and `server.json` that name; the entry made for 0.1.5 keeps the name it was made under.
+- **The site has its own repository.** The pages at https://mnema.work are built in `mnema-work/mnema.work`, from the
+  latest release of this one, and no longer from a folder here. A pull request that changes `docs/` runs the site's build
+  over the docs of the pull request, so a page the site could not publish is red before it is merged.
+
 ## [0.1.5] - 2026-11-04
 
 ### Added
@@ -2730,12 +2743,12 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 - A binary from before a kind existed stops reading the whole record once that kind is in the
   committed tree (`packages/chain/FORMAT.md` §4.1).
 
-[Unreleased]: https://github.com/felipesauer/mnema/commits/main
-[0.1.5]: https://github.com/felipesauer/mnema/releases/tag/v0.1.5
-[0.1.4]: https://github.com/felipesauer/mnema/releases/tag/v0.1.4
-[0.1.3]: https://github.com/felipesauer/mnema/releases/tag/v0.1.3
-[0.1.2]: https://github.com/felipesauer/mnema/releases/tag/v0.1.2
-[0.1.1]: https://github.com/felipesauer/mnema/releases/tag/v0.1.1
-[0.1.0]: https://github.com/felipesauer/mnema/releases/tag/v0.1.0
-[0.2.0-beta]: https://github.com/felipesauer/mnema/tree/a8907992a60527d2d3dad1c61bafce983e54af46
-[0.1.0-beta]: https://github.com/felipesauer/mnema/tree/1c17287fa389b2ef75f1d2ea71d4c7fbca54889d
+[Unreleased]: https://github.com/mnema-work/mnema/commits/main
+[0.1.5]: https://github.com/mnema-work/mnema/releases/tag/v0.1.5
+[0.1.4]: https://github.com/mnema-work/mnema/releases/tag/v0.1.4
+[0.1.3]: https://github.com/mnema-work/mnema/releases/tag/v0.1.3
+[0.1.2]: https://github.com/mnema-work/mnema/releases/tag/v0.1.2
+[0.1.1]: https://github.com/mnema-work/mnema/releases/tag/v0.1.1
+[0.1.0]: https://github.com/mnema-work/mnema/releases/tag/v0.1.0
+[0.2.0-beta]: https://github.com/mnema-work/mnema/tree/a8907992a60527d2d3dad1c61bafce983e54af46
+[0.1.0-beta]: https://github.com/mnema-work/mnema/tree/1c17287fa389b2ef75f1d2ea71d4c7fbca54889d

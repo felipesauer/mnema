@@ -359,6 +359,45 @@ jobs:
       - name: The built binary refuses it in one line
         run: bash .github/the-binary-runs/it-refuses-an-old-node.sh
 
+  # THE DOCS BUILD ON THE SITE. The pages of `docs/` are published by the site, which is built in its own repository
+  # (mnema-work/mnema.work) from the latest release of this one. A page the site could not build, such as a link that
+  # leaves the repository or a marker that does not pair, would stop the next publication, and nothing here would have
+  # said so. So every pull request runs the site's own build over the docs of this checkout, in its check mode
+  # (`--check`: any commit, no release tag, no build of the product, and nothing it makes is kept). The site is read at
+  # its `main`, a public repository, with no token; this job holds `contents: read` and no secret. It runs on every pull
+  # request, so it can be made a required check without a pull request that leaves `docs/` alone waiting for it.
+  the-docs-build-on-the-site:
+    name: the docs build on the site
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: product
+          persist-credentials: false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mnema-work/mnema.work
+          ref: main
+          path: site
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.15.0'
+
+      - name: Install the site's dependencies
+        working-directory: site
+        run: npm ci --ignore-scripts
+
+      - name: Build the docs of this checkout
+        working-directory: site
+        env:
+          ASTRO_TELEMETRY_DISABLED: '1'
+        run: node build/build.mjs --from "$GITHUB_WORKSPACE/product" --check
+
   # THE SKILLS ORACLE. A stack carries skills written by somebody else, and what makes one valid is
   # the Agent Skills specification, which publishes a validator of its own, `skills-ref` (PyPI; its
   # command is `agentskills`). This repository checks skills with a validator of its own too, and

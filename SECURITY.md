@@ -14,8 +14,8 @@ commit `ef736fc6b1f682a513f02f335ad5b7e2e338eca6`, kept as it was, and it receiv
 
 Please **do not** open a public issue for security problems.
 Use GitHub's private vulnerability reporting on this repository
-(Security → Report a vulnerability), or contact the maintainer
-through their GitHub profile.
+(Security → Report a vulnerability): a report continues there. The address security@mnema.work is
+forwarded to the maintainer, and nothing is answered by e-mail, so the report itself belongs in the private report.
 
 Relevant scope:
 

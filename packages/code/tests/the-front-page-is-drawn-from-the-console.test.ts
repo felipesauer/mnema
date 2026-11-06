@@ -825,7 +825,7 @@ describe('every package, and the family, draws what it is, in its own words', ()
     const readme = read('README.md');
     const block = /## The mnema family\n\n([\s\S]*?<\/div>)\n/.exec(readme)?.[1] ?? '';
     // Said here by hand, apart from the script that writes it.
-    const base = 'https://raw.githubusercontent.com/felipesauer/mnema/main/docs/assets';
+    const base = 'https://raw.githubusercontent.com/mnema-work/mnema/main/docs/assets';
     expect(block).toContain(
       `<source media="(prefers-color-scheme: dark)" srcset="${base}/the-family-dark.svg">`,
     );
@@ -865,7 +865,7 @@ describe('every package, and the family, draws what it is, in its own words', ()
       const urls = [...readme.matchAll(/https:\/\/raw\.githubusercontent\.com\/[^"\s)]+/g)].map(
         (m) => m[0],
       );
-      const base = 'https://raw.githubusercontent.com/felipesauer/mnema/main';
+      const base = 'https://raw.githubusercontent.com/mnema-work/mnema/main';
       expect(urls).toEqual(
         dir === 'code'
           ? [`${base}/docs/assets/the-family-dark.svg`, `${base}/docs/assets/the-family-light.svg`]
@@ -911,7 +911,7 @@ describe('every package, and the family, draws what it is, in its own words', ()
         'Node',
       ]);
       expect(line).toContain(
-        '<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI"',
+        '<a href="https://github.com/mnema-work/mnema/actions/workflows/ci.yml"><img alt="CI"',
       );
       // The badge shows the version the registry serves for this package, and links to its page.
       expect(line).toContain(

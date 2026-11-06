@@ -20,7 +20,7 @@ import { describe, expect, it } from 'vitest';
 import { runDoctor } from '../src/commands/doctor.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
-const PAGE_URL = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
+const PAGE_URL = 'https://github.com/mnema-work/mnema/blob/main/docs/install.md';
 const INSTALL_LINE = 'npm i -g @mnema/code';
 const RELEASE_URL = /releases\/download|\.tgz/;
 /** What the pages said while nothing was on npm, in every spelling the repository used. */
@@ -89,7 +89,7 @@ describe('the install line', () => {
 
   it('leaves the build from the source to its own page, which packs the publishable packages', () => {
     expect(page).toContain('(build-from-source.md)');
-    expect(buildPage).toContain('git clone https://github.com/felipesauer/mnema.git');
+    expect(buildPage).toContain('git clone https://github.com/mnema-work/mnema.git');
     expect(buildPage).toContain('pnpm install --frozen-lockfile');
     expect(buildPage).toContain('npm i -g --prefix ~/.local "$dest"/*.tgz');
     const loop = buildPage.match(/for p in ([^;]+); do/)?.[1]?.split(' ') ?? [];

@@ -206,7 +206,7 @@ function binariesOnPath(processEnv: NodeJS.ProcessEnv): { path: string; real: st
  * Where the install is written. The page is the only place that spells the steps, and
  * `the-install-line-is-one.test.ts` holds this line, and the install line it carries, to it.
  */
-const INSTALL_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
+const INSTALL_PAGE = 'https://github.com/mnema-work/mnema/blob/main/docs/install.md';
 
 function binaryFindings(ctx: DoctorContext): Finding[] {
   const binaries = binariesOnPath(ctx.processEnv);
@@ -659,7 +659,7 @@ function vscodeFiles(ctx: DoctorContext): string[] {
 
 const FIX = '`mnema doctor --fix vscode`';
 const INSTALL_FIRST =
-  'install the plugin first (`claude plugin marketplace add felipesauer/mnema`, then `claude plugin install mnema@mnema`), then';
+  'install the plugin first (`claude plugin marketplace add mnema-work/mnema`, then `claude plugin install mnema@mnema`), then';
 
 function vscodeFindings(ctx: DoctorContext): Finding[] {
   const files = vscodeFiles(ctx);

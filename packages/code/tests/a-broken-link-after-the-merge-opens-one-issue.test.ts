@@ -28,8 +28,8 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
-const IMAGE = 'https://raw.githubusercontent.com/felipesauer/mnema/main/docs/assets/a.svg';
-const PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
+const IMAGE = 'https://raw.githubusercontent.com/mnema-work/mnema/main/docs/assets/a.svg';
+const PAGE = 'https://github.com/mnema-work/mnema/blob/main/docs/install.md';
 
 const README = [
   `<img src="${IMAGE}" alt="a">`,
@@ -87,9 +87,9 @@ describe('what the job reads from the pages', () => {
   it('leaves out an example, a code span, a fenced block and a relative link', () => {
     const text = [
       '[a](https://example.com/x) [b](http://localhost:3000/) [c](docs/a.md)',
-      'A `[d](https://github.com/felipesauer/mnema/blob/main/no.md)` span.',
+      'A `[d](https://github.com/mnema-work/mnema/blob/main/no.md)` span.',
       '```',
-      '![e](https://raw.githubusercontent.com/felipesauer/mnema/main/fenced.svg)',
+      '![e](https://raw.githubusercontent.com/mnema-work/mnema/main/fenced.svg)',
       '```',
       '',
     ].join('\n');

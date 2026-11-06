@@ -70,7 +70,7 @@ describe('the entry for the MCP Registry', () => {
   });
 
   it('is named by the mcpName the package carries, which the registry reads in the version on npm', () => {
-    expect(CODE_PACKAGE.mcpName).toBe('io.github.felipesauer/mnema');
+    expect(CODE_PACKAGE.mcpName).toBe('io.github.mnema-work/mnema');
     expect(ENTRY.name).toBe(CODE_PACKAGE.mcpName);
     expect(NAME).toBe(CODE_PACKAGE.mcpName);
   });

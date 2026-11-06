@@ -16,9 +16,7 @@ pnpm test
 `pnpm build` comes before `pnpm typecheck` and `pnpm test`: the packages compile against each
 other's built output, so a stale `dist` makes both go green over code that no longer exists.
 After a change to text, a page, the changelog or a list of files, `pnpm test:guards` runs just
-the cases that walk the whole tree; it does not replace `pnpm test`. Build the site first
-(`cd site && npm ci && npm run build`) and run `THE_SITE_MUST_BE_BUILT=1 pnpm test:guards`:
-without a built site the cases that read it are skipped, not green.
+the cases that walk the whole tree; it does not replace `pnpm test`.
 Run the whole `pnpm test` once before you push, not only the files you touched: the guards
 walk the tree and count its files and lines, so a focused case that passes proves little.
 When a case is red, keep the output, then run `pnpm why-it-went-red`: it says whether the

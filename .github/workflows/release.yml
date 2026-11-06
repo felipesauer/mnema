@@ -486,8 +486,8 @@ jobs:
   # THE SERVER IN THE MCP REGISTRY. It runs only after the tag and the release, which wait for the five on npm and
   # are behind a person's approval of the `npm` environment, and it asks for that environment too, so nothing
   # is sent to the registry without an approval. It holds no secret: `mcp-publisher login github-oidc` trades the
-  # `id-token` below for a registry token, and the registry accepts the name `io.github.felipesauer/mnema` because
-  # the workflow runs in this account's repository. The registry lists a package only if the version on npm carries
+  # `id-token` below for a registry token, and the registry accepts the name `io.github.mnema-work/mnema` because
+  # the workflow runs in this organization's repository. The registry lists a package only if the version on npm carries
   # `mcpName` equal to the entry's name, so the job asks npm for it before it logs in, and checks that the
   # `server.json` it sends is the version the plan named. It builds nothing and installs nothing: the publisher is
   # one release of the registry's, downloaded by its tag and checked against the SHA-256 written here (the digest
@@ -523,9 +523,9 @@ jobs:
         run: |
           set -euo pipefail
           entry="$(node -p "const e = JSON.parse(require('fs').readFileSync('server.json', 'utf8')); [e.version, e.packages[0].version, e.name].join(' ')")"
-          [ "$entry" = "$VERSION $VERSION io.github.felipesauer/mnema" ] || { echo "::error::server.json says '$entry', not the version $VERSION the plan named"; exit 1; }
+          [ "$entry" = "$VERSION $VERSION io.github.mnema-work/mnema" ] || { echo "::error::server.json says '$entry', not the version $VERSION the plan named"; exit 1; }
           named="$(npm view "@mnema/code@$VERSION" mcpName)"
-          [ "$named" = "io.github.felipesauer/mnema" ] || { echo "::error::@mnema/code@$VERSION on npm has mcpName '$named': the registry would refuse it"; exit 1; }
+          [ "$named" = "io.github.mnema-work/mnema" ] || { echo "::error::@mnema/code@$VERSION on npm has mcpName '$named': the registry would refuse it"; exit 1; }
 
       - name: Download the publisher and check it against the SHA-256 written here
         run: |

@@ -2,19 +2,19 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/stacks/assets/stacks-dark.svg">
-  <img src="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/stacks/assets/stacks-light.svg" alt="The stack contract: the stack.json schema, the validator, and the canonical digest a stack is identified by. A pure library; it runs nothing." width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mnema-work/mnema/main/packages/stacks/assets/stacks-dark.svg">
+  <img src="https://raw.githubusercontent.com/mnema-work/mnema/main/packages/stacks/assets/stacks-light.svg" alt="The stack contract: the stack.json schema, the validator, and the canonical digest a stack is identified by. A pure library; it runs nothing." width="720">
 </picture>
 </p>
 
 <p align="center">
-<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
+<a href="https://github.com/mnema-work/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/mnema-work/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
 <a href="https://www.npmjs.com/package/@mnema/stacks"><img alt="npm: @mnema/stacks" src="https://img.shields.io/npm/v/@mnema/stacks?style=flat-square&amp;label=npm&amp;color=997dbf"></a>
-<a href="https://github.com/felipesauer/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
+<a href="https://github.com/mnema-work/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
 <img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square">
 </p>
 
-The contract of a **stack** for [mnema](https://github.com/felipesauer/mnema): a directory that brings skills,
+The contract of a **stack** for [mnema](https://github.com/mnema-work/mnema): a directory that brings skills,
 agents and declared hooks to an agent, the validator that checks it, and the digest that identifies it. A pure
 library: it reads a directory and runs nothing in it.
 
@@ -90,7 +90,7 @@ carry, or not a bundle at all) is refused.
 
 ## Examples, and the index
 
-[`examples/`](https://github.com/felipesauer/mnema/tree/main/packages/stacks/examples) holds two stacks to read and to try, both in English and neither of any one domain:
+[`examples/`](https://github.com/mnema-work/mnema/tree/main/packages/stacks/examples) holds two stacks to read and to try, both in English and neither of any one domain:
 
 - `evidence-first`: an `investigator` agent that answers with `path:line` findings and says what it did not search,
   and a `claim-checking` skill on what a search that finds nothing does and does not prove;
@@ -102,7 +102,7 @@ validator the Agent Skills specification publishes, installs both with the built
 makes for the purpose, checks that the record still verifies, and has `skills-ref` read the installed skill
 folders.
 
-[`stack-index/`](https://github.com/felipesauer/mnema/tree/main/stack-index) is a list of stacks: for each, a name, a version, a link and the digest.
+[`stack-index/`](https://github.com/mnema-work/mnema/tree/main/stack-index) is a list of stacks: for each, a name, a version, a link and the digest.
 It holds no stack. The two examples are its first entries, and the suite recomputes their digests from the
 folders. A stack listed from somewhere else is held to nothing here: the link may move and the digest is what the
 proposer wrote, so compare it with the digest the install plan shows. `mnema stack index` prints the
@@ -140,7 +140,7 @@ made by its build, so it works in any folder), `mnema stack index <folder>` thos
 npm i @mnema/stacks
 ```
 
-It is on npm; `@mnema/code`, the package most people want, installs it for you ([install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md)).
+It is on npm; `@mnema/code`, the package most people want, installs it for you ([install page](https://github.com/mnema-work/mnema/blob/main/docs/install.md)).
 
 **It is released because `@mnema/code` depends on it**: `mnema stack add` validates and digests a stack with this
 library before it writes anything. The exports are the surface that verb needed and move when it moves; the part

@@ -6,13 +6,13 @@
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
   "type": "module",
-  "homepage": "https://github.com/felipesauer/mnema",
+  "homepage": "https://github.com/mnema-work/mnema",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/felipesauer/mnema.git"
+    "url": "git+https://github.com/mnema-work/mnema.git"
   },
   "bugs": {
-    "url": "https://github.com/felipesauer/mnema/issues"
+    "url": "https://github.com/mnema-work/mnema/issues"
   },
   "engines": {
     "node": "^24.15.0 || >=26.0.0"

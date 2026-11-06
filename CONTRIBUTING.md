@@ -116,35 +116,19 @@ names how to run it.
 
 ## The site
 
-The site is in [`site/`](site/), a tree of its own with its own lockfile (it is not a workspace package and nothing
-that is published depends on it). It holds no page of its own: the pages of `docs/` and the sections of the README are
-copied into it by the build, under paths git ignores, and the pictures and the icon are read from the files that
-already hold them. The theme is calculated from `ACCENT` and `PAGE` (the two constants the front page is painted with):
-the accent as text is the smallest mix of the other ground into the accent that reads at 4.5:1 on the ground and on every
-ground Starlight maps to a grey, and a case measures that, so a colour of the site that falls under AA fails the suite. The landing shows the proof: the output of `mnema verify` on the `.mnema/` of the commit (extracted outside the checkout and
-run by the binary built at the same commit, with the command the README's Quick start shows, so an uncommitted change and the
-private tree of whoever builds are not in it) and the recording `recordings/a-tamper-caught.gif`, copied as it is (every GIF of `recordings/` is carried, for a page of `docs/` that shows one). Above it the hero holds what it reads of the README: the first line of the Quick start (the one a copy button copies), the three cells of the table at the top as cards, and the numbered steps of How it works (the build stops on a table of other than three columns, a step with a link, or other than four steps). The title in the head is the banner's wordmark without its cubes, drawn by `headerWordmark` in `.github/the-front-page/draw.mjs` from the same rows, one picture per theme, and a case holds it to those rows. The social card is `socialCard` in the same file (the wordmark and cubes of the banner and the README's pitch as its only words, still, on the dark page), rasterized to `dist/og.png` by `node build/finish.mjs` with `sharp`, which `astro` installs and `site/package.json` names at the lockfile's version; a case rasterizes the card again, with and without its `<text>`, to hold that the machine that built it drew the letters, and every page must declare the card at its address on the published site. The 404 is made of `site/not-found.md` like the landing is of `site/landing.md` (a line of `site/copy.md` and links, with the labels of the README's Docs), and the record page is an item of the sidebar's Verify group, after the page that describes it. The few words
-no other page holds (a caption) are in [`site/copy.md`](site/copy.md), the fourth source beside the README, `docs/` and the
-description of `@mnema/code`: one line each, at most twenty words, every entry used by the build; the case on the landing reads
-every element of its `<main>` and finds each in a source, and no stylesheet may draw text of its own (a `content` that is not empty, or an `attr()`: a case reads the site's CSS and the built one). The page at `/record/` is what `mnema site` writes of this repository's record, from the binary
-built at the same commit, with `--back-link` to the site's root and `--head` (the title, the description, the canonical address and the structured data, which the build hands the command as a file), and nothing is done to it afterwards. A stretch of a source that is true of the repository and
-not of the published version the site describes (the sentence that the pages describe the next version) is wrapped in
-`<!-- not-on-the-site -->` and `<!-- /not-on-the-site -->` lines of their own; the build takes out that stretch and nothing
-else, and stops on a marker that does not pair. To build it, from the root of a built checkout:
+The site, [mnema.work](https://mnema.work), is built in its own repository,
+[mnema-work/mnema.work](https://github.com/mnema-work/mnema.work). It holds no copy of this one: it reads the pages of
+`docs/`, the README and the record from a checkout of the latest release tag, and its footer says which version and which
+commit it was built from. Its pages of the docs are therefore the pages of `docs/` at the last release, with the links
+between them rewritten to where they land.
 
-```sh
-pnpm build
-npm ci --ignore-scripts --prefix site
-npm run build --prefix site       # writes site/dist
-```
+A stretch of a page that is true of this repository and not of the published version (the sentence that the pages describe
+the next version) is wrapped in `<!-- not-on-the-site -->` and `<!-- /not-on-the-site -->` lines of their own; the site's
+build takes out that stretch and nothing else, and stops on a marker that does not pair.
 
-The build stops when the record does not verify. The script sets `ASTRO_TELEMETRY_DISABLED=1` for `astro build` (so does the workflow's step), which is the variable Astro's telemetry reads to send nothing; a case refuses a build of the site without it, and the script's prefix is for a POSIX shell. Two cases hold what it wrote to its sources (the pages, the links
-between them, the sentences, the accent and the pictures, the version and the commit in the footer):
-[`the-site-is-made-of-its-sources.test.ts`](packages/code/tests/the-site-is-made-of-its-sources.test.ts) runs in the
-suite, and [`the-built-site-lands-and-says-what-it-was-built-from.test.ts`](packages/code/tests/the-built-site-lands-and-says-what-it-was-built-from.test.ts)
-reads `site/dist`, so it stands down until the site is built; with `THE_SITE_MUST_BE_BUILT=1` a missing build is the
-failure, as in the `Site` workflow. That workflow builds the site on a pull request that touches what it is made of, and
-deploys to GitHub Pages only after a release, from the commit the release tagged.
+A pull request that changes `docs/` runs the `Docs build on the site` job of the CI: it builds the docs of the pull request
+with the site's own build (`node build/build.mjs --from <this checkout> --check`, from a checkout of
+`mnema-work/mnema.work` at `main`), so a page the site could not publish is red here, before it is merged.
 
 ## Releases
 
@@ -231,7 +215,7 @@ The VS Code extension is published by two jobs of `release.yml`, both asking for
 
 - **The Visual Studio Marketplace** by trusted publishing: the job holds `id-token: write` and no secret, and runs
   `vsce publish --oidc`. For that the publisher `mnema` needs a Trusted Publishing policy (on the publisher's page of
-  the Marketplace management portal): Repository owner `felipesauer`, Repository `mnema`, Workflow `release.yml`,
+  the Marketplace management portal): Repository owner `mnema-work`, Repository `mnema`, Workflow `release.yml`,
   Environment `extension-stores`. Make the policy before the release is merged. Once a publish by this path has
   worked, delete the `VSCE_PAT` secret from the `extension-stores` environment: nothing reads it any more.
 - **Open VSX** with the environment's one secret, `OVSX_PAT`, in a job of its own that cannot ask for the OIDC token,

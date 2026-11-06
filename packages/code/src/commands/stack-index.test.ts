@@ -15,7 +15,7 @@ const entry = (over: Record<string, unknown> = {}) => ({
   name: 'evidence-first',
   version: '1.0.0',
   description: 'An investigator agent.',
-  link: 'https://github.com/felipesauer/mnema/tree/main/packages/stacks/examples/evidence-first',
+  link: 'https://github.com/mnema-work/mnema/tree/main/packages/stacks/examples/evidence-first',
   digest: DIGEST,
   path: 'packages/stacks/examples/evidence-first',
   ...over,

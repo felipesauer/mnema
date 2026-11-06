@@ -121,13 +121,13 @@ document, delivered by the host instead of waited for.
   machine (outside the record, ids and counts and none of the session's words) that lets the next `Stop` read
   only the lines the host wrote since, and from which the MCP server gives a run its goal and closes it with an
   outcome (`mnema switch off session-journal` stops it; see
-  [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#the-session-journal)).
+  [the reference](https://github.com/mnema-work/mnema/blob/main/docs/cli-reference.md#the-session-journal)).
 - **A `SessionStart` hook that runs only after a compaction** (the `compact` matcher), `mnema recall
   --after-a-compaction`. It hands the conversation that continues one sentence, read from the session's journal: the
   decisions that entered the record since it opened (read from the record, by label and the state they have now), the notes copied, the questions answered with no decision after, the
   files its calls wrote; a count and the record's labels, none of the session's words. Nothing runs before a
   compaction, because the host discards what a hook says then. `mnema switch off after-a-compaction` stops it; see
-  [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#after-a-compaction).
+  [the reference](https://github.com/mnema-work/mnema/blob/main/docs/cli-reference.md#after-a-compaction).
 - **A `SubagentStart` hook**, `mnema brief --hook`. A subagent starts with a context of its own and
   does not see what the session was handed when it opened, so it is handed the same document: the
   decisions in force and the adopted patterns, by name, byte for byte what the opening hands over,
@@ -293,7 +293,7 @@ says which version the registry serves.
 Then add this repository as a marketplace and install from it:
 
 ```sh
-claude plugin marketplace add felipesauer/mnema
+claude plugin marketplace add mnema-work/mnema
 claude plugin install mnema@mnema
 ```
 
@@ -446,7 +446,7 @@ machine, with Cursor's import of third-party plugins on, which is how it ships.
 
 **To have VS Code's agent load it,** in this order:
 
-1. Install the plugin in Claude Code (`claude plugin marketplace add felipesauer/mnema`, then
+1. Install the plugin in Claude Code (`claude plugin marketplace add mnema-work/mnema`, then
    `claude plugin install mnema@mnema`). That leaves a copy of the plugin in the marketplace
    folder, `~/.claude/plugins/marketplaces/mnema/plugin`.
 2. Run `mnema doctor` and read its `vscode` line: it says whether your `settings.json` has
@@ -570,4 +570,4 @@ cannot come to stop different writes.
 
 ## License
 
-Apache-2.0, with the rest of [mnema](https://github.com/felipesauer/mnema).
+Apache-2.0, with the rest of [mnema](https://github.com/mnema-work/mnema).

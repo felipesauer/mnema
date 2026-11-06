@@ -1040,7 +1040,7 @@ describe('the act, the claim and the reading, over a record', () => {
   it('keeps a workflow in the record as it is: a workflow is not a person', () => {
     const ctx = aProject();
     const workflow =
-      'https://github.com/felipesauer/mnema/.github/workflows/witness.yml@refs/heads/main';
+      'https://github.com/mnema-work/mnema/.github/workflows/witness.yml@refs/heads/main';
     const claimed = runKeySigstore(ctx, { identity: workflow });
     expect(claimed).toMatchObject({ ok: true, identity: workflow, recorded: workflow });
   });

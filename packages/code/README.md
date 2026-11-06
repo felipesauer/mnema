@@ -2,15 +2,15 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/felipesauer/mnema/main/docs/assets/the-family-dark.svg">
-  <img src="https://raw.githubusercontent.com/felipesauer/mnema/main/docs/assets/the-family-light.svg" alt="The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it" width="880">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mnema-work/mnema/main/docs/assets/the-family-dark.svg">
+  <img src="https://raw.githubusercontent.com/mnema-work/mnema/main/docs/assets/the-family-light.svg" alt="The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it" width="880">
 </picture>
 </p>
 
 <p align="center">
-<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
+<a href="https://github.com/mnema-work/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/mnema-work/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
 <a href="https://www.npmjs.com/package/@mnema/code"><img alt="npm: @mnema/code" src="https://img.shields.io/npm/v/@mnema/code?style=flat-square&amp;label=npm&amp;color=997dbf"></a>
-<a href="https://github.com/felipesauer/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
+<a href="https://github.com/mnema-work/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
 <img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square">
 </p>
 
@@ -22,8 +22,8 @@ since it was signed, and a stranger can check that without your keys and
 without installing this.
 
 This is the package you install: the `mnema` command line and the MCP server of
-[mnema](https://github.com/felipesauer/mnema), two surfaces over one record. The agent writes
-through MCP while it works, and the plugin in [`plugin/`](https://github.com/felipesauer/mnema/tree/main/plugin) hands the record to a
+[mnema](https://github.com/mnema-work/mnema), two surfaces over one record. The agent writes
+through MCP while it works, and the plugin in [`plugin/`](https://github.com/mnema-work/mnema/tree/main/plugin) hands the record to a
 session as it opens; you read, audit and verify from the terminal. It holds no domain logic of
 its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chain`.
 
@@ -86,9 +86,9 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
 - **A task for the work a session hands to other agents**, in the Claude Code plugin: the first dispatch of a session records
   one private task, each dispatch a private handoff on it (its short description and the path of a brief file, never the
   prompt), and the end of the session closes it; `mnema switch off agent-mirror` stops it.
-  [Every switch](https://github.com/felipesauer/mnema/blob/main/docs/switches.md) says where it begins and what it carries.
+  [Every switch](https://github.com/mnema-work/mnema/blob/main/docs/switches.md) says where it begins and what it carries.
 
-[The reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md) has every verb and tool, and what each one leaves
+[The reference](https://github.com/mnema-work/mnema/blob/main/docs/cli-reference.md) has every verb and tool, and what each one leaves
 unproven.
 
 ## What it proves, and what it does not
@@ -110,8 +110,8 @@ no private key and no network, and prints each verdict verbatim.
 - It does not count every use of a tool: `mnema usage --tools` counts only the calls this
   machine's MCP server answered, nothing of it is signed, and `verify` does not read it.
 
-The whole table, claim by claim, is in [What it proves](https://github.com/felipesauer/mnema/blob/main/docs/what-it-proves.md), and the
-long form of each row is in [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#what-it-proves-and-what-it-does-not).
+The whole table, claim by claim, is in [What it proves](https://github.com/mnema-work/mnema/blob/main/docs/what-it-proves.md), and the
+long form of each row is in [the reference](https://github.com/mnema-work/mnema/blob/main/docs/cli-reference.md#what-it-proves-and-what-it-does-not).
 
 ## Install
 
@@ -119,9 +119,9 @@ long form of each row is in [the reference](https://github.com/felipesauer/mnema
 npm i -g @mnema/code
 ```
 
-Then `mnema doctor` says whether the `mnema` your shell runs is the one you meant. [Where the package came from](https://github.com/felipesauer/mnema/blob/main/docs/install.md#where-the-package-came-from) says how to check the published version against its npm provenance.
+Then `mnema doctor` says whether the `mnema` your shell runs is the one you meant. [Where the package came from](https://github.com/mnema-work/mnema/blob/main/docs/install.md#where-the-package-came-from) says how to check the published version against its npm provenance.
 
-[The install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md) has the steps for a Node installed by
+[The install page](https://github.com/mnema-work/mnema/blob/main/docs/install.md) has the steps for a Node installed by
 the system. Requires Node 24.15.0 or a later 24, or 26.0.0 or later; the package is
 ESM-only.
 
@@ -135,13 +135,13 @@ mnema decision record "Use SQLite for the projection cache" \
 mnema verify
 ```
 
-[Your first record](https://github.com/felipesauer/mnema/blob/main/docs/first-record.md) shows what each of them prints, line by line.
+[Your first record](https://github.com/mnema-work/mnema/blob/main/docs/first-record.md) shows what each of them prints, line by line.
 
 ## Where to go next
 
-[The reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md) · [Each host](https://github.com/felipesauer/mnema/blob/main/docs/agent-hosts.md) ·
-[How it works](https://github.com/felipesauer/mnema/blob/main/docs/how-it-works.md) · [The plugin](https://github.com/felipesauer/mnema/blob/main/plugin/README.md) ·
-[Where it fits](https://github.com/felipesauer/mnema/blob/main/docs/where-it-fits.md) · [Evidence](https://github.com/felipesauer/mnema/blob/main/docs/evidence.md)
+[The reference](https://github.com/mnema-work/mnema/blob/main/docs/cli-reference.md) · [Each host](https://github.com/mnema-work/mnema/blob/main/docs/agent-hosts.md) ·
+[How it works](https://github.com/mnema-work/mnema/blob/main/docs/how-it-works.md) · [The plugin](https://github.com/mnema-work/mnema/blob/main/plugin/README.md) ·
+[Where it fits](https://github.com/mnema-work/mnema/blob/main/docs/where-it-fits.md) · [Evidence](https://github.com/mnema-work/mnema/blob/main/docs/evidence.md)
 
 ## License
 

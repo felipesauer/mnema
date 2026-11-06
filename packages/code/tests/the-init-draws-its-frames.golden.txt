@@ -187,11 +187,11 @@ mnema init  ·  0.0.0
 │
 │  Then
 │    1  Commit `.mnema/` with the repository; every clone reads the record.
-│    2  Claude Code: claude plugin marketplace add felipesauer/mnema
+│    2  Claude Code: claude plugin marketplace add mnema-work/mnema
 │                    claude plugin install mnema@mnema
 │    3  Cursor: its command-line agent picks up the Claude Code plugin
 │       installed on this machine, whose server is `mnema mcp`.
-│    4  Codex: codex plugin marketplace add felipesauer/mnema
+│    4  Codex: codex plugin marketplace add mnema-work/mnema
 │              codex plugin add mnema@mnema
 │    5  1 decision file in docs/decisions is not in the record yet:
 │       mnema decision import docs/decisions
@@ -437,14 +437,13 @@ mnema init  ·  0.0.0
 │    1  Commit `.mnema/` with the repository; every clone
 │       reads the record.
 │    2  Claude Code:
-│       claude plugin marketplace add felipesauer/mnema
+│       claude plugin marketplace add mnema-work/mnema
 │       claude plugin install mnema@mnema
 │    3  Cursor: its command-line agent picks up the Claude
 │       Code plugin installed on this machine, whose server
 │       is `mnema mcp`.
-│    4  Codex:
-│       codex plugin marketplace add felipesauer/mnema
-│       codex plugin add mnema@mnema
+│    4  Codex: codex plugin marketplace add mnema-work/mnema
+│              codex plugin add mnema@mnema
 │    5  1 decision file in docs/decisions is not in the
 │       record yet:
 │       mnema decision import docs/decisions

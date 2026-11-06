@@ -63,8 +63,8 @@ const CHANGELOG = `# Changelog
 
 - Old.
 
-[Unreleased]: https://github.com/felipesauer/mnema/commits/main
-[0.2.0-beta]: https://github.com/felipesauer/mnema/tree/abc
+[Unreleased]: https://github.com/mnema-work/mnema/commits/main
+[0.2.0-beta]: https://github.com/mnema-work/mnema/tree/abc
 `;
 
 const git = (cwd: string, ...args: string[]): string =>
@@ -139,8 +139,8 @@ describe('release:prepare with a number', () => {
     const log = readFileSync(join(dir, 'CHANGELOG.md'), 'utf-8');
     expect(log).toContain(`## [Unreleased]\n\n## [${TARGET}] - 2030-01-02\n\n### Added`);
     expect(log).toContain(
-      '[Unreleased]: https://github.com/felipesauer/mnema/commits/main\n' +
-        `[${TARGET}]: https://github.com/felipesauer/mnema/releases/tag/v${TARGET}\n`,
+      '[Unreleased]: https://github.com/mnema-work/mnema/commits/main\n' +
+        `[${TARGET}]: https://github.com/mnema-work/mnema/releases/tag/v${TARGET}\n`,
     );
     expect(log).toContain(
       '## [0.2.0-beta] - 2026-10-11, a pre-release withdrawn, from before this line',

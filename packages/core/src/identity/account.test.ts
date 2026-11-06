@@ -50,7 +50,7 @@ describe('sigstoreIdentityRefusal', () => {
     for (const identity of [
       'felipe@example.com',
       'a.b+c@sub.example.org',
-      'https://github.com/felipesauer/mnema/.github/workflows/witness.yml@refs/heads/main',
+      'https://github.com/mnema-work/mnema/.github/workflows/witness.yml@refs/heads/main',
     ]) {
       expect(sigstoreIdentityRefusal(identity), identity).toBeUndefined();
     }
@@ -63,7 +63,7 @@ describe('sigstoreIdentityRefusal', () => {
       'felipesauer',
       'felipe@localhost',
       'felipe @example.com',
-      'https://github.com/felipesauer/mnema',
+      'https://github.com/mnema-work/mnema',
       'http://github.com/o/r/.github/workflows/w.yml@refs/heads/main',
       'https://github.com/o/r/.github/workflows/w.yml',
     ]) {
@@ -88,7 +88,7 @@ describe('sigstoreAccountOf: what the record keeps for a Sigstore identity', () 
 
   it('keeps a workflow as it is, because a workflow is not a person', () => {
     const workflow =
-      'https://github.com/felipesauer/mnema/.github/workflows/witness.yml@refs/heads/main';
+      'https://github.com/mnema-work/mnema/.github/workflows/witness.yml@refs/heads/main';
     expect(sigstoreAccountOf(workflow)).toBe(workflow);
   });
 });

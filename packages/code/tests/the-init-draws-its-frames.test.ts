@@ -314,8 +314,8 @@ describe('the next steps', () => {
     expect(text).not.toContain('installed on the same machine');
     expect(hosts).toContain('picks up a plugin installed in Claude Code on the same machine');
     expect(hosts).toContain('mnema mcp');
-    expect(text).toContain('claude plugin marketplace add felipesauer/mnema');
-    expect(text).toContain('codex plugin marketplace add felipesauer/mnema');
+    expect(text).toContain('claude plugin marketplace add mnema-work/mnema');
+    expect(text).toContain('codex plugin marketplace add mnema-work/mnema');
   });
 
   it('keep the trail continuous: no row of a frame is blank, every one starts with a mark or the guide', () => {

@@ -2,20 +2,20 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/core/assets/core-dark.svg">
-  <img src="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/core/assets/core-light.svg" alt="The mnema work domain: the gate over the SHAPE of a change, projections, identity, and queries. Depends on @mnema/chain." width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mnema-work/mnema/main/packages/core/assets/core-dark.svg">
+  <img src="https://raw.githubusercontent.com/mnema-work/mnema/main/packages/core/assets/core-light.svg" alt="The mnema work domain: the gate over the SHAPE of a change, projections, identity, and queries. Depends on @mnema/chain." width="720">
 </picture>
 </p>
 
 <p align="center">
-<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
+<a href="https://github.com/mnema-work/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/mnema-work/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
 <a href="https://www.npmjs.com/package/@mnema/core"><img alt="npm: @mnema/core" src="https://img.shields.io/npm/v/@mnema/core?style=flat-square&amp;label=npm&amp;color=997dbf"></a>
-<a href="https://github.com/felipesauer/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
+<a href="https://github.com/mnema-work/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
 <img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square">
 </p>
 
-The work domain of [mnema](https://github.com/felipesauer/mnema), built on top of
-[`@mnema/chain`](https://github.com/felipesauer/mnema/tree/main/packages/chain). Where the chain holds the signed record of *what
+The work domain of [mnema](https://github.com/mnema-work/mnema), built on top of
+[`@mnema/chain`](https://github.com/mnema-work/mnema/tree/main/packages/chain). Where the chain holds the signed record of *what
 happened*, core turns those events into something you can work with: the
 projections that replay the chain into a queryable cache, the workflow and the
 gate that decides which changes are allowed, and the identity layer that gives
@@ -65,7 +65,7 @@ offline: the projection is deterministic, but the merge policy is a separate con
 npm i @mnema/core
 ```
 
-It is on npm; `@mnema/code`, the package most people want, installs it for you ([install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md)).
+It is on npm; `@mnema/code`, the package most people want, installs it for you ([install page](https://github.com/mnema-work/mnema/blob/main/docs/install.md)).
 
 **It is released because `@mnema/code` depends on it, not because you should install
 it.** This section used to say it was internal and never published; what falsified that

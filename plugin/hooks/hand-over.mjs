@@ -188,7 +188,7 @@ const THIS_PRODUCT = '@mnema/code';
  * Where the install is written: the page spells the steps, and `the-install-line-is-one.test.ts`
  * holds this line, and the install line it carries, to it.
  */
-const INSTALL_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
+const INSTALL_PAGE = 'https://github.com/mnema-work/mnema/blob/main/docs/install.md';
 
 /**
  * The version of the plugin this file belongs to, read off its manifest, or `null` where it is

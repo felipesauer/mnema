@@ -3,8 +3,8 @@
   "name": "mnema",
   "description": "The mnema plugin for Claude Code: the project's committed record in the session's opening context, and the mnema MCP server.",
   "owner": {
-    "name": "Felipe Sauer",
-    "url": "https://github.com/felipesauer"
+    "name": "Mnema",
+    "url": "https://github.com/mnema-work"
   },
   "plugins": [
     {
