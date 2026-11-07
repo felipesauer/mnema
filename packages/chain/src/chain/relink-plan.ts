@@ -320,6 +320,19 @@ export function relinksWouldCount(
       ? one
       : { ...one, host: newTailOf(tailFingerprint(one.host)) },
   );
+  // A new tail is not written yet: the readers' words about its events must not name an id no
+  // directory holds (`where`, `record-name.ts`).
+  const notWritten = new Set(
+    toWrite
+      .filter((one, at) => one.host !== (asked[at] as RelinkToWrite).host)
+      .map((one) => one.host),
+  );
+  const unplaced = (detail: string): string =>
+    [...notWritten].reduce(
+      (text, host) =>
+        text.replaceAll(new RegExp(`tail ${host} seq \\d+`, 'g'), 'a new tail of that key'),
+      detail,
+    );
   const read = relinksReadAt(layouts, upcasters, named, toWrite);
   for (const { host, event } of toWrite) {
     if (event.kind !== 'tail.relinked') continue;
@@ -336,7 +349,7 @@ export function relinksWouldCount(
         ok: false,
         code: 'RELINK_WOULD_NOT_COUNT',
         token: refused.token,
-        message: `The readers would not count the relink of tail ${oneLine(tail)}: ${refused.detail}.${rule} Nothing was written.`,
+        message: `The readers would not count the relink of tail ${oneLine(tail)}: ${unplaced(refused.detail)}.${rule} Nothing was written.`,
       };
     }
     if (!read.counted.some((one) => one.relink.tail === tail && one.relink.host === host)) {
@@ -357,8 +370,8 @@ export function relinksWouldCount(
       message:
         `The record would not verify with these relinks written: the readers' identity check ` +
         `(T2/T4, the one \`mnema verify\` makes) would refuse ${together.length} event(s) it ` +
-        `refuses nowhere today, once these tails are read as one record, the first at tail ` +
-        `${oneLine(first.tail)} seq ${first.seq}: ${oneLine(first.detail)}. A relink does not ` +
+        `refuses nowhere today, once these tails are read as one record, the first at ` +
+        `${notWritten.has(first.tail) ? 'a new tail of that key, the one the relink would be written in' : `tail ${oneLine(first.tail)} seq ${first.seq}`}: ${oneLine(first.detail)}. A relink does not ` +
         'change what a tail holds: leave these tails where they are, where they verify. Nothing ' +
         'was written.',
     };
