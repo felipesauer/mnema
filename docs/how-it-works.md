@@ -40,7 +40,11 @@ turned down, the patterns your team works by, tasks and handoffs: typed facts in
 `.mnema/`, committed with the code, in the diff of the pull request that adds them,
 and handed to every clone. Notes go there when a person writes them; an agent's
 stay in a private tree on its machine unless it names the shared one, and a global
-tree keeps what outlives a project. Every write says which tree it landed in. Not a
+tree keeps what outlives a project. Every write says which tree it landed in. A rule
+recorded in the private tree governs no agent: the document a session opens with
+carries only the committed record, and says how many decisions in force and adopted
+patterns the private tree holds and the commands that list them (never their text),
+and nothing when it holds none. Not a
 file on one person's machine: a record the team shares, and one that no command
 rewrites.
 

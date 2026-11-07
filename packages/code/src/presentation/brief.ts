@@ -785,8 +785,10 @@ export function briefWithin(
   ceiling: HookCeiling = CLAUDE_CODE_CEILING,
   stacks?: StacksHere,
   formatter?: readonly string[],
+  keptPrivate?: BriefDone['keptPrivate'],
 ): string[] {
   const late = [
+    ...keptPrivateSection(keptPrivate),
     ...notInTheRecord(outside),
     ...stacksSection(stacks),
     ...formatterSection(formatter),
@@ -798,6 +800,36 @@ export function briefWithin(
     (shown) => [...composed(governance, shown, ceiling, false, inherited), ...late],
     ceiling.lengthOf,
   );
+}
+
+/**
+ * What the copy a hook carries says of the rules recorded in this machine's private tree, and
+ * nothing at all where there are none.
+ *
+ * IT IS THE HOOK'S COPY ONLY, for the reason {@link notInTheRecord} is: a count of one machine's
+ * private tree inside the file somebody commits would move with that tree. It is the other half
+ * of {@link WHAT_TRAVELS}: the file says it carries only what is committed, and this says, to
+ * the session that is handed a copy, that rules recorded privately exist and are not in it. Counts
+ * and the doors that list them, never a title or a text.
+ */
+function keptPrivateSection(kept: BriefDone['keptPrivate']): string[] {
+  if (kept === undefined || kept.decisions + kept.patterns === 0) return [];
+  const parts = [
+    ...(kept.decisions > 0
+      ? [counted(kept.decisions, 'decision in force', 'decisions in force')]
+      : []),
+    ...(kept.patterns > 0 ? [counted(kept.patterns, 'adopted pattern', 'adopted patterns')] : []),
+  ].join(' and ');
+  const doors = [
+    ...(kept.decisions > 0
+      ? ['`mnema search --scope private --kind decision --state accepted`']
+      : []),
+    ...(kept.patterns > 0 ? ['`mnema search --scope private --kind skill --state adopted`'] : []),
+  ].join(' and ');
+  return [
+    '',
+    `Recorded privately on this machine and not handed to you: ${parts}. They are not in this text; a person lists them with ${doors}.`,
+  ];
 }
 
 /**
