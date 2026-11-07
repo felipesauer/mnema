@@ -246,14 +246,14 @@ describe('whether the readers would count a relink not written yet', () => {
 });
 
 /** The agent key `name` enrolled by the person writing at `w`, its public half in `root`. */
-function enrolledAgent(root: string, w: ChainWriter, name: string): string {
+function enrolledAgent(root: string, w: ChainWriter, name: string, when = at()): string {
   const agent = loadOrCreateKeyPair({ root: join(sandbox, name) });
   mkdirSync(join(root, 'keys'), { recursive: true });
   writeFileSync(publicKeyPath({ root }, agent.fingerprint), publicKeyToPem(agent.publicKey));
   const consent = sign(agentEnrollmentMessage(w.anchor, agent.fingerprint, name), agent.privateKey);
   w.append(
     agentEnrolled(
-      { at: at(), who: w.anchor, signerFp: w.signerFingerprint, subject: w.anchor },
+      { at: when, who: w.anchor, signerFp: w.signerFingerprint, subject: w.anchor },
       { agentFp: agent.fingerprint, name, reverseSig: Buffer.from(consent).toString('hex') },
     ),
   );
@@ -496,11 +496,10 @@ describe('a tail found in both trees', () => {
     enrolledAgent(moves, other, 'twice');
     const mover = noted(moves, 'first', 'in the moving tail');
     enrolledAgent(moves, mover, 'bot');
-    // The shared tail of the tree that stays enrolls `bot` after the moving tail did: the later
-    // event is the one the join refuses.
-    for (const until = Date.now() + 5; Date.now() < until; ) {}
+    // The shared tail of the tree that stays enrolls `bot` at a stamped time later than every
+    // other event here, so the join folds it last and refuses it, whatever the clock says.
     enrolledAgent(stays, shared, 'pad');
-    enrolledAgent(stays, shared, 'bot');
+    enrolledAgent(stays, shared, 'bot', '2099-01-01T00:00:00.000Z');
     return { stays, moves, shared, host, mover };
   }
 
