@@ -877,7 +877,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/cli.test.ts': 3,
   'packages/code/src/commands/accountability.test.ts': 10,
   'packages/code/src/commands/antipatterns.test.ts': 13,
-  'packages/code/src/commands/brief.test.ts': 16,
+  'packages/code/src/commands/brief.test.ts': 17,
   'packages/code/src/commands/decision-import-bridges.test.ts': 8,
   'packages/code/src/commands/decision-import-twice-at-once.test.ts': 8,
   'packages/code/src/commands/decision-import.test.ts': 8,
