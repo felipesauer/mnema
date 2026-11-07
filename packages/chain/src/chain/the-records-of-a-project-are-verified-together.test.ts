@@ -29,7 +29,12 @@ import { entryHash, writtenAsBuilt } from './hash.js';
 import { deriveAnchor, generateKeyPair, type KeyPair, publicKeyToPem, sign } from './keys.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailDir, tailProofPath } from './layout.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
-import { type VerifyResult, verifyChain, verifyTogether } from './verify.js';
+import {
+  identityRefusedOnlyTogether,
+  type VerifyResult,
+  verifyChain,
+  verifyTogether,
+} from './verify.js';
 
 let sandbox: string;
 beforeEach(() => {
@@ -182,5 +187,32 @@ describe('verifyTogether', () => {
 
     expect(own?.ok).toBe(true);
     expect(attested(own as VerifyResult)).toEqual(['claude 1']);
+  });
+});
+
+describe('a join of two records one of which retired an agent key the other signs with', () => {
+  it('is refused at the enrolment both hold, with or without what verifyTogether adds', () => {
+    // A record that never enrolled the key cannot have an event of it verify (its signer is not
+    // enrolled), so a key another record retired is always enrolled in both: the join refuses
+    // that second enrolment, and what the retirement adds on top changes no answer.
+    const p = aProject();
+    writeTail(p.committed, `${p.a.fingerprint}-c1`, [p.founded, p.enrolled, p.retired], p.a);
+    writeTail(p.own, `${p.a.fingerprint}-p1`, [p.founded, p.enrolled], p.a);
+    writeTail(p.own, `${p.g.fingerprint}-p2`, [p.byAgent('t-after', 5)], p.g);
+    const upcasters = catalogUpcasters();
+    const [, own] = verifyTogether(
+      [
+        { layout: { root: p.committed }, where: "this project's committed tree" },
+        { layout: { root: p.own }, where: "this project's private tree" },
+      ],
+      upcasters,
+    );
+    expect(own?.ok).toBe(false);
+    const refused = identityRefusedOnlyTogether(
+      [{ root: p.committed }, { root: p.own }],
+      upcasters,
+      [],
+    );
+    expect(refused.map((one) => `${one.tail.slice(-2)}#${one.seq}`)).toContain('p1#1');
   });
 });
