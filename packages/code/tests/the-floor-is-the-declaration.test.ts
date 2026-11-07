@@ -391,6 +391,7 @@ const FLOOR_MODULES: readonly string[] = [
   'program.ts',
   'env.ts',
   'one-line.ts',
+  'git-log.ts',
   'pinned-run.ts',
   'presentation/detail.ts',
   'presentation/folded.ts',

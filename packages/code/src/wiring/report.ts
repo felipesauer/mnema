@@ -240,7 +240,10 @@ export function reportReplacement(result: Replacement, io: CliIo): void {
  * is no choice for the reply to report.
  */
 export function reportRecorded(result: Landed & Replacement, io: CliIo): void {
-  writeLines(io, [landedNotice(result.scope), ...replacementNotice(result.replaced)]);
+  writeLines(io, [
+    landedNotice(result.scope, process.cwd()),
+    ...replacementNotice(result.replaced),
+  ]);
 }
 
 /**

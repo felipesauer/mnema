@@ -16,8 +16,6 @@
  * "there is git and it has nothing to say".
  */
 
-import { execFileSync } from 'node:child_process';
-
 /** The trailer key a commit message carries. */
 export const TRAILER = 'Mnema-Decision';
 
@@ -49,6 +47,10 @@ export interface Commit {
 /** One read-only git in `root`, or `null` for every outcome that is not an answer. */
 export function git(root: string, args: readonly string[]): string | null {
   try {
+    // Loaded where it is used and not at the top: this module is on the floor every invocation
+    // loads (the line after a write asks whether there is a work tree), and most invocations
+    // never run a git.
+    const { execFileSync } = process.getBuiltinModule('node:child_process');
     return execFileSync('git', [...READ_ONLY, ...args], {
       cwd: root,
       encoding: 'utf-8',

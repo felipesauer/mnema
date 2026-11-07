@@ -37,6 +37,7 @@ import { ADDRESS_RELATIONS, RECOMMENDED_LINK_RELATIONS } from '@mnema/chain';
 import type { AddressReach } from '@mnema/context';
 import type { ReplacedClass, Scope } from '@mnema/core';
 import { EMAIL_PLACEHOLDER, FIELD_BYTE_LIMIT, secretPlaceholder } from '@mnema/core';
+import { inAWorkTree } from './git-log.js';
 import { oneLine } from './one-line.js';
 
 /**
@@ -117,7 +118,11 @@ export function subjectReachNotice(
   // The link itself, so a relation that carries no ADDRESS is not told it has one. Absent, the
   // link is read as an address, the case this notice was written for.
   link?: { readonly subject: string; readonly rel: string },
+  // The project the link fell in: without git there is no clone, only copies of the folder.
+  project?: string,
 ): string[] {
+  const clones =
+    project !== undefined && !inAWorkTree(project) ? 'every copy of the project' : 'every clone';
   const plain =
     link !== undefined && !(ADDRESS_RELATIONS as readonly string[]).includes(link.rel)
       ? link
@@ -134,7 +139,7 @@ export function subjectReachNotice(
   }
   if (subjectScope === undefined) {
     return [
-      '  No tree here holds the rule it names, so this address reaches every clone and',
+      `  No tree here holds the rule it names, so this address reaches ${clones} and`,
       '  names nothing a reader of one can open. Check the id, or record the rule.',
     ];
   }
@@ -143,18 +148,18 @@ export function subjectReachNotice(
   if (subjectIsATask) {
     return [
       `  The task it names is in the ${subjectScope} tree, which does not travel, so this link`,
-      '  reaches every clone and the task does not. A reader of one gets the link and no task.',
+      `  reaches ${clones} and the task does not. A reader of one gets the link and no task.`,
     ];
   }
   if (plain !== undefined) {
     return [
       `  The record it names is in the ${subjectScope} tree, which does not travel, so this link`,
-      '  reaches every clone and the record does not. A reader of one gets the link and no record.',
+      `  reaches ${clones} and the record does not. A reader of one gets the link and no record.`,
     ];
   }
   return [
     `  The rule it names is in the ${subjectScope} tree, which does not travel, so this`,
-    '  address reaches every clone and the rule it names does not. A reader of one gets',
+    `  address reaches ${clones} and the rule it names does not. A reader of one gets`,
     '  the address and no rule; record the rule where the address is, or address it from',
     '  the tree it lives in.',
   ];
@@ -196,6 +201,10 @@ function placeholderOf(replaced: ReplacedClass): string {
   return replaced === 'email' ? EMAIL_PLACEHOLDER : secretPlaceholder(replaced);
 }
 
+/** What the public tree is in a project that has no git: a folder, not a commit. */
+const LANDED_PUBLIC_WITHOUT_GIT =
+  "  Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.";
+
 /**
  * WHERE the write landed, as the line that follows every confirmation.
  *
@@ -217,9 +226,13 @@ function placeholderOf(replaced: ReplacedClass): string {
  * suggestion appended to every successful write would be noise on the path that is
  * working as designed.
  */
-export function landedNotice(scope: Scope): string {
+export function landedNotice(scope: Scope, project?: string): string {
   switch (scope) {
     case 'public':
+      // Without git nothing is committed and no clone exists: the folder travels only as far as
+      // the project's files are copied. Asked of the project the write fell in; with none named,
+      // the sentence is the one a repository earns.
+      if (project !== undefined && !inAWorkTree(project)) return LANDED_PUBLIC_WITHOUT_GIT;
       return '  Landed in the public tree: committed with the repository, so it reaches every clone.';
     case 'private':
       return "  Landed in the private tree: this machine's own; it is not committed and does not travel.";

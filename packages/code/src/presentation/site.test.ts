@@ -17,6 +17,7 @@ const done = (over: Partial<SiteDone> = {}): SiteDone => ({
   events: 14,
   files: 5,
   verdict: { ok: true, summary: 'local integrity verified' },
+  git: true,
   ...over,
 });
 
@@ -27,6 +28,12 @@ describe('what mnema site says', () => {
       '3 decision(s), 2 in force; 14 event(s); 5 file(s) carried for the verification in the page',
       'only the committed public tree is in the page',
     ]);
+  });
+
+  it('does not call the public tree committed where there is no git', () => {
+    expect(siteReport(render, done({ git: false })).at(-1)).toBe(
+      'only the public tree is in the page',
+    );
   });
 
   it('keeps a path with a line break on one line', () => {

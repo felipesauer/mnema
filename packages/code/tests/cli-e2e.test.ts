@@ -632,7 +632,7 @@ describe('mnema CLI: decision, end to end', () => {
     // was declared), then WHERE it landed; a decision is a declaration about the project, so it
     // goes to the tree that travels, and nothing in the command said so.
     expect(c.out.join('\n')).toMatch(
-      /^Recorded decision ADR-1 \([0-9a-f-]{36}\)\n {2}Born proposed, so not yet in force\. A person accepts it with `mnema decision review`\.\n {2}Landed in the public tree: committed with the repository, so it reaches every clone\.$/,
+      /^Recorded decision ADR-1 \([0-9a-f-]{36}\)\n {2}Born proposed, so not yet in force\. A person accepts it with `mnema decision review`\.\n {2}Landed in the public tree: a folder of this project, not committed \(there is no git here\); it travels only as the project's files are copied\.$/,
     );
 
     const root = resolveTrees(repo, {
@@ -902,7 +902,7 @@ describe('mnema CLI: skill, end to end', () => {
     expect(c.failed()).toBe(false);
     // The output is `"<name>" (<uuid>)`: the display name and the key, no alias.
     expect(c.out.join('\n')).toMatch(
-      /^Proposed skill "stacked-prs" \([0-9a-f-]{36}\)\n {2}Landed in the public tree: committed with the repository, so it reaches every clone\.$/,
+      /^Proposed skill "stacked-prs" \([0-9a-f-]{36}\)\n {2}Landed in the public tree: a folder of this project, not committed \(there is no git here\); it travels only as the project's files are copied\.$/,
     );
 
     const root = resolveTrees(repo, {
@@ -1053,7 +1053,7 @@ describe('mnema CLI: knowledge (memory, observe, handoff, link), end to end', ()
     // person's capture is public, and the line is what makes that visible at the
     // moment it happens instead of afterwards, in the record.
     expect(c.out.join('\n')).toMatch(
-      /^Captured memory [0-9a-f-]{36}\n {2}Landed in the public tree: committed with the repository, so it reaches every clone\.$/,
+      /^Captured memory [0-9a-f-]{36}\n {2}Landed in the public tree: a folder of this project, not committed \(there is no git here\); it travels only as the project's files are copied\.$/,
     );
     const id = (c.out.join('\n').match(/([0-9a-f-]{36})/) as RegExpMatchArray)[1] as string;
 
@@ -1120,7 +1120,7 @@ describe('mnema CLI: knowledge (memory, observe, handoff, link), end to end', ()
     expect(c.out.join('\n')).toBe(
       'Recorded handoff on a-task-id: claude-code → claude-code\n' +
         '  No tree here holds a-task-id, so the handoff took the default tree (public).\n' +
-        '  Landed in the public tree: committed with the repository, so it reaches every clone.',
+        "  Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.",
     );
 
     const root = treesOf().projectPublic as string;

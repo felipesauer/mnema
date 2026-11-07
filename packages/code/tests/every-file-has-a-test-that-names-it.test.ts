@@ -1347,6 +1347,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-proof-answers-a-machine.test.ts': 7,
   'packages/code/tests/the-prose-carries-its-own-emphasis.test.ts': 5,
   'packages/code/tests/the-prose-carries-no-em-dash.test.ts': 5,
+  'packages/code/tests/the-public-tree-says-what-holds-without-git.test.ts': 12,
   'packages/code/tests/the-pull-request-text.test.ts': 5,
   'packages/code/tests/the-python-floor-is-declared-once.test.ts': 5,
   'packages/code/tests/the-quick-start-runs-as-it-reads.test.ts': 7,

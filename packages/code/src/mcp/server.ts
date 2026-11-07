@@ -1228,6 +1228,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
             result.subjectScope,
             result.subjectIsATask === true,
             { subject, rel: result.recorded[0] ?? rel },
+            result.project ?? active.project,
           ),
         },
       );
@@ -2336,7 +2337,7 @@ function recorded(
       [
         line,
         ...(extra.after ?? []),
-        landedNotice(result.scope),
+        landedNotice(result.scope, result.project ?? session.project),
         ...(result.project !== undefined
           ? [`  In the project at ${oneLine(result.project)}.`]
           : []),
