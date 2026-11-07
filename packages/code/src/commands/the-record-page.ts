@@ -78,6 +78,52 @@ export const RECORD_README = [
   '',
 ].join('\n');
 
+/**
+ * Every text of the README that a PUBLISHED version of mnema wrote, other than the current one. A
+ * README whose bytes equal one of these is mnema's own old page and is replaced by
+ * {@link RECORD_README}; any other bytes are a person's and are never touched.
+ *
+ * How it is known which texts reached a release: the page first appeared on 2026-10-21 and the
+ * releases v0.1.2, v0.1.3, v0.1.4 and v0.1.5 all carry this same text (the first two releases
+ * carry no page), so there is one entry. A new text of the page that ships in a release moves the
+ * text it replaces here.
+ */
+export const OLDER_RECORD_READMES: readonly string[] = [
+  [
+    '# .mnema',
+    '',
+    "This is the project's mnema record: the signed, append-only log of the decisions behind the",
+    'work, kept with the repository and committed with it.',
+    '',
+    '- The record changes as the work does, and each change goes in the same commit as the work',
+    '  it describes.',
+    '- Nothing here is edited by hand or reformatted. The record is signed bytes: a formatter that',
+    '  rewrites one byte of it breaks the proof, so keep prettier and the like away from this folder.',
+    '- Private keys are never here: the `.gitignore` in this folder keeps them out of git.',
+    '',
+    'To check it, run `mnema verify` in the project. Without installing anything, clone',
+    'https://github.com/felipesauer/mnema and run',
+    '`python3 packages/chain/verifier/mnema_verify.py record <this folder>`.',
+    '',
+  ].join('\n'),
+];
+
+/**
+ * Replaces the page at `page` with the current one when its bytes are exactly an older page mnema
+ * wrote, and says whether it did. A page that is the current one, a page that is not there and a
+ * page with any other bytes are left as they are.
+ */
+function replaceAnOlderPage(page: string): boolean {
+  try {
+    if (!OLDER_RECORD_READMES.includes(readFileSync(page, 'utf-8'))) return false;
+    writeFileSync(page, RECORD_README, 'utf-8');
+    return true;
+  } catch {
+    // A page that cannot be read or written is left as it is.
+    return false;
+  }
+}
+
 const IGNORED_LINE = '.mnema/';
 const IGNORING_LINES = ['.mnema', '.mnema/', '/.mnema', '/.mnema/'];
 
@@ -126,6 +172,8 @@ export interface PrettierIgnoreChange {
 /** What a project lacks of what init leaves beside the record. */
 export interface Missing {
   readonly readme: boolean;
+  /** Set by {@link complete} only: the README was a page an earlier version wrote and was replaced. */
+  readonly readmeReplaced?: true;
   readonly editorconfig: boolean;
   readonly prettierIgnore?: PrettierIgnoreChange;
 }
@@ -188,8 +236,12 @@ function writeEditorconfig(record: string): boolean {
 /** Writes what is missing and returns what it wrote. Touches nothing else. */
 export function complete(project: string): Missing {
   const missing = whatIsMissing(project);
+  const page = join(project, PROJECT_DIR, README_NAME);
+  let replaced = false;
   if (missing.readme) {
-    writeFileSync(join(project, PROJECT_DIR, README_NAME), RECORD_README, 'utf-8');
+    writeFileSync(page, RECORD_README, 'utf-8');
+  } else {
+    replaced = replaceAnOlderPage(page);
   }
   if (missing.editorconfig) writeEditorconfig(join(project, PROJECT_DIR));
   const change = missing.prettierIgnore;
@@ -206,7 +258,7 @@ export function complete(project: string): Missing {
       addTheLine(change.path);
     }
   }
-  return missing;
+  return replaced ? { ...missing, readmeReplaced: true } : missing;
 }
 
 /**
@@ -266,6 +318,11 @@ export const THE_PAGE_WAS_LEFT =
   'This record had no README.md, so this write left a README.md in .mnema/: it says the ' +
   'record is signed bytes that a formatter must not rewrite.';
 
+/** The one line a write says when it replaced an older page of its own. */
+export const THE_PAGE_WAS_REPLACED =
+  "This record's .mnema/README.md was a page an earlier mnema wrote, so this write replaced it " +
+  'with the current one: it names the address the project now lives at.';
+
 /** The one line a write says when it made the `.editorconfig`. */
 export const THE_EDITORCONFIG_WAS_LEFT =
   'This record had no .editorconfig, so this write left one in .mnema/: it tells editors and ' +
@@ -275,7 +332,8 @@ export const THE_EDITORCONFIG_WAS_LEFT =
  * The lines owed by a write that ran since `before` was taken at `root` (a project's `.mnema/`):
  * when a tail of this process's own key grew, the README and the `.editorconfig` the record lacks
  * are created, and each says so in one line; none otherwise. A file that is there is never
- * replaced (each is created, not written over).
+ * replaced (each is created, not written over), except a README that is byte for byte a page an
+ * earlier mnema wrote ({@link OLDER_RECORD_READMES}): that one is replaced, and says so.
  */
 export function leaveThePage(
   root: string,
@@ -284,8 +342,9 @@ export function leaveThePage(
 ): string[] {
   const page = join(root, README_NAME);
   const config = join(root, EDITORCONFIG_NAME);
-  if ((existsSync(page) && existsSync(config)) || !growthOfOurs(root, before, keyRoots)) return [];
+  if (!growthOfOurs(root, before, keyRoots)) return [];
   const lines: string[] = [];
+  if (replaceAnOlderPage(page)) lines.push(THE_PAGE_WAS_REPLACED);
   if (!existsSync(page)) {
     try {
       // 'wx' fails where the file exists: one that appeared since the check is not overwritten.

@@ -247,7 +247,11 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
     const ignoreChanged = ignoreBefore !== readFileSync(ignoreFile, 'utf-8');
     const done = complete(ctx.cwd);
     const completed =
-      done.readme || done.editorconfig || done.prettierIgnore !== undefined || ignoreChanged
+      done.readme ||
+      done.readmeReplaced === true ||
+      done.editorconfig ||
+      done.prettierIgnore !== undefined ||
+      ignoreChanged
         ? { completed: { ...done, ...(ignoreChanged ? { gitignore: true as const } : {}) } }
         : {};
     const recorded = recordedAnchorOf(asked);

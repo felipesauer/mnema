@@ -404,6 +404,11 @@ export async function sayAlready(io: CliIo, render: Render, result: InitResult):
       onOneLine`Already a mnema project at ${result.root}: nothing to found, and what it lacked beside the record is added.`,
     );
     if (result.completed.readme) io.out('Added .mnema/README.md.');
+    if (result.completed.readmeReplaced) {
+      io.out(
+        'Replaced .mnema/README.md, a page an earlier mnema wrote, with the current one: it names the address the project now lives at.',
+      );
+    }
     if (result.completed.editorconfig) io.out('Added .mnema/.editorconfig.');
     if (result.completed.gitignore) io.out('Added the lines it lacked to .mnema/.gitignore.');
     reportIgnore(io, result.completed.prettierIgnore);
