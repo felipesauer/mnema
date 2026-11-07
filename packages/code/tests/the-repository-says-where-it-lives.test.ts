@@ -34,6 +34,10 @@ const HISTORY: Readonly<Record<string, string>> = {
     'the entries of past versions name the address of their day, and the alpha it points to lives at a commit of the old line',
   'packages/code/tests/the-repository-says-where-it-lives.test.ts':
     'this file names the patterns it forbids',
+  'packages/code/src/commands/the-record-page.ts':
+    'it keeps, byte for byte, the README that the first releases to carry one wrote, so that a record still holding it gets the current page: the old address is the text it recognizes',
+  'packages/code/tests/an-older-record-page-is-rewritten.test.ts':
+    'it holds that same README, typed from the releases, to prove an old page is replaced and an edited one is not',
 };
 
 const allowed = (path: string): string | undefined =>

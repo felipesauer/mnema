@@ -12,6 +12,22 @@ with its own changelog.
 
 ### Changed
 
+- **A record's README from an earlier release is replaced by the current page.** `.mnema/README.md` was written only
+  where it was missing, so a record founded before the move to `mnema-work` kept the old clone address. A README whose
+  bytes are exactly the page the releases 0.1.2 to 0.1.5 wrote is now replaced by the next signed write to the record or
+  by `mnema init`, with one line saying so. A README with any other bytes, and the current page, are never touched; the
+  page is not signed and neither reader reads it.
+- **`record commit` finds the forge behind an ssh alias.** A remote written as `git@<alias>:owner/repo.git`, where the
+  alias stands for github.com in your ssh configuration, got the generic sentence. For a host that is not a known forge,
+  reached over ssh, the host is read from `ssh -G <alias>` (three seconds at most) before the command is chosen; where ssh
+  is absent or fails, the sentence is the same as before.
+- **A key whose tail was cut is told what happened.** When the next write of a key that the record names among the keys
+  lost with a cut founds an identity beside others, the sentence no longer says it is how everyone after the first
+  arrives and there is nothing to do, nor points to `key request --anchor` of another identity: it says the key was lost
+  with the cut and that this write started a new identity.
+- **A decision accepted again says it is already accepted.** `decision move accept` and `decision_transition` on a
+  decision that is accepted keep the refusal `ILLEGAL_TRANSITION` and now say that it is already accepted, by a person or
+  by which agent, and when, and that nothing changed.
 - **A session is told about the rules that live only in the private tree.** The document a session opens with carries the
   committed record alone, so a decision or pattern recorded with `--scope private` never reached an agent and nothing said
   so. Where the private tree holds decisions in force or adopted patterns, the session's copy now ends with one line
@@ -44,6 +60,9 @@ with its own changelog.
 
 ### Fixed
 
+- **A write refused before it appended anything no longer says it went to a new tail.** The line `mnema: wrote to a new
+  tail` was printed as soon as the writer moved to a new tail, so a refusal such as `STALE_ANCHOR` came after a line that
+  read as if something was written. It is said once the new tail holds something.
 - **`verify --since` and `verify` agree on a tail that holds only its proof.** A tail directory with a tail proof and no
   segment holds nothing and names no record for `verify`; `verify --since` counted the record it names as a tail of
   another record that arrived. It now leaves it out too.

@@ -392,12 +392,37 @@ export function remoteHost(url: string): string | undefined {
   return scpLike?.[1]?.toLowerCase();
 }
 
+/** Whether a host is one the forge is chosen from by its name: GitHub's, or any GitLab's. */
+function isAKnownForge(host: string): boolean {
+  return host === 'github.com' || host === 'ssh.github.com' || /(?:^|\.)gitlab\./.test(host);
+}
+
+/**
+ * The host an ssh alias stands for, as `ssh -G <alias>` prints it on its `hostname` line (it reads
+ * the ssh configuration and connects to nothing), or undefined when ssh is absent, fails, takes
+ * more than three seconds or prints no such line.
+ */
+function sshHostnameOf(alias: string, env: NodeJS.ProcessEnv): string | undefined {
+  if (alias.startsWith('-')) return undefined;
+  const ran = spawnSync('ssh', ['-G', alias], {
+    encoding: 'utf-8',
+    env,
+    timeout: 3000,
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  if (ran.status !== 0) return undefined;
+  return /^hostname\s+(\S+)\s*$/im.exec(ran.stdout)?.[1]?.toLowerCase();
+}
+
 /**
  * The commands that publish the branch and open its pull request: `git push`, then the forge's
  * own command where the remote's host is GitHub's or GitLab's, or a sentence where it is neither.
- * No address is printed: one may carry a credential.
+ * A host that is no known forge, reached over ssh, may be an alias of the ssh configuration: it is
+ * resolved with `ssh -G` before the forge is chosen. No address is printed: one may carry a
+ * credential.
  */
 export function nextCommands(input: {
+  readonly env?: NodeJS.ProcessEnv;
   readonly url: string | undefined;
   readonly remote: string;
   readonly base: string;
@@ -406,7 +431,13 @@ export function nextCommands(input: {
   readonly body: string;
 }): NextCommands {
   const push = `git push -u ${shellWord(input.remote)} ${shellWord(input.branch)}`;
-  const host = input.url === undefined ? undefined : remoteHost(input.url);
+  let host = input.url === undefined ? undefined : remoteHost(input.url);
+  const overSsh =
+    input.url !== undefined &&
+    (/^ssh:\/\//i.test(input.url) || !/^[a-z][a-z0-9+.-]*:\/\//i.test(input.url));
+  if (host !== undefined && overSsh && !isAKnownForge(host)) {
+    host = sshHostnameOf(host, input.env ?? process.env) ?? host;
+  }
   const [title, body, base, head] = [input.title, input.body, input.base, input.branch].map(
     shellWord,
   );
@@ -805,6 +836,7 @@ function cut(
     const body = `The record's events through a signed checkpoint of each tail: ${events} event${events === 1 ? '' : 's'} in ${cuts.length} tail${cuts.length === 1 ? '' : 's'}, made by mnema record commit and verified with verify --since ${base.ref}${decisions.length > 0 ? `; the decisions: ${decisions.map((one) => `${one.adr} ${one.state}`).join(', ')}` : ''}.`;
     const name = existing ?? cutBranch(labels, digest);
     const next = nextCommands({
+      env: ctx.processEnv,
       url: said(git(ctx, top, ['remote', 'get-url', remote])),
       remote,
       base: branch,

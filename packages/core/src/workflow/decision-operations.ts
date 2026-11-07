@@ -411,6 +411,22 @@ function transition(
         return { refuse: stateMoved('decision', id, action, was, current.state) };
       }
 
+      // An accept of a decision that is already accepted changes nothing, and says so in plain
+      // words, with the code the gate would have given it (`ILLEGAL_TRANSITION`).
+      if (action === 'accept' && current.state === 'accepted') {
+        const agent = current.acceptedBy?.which;
+        return {
+          refuse: {
+            ok: false,
+            code: 'ILLEGAL_TRANSITION',
+            message:
+              agent === undefined
+                ? `${oneLine(current.adr)} is already accepted, by a person, at ${oneLine(current.updatedAt)}: nothing changed.`
+                : `${oneLine(current.adr)} is already accepted, by an agent (${oneLine(agent)}), at ${oneLine(current.updatedAt)}: nothing changed.`,
+          },
+        };
+      }
+
       // `who` is this installation's authorizing anchor, never supplied.
       const who = authorizingAnchor(ctx);
 

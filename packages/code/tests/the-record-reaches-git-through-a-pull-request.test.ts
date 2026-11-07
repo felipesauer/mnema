@@ -686,3 +686,65 @@ describe('the command that opens the pull request', () => {
     expect(remoteHost('/srv/repo.git')).toBeUndefined();
   });
 });
+
+describe('a remote whose host is an ssh alias', () => {
+  const ask = {
+    remote: 'origin',
+    base: 'main',
+    branch: 'mnema-record/adr-1-0123456789ab',
+    title: 'Record ADR-1',
+    body: 'the body',
+  };
+  let bin: string | undefined;
+  let asked = '';
+
+  /** An `ssh` on a PATH of its own that answers `-G <alias>` the way OpenSSH does, and notes what it was asked. */
+  function fakeSsh(script: string): NodeJS.ProcessEnv {
+    bin = mkdtempSync(join(tmpdir(), 'mnema-fake-ssh-'));
+    asked = join(bin, 'asked');
+    writeFileSync(join(bin, 'ssh'), `#!/bin/sh\necho "$*" >> '${asked}'\n${script}\n`);
+    chmodSync(join(bin, 'ssh'), 0o755);
+    return { PATH: `${bin}:${process.env.PATH ?? ''}`, HOME: bin };
+  }
+
+  afterEach(() => {
+    if (bin !== undefined) rmSync(bin, { recursive: true, force: true });
+    bin = undefined;
+  });
+
+  it('is gh when the alias resolves to github.com, and asks ssh for the alias only', () => {
+    const env = fakeSsh('printf "user git\\nhostname github.com\\nport 22\\n"');
+    const next = nextCommands({ ...ask, url: 'git@work-github:owner/repo.git', env });
+    expect(next.forge).toBe('github');
+    expect(next.open).toContain('gh pr create --base main');
+    expect(readFileSync(asked, 'utf-8').trim()).toBe('-G work-github');
+  });
+
+  it('is glab when the alias resolves to a GitLab host', () => {
+    const env = fakeSsh('echo "hostname gitlab.example.org"');
+    expect(nextCommands({ ...ask, url: 'ssh://git@alias/g/r', env }).forge).toBe('gitlab');
+  });
+
+  it('is the generic sentence when ssh fails, is absent or answers nothing useful', () => {
+    const failing = fakeSsh('exit 255');
+    expect(nextCommands({ ...ask, url: 'git@work-github:o/r.git', env: failing }).forge).toBe(
+      'other',
+    );
+    const nothing = fakeSsh('echo "port 22"');
+    expect(nextCommands({ ...ask, url: 'git@work-github:o/r.git', env: nothing }).forge).toBe(
+      'other',
+    );
+    const absent = { PATH: '/nonexistent', HOME: bin ?? '/nonexistent' };
+    expect(nextCommands({ ...ask, url: 'git@work-github:o/r.git', env: absent }).forge).toBe(
+      'other',
+    );
+  });
+
+  it('does not ask ssh for a host that is a known forge, or for an address that is not ssh', () => {
+    const env = fakeSsh('echo "hostname github.com"');
+    nextCommands({ ...ask, url: 'git@github.com:o/r.git', env });
+    nextCommands({ ...ask, url: 'git@gitlab.com:o/r.git', env });
+    nextCommands({ ...ask, url: 'https://code.example.org/o/r.git', env });
+    expect(existsSync(asked)).toBe(false);
+  });
+});

@@ -2568,6 +2568,31 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the successor `--by` named, which is the caller’s word until the record answers about it',
     },
+  '@mnema/core workflow/decision-operations.ts «{} is already accepted, by a person, at {}: nothing changed.» oneLine(current.adr) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the label of a decision, read out of the record, in the refusal of an accept the state has already had',
+    },
+  '@mnema/core workflow/decision-operations.ts «{} is already accepted, by a person, at {}: nothing changed.» oneLine(current.updatedAt) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the instant of the accepting move, read out of the record like every other field of it',
+    },
+  '@mnema/core workflow/decision-operations.ts «{} is already accepted, by an agent ({}), at {}: nothing changed.» oneLine(current.adr) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the label of a decision, read out of the record, in the refusal of an accept the state has already had',
+    },
+  '@mnema/core workflow/decision-operations.ts «{} is already accepted, by an agent ({}), at {}: nothing changed.» oneLine(agent) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name of the agent that accepted it, free text read out of the record',
+    },
+  '@mnema/core workflow/decision-operations.ts «{} is already accepted, by an agent ({}), at {}: nothing changed.» oneLine(current.updatedAt) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the instant of the accepting move, read out of the record like every other field of it',
+    },
   '@mnema/core workflow/gate.ts «"{}" requires a non-empty "{}"» oneLine(request.action) #1': {
     verdict: 'collapsed',
     why: 'the task action a caller typed',
@@ -2851,9 +2876,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said (twenty-three
     // sites, twelve in `core` and eleven in `chain`), because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(442);
+    expect(SITES.length).toBe(447);
     expect(FOUND[0]?.sites.length).toBe(228);
-    expect(FOUND[1]?.sites.length).toBe(214);
+    expect(FOUND[1]?.sites.length).toBe(219);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -2903,11 +2928,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(302);
+    expect(count('collapsed')).toBe(307);
     expect(count('minted')).toBe(108);
     expect(count('composed')).toBe(32);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      302,
+      307,
     );
   });
 

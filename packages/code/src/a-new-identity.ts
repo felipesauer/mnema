@@ -174,6 +174,18 @@ export function foundingSentence(founded: FoundedBeside, scope: Scope): string {
   // anchor against the record it is run in, and "here" is that record.
   const target = one ? named(founded.besides[0] as string) : '<that identity>';
   const tree = BY_TREE[scope];
+  if (founded.lostWithACut === true) {
+    // Said of the key, from the record: a cut of a tail names it among the keys it lost, so it is
+    // not new here, and an enrollment that took it into an identity went with that tail.
+    return oneLine(
+      `This key founded an identity of its own in the ${scope} tree, ${named(founded.anchor)}, ` +
+        `beside ${founded.besides.length} already there (${which}). It is not a person new to ` +
+        'the record: the record names this key among the keys lost when a tail was cut, the tail ' +
+        'that held its founding or its enrolment, so what made it speak for an identity went with ' +
+        'that tail and this write started a new one. `mnema audit accountability` names the ' +
+        'identities.',
+    );
+  }
   return oneLine(
     `This key founded an identity of its own in the ${scope} tree, ${named(founded.anchor)}, ` +
       `beside ${founded.besides.length} already there (${which}). ${tree.who} ` +
