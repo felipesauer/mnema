@@ -68,7 +68,7 @@
 
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { type Brief, brief, channelIsOn, channelStates } from '@mnema/context';
+import { type Brief, brief, channelIsOn, channelStates, rulesKeptPrivate } from '@mnema/context';
 import { chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type InheritedReading, readProjectInherited } from '../inherited-record.js';
 import {
@@ -153,6 +153,13 @@ export interface BriefDone {
    * is written for it: `mnema init` is what protects the record.
    */
   readonly formatter?: readonly string[];
+  /**
+   * How many decisions in force and patterns adopted live only in this machine's private tree, so
+   * the brief does not carry them: counts, never text. Present only when the caller asked
+   * ({@link runBrief}'s `outside`), for the reason {@link outside} is: the file somebody commits
+   * never carries a fact about one machine's private tree. Absent when there are none.
+   */
+  readonly keptPrivate?: { readonly decisions: number; readonly patterns: number };
 }
 
 /** The read was refused: there is no project to compose a brief for. */
@@ -273,6 +280,7 @@ export function runBrief(
       ...(asked.outside === true
         ? {
             stacks: asked.stacks(ctx),
+            ...keptPrivateOf(sources),
             ...formatterOf(dirname(trees.projectPublic as string)),
             outside: {
               drift: decisionsOutsideTheRecord(sources, dirname(trees.projectPublic as string)),
@@ -309,6 +317,13 @@ function formatterOf(project: string): { formatter?: readonly string[] } {
     ...toolsThatRewrite(project).map(sayWhatReaches),
   ];
   return lines.length > 0 ? { formatter: lines } : {};
+}
+
+function keptPrivateOf(sources: Parameters<typeof rulesKeptPrivate>[0]): {
+  keptPrivate?: { readonly decisions: number; readonly patterns: number };
+} {
+  const kept = rulesKeptPrivate(sources);
+  return kept.decisions + kept.patterns > 0 ? { keptPrivate: kept } : {};
 }
 
 function inheritedOf(trees: ReturnType<typeof resolveTrees>): { inherited?: InheritedReading } {

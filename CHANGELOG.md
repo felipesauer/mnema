@@ -12,6 +12,12 @@ with its own changelog.
 
 ### Changed
 
+- **A session is told about the rules that live only in the private tree.** The document a session opens with carries the
+  committed record alone, so a decision or pattern recorded with `--scope private` never reached an agent and nothing said
+  so. Where the private tree holds decisions in force or adopted patterns, the session's copy now ends with one line
+  saying how many and the `mnema search --scope private` commands that list them. Their text is not in it, and the file
+  `mnema brief` prints is unchanged.
+
 - **In a project with no git, the reply to a public write and the line `mnema site` ends with stop saying the tree is
   committed.** `Landed in the public tree: committed with the repository, so it reaches every clone` is still what a
   repository is told, byte for byte. Without git, both the command line and the tools say that the public tree is a

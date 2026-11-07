@@ -718,7 +718,13 @@ describe('the record arrives unasked', () => {
       /Regenerate this file with `mnema brief > <this file>`[\s\S]*?survives a regeneration\.\n\n/;
     expect(cli('brief')).toMatch(recipe);
     expect(document).not.toMatch(/Regenerate this file/);
-    expect(document).toBe(cli('brief').replace(recipe, ''));
+    // The one addition is the line saying the private tree holds a rule in force (this project
+    // has one) that the file, being committed, never carries.
+    const privately =
+      /\nRecorded privately on this machine and not handed to you: 1 decision in force\. [^\n]*\n$/;
+    expect(document).toMatch(privately);
+    expect(cli('brief')).not.toMatch(/Recorded privately/);
+    expect(document.replace(privately, '')).toBe(cli('brief').replace(recipe, ''));
     expect(notes).toBe(cli('recall'));
 
     // Each handler, and the text of the verb IT runs: the two are one rule over two verbs.
