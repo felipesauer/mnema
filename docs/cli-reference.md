@@ -315,8 +315,11 @@ mnema init
 # A project founded before `init` left the README gets it without running `init` again: the first signed
 # write to its public record (any verb, or any MCP tool) leaves `.mnema/README.md` and `.mnema/.editorconfig`,
 # each missing one with a line saying so (on stderr for a verb). A read, a refused write and a write to a tree
-# that does not travel leave the folder as it was, and a file that is already there is never replaced. Only
-# these two are made this way; the `.prettierignore` is never edited outside `init`.
+# that does not travel leave the folder as it was, and a file that is already there is never replaced, with
+# one exception: a README whose bytes are exactly a page an earlier release of mnema wrote (the clone address it
+# names has moved) is replaced by the current page, by that write or by `init`, with a line saying so; a README
+# with any other bytes is yours and is never touched. Only these two are made this way; the `.prettierignore`
+# is never edited outside `init`.
 
 ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
@@ -1471,7 +1474,10 @@ It builds the commit with git's plumbing on top of the base, signed when `commit
 `git commit` would sign it. Before a branch exists, the tree is checked out apart and verified at the
 signed level and with `--since` the base; where either fails it refuses and makes no branch. Then it
 prints `git push -u <remote> <branch>` and the command that opens the pull request: `gh pr create`
-for a GitHub remote, `glab mr create` for a GitLab one, a sentence for any other. It pushes nothing
+for a GitHub remote, `glab mr create` for a GitLab one, a sentence for any other. A remote reached over
+ssh whose host is not a known forge may be an alias of your ssh configuration: the host is read with
+`ssh -G <alias>` (three seconds at most, nothing is connected to), and the sentence stays where ssh is
+absent or does not answer. It pushes nothing
 and runs neither. The branch is `mnema-record/` with the decisions' labels and a digest of where
 the cut ends: run again with nothing new it says the branch is there, and once the base holds the cut
 it says there is nothing to commit. After the pull request merges, `record pull` brings the branch
@@ -1911,6 +1917,8 @@ one. Nothing is accepted on your behalf: every proposal is born `proposed`, what
 the file says its status is, and you rule on it with `decision move accept`, or one by one at a
 terminal with `mnema decision review` (it asks for one note, then accept, reject, skip or quit for each
 proposal, signs with your own key, and without a terminal writes nothing and prints the `move` command).
+Accepting a decision that is already accepted changes nothing and is refused (`ILLEGAL_TRANSITION`) with the facts:
+that it is already accepted, by a person or by which agent, and when.
 
 Run it without `--write` first. Nothing is written, and the plan tells you what the
 door made of every file:
@@ -2554,8 +2562,9 @@ saying the person's key signed it and the agent it names is declared, not attest
 A write that the writer sent to a new tail, because the tail of this installation no longer ends where it left it (a
 branch switch, a merge, a restored backup, a copied checkout), says so in its reply, in the sentence the command line
 prints on standard error (`mnema: wrote to a new tail, ...`), once, and the connection's log hears it too
-(`tests/an-mcp-agent-is-told-of-a-new-tail.test.ts`). A refusal that comes after the tail was opened carries it beside the
-refusal's own words, which are not changed (`tests/the-checkout-a-key-left.test.ts`). A write that the connection makes on
+(`tests/an-mcp-agent-is-told-of-a-new-tail.test.ts`). The sentence is said once the new tail holds something: a write that
+is refused before it appends anything says only its refusal, since none went to a new tail
+(`tests/the-checkout-a-key-left.test.ts`). A write that the connection makes on
 its own, the closing of its run, has no reply to carry it and says it in the log alone.
 
 A record that two machines moved out of one state without seeing each other (the state shown is the last
