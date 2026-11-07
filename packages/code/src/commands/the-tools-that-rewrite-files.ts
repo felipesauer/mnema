@@ -225,7 +225,14 @@ function preCommit(file: string, text: string): Reach | undefined {
 // ---------------------------------------------------------------------------------------------
 
 const BIOME_1 = '"files": { "ignore": [".mnema"] }';
-const BIOME_2 = '"files": { "includes": ["**", "!.mnema"] }';
+/** The Copilot instructions file `mnema init` writes; Biome 2 formats markdown and refuses its front matter. */
+const COPILOT_FILE = '.github/instructions/mnema-instructions.instructions.md';
+
+/** The entries that take the record out of Biome 2, and the Copilot file too where the project has it. */
+function biome2(copilot: boolean): string {
+  const entries = ['**', '!.mnema', ...(copilot ? [`!${COPILOT_FILE}`] : [])];
+  return `"files": { "includes": [${entries.map((e) => `"${e}"`).join(', ')}] }`;
+}
 const A_MNEMA_PATH = /^!?(\*\*\/|\.\/)?\.mnema(\/.*)?$/;
 
 /** Whether a Biome `includes` entry or `ignore` entry takes `.mnema` out. */
@@ -237,7 +244,9 @@ function biomeExcludes(entry: unknown, negated: boolean): boolean {
   );
 }
 
-function biome(file: string, text: string): Reach | undefined {
+function biome(file: string, text: string, project: string): Reach | undefined {
+  const copilot = existsSync(join(project, COPILOT_FILE));
+  const BIOME_2 = biome2(copilot);
   const config = readJsonc(text);
   if (!isObject(config)) return { tool: 'biome', file, unsure: true, add: BIOME_2 };
   const files = isObject(config.files) ? config.files : {};
@@ -410,7 +419,7 @@ export function toolsThatRewrite(project: string): Reach[] {
       return undefined;
     };
     add(configured(['.pre-commit-config.yaml'], preCommit));
-    add(configured(['biome.json', 'biome.jsonc'], biome));
+    add(configured(['biome.json', 'biome.jsonc'], (file, text) => biome(file, text, dir)));
     add(configured(['dprint.json', '.dprint.json', 'dprint.jsonc', '.dprint.jsonc'], dprint));
     add(lintStagedIn(dir));
   }

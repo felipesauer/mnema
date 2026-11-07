@@ -18,6 +18,7 @@ import type { MergeDriverFixed } from '../commands/doctor-merge-driver.js';
 import type { InitRefused, InitResult } from '../commands/init.js';
 import type { InstructionsFile } from '../commands/instructions.js';
 import type { PrettierIgnoreChange } from '../commands/the-record-page.js';
+import { sayWhatReaches } from '../commands/the-tools-that-rewrite-files.js';
 import type { HostName } from '../host-names.js';
 import type { WhoMayAcceptRecorded } from '../init/accepts.js';
 import { fact } from '../presentation/detail.js';
@@ -423,6 +424,7 @@ export async function sayClassic(
   io.out(render(fact(`identity: ${result.anchor}`)));
   reportIdentity(result.identity, io, render);
   reportIgnore(io, result.around?.prettierIgnore);
+  if (result.around?.biome !== undefined) io.out(render(fact(sayWhatReaches(result.around.biome))));
   const wroteInstructions = await reportInstructions(io, render, result.around?.instructions ?? []);
   if (recorded !== undefined) {
     if (recorded.moved !== undefined) io.out(recorded.moved);

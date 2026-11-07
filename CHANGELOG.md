@@ -12,6 +12,12 @@ with its own changelog.
 
 ### Changed
 
+- **`mnema init` says the Biome entries.** In a repository whose Biome configuration does not leave `.mnema/` alone,
+  `biome check .` goes red after init on `tailproof.json` and, with Biome 2, on the front matter of the Copilot
+  instructions file. `init` still edits no formatter's configuration: it now ends by naming the file and the entries to
+  add (`!.mnema`, and the Copilot instructions file where it was written), and `mnema doctor` and the session brief say the
+  same entries.
+
 - **mnema lives in the organization `mnema-work` now.** The repository is `github.com/mnema-work/mnema` (the old address
   redirects), and the install line for the plugins is `mnema-work/mnema` (`claude plugin marketplace add mnema-work/mnema`,
   and the same for Codex and Copilot CLI); the plugin is still `mnema@mnema`, the extension id and the package names do not
