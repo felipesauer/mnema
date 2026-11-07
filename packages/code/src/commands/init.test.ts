@@ -15,7 +15,7 @@ import { catalogUpcasters, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, PROJECT_DIR } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type InitContext, type InitResult, runInit } from './init.js';
-import { toolsThatRewrite } from './the-tools-that-rewrite-files.js';
+import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
 
 /** Founds the project; a refusal here is a broken setup, not a case. */
 function found(ctx: InitContext): InitResult {
@@ -410,12 +410,12 @@ describe('mnema init, and a Biome configuration that would rewrite the record', 
       '{"$schema":"https://biomejs.dev/schemas/2.5.15/schema.json"}',
     );
     const result = found({ cwd: repo, env });
-    expect(result.around?.biome?.file).toBe(join(repo, 'biome.json'));
-    expect(result.around?.biome?.add).toBe(
-      `"files": { "includes": ["**", "!.mnema", "!${COPILOT}"] }`,
+    expect(result.around?.biomeLine).toContain(join(repo, 'biome.json'));
+    expect(result.around?.biomeLine).toContain(
+      `add "files": { "includes": ["**", "!.mnema", "!${COPILOT}"] }.`,
     );
-    // The same finding doctor makes from the same project: the two cannot say different entries.
-    expect(toolsThatRewrite(repo)).toEqual([result.around?.biome]);
+    // The same words doctor uses for the same project: the two cannot say different entries.
+    expect(toolsThatRewrite(repo).map(sayWhatReaches)).toEqual([result.around?.biomeLine]);
     expect(existsSync(join(repo, COPILOT))).toBe(true);
   });
 
@@ -425,7 +425,9 @@ describe('mnema init, and a Biome configuration that would rewrite the record', 
       join(repo, 'biome.json'),
       '{"$schema":"https://biomejs.dev/schemas/1.9.4/schema.json"}',
     );
-    expect(found({ cwd: repo, env }).around?.biome?.add).toBe('"files": { "ignore": [".mnema"] }');
+    expect(found({ cwd: repo, env }).around?.biomeLine).toContain(
+      'add "files": { "ignore": [".mnema"] }.',
+    );
   });
 
   it('says nothing where Biome already leaves the record alone, or there is no Biome', () => {
@@ -434,8 +436,8 @@ describe('mnema init, and a Biome configuration that would rewrite the record', 
       join(one.repo, 'biome.json'),
       `{"files":{"includes":["**","!.mnema","!${COPILOT}"]}}`,
     );
-    expect(found({ cwd: one.repo, env: one.env }).around?.biome).toBeUndefined();
+    expect(found({ cwd: one.repo, env: one.env }).around?.biomeLine).toBeUndefined();
     const none = setup();
-    expect(found({ cwd: none.repo, env: none.env }).around?.biome).toBeUndefined();
+    expect(found({ cwd: none.repo, env: none.env }).around?.biomeLine).toBeUndefined();
   });
 });

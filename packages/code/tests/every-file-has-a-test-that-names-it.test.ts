@@ -888,7 +888,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/guard.test.ts': 11,
   'packages/code/src/commands/handoff.test.ts': 9,
   'packages/code/src/commands/inherit.test.ts': 16,
-  'packages/code/src/commands/init.test.ts': 8,
+  'packages/code/src/commands/init.test.ts': 9,
   'packages/code/src/commands/key-protect.test.ts': 6,
   'packages/code/src/commands/key-restore.test.ts': 9,
   'packages/code/src/commands/key-roster.test.ts': 10,

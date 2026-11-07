@@ -22,7 +22,6 @@ import { basename, dirname } from 'node:path';
 import type { MergeDriverFixed } from '../commands/doctor-merge-driver.js';
 import type { InitResult } from '../commands/init.js';
 import { changeLine, type InstructionsFile } from '../commands/instructions.js';
-import { sayWhatReaches } from '../commands/the-tools-that-rewrite-files.js';
 import { HOSTS } from '../host-names.js';
 import type { Line } from '../presentation/line.js';
 import { widthOfText } from '../presentation/width.js';
@@ -200,7 +199,7 @@ function nextSteps(founded: Founded): readonly NextStep[] {
       });
     }
   }
-  if (around?.biome !== undefined) steps.push({ says: sayWhatReaches(around.biome), commands: [] });
+  if (around?.biomeLine !== undefined) steps.push({ says: around.biomeLine, commands: [] });
   for (const row of HOST_ROWS) {
     if (!answers.marks.has(hostMark(row.id))) continue;
     steps.push(hostStep(row.id, answers.marks.has(hostMark('claude'))));
