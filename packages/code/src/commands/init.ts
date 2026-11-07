@@ -62,6 +62,7 @@ import {
   nearestGitRoot,
   type PrettierIgnoreChange,
 } from './the-record-page.js';
+import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
 
 /** What init needs from its environment: injected so it is testable. */
 export interface InitContext {
@@ -121,6 +122,13 @@ export interface InitResult {
      * prettier or the line was already there.
      */
     readonly prettierIgnore?: PrettierIgnoreChange;
+    /**
+     * What to tell about a Biome configuration that does not leave `.mnema/` alone: init edits no
+     * formatter's configuration, so it says the file and the entries to add, in the words
+     * `mnema doctor` uses for the same finding. Absent when there is no Biome or it already leaves
+     * the record alone.
+     */
+    readonly biomeLine?: string;
     /**
      * What this run did to the files an agent host reads standing instructions from (ADR-46):
      * the files the person chose among `AGENTS.md` and the files of mnema's own (every one where
@@ -291,6 +299,8 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
     ctx.instructionFiles ?? EVERY_HOST_FILE,
     ctx.yoursFiles,
   );
+  const biome = toolsThatRewrite(ctx.cwd).find((reach) => reach.tool === 'biome');
+  const biomeLine = biome === undefined ? undefined : sayWhatReaches(biome);
   return {
     created: true,
     root,
@@ -302,6 +312,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
       // Nothing has been imported into a tree founded a moment ago, so no sources are asked.
       neverImported: basesNeverImported([], ctx.cwd),
       ...(prettierIgnore !== undefined ? { prettierIgnore } : {}),
+      ...(biomeLine !== undefined ? { biomeLine } : {}),
       instructions,
     },
   };
