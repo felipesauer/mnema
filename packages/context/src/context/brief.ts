@@ -453,6 +453,27 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
 }
 
 /**
+ * How many decisions in force and patterns adopted live ONLY in this machine's private tree:
+ * rules that {@link brief} leaves out because they do not travel, and that therefore govern no
+ * agent that is handed the brief.
+ *
+ * IT IS NOT PART OF {@link Brief}, and that is the point. The brief is the text of a file somebody
+ * commits and compares with `diff`; a count of one machine's private tree inside it would move
+ * with that tree. A caller that hands a session a copy which is read once and thrown away (the
+ * hook) asks this separately and says it there. Counts only: no title, no id, no text.
+ *
+ * The machine-global tree is not counted: it keeps what outlives a project, and the sentence the
+ * caller says is about this project's private tree.
+ */
+export function rulesKeptPrivate(sources: readonly ScopedCache[]): {
+  readonly decisions: number;
+  readonly patterns: number;
+} {
+  const kept = sources.filter((source) => source.scope === 'private').map((source) => source.cache);
+  return { decisions: decisionsInForce(kept).length, patterns: adoptedSkills(kept).length };
+}
+
+/**
  * One rule with the provenance the committed record asserts for it, or the rule
  * unchanged when it asserts none.
  *

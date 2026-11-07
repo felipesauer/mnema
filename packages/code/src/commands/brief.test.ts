@@ -26,6 +26,7 @@ import { join, relative } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { isTheDerivedCache } from '../../tests/support/the-cache-is-not-the-record.js';
+import { briefDocument, briefWithin } from '../presentation/brief.js';
 import { withScopedCaches } from '../tree-sources.js';
 import { runBrief } from './brief.js';
 import { runDecision } from './decision.js';
@@ -396,5 +397,76 @@ describe('mnema brief (what governs the work here)', () => {
     // And the same record twice is the same answer twice, through the adapter that
     // rebuilds a cache from the chain each time.
     expect(second).toEqual(first);
+  });
+
+  describe('the private rules a session is not handed', () => {
+    const hookCopy = (here: { cwd: string; env: DiscoveryEnv }): string => {
+      const done = runBrief(here, {
+        outside: true,
+        stacks: () => ({ adopted: [], departures: [] }),
+      });
+      if (!done.ok) throw new Error('setup: brief refused');
+      return briefWithin(
+        done.brief,
+        100_000,
+        done.outside,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        done.keptPrivate,
+      ).join('\n');
+    };
+    const file = (here: { cwd: string; env: DiscoveryEnv }): string => {
+      const done = runBrief(here);
+      if (!done.ok) throw new Error('setup: brief refused');
+      return briefDocument(done.brief).join('\n');
+    };
+
+    it('says how many there are and the commands that list them, without their text', () => {
+      const { repo, env } = setup();
+      runInit({ cwd: repo, env });
+      const here = { cwd: repo, env };
+      accepted(here, 'What the team settled', 'public');
+      accepted(here, 'The staging secret lives in the vault', 'private');
+      accepted(here, 'Never print the vault path', 'private');
+      adopted(here, 'How this machine works', 'private');
+      accepted(here, 'What I settled for myself', 'global');
+
+      const copy = hookCopy(here);
+      expect(copy).toContain(
+        'Recorded privately on this machine and not handed to you: 2 decisions in force and 1 adopted pattern.',
+      );
+      expect(copy).toContain('`mnema search --scope private --kind decision --state accepted`');
+      expect(copy).toContain('`mnema search --scope private --kind skill --state adopted`');
+      for (const text of ['staging secret', 'vault', 'How this machine works']) {
+        expect(copy).not.toContain(text);
+      }
+    });
+
+    it('says nothing where the private tree holds no rule in force', () => {
+      const { repo, env } = setup();
+      runInit({ cwd: repo, env });
+      const here = { cwd: repo, env };
+      accepted(here, 'What the team settled', 'public');
+      // A private proposal is not in force, and a global rule is not this project's private tree.
+      runDecision(here, { title: 'Only proposed', rationale: 'later', scope: 'private' });
+      accepted(here, 'What I settled for myself', 'global');
+
+      expect(hookCopy(here)).not.toContain('Recorded privately');
+    });
+
+    it('leaves the committed file as it is with or without private rules', () => {
+      const { repo, env } = setup();
+      runInit({ cwd: repo, env });
+      const here = { cwd: repo, env };
+      accepted(here, 'What the team settled', 'public');
+      const without = file(here);
+      accepted(here, 'The staging secret lives in the vault', 'private');
+      adopted(here, 'How this machine works', 'private');
+
+      expect(file(here)).toBe(without);
+      expect(file(here)).not.toContain('Recorded privately');
+    });
   });
 });

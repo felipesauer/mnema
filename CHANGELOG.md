@@ -12,6 +12,12 @@ with its own changelog.
 
 ### Changed
 
+- **A session is told about the rules that live only in the private tree.** The document a session opens with carries the
+  committed record alone, so a decision or pattern recorded with `--scope private` never reached an agent and nothing said
+  so. Where the private tree holds decisions in force or adopted patterns, the session's copy now ends with one line
+  saying how many and the `mnema search --scope private` commands that list them. Their text is not in it, and the file
+  `mnema brief` prints is unchanged.
+
 - **`mnema init` says the Biome entries.** In a repository whose Biome configuration does not leave `.mnema/` alone,
   `biome check .` goes red after init on `tailproof.json` and, with Biome 2, on the front matter of the Copilot
   instructions file. `init` still edits no formatter's configuration: it now ends by naming the file and the entries to
