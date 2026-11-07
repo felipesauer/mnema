@@ -327,6 +327,56 @@ describe('the decision transitions are gated against the chain', () => {
     const again = acceptDecision(ctx, { id, fields: { note: 'again' } });
     expect(again).toMatchObject({ ok: false, code: 'ILLEGAL_TRANSITION' });
   });
+
+  it('says an already-accepted decision is accepted, by whom and when, and that nothing changed', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const { id, adr } = mustRecord(ctx, { title: 't', rationale: 'r' });
+    tick();
+    acceptDecision(ctx, { id, fields: { note: 'ok' } });
+    const events = orderedEvents({ root }, upcasters).length;
+    tick();
+    const again = acceptDecision(ctx, { id, fields: { note: 'again' } });
+    expect(again).toMatchObject({ ok: false, code: 'ILLEGAL_TRANSITION' });
+    if (again.ok) return;
+    expect(again.message).toBe(
+      `${adr} is already accepted, by a person, at 2026-07-21T00:00:01.000Z: nothing changed.`,
+    );
+    expect(orderedEvents({ root }, upcasters)).toHaveLength(events);
+  });
+
+  it('names the agent when an agent accepted it', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const { id, adr } = mustRecord(ctx, { title: 't', rationale: 'r' });
+    tick();
+    acceptDecision(ctx, { id, fields: { note: 'ok' }, which: WHICH });
+    tick();
+    const again = acceptDecision(ctx, { id, fields: { note: 'again' } });
+    expect(again).toMatchObject({ ok: false, code: 'ILLEGAL_TRANSITION' });
+    if (again.ok) return;
+    expect(again.message).toBe(
+      `${adr} is already accepted, by an agent (${WHICH}), at 2026-07-21T00:00:01.000Z: nothing changed.`,
+    );
+  });
+
+  it('keeps the plain refusal for an accept the state does not allow for another reason', () => {
+    const w = openChainForWriting(root, { keyRoot: root });
+    const { clock, tick } = fixedClock();
+    const ctx = contextFor(w, root, clock);
+    const { id } = mustRecord(ctx, { title: 't', rationale: 'r' });
+    tick();
+    rejectDecision(ctx, { id, fields: { note: 'no' } });
+    tick();
+    const again = acceptDecision(ctx, { id, fields: { note: 'yes' } });
+    expect(again).toMatchObject({
+      ok: false,
+      code: 'ILLEGAL_TRANSITION',
+      message: 'cannot "accept" a decision in rejected',
+    });
+  });
 });
 
 describe('supersede: the multi-entity move, with existence enforced', () => {
