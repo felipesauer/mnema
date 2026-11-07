@@ -31,6 +31,13 @@ with its own changelog.
 
 ### Fixed
 
+- **`verify --since` and `verify` agree on a tail that holds only its proof.** A tail directory with a tail proof and no
+  segment holds nothing and names no record for `verify`; `verify --since` counted the record it names as a tail of
+  another record that arrived. It now leaves it out too.
+- **A relink is checked against the tail the join reads.** Where both trees hold a tail of the same id, the check of
+  what a join would break (`tail relink`, `doctor --fix private-tree`) set aside as already broken an event of the tree
+  it does not read, and could pass a relink that leaves the record failing `verify`. It now sets aside only what the
+  tree it reads refuses already.
 - **A supersede by a proposal says who may accept it as the switch stands.** The line that says nothing is in force on
   the subject until the successor is accepted no longer says a person must, while `agent-accepts` is on: it says an agent
   may accept it where the person dictated it, and a person otherwise; with the switch off, or unreadable, it says a person.

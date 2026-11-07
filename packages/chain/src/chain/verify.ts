@@ -1066,11 +1066,15 @@ export function identityRefusedOnlyTogether(
     const keys = committedKeys(layout);
     return { layout, keys, ...readForTheFold(layout, upcasters, keys) };
   });
+  // A tail found in two layouts is read from the first below, so only the first's version of it
+  // can have an issue apart: an issue of the second's version is another event's.
   const apart = new Set<string>();
+  const readFirst = new Set<string>();
   for (const { layout, keys, entries, covered } of each) {
     for (const issue of resolveIdentity(layout, entries, covered, keys).issues) {
-      apart.add(eventAt(issue));
+      if (!readFirst.has(issue.tail)) apart.add(eventAt(issue));
     }
+    for (const tail of entries.keys()) readFirst.add(tail);
   }
   // Read together as the first layout's directory: a tail found in two layouts is the first's.
   const entries = new Map<string, readonly ChainEntry[]>();

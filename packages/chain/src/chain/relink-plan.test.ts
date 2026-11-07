@@ -360,6 +360,16 @@ describe('whether the record a relink leaves would verify', () => {
     ]);
     expect(asked(stays, moves, host, old.tail)).toEqual({ ok: true, leftBehind: [] });
   });
+
+  it('counts a relink where only the tail that moves refuses an event already: not the join’s doing', () => {
+    const { stays, moves, host, old } = twoTrees();
+    enrolledAgent(moves, old, 'bot');
+    enrolledAgent(moves, old, 'bot');
+    expect(verifyChain({ root: moves }, upcasters).issues.map((issue) => issue.detail)).toEqual([
+      'agent.enrolled names a key that is already in an identity, or holds a role, at this point',
+    ]);
+    expect(asked(stays, moves, host, old.tail)).toEqual({ ok: true, leftBehind: [] });
+  });
 });
 
 describe('the plan refuses, naming what it found', () => {
@@ -458,5 +468,81 @@ describe('the writer of a directory a relink joins', () => {
     expect(describeNewTail(told[0] as NewTail)).toContain('its owner relinked it into record');
     expect(readFileSync(join(x, 'tails', tail, '000001.jsonl'), 'utf-8')).toBe(frozen);
     expect(namesOfTails({ root: x }).get(landed)).toBe(into);
+  });
+});
+
+describe('a tail found in both trees', () => {
+  /**
+   * A tail `shared` that both trees hold, with a different history in each (the join reads it
+   * from the tree that stays). The tree that stays enrolls `bot` in it, at seq 3, after the
+   * moving tail `mover` did: the join refuses that enrolment. The tree that moves refuses, alone,
+   * its own second enrolment of `twice` in its history of `shared`, also at seq 3.
+   */
+  function sharedTail() {
+    const stays = join(sandbox, 'stays');
+    const moves = join(sandbox, 'moves');
+    const host = noted(stays, 'first', 'the tree that stays begins here');
+    const shared = noted(stays, 'shared', 'in the shared tail');
+    mkdirSync(join(moves, 'keys'), { recursive: true });
+    for (const name of readdirSync(join(stays, 'keys')).filter((n) => n.endsWith('.inst'))) {
+      if (name.startsWith(shared.signerFingerprint)) {
+        cpSync(join(stays, 'keys', name), join(moves, 'keys', name));
+      }
+    }
+    noted(moves, 'second', 'the tree that moves begins here');
+    const other = noted(moves, 'shared', 'the other history of the shared tail');
+    expect(other.tail).toBe(shared.tail);
+    enrolledAgent(moves, other, 'twice');
+    enrolledAgent(moves, other, 'twice');
+    const mover = noted(moves, 'first', 'in the moving tail');
+    enrolledAgent(moves, mover, 'bot');
+    // The shared tail of the tree that stays enrolls `bot` after the moving tail did: the later
+    // event is the one the join refuses.
+    for (const until = Date.now() + 5; Date.now() < until; ) {}
+    enrolledAgent(stays, shared, 'pad');
+    enrolledAgent(stays, shared, 'bot');
+    return { stays, moves, shared, host, mover };
+  }
+
+  function asked(t: ReturnType<typeof sharedTail>) {
+    const { stays, moves, host, mover } = t;
+    const held = tailStanding({ root: moves }, mover.tail, upcasters);
+    if (held === undefined) throw new Error('the tail holds nothing');
+    const into = namesOfTails({ root: stays }).get(host.tail) as string;
+    return relinksWouldCount(
+      [{ root: stays }, { root: moves }],
+      upcasters,
+      [
+        {
+          host: host.tail,
+          hostNames: into,
+          event: tailRelinked(
+            { at: at(), who: host.anchor, signerFp: host.signerFingerprint, subject: host.anchor },
+            {
+              tail: mover.tail,
+              from: namesOfTails({ root: moves }).get(mover.tail) as string,
+              into,
+              throughHash: held.throughHash,
+              eventCount: held.eventCount,
+              reason: 'joined',
+            },
+          ),
+        },
+      ],
+      NEW_TAIL,
+    );
+  }
+
+  it('refuses the join that breaks the tail read from the tree that stays, though the other history refuses an event at the same seq', () => {
+    const t = sharedTail();
+    expect(verifyChain({ root: t.stays }, upcasters).ok).toBe(true);
+    expect(
+      verifyChain({ root: t.moves }, upcasters).issues.map((i) => `${i.tail}#${i.seq}`),
+    ).toEqual([`${t.shared.tail}#3`]);
+    const would = asked(t);
+    expect(would.ok).toBe(false);
+    if (would.ok) return;
+    expect(would.code).toBe('RELINK_WOULD_NOT_VERIFY');
+    expect(would.message).toContain(`tail ${t.shared.tail} seq 3: agent.enrolled names a key`);
   });
 });

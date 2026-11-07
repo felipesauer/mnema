@@ -555,6 +555,9 @@ stdout, a note and not a failure:
 since <rev> (<commit>): tail <id> arrived since and names no record, and no tail there names one either: the record has no name yet, ...; a note, not a failure, ... (unnamed-record)
 ```
 
+A tail directory that holds only its proof and no segment holds nothing and names no record,
+for `--since` as for a plain `verify`.
+
 The refusal holds from the first write of a mnema from 0.1.5 on, which names the record.
 After that, a tail written by mnema 0.1.4 or earlier is refused the first way; upgrade,
 take the tail out of the change, and record its work again. With `--json`, the tails are in
@@ -1193,7 +1196,8 @@ over the directory as it would read, and refuses by its words (`RELINK_WOULD_NOT
 `relink-not-a-member` and the rest). It asks their identity check (T2/T4) over that directory too,
 and refuses `RELINK_WOULD_NOT_VERIFY`, naming the tail, the seq and their reason, where it would
 refuse an event no tree refuses today: a relink does not change what a tail holds, so the record
-would fail `verify`. Where the refused event is the relink itself, written in a new tail, the
+would fail `verify`. A tail found in two trees is read from the first, and only what that version
+refuses counts as refused today. Where the refused event is the relink itself, written in a new tail, the
 message says a new tail of that key and names no id. It refuses too, each naming what it found, a tail that is not
 here, whose key this machine does not hold (`NOT_THE_OWNER`), that names no record, that already
 names the record it would join (`ALREADY_IN_THAT_RECORD`), that does not verify, that holds a
