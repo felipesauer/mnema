@@ -56,6 +56,22 @@ export function namesOfTails(layout: ChainLayout): Map<string, string | undefine
 }
 
 /**
+ * {@link namesOfTails}, with the name of a tail that holds no segment left out: it holds nothing
+ * and counts toward no name, as both readers count it (`verify` leaves it out). What
+ * {@link tailsReadAt} and {@link arrivalsSince} name by, so that `verify` and `verify --since`
+ * agree on a tail that holds only its proof.
+ */
+function namesOfTailsThatHold(layout: ChainLayout): Map<string, string | undefined> {
+  const named = namesOfTails(layout);
+  for (const [tail, name] of named) {
+    if (name !== undefined && orderedSegments(layout, tail).length === 0) {
+      named.set(tail, undefined);
+    }
+  }
+  return named;
+}
+
+/**
  * What the tails of the directories at `roots`, read together, name ({@link recordOf}): one
  * record, several, or none. Each directory's tails are checked under that directory's own keys.
  *
@@ -103,7 +119,7 @@ function relinksNamedAt(
   layout: ChainLayout,
   upcasters: UpcasterRegistry,
 ): { named: ReadonlyMap<string, string | undefined>; counted: readonly RelinkCounted[] } {
-  const named = namesOfTails(layout);
+  const named = namesOfTailsThatHold(layout);
   if (recordOf(named).state !== 'several') return { named, counted: [] };
   const read = relinksReadAt([layout], upcasters, named);
   return { named: read.named, counted: read.counted };
@@ -152,12 +168,7 @@ function relinksNamedAt(
 export function tailsReadAt(layout: ChainLayout): TheRecordRead {
   const tails = listTails(layout);
   if (tails.length < 2) return { read: tails, several: [] };
-  const named = namesOfTails(layout);
-  for (const tail of tails) {
-    if (named.get(tail) !== undefined && orderedSegments(layout, tail).length === 0) {
-      named.set(tail, undefined);
-    }
-  }
+  const named = namesOfTailsThatHold(layout);
   const reading = tailsReadAsOneRecord(named);
   if (reading.several.length === 0) return reading;
   const record = recordOf(relinkedIfHeld(layout, tails, named).named);

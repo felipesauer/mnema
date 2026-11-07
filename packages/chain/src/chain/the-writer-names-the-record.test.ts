@@ -40,6 +40,7 @@ import {
 import { recordName } from './record-name.js';
 import { listTails } from './store.js';
 import {
+  arrivalsSince,
   firstEntries,
   namesOfTails,
   nameTheGenesisDerives,
@@ -428,6 +429,24 @@ describe('the tails a reading of the record reads off the disk (tailsReadAt)', (
     }
     expect(namesOfTails({ root }).get(theirs)).toBe(recordName(theirs));
     expect(tailsReadAt({ root })).toEqual({ read: [ours, theirs].sort(), several: [] });
+  });
+
+  it('counts a tail that holds no segment toward no name in what arrived since a base, as verify does', () => {
+    const root = aRecord('empty-arrival');
+    const ours = write(root, 'alice', 'ours');
+    const base = join(sandbox, 'empty-arrival-base');
+    cpSync(root, base, { recursive: true });
+    const other = aRecord('elsewhere-arrival');
+    const theirs = write(other, 'bob', 'theirs');
+    mkdirSync(tailDir({ root }, theirs), { recursive: true });
+    cpSync(tailProofPath({ root: other }, theirs), tailProofPath({ root }, theirs));
+    for (const key of readdirSync(join(other, 'keys'))) {
+      if (key.endsWith('.pub')) cpSync(join(other, 'keys', key), join(root, 'keys', key));
+    }
+    expect(tailsReadAt({ root }).several).toEqual([]);
+    const arrived = arrivalsSince({ root: base }, { root }, catalogUpcasters());
+    expect(arrived.foreign).toEqual([]);
+    expect(arrived.records).toEqual([recordName(ours)]);
   });
 });
 
