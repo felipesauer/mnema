@@ -14,8 +14,9 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { outsideTheProject } from '../src/link-target.js';
 import { buildMcpServer } from '../src/mcp/server.js';
-import { landedNotice } from '../src/recorded-content.js';
+import { landedNotice, subjectReachNotice } from '../src/recorded-content.js';
 
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
@@ -121,4 +122,40 @@ describe('the line mnema site ends with', () => {
       expect(site.stdout.split('\n').map((line) => line.trim())).toContain(sentence);
     }
   }, 60_000);
+});
+
+describe('the replies that say where a link reaches', () => {
+  it('the notice about the rule a link names says every clone with git and every copy without', () => {
+    for (const [subjectScope, isTask] of [
+      [undefined, false],
+      ['private', true],
+      ['private', false],
+    ] as const) {
+      const withGit = subjectReachNotice('public', subjectScope, isTask, undefined, repo).join(
+        '\n',
+      );
+      const without = subjectReachNotice('public', subjectScope, isTask, undefined, plain).join(
+        '\n',
+      );
+      expect(withGit).toContain('reaches every clone');
+      expect(without).not.toContain('clone');
+      expect(without).toContain('reaches every copy of the project');
+      // Nothing named: the sentence is the one a repository earns, byte for byte.
+      expect(subjectReachNotice('public', subjectScope, isTask)).toEqual(
+        subjectReachNotice('public', subjectScope, isTask, undefined, repo),
+      );
+    }
+  });
+
+  it('the refusal of an address outside the project names a clone only with git', () => {
+    const root = (dir: string): string => join(dir, '.mnema');
+    mkdirSync(root(repo), { recursive: true });
+    mkdirSync(root(plain), { recursive: true });
+    const withGit = outsideTheProject('governs', '/elsewhere/file.ts', root(repo));
+    const without = outsideTheProject('governs', '/elsewhere/file.ts', root(plain));
+    expect(withGit).toContain('reaches every clone, none of which can open that path');
+    expect(without).toBe(
+      '"/elsewhere/file.ts" is outside this project, and a link in the public tree travels only as the project\'s files are copied, and no copy can open that path. Link a path inside the project, or record the link with --scope private. Nothing was recorded.',
+    );
+  });
 });

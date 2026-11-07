@@ -18,6 +18,7 @@ import { dirname, isAbsolute, join } from 'node:path';
 import type { UpcasterRegistry } from '@mnema/chain';
 import type { RecordedAs } from '@mnema/context';
 import { ADDRESS_RELATIONS, locateLinkScope, type ResolvedTrees, type Scope } from '@mnema/core';
+import { inAWorkTree } from './git-log.js';
 import { addressLiesOutside, addressRelativeToRoot } from './governed-tree.js';
 import { oneLine } from './one-line.js';
 
@@ -65,6 +66,9 @@ export function relationNamesAPath(rel: string, root: string): string | undefine
 export function outsideTheProject(rel: string, target: string, root: string): string | undefined {
   if (!(ADDRESS_RELATIONS as readonly string[]).includes(rel)) return undefined;
   if (!addressLiesOutside(target, root)) return undefined;
+  if (!inAWorkTree(root)) {
+    return `"${oneLine(target)}" is outside this project, and a link in the public tree travels only as the project's files are copied, and no copy can open that path. Link a path inside the project, or record the link with --scope private. Nothing was recorded.`;
+  }
   return `"${oneLine(target)}" is outside this project, and a link in the public tree reaches every clone, none of which can open that path. Link a path inside the project, or record the link with --scope private. Nothing was recorded.`;
 }
 
