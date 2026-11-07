@@ -77,10 +77,25 @@ function isAFile(path: string, executable: boolean): boolean {
   }
 }
 
-function mnemaIsOnThePath(processEnv: NodeJS.ProcessEnv): boolean {
-  return (processEnv.PATH ?? '')
-    .split(delimiter)
-    .some((dir) => dir !== '' && isAFile(join(dir, 'mnema'), true));
+/** Windows finds a program by the extensions PATHEXT lists, so `mnema.cmd` is the mnema on the PATH. */
+const DEFAULT_PATHEXT = '.COM;.EXE;.BAT;.CMD';
+
+function mnemaIsOnThePath(processEnv: NodeJS.ProcessEnv, platform: NodeJS.Platform): boolean {
+  const windows = platform === 'win32';
+  // A copied environment keeps the case it had: Windows spells the variables `Path` and `PathExt`.
+  const read = (name: string): string | undefined =>
+    windows
+      ? Object.entries(processEnv).find(([key]) => key.toUpperCase() === name)?.[1]
+      : processEnv[name];
+  const names = windows
+    ? (read('PATHEXT') ?? DEFAULT_PATHEXT)
+        .split(';')
+        .filter((ext) => ext !== '')
+        .map((ext) => `mnema${ext.toLowerCase()}`)
+    : ['mnema'];
+  return (read('PATH') ?? '')
+    .split(windows ? ';' : delimiter)
+    .some((dir) => dir !== '' && names.some((name) => isAFile(join(dir, name), !windows)));
 }
 
 /**
@@ -91,6 +106,7 @@ function mnemaIsOnThePath(processEnv: NodeJS.ProcessEnv): boolean {
 export function whyTheDriverCannotRun(
   processEnv: NodeJS.ProcessEnv,
   value: string,
+  platform: NodeJS.Platform = process.platform,
 ): string | undefined {
   const quoted = QUOTED_FORM.exec(value);
   if (quoted !== null) {
@@ -101,7 +117,9 @@ export function whyTheDriverCannotRun(
     return undefined;
   }
   if (value === PATH_FORM) {
-    return mnemaIsOnThePath(processEnv) ? undefined : 'there is no mnema on the PATH git runs with';
+    return mnemaIsOnThePath(processEnv, platform)
+      ? undefined
+      : 'there is no mnema on the PATH git runs with';
   }
   return undefined;
 }

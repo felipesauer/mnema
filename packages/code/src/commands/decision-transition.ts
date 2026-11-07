@@ -48,7 +48,7 @@ import {
   rejectDecision,
   supersedeDecision,
 } from '@mnema/core/write';
-import { agentMayAccept } from '../agent-accepts.js';
+import { type AcceptState, acceptStateHere, agentMayAccept } from '../agent-accepts.js';
 import { resolveAddress } from '../label-as-address.js';
 import {
   movedDisplay,
@@ -60,6 +60,15 @@ import { locateEntityScopeKept, withScopedCaches } from '../tree-sources.js';
 import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
 /** What the transition command needs: injected so it is testable. */
+/** The switch `agent-accepts` as the reply says it: a record that cannot be read is `unreadable`, not off. */
+function acceptStateOrUnreadable(read: () => AcceptState): AcceptState {
+  try {
+    return read();
+  } catch {
+    return 'unreadable';
+  }
+}
+
 export interface DecisionTransitionContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
@@ -248,7 +257,12 @@ export function runDecisionTransition(
   const adr = movedDisplay('decision', root, input.id, upcasters);
   const notice =
     input.action === 'supersede' && input.by !== undefined
-      ? supersedeLeavesNothingInForce(root, input.by, upcasters)
+      ? supersedeLeavesNothingInForce(
+          root,
+          input.by,
+          upcasters,
+          acceptStateOrUnreadable(() => withScopedCaches(trees, acceptStateHere)),
+        )
       : undefined;
   return {
     ok: true,

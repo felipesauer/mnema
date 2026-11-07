@@ -1134,7 +1134,12 @@ export function runDecisionTransition(
   const adr = movedDisplay('decision', located.home.chainRoot, input.id, upcasters);
   const notice =
     input.action === 'supersede' && input.by !== undefined
-      ? supersedeLeavesNothingInForce(located.home.chainRoot, input.by, upcasters)
+      ? supersedeLeavesNothingInForce(
+          located.home.chainRoot,
+          input.by,
+          upcasters,
+          agentsAcceptInThisSession(session),
+        )
       : undefined;
   return {
     ok: true,

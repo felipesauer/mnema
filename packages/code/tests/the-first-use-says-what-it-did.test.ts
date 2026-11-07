@@ -255,7 +255,7 @@ describe('ADR-<n> as an address', () => {
 });
 
 describe('a supersede by a proposal', () => {
-  it('says that nothing is in force until a person accepts the successor', async () => {
+  it('says who may accept the successor as the switch stands', async () => {
     repo();
     await mnema('init');
     const old = idOf((await mnema('decision', 'record', 'Use UTC', 'three zones')).out);
@@ -265,7 +265,16 @@ describe('a supersede by a proposal', () => {
     expect(said.failed).toBe(false);
     expect(said.out).toContain('→ superseded');
     expect(said.out).toContain(
-      `ADR-2 (${next}) is still proposed, so nothing is in force on this subject until a person accepts it`,
+      `ADR-2 (${next}) is still proposed, so nothing is in force on this subject until it is accepted (an agent may accept it where the person dictated it, otherwise a person does)`,
+    );
+    expect(said.out).not.toContain('until a person accepts it');
+
+    await mnema('switch', 'off', 'agent-accepts');
+    const next2 = idOf((await mnema('decision', 'record', 'Use Z', 'offset')).out);
+    const old2 = idOf((await mnema('decision', 'record', 'Use local', 'zones')).out);
+    const off = await mnema('decision', 'supersede', old2, next2, '--reason', 'newer');
+    expect(off.out).toContain(
+      `is still proposed, so nothing is in force on this subject until a person accepts it (\`agent-accepts\` is switched off)`,
     );
   });
 
@@ -286,16 +295,16 @@ describe('a supersede by a proposal', () => {
     const old = idOf((await mnema('decision', 'record', 'Use UTC', 'three zones')).out);
     const next = idOf((await mnema('decision', 'record', 'Use ISO instants', 'one format')).out);
     const root = join(dir, '.mnema');
-    expect(supersedeLeavesNothingInForce(root, next, catalogUpcasters())).toContain(
+    expect(supersedeLeavesNothingInForce(root, next, catalogUpcasters(), 'on')).toContain(
       'still proposed',
     );
     await mnema('decision', 'move', 'accept', next, '--note', 'agreed');
-    expect(supersedeLeavesNothingInForce(root, next, catalogUpcasters())).toBeUndefined();
-    expect(supersedeLeavesNothingInForce(root, old, catalogUpcasters())).toContain(
+    expect(supersedeLeavesNothingInForce(root, next, catalogUpcasters(), 'on')).toBeUndefined();
+    expect(supersedeLeavesNothingInForce(root, old, catalogUpcasters(), 'on')).toContain(
       'still proposed',
     );
     expect(
-      supersedeLeavesNothingInForce(root, 'no-such-decision', catalogUpcasters()),
+      supersedeLeavesNothingInForce(root, 'no-such-decision', catalogUpcasters(), 'on'),
     ).toBeUndefined();
   });
 });
