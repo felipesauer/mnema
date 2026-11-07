@@ -47,6 +47,7 @@
 import type { UpcasterRegistry } from '@mnema/chain';
 import { decisionDisposition } from '@mnema/context';
 import { isDecisionState } from '@mnema/core';
+import type { AcceptState } from './agent-accepts.js';
 import { oneLine } from './one-line.js';
 import { withCache } from './tree-sources.js';
 
@@ -165,6 +166,7 @@ export function supersedeLeavesNothingInForce(
   root: string,
   by: string,
   upcasters: UpcasterRegistry,
+  accepts: AcceptState,
 ): string | undefined {
   const successor = withCache(root, upcasters, (cache) => cache.getDecision(by) ?? undefined);
   if (
@@ -174,7 +176,13 @@ export function supersedeLeavesNothingInForce(
   ) {
     return undefined;
   }
-  return `${oneLine(successor.adr)} (${oneLine(by)}) is still proposed, so nothing is in force on this subject until a person accepts it: mnema decision move accept ${oneLine(by)} --note "<why>"`;
+  const whoAccepts =
+    accepts === 'on'
+      ? 'until it is accepted (an agent may accept it where the person dictated it, otherwise a person does)'
+      : accepts === 'off'
+        ? 'until a person accepts it (`agent-accepts` is switched off)'
+        : 'until a person accepts it (the switch `agent-accepts` could not be read)';
+  return `${oneLine(successor.adr)} (${oneLine(by)}) is still proposed, so nothing is in force on this subject ${whoAccepts}: mnema decision move accept ${oneLine(by)} --note "<why>"`;
 }
 
 /**

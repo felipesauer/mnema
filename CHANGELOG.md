@@ -29,6 +29,16 @@ with its own changelog.
   latest release of this one, and no longer from a folder here. A pull request that changes `docs/` runs the site's build
   over the docs of the pull request, so a page the site could not publish is red before it is merged.
 
+### Fixed
+
+- **A supersede by a proposal says who may accept it as the switch stands.** The line that says nothing is in force on
+  the subject until the successor is accepted no longer says a person must, while `agent-accepts` is on: it says an agent
+  may accept it where the person dictated it, and a person otherwise; with the switch off, or unreadable, it says a person.
+- **On Windows the doctor finds `mnema.cmd`.** The check of the merge driver written by an earlier mnema looked only
+  for a file named `mnema` on the PATH, so a working driver was called dead. It looks for the extensions `PATHEXT` lists.
+- **A refused relink no longer names a tail that does not exist.** Where the refused
+  event is the relink itself, in the new tail it would be written in, the message says a new tail of that key.
+
 ## [0.1.5] - 2026-11-04
 
 ### Added

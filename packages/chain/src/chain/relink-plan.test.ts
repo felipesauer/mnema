@@ -246,7 +246,7 @@ describe('whether the readers would count a relink not written yet', () => {
 });
 
 /** The agent key `name` enrolled by the person writing at `w`, its public half in `root`. */
-function enrolledAgent(root: string, w: ChainWriter, name: string): void {
+function enrolledAgent(root: string, w: ChainWriter, name: string): string {
   const agent = loadOrCreateKeyPair({ root: join(sandbox, name) });
   mkdirSync(join(root, 'keys'), { recursive: true });
   writeFileSync(publicKeyPath({ root }, agent.fingerprint), publicKeyToPem(agent.publicKey));
@@ -258,6 +258,7 @@ function enrolledAgent(root: string, w: ChainWriter, name: string): void {
     ),
   );
   w.checkpoint();
+  return agent.fingerprint;
 }
 
 describe('whether the record a relink leaves would verify', () => {
@@ -311,6 +312,43 @@ describe('whether the record a relink leaves would verify', () => {
     expect(would.message).toMatch(
       /refuse 1 event\(s\) it refuses nowhere today, .* the first at tail [0-9a-f]{64}-[0-9a-f]{32} seq 2: agent\.enrolled names a key that is already in an identity/,
     );
+  });
+
+  it('names no tail that does not exist when the refused event is the relink in a new tail', () => {
+    const { stays, moves, host, old } = twoTrees();
+    const agentFp = enrolledAgent(stays, host, 'bot');
+    const held = tailStanding({ root: moves }, old.tail, upcasters);
+    if (held === undefined) throw new Error('the tail holds nothing');
+    const into = namesOfTails({ root: stays }).get(host.tail) as string;
+    // The relink is signed by an agent key that does not name itself, and the host (the moving
+    // tail) does not name the record joined, so the relink is read as written in a new tail.
+    const would = relinksWouldCount(
+      [{ root: stays }, { root: moves }],
+      upcasters,
+      [
+        {
+          host: old.tail,
+          hostNames: into,
+          event: tailRelinked(
+            { at: at(), who: host.anchor, signerFp: agentFp, subject: host.anchor },
+            {
+              tail: old.tail,
+              from: namesOfTails({ root: moves }).get(old.tail) as string,
+              into,
+              throughHash: held.throughHash,
+              eventCount: held.eventCount,
+              reason: 'joined',
+            },
+          ),
+        },
+      ],
+      NEW_TAIL,
+    );
+    expect(would.ok).toBe(false);
+    if (would.ok) return;
+    expect(would.code).toBe('RELINK_WOULD_NOT_COUNT');
+    expect(would.message).not.toContain('0'.repeat(32));
+    expect(would.message).toContain('a new tail of that key relinks tail ');
   });
 
   it('counts a relink where only a tree that stays refuses an event already: not the join’s doing', () => {

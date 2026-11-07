@@ -725,6 +725,22 @@ describe('what a driver can run, and the sentence about what a pull left aside',
     expect(whyTheDriverCannotRun({}, EARLIER)).toMatch(/no mnema on the PATH/);
   });
 
+  it('finds mnema.cmd on a Windows PATH through PATHEXT, and only there', () => {
+    const bin = mkdtempSync(join(sandbox, 'win-bin-'));
+    const windowsEnv = { Path: `C:\\nowhere;${bin}`, PATHEXT: '.COM;.EXE;.BAT;.CMD' };
+    expect(whyTheDriverCannotRun(windowsEnv, EARLIER, 'win32')).toMatch(/no mnema on the PATH/);
+    writeFileSync(join(bin, 'mnema.cmd'), '');
+    expect(whyTheDriverCannotRun(windowsEnv, EARLIER, 'win32')).toBeUndefined();
+    // An extension PATHEXT does not list is not a program, and a bare name is not found by PATHEXT.
+    expect(whyTheDriverCannotRun({ ...windowsEnv, PATHEXT: '.EXE' }, EARLIER, 'win32')).toMatch(
+      /no mnema on the PATH/,
+    );
+    // Elsewhere the file must be named mnema, as before.
+    expect(whyTheDriverCannotRun({ PATH: bin, PATHEXT: '.CMD' }, EARLIER, 'linux')).toMatch(
+      /no mnema on the PATH/,
+    );
+  });
+
   it('names a stash, a conflict, both, and a driver that cannot run, each in its own words', () => {
     expect(saysForkKeptAside({ stashes: 1, conflicted: 0 })).toMatch(
       /^A pull left events of this record aside: an autostash entry of git's stash holds files/,

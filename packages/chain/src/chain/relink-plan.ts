@@ -320,6 +320,22 @@ export function relinksWouldCount(
       ? one
       : { ...one, host: newTailOf(tailFingerprint(one.host)) },
   );
+  // A new tail is not written yet: the readers' words about its events must not name an id no
+  // directory holds (`where`, `record-name.ts`).
+  const notWritten = new Set(toWrite.filter((one) => !named.has(one.host)).map((one) => one.host));
+  const unplaced = (
+    refusal: RelinkRefusal & { readonly token?: string },
+  ): RelinkRefusal & { readonly token?: string } => ({
+    ...refusal,
+    message: [...notWritten].reduce(
+      (text, host) =>
+        text.replaceAll(
+          new RegExp(['tail', host, 'seq \\d+'].join(' '), 'g'),
+          'a new tail of that key',
+        ),
+      refusal.message,
+    ),
+  });
   const read = relinksReadAt(layouts, upcasters, named, toWrite);
   for (const { host, event } of toWrite) {
     if (event.kind !== 'tail.relinked') continue;
@@ -332,12 +348,12 @@ export function relinksWouldCount(
         refused.token === RELINK_NOT_A_MEMBER
           ? ' Only a key the record joined took in may relink into it: the key that founded the identity of its genesis tail, or a key that identity, or a member it took in, enrolled (ADR-157). A key that founded its own identity there does not count, and an admission of another person’s tail by a member of the record does not exist in this version: that person writes again in this record, under a tail born in it, or the tail is cut (`mnema tail prune`).'
           : '';
-      return {
+      return unplaced({
         ok: false,
         code: 'RELINK_WOULD_NOT_COUNT',
         token: refused.token,
         message: `The readers would not count the relink of tail ${oneLine(tail)}: ${refused.detail}.${rule} Nothing was written.`,
-      };
+      });
     }
     if (!read.counted.some((one) => one.relink.tail === tail && one.relink.host === host)) {
       return {
@@ -351,7 +367,7 @@ export function relinksWouldCount(
   const together = identityRefusedOnlyTogether(layouts, upcasters, toWrite);
   const first = together[0];
   if (first !== undefined) {
-    return {
+    return unplaced({
       ok: false,
       code: 'RELINK_WOULD_NOT_VERIFY',
       message:
@@ -361,7 +377,7 @@ export function relinksWouldCount(
         `${oneLine(first.tail)} seq ${first.seq}: ${oneLine(first.detail)}. A relink does not ` +
         'change what a tail holds: leave these tails where they are, where they verify. Nothing ' +
         'was written.',
-    };
+    });
   }
   const joined = new Set(
     toWrite.flatMap((one) => (one.event.kind === 'tail.relinked' ? [one.event.payload.into] : [])),

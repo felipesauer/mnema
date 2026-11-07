@@ -1193,7 +1193,8 @@ over the directory as it would read, and refuses by its words (`RELINK_WOULD_NOT
 `relink-not-a-member` and the rest). It asks their identity check (T2/T4) over that directory too,
 and refuses `RELINK_WOULD_NOT_VERIFY`, naming the tail, the seq and their reason, where it would
 refuse an event no tree refuses today: a relink does not change what a tail holds, so the record
-would fail `verify`. It refuses too, each naming what it found, a tail that is not
+would fail `verify`. Where the refused event is the relink itself, written in a new tail, the
+message says a new tail of that key and names no id. It refuses too, each naming what it found, a tail that is not
 here, whose key this machine does not hold (`NOT_THE_OWNER`), that names no record, that already
 names the record it would join (`ALREADY_IN_THAT_RECORD`), that does not verify, that holds a
 relink, or that a relink names already. It says, and does not refuse, what each tail brings into
@@ -1542,7 +1543,8 @@ says it is a fork and where the sides part, and leaves the file conflicted. It n
 a file holding both sides is a fork, which both readers refuse. Git runs a driver only where its own
 configuration says what the name means, and a committed file cannot say it, so a clone merges the
 tails as text, as git merges any file, until a person runs `mnema doctor --fix merge-driver`; `mnema
-doctor` names a clone where it is missing.
+doctor` names a clone where it is missing; on Windows it finds the earlier form `mnema` as `mnema.cmd`
+or any other extension `PATHEXT` lists.
 
 **A plain `git pull`.** No driver makes a plain `git pull` pass over uncommitted changes: git refuses
 those before it merges, whatever the configuration says about merges. What makes it automatic is git's
