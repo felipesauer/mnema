@@ -349,7 +349,7 @@ describe('both surfaces say the same sentence about where a write landed', () =>
     }
     // The three are distinguishable: a shared prefix with no distinguishing tail
     // would pass the checks above and tell a reader nothing.
-    const said = (['public', 'private', 'global'] as const).map(landedNotice);
+    const said = (['public', 'private', 'global'] as const).map((scope) => landedNotice(scope));
     expect(new Set(said).size).toBe(3);
     expect(landedNotice('public')).toContain('clone');
     expect(landedNotice('private')).toContain('does not travel');

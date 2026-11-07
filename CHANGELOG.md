@@ -18,6 +18,13 @@ with its own changelog.
   saying how many and the `mnema search --scope private` commands that list them. Their text is not in it, and the file
   `mnema brief` prints is unchanged.
 
+- **In a project with no git, the reply to a public write and the line `mnema site` ends with stop saying the tree is
+  committed.** `Landed in the public tree: committed with the repository, so it reaches every clone` is still what a
+  repository is told, byte for byte. Without git, both the command line and the tools say that the public tree is a
+  folder of the project, not committed, which travels only as the project's files are copied, and `mnema site` says
+  `only the public tree is in the page`. The notice that a link reaches a rule or task its tree does not hold, and the
+  refusal of an address outside the project, likewise say "every copy of the project" and "the project's files are
+  copied" where they said "every clone".
 - **`mnema init` says the Biome entries.** In a repository whose Biome configuration does not leave `.mnema/` alone,
   `biome check .` goes red after init on `tailproof.json` and, with Biome 2, on the front matter of the Copilot
   instructions file. `init` still edits no formatter's configuration: it now ends by naming the file and the entries to

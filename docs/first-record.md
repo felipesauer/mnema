@@ -63,6 +63,10 @@ names the first decision of a new record. A long rationale can come from a file 
 why.md`) or a pipe (`--stdin`) instead of the line, which keeps it out of the shell history; from
 two places at once, it is refused.
 
+The line about the public tree is the one a project in a repository earns. In a folder with no git it says
+instead that the tree is a folder of the project, not committed, which travels only as the project's files are
+copied; `mnema site` likewise stops calling the tree "committed" there.
+
 ## 3. Put the rule where it applies
 
 ```sh
