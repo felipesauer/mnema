@@ -42,7 +42,7 @@ $ mnema run start --which agent-alpha --goal 'set the record up'
 ### the births
 $ mnema task create 'Write the deploy runbook'
 | Created task <task-runbook-alias> (<task-runbook>)
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 $ mnema task create 'Rotate the local credentials' --scope private --which agent-alpha
 | Created task <task-chore-alias> (<task-chore>)
 |   Landed in the private tree: this machine's own; it is not committed and does not travel.
@@ -52,45 +52,45 @@ $ mnema task create 'Read the release notes' --scope global
 $ mnema decision record 'Keep the runbook in the record' 'a wiki page nobody owns goes stale' --alternatives 'a shared spreadsheet: it has no history and nobody reviews it'
 | Recorded decision ADR-1 (<decision-runbook>)
 |   Born proposed, so not yet in force. A person accepts it with `mnema decision review`.
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 $ mnema decision record 'Keep the runbook in the wiki' 'it is where we look'
 | Recorded decision ADR-2 (<decision-wiki>)
 |   Born proposed, so not yet in force. A person accepts it with `mnema decision review`.
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 $ mnema skill create 'One slice per PR' --body 'A slice is one reviewable change with its tests.'
 | Proposed skill "One slice per PR" (<skill-slices>)
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 $ mnema skill create 'Ship on Fridays' --body 'Cut the release at the end of the week.' --scope private
 | Proposed skill "Ship on Fridays" (<skill-fridays>)
 |   Landed in the private tree: this machine's own; it is not committed and does not travel.
 $ mnema memory 'the deploy runbook lives in the record now'
 | Captured memory <memory-runbook>
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 $ mnema memory 'my own note about the runbook' --scope global
 | Captured memory <memory-personal>
 |   Landed in the global tree: personal and cross-project, outside any repository.
 $ mnema observe <task-runbook> --topic review --text 'the runbook needs a rollback section'
 | Recorded observation <observation-rollback> about <task-runbook>
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 $ mnema task handoff <task-runbook> agent-alpha agent-beta
 | Recorded handoff on <task-runbook>: agent-alpha → agent-beta
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 $ mnema link <decision-runbook> <task-runbook> --rel relates-to
 | Linked <decision-runbook> -relates-to→ <task-runbook>
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 $ mnema link <task-runbook> <task-chore> --rel derived-from
 | Linked <task-runbook> -derived-from→ <task-chore>
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 $ mnema link <decision-runbook> docs/runbook --rel governs
 | Linked <decision-runbook> -governs→ docs/runbook
 |   docs/runbook covers 1 of 5 file(s) counted in the working tree; not counted: .mnema.
 |   Files on disk, not edits: a directory nobody touches counts the same as a busy one.
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 $ mnema link <decision-runbook> docs/gone-away --rel governs
 | Linked <decision-runbook> -governs→ docs/gone-away
 |   docs/gone-away covers 0 of 5 file(s) counted in the working tree; not counted: .mnema.
 |   Files on disk, not edits: a directory nobody touches counts the same as a busy one.
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 
 ### the decisions the repository already wrote
 $ mnema decision import docs/adr
@@ -156,7 +156,7 @@ $ mnema skill move deprecate <skill-fridays> --reason 'nobody ships on a Friday'
 ### a record written before the content door
 $ mnema memory 'a note with a token in it: ghp_abcdefghijklmnopqrstuvwxyz0123456789'
 | Captured memory <memory-scrubbed>
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 |   1 value(s) replaced before recording: <SECRET:github-token>
 |   This record is permanent. If those were real credentials, rotate them.
 
@@ -272,7 +272,7 @@ $ mnema switch
 |   session-tally          on   the line a session’s `Stop` hook prints: how many files its own tool calls wrote and how many decisions were recorded since it opened, and how many events of the record are in no git commit yet, and, on a second line, how many of those decisions still await a person
 $ mnema switch off edit-rules-push --reason 'noisy while porting'
 | Switched edit-rules-push off
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 |   edit-rules-push is now OFF: nothing of it reaches a model. The switch that decides it was made by <anchor-short> at <at:01>.
 |   Nothing was removed and nothing else stopped: the record still holds what it held, and every read and tool still answers whoever asks. What stops is this product putting it in front of a model unasked.
 $ mnema switch
@@ -297,7 +297,7 @@ $ mnema switch
 |   session-tally          on   the line a session’s `Stop` hook prints: how many files its own tool calls wrote and how many decisions were recorded since it opened, and how many events of the record are in no git commit yet, and, on a second line, how many of those decisions still await a person
 $ mnema switch on edit-rules-push
 | Switched edit-rules-push on
-|   Landed in the public tree: committed with the repository, so it reaches every clone.
+|   Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.
 |   edit-rules-push is now ON: it hands the record over as it did before.
 $ mnema switch off no-such-channel
 ! mnema pushes no channel by that name: `mnema switch` lists them.

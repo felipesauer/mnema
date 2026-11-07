@@ -2837,7 +2837,7 @@ describe('MCP server: end to end over a real client', () => {
     // needs the first line to move the task.
     const [headline, landed, where] = textOf(created).split('\n');
     expect(landed).toBe(
-      '  Landed in the public tree: committed with the repository, so it reaches every clone.',
+      "  Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.",
     );
     expect(where).toBe(`  In the project at ${project}.`);
     const reported = /^Created task (t-[0-9a-f]{4}) \(([0-9a-f-]{36})\)$/.exec(headline as string);
@@ -3057,7 +3057,7 @@ describe('MCP server: end to end over a real client', () => {
     expect(textOf(handed)).toBe(
       'Recorded handoff on some-id: claude-code → claude-code\n' +
         '  No tree of this workspace holds some-id, so the handoff took the default tree (public).\n' +
-        '  Landed in the public tree: committed with the repository, so it reaches every clone.\n' +
+        "  Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.\n" +
         `  In the project at ${project}.`,
     );
 
@@ -3069,7 +3069,7 @@ describe('MCP server: end to end over a real client', () => {
     expect(linked.isError).toBeFalsy();
     expect(textOf(linked)).toBe(
       'Linked some-id -reminds-me-of→ ghost-id\n' +
-        '  Landed in the public tree: committed with the repository, so it reaches every clone.\n' +
+        "  Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.\n" +
         `  In the project at ${project}.\n` +
         '  No tree here holds some-id, so this link names nothing a reader can open. Check the id.',
     );
