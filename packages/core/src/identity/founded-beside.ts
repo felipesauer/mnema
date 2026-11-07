@@ -27,6 +27,31 @@ export interface FoundedBeside {
   readonly at: string;
   /** The identities already founded in the tree when it was, in the order the record has them. */
   readonly besides: readonly string[];
+  /**
+   * Set when the record names the founding key among the keys a cut of a tail lost (the list a
+   * `tail.pruned` reason starts with): it had been founded or enrolled in the tail that was cut,
+   * so it is not a person new to the record. Present only when true.
+   */
+  readonly lostWithACut?: true;
+}
+
+/** One entry of the list a cut's reason starts with: `<fingerprint> (<how>, <breaks|stranded>)`. */
+const LOST_KEY = /([0-9a-f]{64}) \((?:founded|enrolled), (?:breaks|stranded)\)/g;
+
+/** The list a cut's reason starts with: `Keys lost: <entry>, <entry>. `. */
+const LOST_KEYS_PREFIX =
+  /^Keys lost: ((?:[0-9a-f]{64} \((?:founded|enrolled), (?:breaks|stranded)\)(?:, )?)+)\. /;
+
+/** The fingerprints of the keys the cuts of tails in `events` say they lost. */
+export function keysLostWithCuts(events: Iterable<CatalogEvent>): Set<string> {
+  const lost = new Set<string>();
+  for (const event of events) {
+    if (event.kind !== 'tail.pruned') continue;
+    const list = LOST_KEYS_PREFIX.exec(event.payload.reason)?.[1];
+    if (list === undefined) continue;
+    for (const match of list.matchAll(LOST_KEY)) lost.add(match[1] as string);
+  }
+  return lost;
 }
 
 /**
@@ -83,9 +108,10 @@ export function foundedBesideBy(
   fingerprint: string,
   upcasters: UpcasterRegistry,
 ): FoundedBeside | undefined {
-  return identitiesFoundedBeside(orderedEvents({ root }, upcasters)).find(
-    (one) => one.foundingFp === fingerprint,
-  );
+  const events = [...orderedEvents({ root }, upcasters)];
+  const found = identitiesFoundedBeside(events).find((one) => one.foundingFp === fingerprint);
+  if (found === undefined) return undefined;
+  return keysLostWithCuts(events).has(fingerprint) ? { ...found, lostWithACut: true } : found;
 }
 
 /** The anchors THIS process settled, by tree and key: what a record cannot say about itself. */

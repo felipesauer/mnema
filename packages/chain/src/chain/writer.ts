@@ -328,6 +328,8 @@ export class ChainWriter {
    * wrote to it: the act does not run there, and {@link underTailLock} moves to a new tail.
    */
   private movedOn: NewTail | undefined;
+  /** A new tail this writer moved to and has not told of yet: see {@link sayNewTailOnceWritten}. */
+  private unsaid: NewTail | undefined;
   /** The head last kept in the note ({@link keepHead}), so an act that wrote nothing writes no note. */
   private keptHash: string | null = null;
   /**
@@ -447,6 +449,15 @@ export class ChainWriter {
     // Already held by this writer: the outer hold resynced on the way in and writes the
     // mark on the way out, so the inner act only runs.
     if (this.holding) return act();
+    try {
+      return this.underTailLockOnce(act);
+    } finally {
+      this.sayNewTailOnceWritten();
+    }
+  }
+
+  /** {@link underTailLock} without the telling: the lock, the resync and the act. */
+  private underTailLockOnce<T>(act: () => T): T {
     // No options: the writer takes the lock's own budgets. They are not a knob this
     // class forwards, because nothing in the product would have a reason to differ
     // from them, and an option no caller sets is the defect this workspace already
@@ -499,7 +510,19 @@ export class ChainWriter {
       ? new HeadsToCite(this.layout, this.tailId, this.upcasters)
       : undefined;
     this.resetForTail();
-    this.onNewTail?.({ ...movedOn, to: this.tailId });
+    this.unsaid = { ...movedOn, to: this.tailId };
+  }
+
+  /**
+   * Tells {@link WriterOptions.onNewTail} of a new tail only once the tail is born. An act
+   * refused before it appended anything leaves no tail behind it, and "wrote to a new tail" must
+   * not precede a refusal that wrote nothing; the next act of this writer that does write says it.
+   */
+  private sayNewTailOnceWritten(): void {
+    if (this.unsaid === undefined || !this.born) return;
+    const opened = this.unsaid;
+    this.unsaid = undefined;
+    this.onNewTail?.(opened);
   }
 
   /** Everything this writer believed about the tail it left, back to a tail it has not read. */

@@ -305,8 +305,8 @@ describe('the agent in the checkout the key left', () => {
   }, 150_000);
 });
 
-describe('the agent in the checkout the key left, whose write also opens a new tail', () => {
-  it('is refused in the same words, and the refusal then says the tail was opened and leaves the words as they were', async () => {
+describe('the agent in the checkout the key left, whose write would also open a new tail', () => {
+  it('is refused in the same words, and nothing says a write went to a new tail, because none did', async () => {
     const { b, n, atB, fp, founded } = aMigration();
     pull(atB);
     expect(mnema(atB, b, 'key', 'enroll', requestFrom(n, founded)).status).toBe(0);
@@ -341,7 +341,7 @@ describe('the agent in the checkout the key left, whose write also opens a new t
     expect(first?.startsWith(REFUSED), first).toBe(true);
     expect(first).toContain(printed);
     expect(first).not.toContain('wrote to a new tail');
-    expect(beside.join('\n').match(/wrote to a new tail/g) ?? []).toHaveLength(1);
+    expect(beside.join('\n')).not.toContain('wrote to a new tail');
     expect(whoWrote(atB, 'from the agent, for the team')).toBeUndefined();
   }, 150_000);
 });
