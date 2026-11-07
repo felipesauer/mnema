@@ -423,6 +423,7 @@ export async function sayClassic(
   io.out(render(fact(`identity: ${result.anchor}`)));
   reportIdentity(result.identity, io, render);
   reportIgnore(io, result.around?.prettierIgnore);
+  if (result.around?.biomeLine !== undefined) io.out(render(fact(result.around.biomeLine)));
   const wroteInstructions = await reportInstructions(io, render, result.around?.instructions ?? []);
   if (recorded !== undefined) {
     if (recorded.moved !== undefined) io.out(recorded.moved);

@@ -117,7 +117,8 @@ can check. The record changes with the work, so each change goes in the same com
 describes. `init` leaves a `README.md` in the folder saying so, and an `.editorconfig` that unsets what an outer one
 could impose on the bytes, and, where the repository has a `.prettierignore` or declares prettier, adds the line
 `.mnema/` to it and says it did: a formatter that rewrote a byte of the record would
-break its signatures. It also writes the mnema instructions into the files agent hosts read at the start of a
+break its signatures. Where a Biome configuration does not leave `.mnema/` alone, `init` edits no configuration and
+ends by saying the entries to add, the same ones `mnema doctor` says. It also writes the mnema instructions into the files agent hosts read at the start of a
 session (an `AGENTS.md`, created where there is none, a `CLAUDE.md` or a `GEMINI.md` where one exists, and a
 rule file of its own for Claude Code, Copilot and Cursor), after what each of yours holds, and names each file. At a
 terminal it first shows what it found around the folder and asks which agent hosts to write them for (the arrows

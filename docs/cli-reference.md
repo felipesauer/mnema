@@ -295,7 +295,10 @@ mnema init
 # has a `.prettierignore` or declares prettier (a dependency, a `prettier` key in `package.json`, or a
 # `.prettierrc*` in the project's directory or any directory above it up to the git root), `init` also adds
 # the line `.mnema/` to the `.prettierignore` of the nearest of those directories that declares prettier (a
-# subproject's own, else the root's; creating it only when prettier is declared), and says so. It also leaves
+# subproject's own, else the root's; creating it only when prettier is declared), and says so. Where a Biome
+# configuration does not leave `.mnema/` alone, `init` edits nothing of it and ends by saying the entries to add
+# (`!.mnema`, and the Copilot instructions file it wrote, which Biome 2 formats too); `mnema doctor` says the same
+# entries. It also leaves
 # `.mnema/.editorconfig`, which sets every property an outer `.editorconfig` could impose on the record (a final
 # newline, an end of line, a trim, a charset, an indent) to `unset`; it has no `root = true`, so it takes nothing
 # else away from the folders above. And it writes the mnema instructions into the files agent hosts read at

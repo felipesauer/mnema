@@ -199,6 +199,7 @@ function nextSteps(founded: Founded): readonly NextStep[] {
       });
     }
   }
+  if (around?.biomeLine !== undefined) steps.push({ says: around.biomeLine, commands: [] });
   for (const row of HOST_ROWS) {
     if (!answers.marks.has(hostMark(row.id))) continue;
     steps.push(hostStep(row.id, answers.marks.has(hostMark('claude'))));

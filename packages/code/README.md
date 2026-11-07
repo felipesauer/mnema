@@ -39,7 +39,8 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
 - **`mnema init`**, which founds the record and leaves in `.mnema/` a `README.md` that says what the
   folder is and an `.editorconfig` that unsets what an outer one could impose on its bytes; where the
   repository has a `.prettierignore` or declares prettier, it adds the line `.mnema/` to it and
-  says so. It writes the mnema instructions (when to call the mnema tools, and what never goes in the
+  says so; where a Biome configuration does not leave `.mnema/` alone, it ends by saying the entries to add. It
+  writes the mnema instructions (when to call the mnema tools, and what never goes in the
   record) into `AGENTS.md`, into a `CLAUDE.md` or `GEMINI.md` that exists, and into a rule file of its
   own for Claude Code, Copilot and Cursor, and names each file. At a terminal it first shows what it
   found around the folder, asks which agent hosts to write them for (arrows and space; the hosts found are

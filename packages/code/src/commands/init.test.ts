@@ -15,6 +15,7 @@ import { catalogUpcasters, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, PROJECT_DIR } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type InitContext, type InitResult, runInit } from './init.js';
+import { sayWhatReaches, toolsThatRewrite } from './the-tools-that-rewrite-files.js';
 
 /** Founds the project; a refusal here is a broken setup, not a case. */
 function found(ctx: InitContext): InitResult {
@@ -396,5 +397,47 @@ describe('mnema init, and the formatter that would rewrite the record', () => {
     found({ cwd: below, env });
     expect(readFileSync(ignoreFile(repo), 'utf-8')).toBe('.mnema/\n');
     expect(existsSync(ignoreFile(below))).toBe(false);
+  });
+});
+
+describe('mnema init, and a Biome configuration that would rewrite the record', () => {
+  const COPILOT = '.github/instructions/mnema-instructions.instructions.md';
+
+  it('hands back the entries to add: the record and the Copilot file, in the form of its version', () => {
+    const { repo, env } = setup();
+    writeFileSync(
+      join(repo, 'biome.json'),
+      '{"$schema":"https://biomejs.dev/schemas/2.5.15/schema.json"}',
+    );
+    const result = found({ cwd: repo, env });
+    expect(result.around?.biomeLine).toContain(join(repo, 'biome.json'));
+    expect(result.around?.biomeLine).toContain(
+      `add "files": { "includes": ["**", "!.mnema", "!${COPILOT}"] }.`,
+    );
+    // The same words doctor uses for the same project: the two cannot say different entries.
+    expect(toolsThatRewrite(repo).map(sayWhatReaches)).toEqual([result.around?.biomeLine]);
+    expect(existsSync(join(repo, COPILOT))).toBe(true);
+  });
+
+  it('says the Biome 1 form without the markdown file, which that Biome does not format', () => {
+    const { repo, env } = setup();
+    writeFileSync(
+      join(repo, 'biome.json'),
+      '{"$schema":"https://biomejs.dev/schemas/1.9.4/schema.json"}',
+    );
+    expect(found({ cwd: repo, env }).around?.biomeLine).toContain(
+      'add "files": { "ignore": [".mnema"] }.',
+    );
+  });
+
+  it('says nothing where Biome already leaves the record alone, or there is no Biome', () => {
+    const one = setup();
+    writeFileSync(
+      join(one.repo, 'biome.json'),
+      `{"files":{"includes":["**","!.mnema","!${COPILOT}"]}}`,
+    );
+    expect(found({ cwd: one.repo, env: one.env }).around?.biomeLine).toBeUndefined();
+    const none = setup();
+    expect(found({ cwd: none.repo, env: none.env }).around?.biomeLine).toBeUndefined();
   });
 });
