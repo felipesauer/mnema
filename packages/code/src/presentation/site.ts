@@ -23,7 +23,13 @@ export function siteReport(render: Render, done: SiteDone): string[] {
           `${done.files} file(s) carried for the verification in the page`,
       ),
     ),
-    render(fact('only the committed public tree is in the page')),
+    render(
+      fact(
+        done.git
+          ? 'only the committed public tree is in the page'
+          : 'only the public tree is in the page',
+      ),
+    ),
   ];
 }
 

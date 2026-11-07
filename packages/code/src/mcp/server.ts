@@ -2336,7 +2336,7 @@ function recorded(
       [
         line,
         ...(extra.after ?? []),
-        landedNotice(result.scope),
+        landedNotice(result.scope, result.project ?? session.project),
         ...(result.project !== undefined
           ? [`  In the project at ${oneLine(result.project)}.`]
           : []),

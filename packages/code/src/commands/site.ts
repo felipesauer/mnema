@@ -31,6 +31,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { catalogUpcasters, ensureTree, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, realOfMaybeMissing, resolveTrees } from '@mnema/core';
+import { inAWorkTree } from '../git-log.js';
 import { tailsOfFiles } from '../site/browser/tails.js';
 import { pageModel } from '../site/model.js';
 import { renderPage, type SiteHead } from '../site/page.js';
@@ -60,6 +61,8 @@ export interface SiteDone {
    * person who ran the verb is the one who can still decide.
    */
   readonly verdict: { readonly ok: boolean; readonly summary: string };
+  /** Whether the record sits in a git work tree: without one, none of it is committed. */
+  readonly git: boolean;
 }
 
 /** Nothing was written. */
@@ -261,5 +264,6 @@ export function runSite(
     events: tails.reduce((n, tail) => n + tail.events, 0),
     files: Object.keys(files).length,
     verdict: { ok: ruled.ok, summary: ruled.summary },
+    git: inAWorkTree(publicRoot),
   };
 }

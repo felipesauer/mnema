@@ -37,6 +37,7 @@ import { ADDRESS_RELATIONS, RECOMMENDED_LINK_RELATIONS } from '@mnema/chain';
 import type { AddressReach } from '@mnema/context';
 import type { ReplacedClass, Scope } from '@mnema/core';
 import { EMAIL_PLACEHOLDER, FIELD_BYTE_LIMIT, secretPlaceholder } from '@mnema/core';
+import { inAWorkTree } from './git-log.js';
 import { oneLine } from './one-line.js';
 
 /**
@@ -196,6 +197,10 @@ function placeholderOf(replaced: ReplacedClass): string {
   return replaced === 'email' ? EMAIL_PLACEHOLDER : secretPlaceholder(replaced);
 }
 
+/** What the public tree is in a project that has no git: a folder, not a commit. */
+const LANDED_PUBLIC_WITHOUT_GIT =
+  "  Landed in the public tree: a folder of this project, not committed (there is no git here); it travels only as the project's files are copied.";
+
 /**
  * WHERE the write landed, as the line that follows every confirmation.
  *
@@ -217,9 +222,13 @@ function placeholderOf(replaced: ReplacedClass): string {
  * suggestion appended to every successful write would be noise on the path that is
  * working as designed.
  */
-export function landedNotice(scope: Scope): string {
+export function landedNotice(scope: Scope, project?: string): string {
   switch (scope) {
     case 'public':
+      // Without git nothing is committed and no clone exists: the folder travels only as far as
+      // the project's files are copied. Asked of the project the write fell in; with none named,
+      // the sentence is the one a repository earns.
+      if (project !== undefined && !inAWorkTree(project)) return LANDED_PUBLIC_WITHOUT_GIT;
       return '  Landed in the public tree: committed with the repository, so it reaches every clone.';
     case 'private':
       return "  Landed in the private tree: this machine's own; it is not committed and does not travel.";

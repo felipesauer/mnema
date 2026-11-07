@@ -554,7 +554,7 @@ describe('the verdict a page computes', () => {
       expect.stringMatching(
         /^ {2}2 decision\(s\), 2 in force; \d+ event\(s\); \d+ file\(s\) carried/,
       ),
-      '  only the committed public tree is in the page',
+      '  only the public tree is in the page',
     ]);
     expect(readFileSync(join(out, 'index.html'), 'utf-8')).toBe(
       readFileSync(join(sandbox, 'out', 'index.html'), 'utf-8'),
